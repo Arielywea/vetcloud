@@ -26,14 +26,12 @@ app.use(cors());
 app.use(express.json());
 
 const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-app.use('/uploads', express.static(uploadsDir));
+try {
+  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+  app.use('/uploads', express.static(uploadsDir));
+} catch (e) {}
 
-const storage = multer.diskStorage({
-  destination: uploadsDir,
-  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
-});
-const upload = multer({ storage });
+const upload = multer({ storage: multer.memoryStorage() });
 
 // ─── DISEASES ────────────────────────────────────────────
 app.get('/items/diseases', async (req, res) => {
@@ -326,11 +324,11 @@ app.delete('/items/favorites/:id', async (req, res) => {
 
 // ─── FILE UPLOAD ─────────────────────────────────────────
 app.post('/files', upload.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No file' });
+  if (!req.file) return res.status(400).json({ error: 'No file upload' });
   res.json({
     data: {
-      id: req.file.filename,
-      filename_disk: req.file.filename,
+      id: `${Date.now()}-${req.file.originalname}`,
+      filename_disk: `${Date.now()}-${req.file.originalname}`,
       filename_download: req.file.originalname,
       type: req.file.mimetype,
       filesize: req.file.size,
@@ -343,7 +341,11 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`VetCloud API running on http://localhost:${PORT}`);
-  console.log(`Admin panel: http://localhost:${PORT}/admin`);
-});
+if (!process.env.VERCEL_ENV) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`VetCloud API running on http://localhost:${PORT}`);
+    console.log(`Admin panel: http://localhost:${PORT}/admin`);
+  });
+}
+
+module.exports = app;
