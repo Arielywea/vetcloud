@@ -74,7 +74,7 @@ app.get('/items/diseases', async (req, res) => {
 
 app.get('/items/diseases/:id', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM diseases WHERE id = $1', [req.params.id]);
+    const result = await pool.query('SELECT *, references_list AS references FROM diseases WHERE id = $1', [req.params.id]);
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
   } catch (err) {
@@ -86,8 +86,9 @@ app.post('/items/diseases', async (req, res) => {
   try {
     const d = req.body;
     const result = await pool.query(
-      `INSERT INTO diseases (name, scientific_name, species, category, severity, description, key_signs, diagnosis, treatment, prevention, prognosis, is_zoonotic, references_list)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+      `WITH ins AS (INSERT INTO diseases (name, scientific_name, species, category, severity, description, key_signs, diagnosis, treatment, prevention, prognosis, is_zoonotic, references_list)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *)
+       SELECT *, references_list AS references FROM ins`,
       [d.name, d.scientific_name, d.species, d.category, d.severity, d.description,
        JSON.stringify(d.key_signs), JSON.stringify(d.diagnosis), JSON.stringify(d.treatment),
        JSON.stringify(d.prevention), d.prognosis, d.is_zoonotic, JSON.stringify(d.references)]
@@ -104,17 +105,19 @@ app.patch('/items/diseases/:id', async (req, res) => {
     const fields = [];
     const values = [];
     let idx = 1;
+    const aliasMap = { references: 'references_list' };
     for (const [key, val] of Object.entries(d)) {
       if (key === 'id' || key === 'created_at' || key === 'updated_at') continue;
+      const column = aliasMap[key] || key;
       const valStr = typeof val === 'object' ? JSON.stringify(val) : val;
-      fields.push(`${key} = $${idx}`);
+      fields.push(`${column} = $${idx}`);
       values.push(valStr);
       idx++;
     }
     fields.push(`updated_at = NOW()`);
     values.push(req.params.id);
     const result = await pool.query(
-      `UPDATE diseases SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`, values
+      `WITH u AS (UPDATE diseases SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *) SELECT *, references_list AS references FROM u`, values
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
