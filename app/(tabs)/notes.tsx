@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { Text, Card, Button, TextInput, FAB, Portal, Modal, Chip } from 'react-native-paper';
+import { View, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text, Card, Button, TextInput, FAB, Portal, Modal, Dialog, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNotes } from '../../hooks/useDirectus';
 import { DirectusNote, api } from '../../services/directus';
@@ -11,6 +11,7 @@ export default function NotesScreen() {
   const [showModal, setShowModal] = useState(false);
   const [editingNote, setEditingNote] = useState<DirectusNote | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [deleteTarget, setDeleteTarget] = useState<DirectusNote | null>(null);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -25,7 +26,6 @@ export default function NotesScreen() {
 
   const handleSave = async () => {
     if (!title.trim() || !content.trim()) {
-      Alert.alert('Error', 'Título y contenido son obligatorios');
       return;
     }
 
@@ -51,7 +51,6 @@ export default function NotesScreen() {
       resetForm();
       setShowModal(false);
     } catch (error) {
-      Alert.alert('Error', 'No se pudo guardar la nota');
     }
   };
 
@@ -64,26 +63,19 @@ export default function NotesScreen() {
   };
 
   const handleDelete = (note: DirectusNote) => {
-    Alert.alert(
-      'Eliminar nota',
-      `¿Estás seguro de eliminar "${note.title}"?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await api.notes.delete(note.id);
-              setRefreshKey(k => k + 1);
-              refresh();
-            } catch (e: any) {
-              Alert.alert('Error', e?.message || 'No se pudo eliminar');
-            }
-          },
-        },
-      ]
-    );
+    setDeleteTarget(note);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await api.notes.delete(deleteTarget.id);
+      setRefreshKey(k => k + 1);
+      refresh();
+    } catch (e: any) {
+    } finally {
+      setDeleteTarget(null);
+    }
   };
 
   const renderNote = ({ item }: { item: DirectusNote }) => {
@@ -214,6 +206,22 @@ export default function NotesScreen() {
           </View>
         </Modal>
       </Portal>
+
+      <Portal>
+        <Dialog visible={!!deleteTarget} onDismiss={() => setDeleteTarget(null)}>
+          <Dialog.Icon icon="alert" />
+          <Dialog.Title style={styles.dialogTitle}>Eliminar nota</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              ¿Estás seguro de eliminar "{deleteTarget?.title}"?
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteTarget(null)}>Cancelar</Button>
+            <Button onPress={confirmDelete} textColor={APP_COLORS.error}>Eliminar</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }
@@ -330,5 +338,8 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: APP_COLORS.primary,
+  },
+  dialogTitle: {
+    textAlign: 'center',
   },
 });
