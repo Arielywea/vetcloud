@@ -133,26 +133,31 @@ export function usePet(id: string | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!id) {
+  const fetchPet = useCallback(async () => {
+    if (!id) { setLoading(false); return; }
+    setLoading(true);
+    try {
+      const result = await api.pets.get(id);
+      setPet(result);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
       setLoading(false);
-      return;
     }
-    const fetchPet = async () => {
-      setLoading(true);
-      try {
-        const result = await api.pets.get(id);
-        setPet(result);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPet();
   }, [id]);
 
-  return { pet, loading, error };
+  useEffect(() => {
+    fetchPet();
+  }, [fetchPet]);
+
+  const updatePet = async (data: Partial<DirectusPet>) => {
+    if (!id) return;
+    const result = await api.pets.update(id, data);
+    setPet(result);
+    return result;
+  };
+
+  return { pet, loading, error, updatePet, refresh: fetchPet };
 }
 
 // ─────────────────────────────────────────────────────────

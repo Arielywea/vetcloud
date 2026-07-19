@@ -159,11 +159,12 @@ app.post('/items/pets', async (req, res) => {
   try {
     const p = req.body;
     const result = await pool.query(
-      `INSERT INTO pets (name, species, breed, birth_date, weight, color, photo, allergies, notes, tutor_name, phone, email, address, clinic_location)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
+      `INSERT INTO pets (name, species, breed, birth_date, weight, color, photo, allergies, notes, tutor_name, phone, email, address, clinic_location, reproductive_status, anamnesis, clinical_history)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
       [p.name, p.species, p.breed, p.birth_date, p.weight, p.color, p.photo,
        JSON.stringify(p.allergies || []), p.notes,
-       p.tutor_name || null, p.phone || null, p.email || null, p.address || null, p.clinic_location || null]
+       p.tutor_name || null, p.phone || null, p.email || null, p.address || null, p.clinic_location || null,
+       p.reproductive_status || 'intacto', p.anamnesis || null, JSON.stringify(p.clinical_history || [])]
     );
     res.json({ data: result.rows[0] });
   } catch (err) {

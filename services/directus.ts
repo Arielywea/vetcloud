@@ -48,8 +48,18 @@ export interface DirectusPet {
   email: string | null;
   address: string | null;
   clinic_location: string | null;
+  reproductive_status: string;
+  anamnesis: string | null;
+  clinical_history: ClinicalEntry[];
   created_at: string;
   updated_at: string;
+}
+
+export interface ClinicalEntry {
+  date: string;
+  notes: string;
+  veterinarian?: string;
+  weight?: number;
 }
 
 export interface DirectusMedicalRecord {

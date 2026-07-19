@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { Text, Card, Button, Chip, FAB, Portal, Modal, TextInput, SegmentedButtons } from 'react-native-paper';
+import { Text, Card, Button, Chip, FAB, Portal, Modal, TextInput, SegmentedButtons, Menu } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePets } from '../../hooks/useDirectus';
@@ -22,11 +22,14 @@ export default function PetsScreen() {
   const [birthDate, setBirthDate] = useState('');
   const [weight, setWeight] = useState('');
   const [color, setColor] = useState('');
+  const [reproductiveStatus, setReproductiveStatus] = useState('intacto');
+  const [anamnesis, setAnamnesis] = useState('');
   const [tutorName, setTutorName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [clinicLocation, setClinicLocation] = useState('');
+  const [statusMenuVisible, setStatusMenuVisible] = useState(false);
 
   const resetForm = () => {
     setName('');
@@ -35,6 +38,8 @@ export default function PetsScreen() {
     setBirthDate('');
     setWeight('');
     setColor('');
+    setReproductiveStatus('intacto');
+    setAnamnesis('');
     setTutorName('');
     setPhone('');
     setEmail('');
@@ -59,6 +64,9 @@ export default function PetsScreen() {
         photo: null,
         allergies: [],
         notes: '',
+        reproductive_status: reproductiveStatus,
+        anamnesis: anamnesis.trim(),
+        clinical_history: [],
         tutor_name: tutorName.trim() || null,
         phone: phone.trim() || null,
         email: email.trim() || null,
@@ -220,6 +228,35 @@ export default function PetsScreen() {
             value={color}
             onChangeText={setColor}
             mode="outlined"
+            style={styles.input}
+          />
+
+          <Text style={styles.fieldLabel}>Estado Reproductivo</Text>
+          <Menu
+            visible={statusMenuVisible}
+            onDismiss={() => setStatusMenuVisible(false)}
+            anchor={
+              <Button mode="outlined" onPress={() => setStatusMenuVisible(true)} style={styles.input}>
+                {reproductiveStatus === 'intacto' ? 'Intacto/a' :
+                 reproductiveStatus === 'castrado' ? 'Castrado' :
+                 reproductiveStatus === 'esterilizado' ? 'Esterilizado/a' :
+                 reproductiveStatus === 'gestante' ? 'Gestante' : reproductiveStatus}
+              </Button>
+            }
+          >
+            <Menu.Item onPress={() => { setReproductiveStatus('intacto'); setStatusMenuVisible(false); }} title="Intacto/a" />
+            <Menu.Item onPress={() => { setReproductiveStatus('castrado'); setStatusMenuVisible(false); }} title="Castrado" />
+            <Menu.Item onPress={() => { setReproductiveStatus('esterilizado'); setStatusMenuVisible(false); }} title="Esterilizado/a" />
+            <Menu.Item onPress={() => { setReproductiveStatus('gestante'); setStatusMenuVisible(false); }} title="Gestante" />
+          </Menu>
+
+          <TextInput
+            label="Anamnesis"
+            value={anamnesis}
+            onChangeText={setAnamnesis}
+            mode="outlined"
+            multiline
+            numberOfLines={4}
             style={styles.input}
           />
 
@@ -386,6 +423,12 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#eee',
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: APP_COLORS.textSecondary,
+    marginBottom: 4,
   },
   speciesSelector: {
     marginBottom: 16,

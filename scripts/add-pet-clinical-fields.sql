@@ -1,0 +1,3 @@
+ALTER TABLE pets ADD COLUMN IF NOT EXISTS reproductive_status VARCHAR(50) DEFAULT 'intacto';
+ALTER TABLE pets ADD COLUMN IF NOT EXISTS anamnesis TEXT;
+ALTER TABLE pets ADD COLUMN IF NOT EXISTS clinical_history JSONB DEFAULT '[]'::jsonb;

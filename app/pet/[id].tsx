@@ -1,14 +1,36 @@
-import React from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Card, Chip } from 'react-native-paper';
+import React, { useState } from 'react';
+import { View, ScrollView, StyleSheet, Alert } from 'react-native';
+import { Text, Card, Chip, Button, TextInput, Portal, Modal } from 'react-native-paper';
 import { useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePet } from '../../hooks/useDirectus';
+import { ClinicalEntry } from '../../services/directus';
 import { APP_COLORS } from '../../constants/colors';
 
 export default function PetDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { pet, loading } = usePet(id || null);
+  const { pet, loading, updatePet } = usePet(id || null);
+  const [showConsultModal, setShowConsultModal] = useState(false);
+  const [consultDate, setConsultDate] = useState(new Date().toLocaleDateString('es-CL'));
+  const [consultNotes, setConsultNotes] = useState('');
+  const [consultVet, setConsultVet] = useState('');
+
+  const handleAddConsult = async () => {
+    if (!consultNotes.trim()) {
+      Alert.alert('Error', 'Las notas son obligatorias');
+      return;
+    }
+    if (!pet) return;
+    const history: ClinicalEntry[] = (pet.clinical_history || []).concat({
+      date: consultDate,
+      notes: consultNotes.trim(),
+      veterinarian: consultVet.trim() || undefined,
+    });
+    await updatePet({ clinical_history: history });
+    setConsultNotes('');
+    setConsultVet('');
+    setShowConsultModal(false);
+  };
 
   if (loading) {
     return (
@@ -40,6 +62,13 @@ export default function PetDetailScreen() {
     }
   };
 
+  const statusLabels: Record<string, string> = {
+    intacto: 'Intacto/a',
+    castrado: 'Castrado',
+    esterilizado: 'Esterilizado/a',
+    gestante: 'Gestante',
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Pet Info Card */}
@@ -59,8 +88,11 @@ export default function PetDetailScreen() {
               <Text variant="bodySmall" style={styles.petDetails}>
                 {calculateAge(pet.birth_date)} · {pet.weight > 0 ? `${pet.weight} kg` : 'Peso no registrado'}
               </Text>
-              {pet.color && (
-                <Text variant="bodySmall" style={styles.petColor}>Color: {pet.color}</Text>
+              {pet.color && <Text variant="bodySmall" style={styles.petColor}>Color: {pet.color}</Text>}
+              {pet.reproductive_status && (
+                <Text variant="bodySmall" style={styles.petColor}>
+                  Estado reproductivo: {statusLabels[pet.reproductive_status] || pet.reproductive_status}
+                </Text>
               )}
             </View>
           </View>
@@ -140,6 +172,44 @@ export default function PetDetailScreen() {
         </Card>
       )}
 
+      {/* Anamnesis */}
+      {pet.anamnesis && (
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Text variant="titleSmall" style={styles.sectionTitle}>Anamnesis</Text>
+            <Text style={styles.description}>{pet.anamnesis}</Text>
+          </Card.Content>
+        </Card>
+      )}
+
+      {/* Historia Clínica */}
+      <Card style={styles.sectionCard}>
+        <Card.Content>
+          <View style={styles.sectionHeader}>
+            <Text variant="titleSmall" style={styles.sectionTitle}>Historia Clínica</Text>
+            <Button mode="contained" compact onPress={() => setShowConsultModal(true)}>
+              Agregar Consulta
+            </Button>
+          </View>
+          {(!pet.clinical_history || pet.clinical_history.length === 0) ? (
+            <Text style={styles.emptyText}>Sin consultas registradas</Text>
+          ) : (
+            [...pet.clinical_history].reverse().map((entry: ClinicalEntry, i: number) => (
+              <View key={i} style={styles.entryCard}>
+                <View style={styles.entryHeader}>
+                  <MaterialCommunityIcons name="calendar" size={14} color={APP_COLORS.primary} />
+                  <Text style={styles.entryDate}>{entry.date}</Text>
+                  {entry.veterinarian && (
+                    <Text style={styles.entryVet}> · {entry.veterinarian}</Text>
+                  )}
+                </View>
+                <Text style={styles.entryNotes}>{entry.notes}</Text>
+              </View>
+            ))
+          )}
+        </Card.Content>
+      </Card>
+
       {/* Notes */}
       {pet.notes && (
         <Card style={styles.sectionCard}>
@@ -149,6 +219,17 @@ export default function PetDetailScreen() {
           </Card.Content>
         </Card>
       )}
+
+      {/* Add Consult Modal */}
+      <Portal>
+        <Modal visible={showConsultModal} onDismiss={() => setShowConsultModal(false)} contentContainerStyle={styles.modal}>
+          <Text variant="titleMedium" style={styles.modalTitle}>Nueva Consulta</Text>
+          <TextInput label="Fecha" value={consultDate} onChangeText={setConsultDate} mode="outlined" style={styles.input} />
+          <TextInput label="Veterinario (opcional)" value={consultVet} onChangeText={setConsultVet} mode="outlined" style={styles.input} />
+          <TextInput label="Notas" value={consultNotes} onChangeText={setConsultNotes} mode="outlined" multiline numberOfLines={4} style={styles.input} />
+          <Button mode="contained" onPress={handleAddConsult} style={styles.saveButton}>Guardar Consulta</Button>
+        </Modal>
+      </Portal>
     </ScrollView>
   );
 }
@@ -245,5 +326,57 @@ const styles = StyleSheet.create({
   description: {
     color: APP_COLORS.text,
     lineHeight: 22,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  emptyText: {
+    color: APP_COLORS.textSecondary,
+    fontStyle: 'italic',
+  },
+  entryCard: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+  },
+  entryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  entryDate: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: APP_COLORS.primary,
+    marginLeft: 4,
+  },
+  entryVet: {
+    fontSize: 12,
+    color: APP_COLORS.textSecondary,
+  },
+  entryNotes: {
+    fontSize: 14,
+    color: APP_COLORS.text,
+    lineHeight: 20,
+  },
+  modal: {
+    backgroundColor: 'white',
+    padding: 24,
+    margin: 24,
+    borderRadius: 12,
+  },
+  modalTitle: {
+    fontWeight: '700',
+    marginBottom: 16,
+  },
+  input: {
+    marginBottom: 12,
+  },
+  saveButton: {
+    marginTop: 8,
   },
 });
