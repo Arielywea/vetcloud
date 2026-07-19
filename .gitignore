@@ -1,0 +1,10 @@
+node_modules/
+.expo/
+dist/
+*.tsbuildinfo
+.env
+uploads/
+server.log
+.DS_Store
+*.log
+docker/*.exe

@@ -1,0 +1,176 @@
+import { API_URL } from '../config';
+
+// ─────────────────────────────────────────────────────────
+// Schema Types
+// ─────────────────────────────────────────────────────────
+
+export interface DirectusDisease {
+  id: string;
+  name: string;
+  scientific_name: string;
+  species: 'dog' | 'cat' | 'both';
+  category: string;
+  severity: 'mild' | 'moderate' | 'severe' | 'critical';
+  description: string;
+  key_signs: string[];
+  diagnosis: {
+    clinicalExam: string;
+    labTests: string[];
+    imaging: string[];
+    differentialDiagnosis: string[];
+  };
+  treatment: {
+    firstLine: string[];
+    secondLine: string[];
+    emergency: string;
+    duration: string;
+    notes?: string;
+  };
+  prevention: string[];
+  prognosis: 'excellent' | 'good' | 'guarded' | 'poor' | 'grave';
+  is_zoonotic: boolean;
+  references: string[];
+}
+
+export interface DirectusPet {
+  id: string;
+  name: string;
+  species: 'dog' | 'cat';
+  breed: string;
+  birth_date: string;
+  weight: number;
+  color: string;
+  photo: string | null;
+  allergies: string[];
+  notes: string;
+  tutor_name: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  clinic_location: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DirectusMedicalRecord {
+  id: string;
+  pet_id: DirectusPet | string;
+  disease_id: DirectusDisease | string;
+  date: string;
+  veterinarian: string;
+  symptoms: string[];
+  diagnosis: string;
+  treatment: string;
+  notes: string;
+  created_at: string;
+}
+
+export interface DirectusNote {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  disease_id: DirectusDisease | string | null;
+  pet_id: DirectusPet | string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DirectusFavorite {
+  id: string;
+  disease_id: DirectusDisease | string;
+  category: 'frequently_used' | 'important' | 'study' | 'emergency';
+  added_at: string;
+}
+
+// ─────────────────────────────────────────────────────────
+// API Client
+// ─────────────────────────────────────────────────────────
+
+async function apiGet(endpoint: string, params?: Record<string, string>) {
+  const url = new URL(`${API_URL}${endpoint}`);
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => {
+      if (v && v !== 'all') url.searchParams.set(k, v);
+    });
+  }
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error(`API error: ${res.statusText}`);
+  const json = await res.json();
+  return json.data;
+}
+
+async function apiPost(endpoint: string, body: any) {
+  const res = await fetch(`${API_URL}${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API error: ${text}`);
+  }
+  const json = await res.json();
+  return json.data;
+}
+
+async function apiPatch(endpoint: string, body: any) {
+  const res = await fetch(`${API_URL}${endpoint}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`API error: ${res.statusText}`);
+  const json = await res.json();
+  return json.data;
+}
+
+async function apiDelete(endpoint: string) {
+  const res = await fetch(`${API_URL}${endpoint}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`API error: ${res.statusText}`);
+}
+
+// ─────────────────────────────────────────────────────────
+// API Methods (Directus-compatible shape for hooks)
+// ─────────────────────────────────────────────────────────
+
+export const api = {
+  diseases: {
+    list: (params?: { species?: string; search?: string; category?: string; severity?: string }) =>
+      apiGet('/items/diseases', params),
+    get: (id: string) => apiGet('/items/diseases', { id }).then((d: any[]) => d[0] || null),
+    create: (data: any) => apiPost('/items/diseases', data),
+    update: (id: string, data: any) => apiPatch(`/items/diseases/${id}`, data),
+    delete: (id: string) => apiDelete(`/items/diseases/${id}`),
+  },
+  pets: {
+    list: () => apiGet('/items/pets'),
+    get: (id: string) => apiGet('/items/pets', { id }).then((p: any[]) => p[0] || null),
+    create: (data: any) => apiPost('/items/pets', data),
+    update: (id: string, data: any) => apiPatch(`/items/pets/${id}`, data),
+    delete: (id: string) => apiDelete(`/items/pets/${id}`),
+  },
+  medicalRecords: {
+    list: (petId?: string) => apiGet('/items/medical_records', petId ? { pet_id: petId } : undefined),
+    create: (data: any) => apiPost('/items/medical_records', data),
+  },
+  notes: {
+    list: () => apiGet('/items/personal_notes'),
+    create: (data: any) => apiPost('/items/personal_notes', data),
+    update: (id: string, data: any) => apiPatch(`/items/personal_notes/${id}`, data),
+    delete: (id: string) => apiDelete(`/items/personal_notes/${id}`),
+  },
+  favorites: {
+    list: () => apiGet('/items/favorites'),
+    create: (data: any) => apiPost('/items/favorites', data),
+    delete: (id: string) => apiDelete(`/items/favorites/${id}`),
+  },
+};
+
+export function getFileUrl(fileId: string): string {
+  return `${API_URL}/uploads/${fileId}`;
+}
+
+export function getThumbnailUrl(fileId: string, width: number = 200, height: number = 200): string {
+  return `${API_URL}/uploads/${fileId}`;
+}

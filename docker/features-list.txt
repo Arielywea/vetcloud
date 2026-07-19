@@ -1,0 +1,318 @@
+
+Herramienta Administraci¢n y mantenimiento de im genes de implementaci¢n
+Versi¢n: 10.0.26100.5074
+
+Versi¢n de imagen: 10.0.26200.7309
+
+Lista de caracter¡sticas del paquete : Microsoft-Windows-Foundation-Package~31bf3856ad364e35~amd64~~10.0.26100.1
+
+Nombre de caracter¡stica : Printing-XPSServices-Features
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : NetFx3
+Estado : Habilitado
+
+Nombre de caracter¡stica : WCF-HTTP-Activation
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : WCF-NonHTTP-Activation
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-WebServerRole
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-WebServer
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-CommonHttpFeatures
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-HttpErrors
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-HttpRedirect
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-ApplicationDevelopment
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-Security
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-RequestFiltering
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-NetFxExtensibility
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-NetFxExtensibility45
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-HealthAndDiagnostics
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-HttpLogging
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-LoggingLibraries
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-RequestMonitor
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-HttpTracing
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-URLAuthorization
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-IPSecurity
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-Performance
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-HttpCompressionDynamic
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-WebServerManagementTools
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-ManagementScriptingTools
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-IIS6ManagementCompatibility
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-Metabase
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : WAS-WindowsActivationService
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : WAS-ProcessModel
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : WAS-NetFxEnvironment
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : WAS-ConfigurationAPI
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-HostableWebCore
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : WCF-Services45
+Estado : Habilitado
+
+Nombre de caracter¡stica : WCF-HTTP-Activation45
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : WCF-TCP-Activation45
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : WCF-Pipe-Activation45
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : WCF-MSMQ-Activation45
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : WCF-TCP-PortSharing45
+Estado : Habilitado
+
+Nombre de caracter¡stica : IIS-StaticContent
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-DefaultDocument
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-DirectoryBrowsing
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-WebDAV
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-WebSockets
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-ApplicationInit
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-ISAPIFilter
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-ISAPIExtensions
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-ASPNET
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-ASPNET45
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-ASP
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-CGI
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-ServerSideIncludes
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-CustomLogging
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-BasicAuthentication
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-HttpCompressionStatic
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-ManagementConsole
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-ManagementService
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-WMICompatibility
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-LegacyScripts
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-FTPServer
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-FTPSvc
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-FTPExtensibility
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : MSMQ-Container
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : MSMQ-DCOMProxy
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : MSMQ-Server
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : MSMQ-ADIntegration
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : MSMQ-HTTP
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : MSMQ-Multicast
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : MSMQ-Triggers
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-CertProvider
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-WindowsAuthentication
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-DigestAuthentication
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-ClientCertificateMappingAuthentication
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-IISCertificateMappingAuthentication
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : IIS-ODBCLogging
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : SMB1Protocol-Deprecation
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : Printing-PrintToPDFServices-Features
+Estado : Habilitado
+
+Nombre de caracter¡stica : SearchEngine-Client-Package
+Estado : Habilitado
+
+Nombre de caracter¡stica : Windows-Identity-Foundation
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : LegacyComponents
+Estado : Habilitado
+
+Nombre de caracter¡stica : DirectPlay
+Estado : Habilitado
+
+Nombre de caracter¡stica : Printing-Foundation-Features
+Estado : Habilitado
+
+Nombre de caracter¡stica : Printing-Foundation-InternetPrinting-Client
+Estado : Habilitado
+
+Nombre de caracter¡stica : Printing-Foundation-LPDPrintService
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : Printing-Foundation-LPRPortMonitor
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : MSRDC-Infrastructure
+Estado : Habilitado
+
+Nombre de caracter¡stica : Client-DeviceLockdown
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : Client-EmbeddedShellLauncher
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : Client-EmbeddedBootExp
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : Client-EmbeddedLogon
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : Client-KeyboardFilter
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : Client-UnifiedWriteFilter
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : DataCenterBridging
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : NetFx4-AdvSrvs
+Estado : Habilitado
+
+Nombre de caracter¡stica : NetFx4Extended-ASPNET45
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : ServicesForNFS-ClientOnly
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : ClientForNFS-Infrastructure
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : NFS-Administration
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : SMB1Protocol
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : SMB1Protocol-Client
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : SMB1Protocol-Server
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : MultiPoint-Connector
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : MultiPoint-Connector-Services
+Estado : Deshabilitado
+
+Nombre de caracter¡stica : MultiPoint-Tools
+Estado : Deshabilitado
+
+La operaci¢n se complet¢ correctamente.

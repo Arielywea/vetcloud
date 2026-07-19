@@ -1,0 +1,15 @@
+
+Herramienta Administraci¢n y mantenimiento de im genes de implementaci¢n
+Versi¢n: 10.0.26100.5074
+
+Versi¢n de imagen: 10.0.26200.7309
+
+
+Error: 0x800f080c
+
+El nombre de caracter¡stica Microsoft-Windows-Subsystem-Linux es desconocido.
+No se reconoci¢ el nombre de una caracter¡stica de Windows.
+Use la opci¢n /Get-Features para encontrar el nombre de la caracter¡stica en
+la imagen y pruebe el comando de nuevo.
+
+El archivo de registro de DISM se encuentra en C:\Windows\Logs\DISM\dism.log
