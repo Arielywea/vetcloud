@@ -3,11 +3,11 @@ import { View, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-nativ
 import { Text, Card, Button, TextInput, FAB, Portal, Modal, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNotes } from '../../hooks/useDirectus';
-import { DirectusNote } from '../../services/directus';
+import { DirectusNote, api } from '../../services/directus';
 import { APP_COLORS } from '../../constants/colors';
 
 export default function NotesScreen() {
-  const { notes, loading, addNote, updateNote, removeNote } = useNotes();
+  const { notes, loading, addNote, updateNote, refresh } = useNotes();
   const [showModal, setShowModal] = useState(false);
   const [editingNote, setEditingNote] = useState<DirectusNote | null>(null);
 
@@ -73,9 +73,10 @@ export default function NotesScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await removeNote(note.id);
+              await api.notes.delete(note.id);
+              refresh();
             } catch (e: any) {
-              Alert.alert('Error', e.message || 'No se pudo eliminar la nota');
+              Alert.alert('Error', e?.message || 'No se pudo eliminar');
             }
           },
         },
