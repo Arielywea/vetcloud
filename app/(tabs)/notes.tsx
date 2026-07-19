@@ -68,7 +68,17 @@ export default function NotesScreen() {
       `¿Estás seguro de eliminar "${note.title}"?`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Eliminar', style: 'destructive', onPress: () => removeNote(note.id) },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await removeNote(note.id);
+            } catch (e: any) {
+              Alert.alert('Error', e.message || 'No se pudo eliminar la nota');
+            }
+          },
+        },
       ]
     );
   };
