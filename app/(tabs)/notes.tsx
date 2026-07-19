@@ -10,6 +10,7 @@ export default function NotesScreen() {
   const { notes, loading, addNote, updateNote, refresh } = useNotes();
   const [showModal, setShowModal] = useState(false);
   const [editingNote, setEditingNote] = useState<DirectusNote | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -74,6 +75,7 @@ export default function NotesScreen() {
           onPress: async () => {
             try {
               await api.notes.delete(note.id);
+              setRefreshKey(k => k + 1);
               refresh();
             } catch (e: any) {
               Alert.alert('Error', e?.message || 'No se pudo eliminar');
@@ -129,6 +131,7 @@ export default function NotesScreen() {
         data={notes}
         renderItem={renderNote}
         keyExtractor={(item) => item.id}
+        extraData={refreshKey}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
