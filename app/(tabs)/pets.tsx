@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, FlatList, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Text, Card, Button, Chip, FAB, Portal, Modal, TextInput, SegmentedButtons, Menu } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -179,6 +179,7 @@ export default function PetsScreen() {
           contentContainerStyle={styles.modalContent}
         >
           <Text variant="titleLarge" style={styles.modalTitle}>Nueva Mascota</Text>
+          <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
 
           <SegmentedButtons
             value={species}
@@ -304,6 +305,8 @@ export default function PetsScreen() {
             style={styles.input}
           />
 
+          </ScrollView>
+
           <View style={styles.modalActions}>
             <Button
               mode="outlined"
@@ -414,6 +417,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: APP_COLORS.text,
     marginBottom: 16,
+  },
+  modalScroll: {
+    maxHeight: 400,
   },
   sectionDivider: {
     fontWeight: '700',
