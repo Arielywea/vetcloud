@@ -48,6 +48,7 @@ export interface Disease {
   category: DiseaseCategory;
   severity: Severity;
   description: string;
+  pathophysiology: string;
   keySigns: string[];
   diagnosis: DiagnosisInfo;
   treatment: TreatmentInfo;

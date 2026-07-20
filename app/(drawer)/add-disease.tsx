@@ -47,6 +47,8 @@ export default function AddDiseaseScreen() {
   const [duration, setDuration] = useState('');
   const [prevention, setPrevention] = useState('');
   const [references, setReferences] = useState('');
+  const [description, setDescription] = useState('');
+  const [pathophysiology, setPathophysiology] = useState('');
 
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
   const [severityMenuVisible, setSeverityMenuVisible] = useState(false);
@@ -70,7 +72,8 @@ export default function AddDiseaseScreen() {
         severity,
         prognosis,
         is_zoonotic: isZoonotic,
-        description: '',
+        description: description.trim(),
+        pathophysiology: pathophysiology.trim(),
         key_signs: splitLines(keySigns),
         diagnosis: {
           clinicalExam: clinicalExam.trim(),
@@ -188,6 +191,30 @@ export default function AddDiseaseScreen() {
           <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginBottom: 0 }]}>¿Es zoonótica?</Text>
           <Switch value={isZoonotic} onValueChange={setIsZoonotic} color={colors.primary} />
         </View>
+      </View>
+
+      {/* ── Section: Descripción ── */}
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Descripción</Text>
+        <TextInput
+          label="Descripción de la enfermedad"
+          value={description}
+          onChangeText={setDescription}
+          mode="outlined"
+          multiline
+          numberOfLines={4}
+          style={[styles.input, { backgroundColor: colors.surface }]}
+        />
+        <TextInput
+          label="Fisiopatología"
+          value={pathophysiology}
+          onChangeText={setPathophysiology}
+          mode="outlined"
+          multiline
+          numberOfLines={4}
+          placeholder="Mecanismo de la enfermedad..."
+          style={[styles.input, { backgroundColor: colors.surface }]}
+        />
       </View>
 
       {/* ── Section: Signos Clave ── */}

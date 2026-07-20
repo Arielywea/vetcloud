@@ -13,6 +13,7 @@ export interface DirectusDisease {
   category: string;
   severity: 'mild' | 'moderate' | 'severe' | 'critical';
   description: string;
+  pathophysiology: string;
   key_signs: string[];
   diagnosis: {
     clinicalExam: string;

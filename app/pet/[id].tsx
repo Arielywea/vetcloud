@@ -406,8 +406,8 @@ export default function PetDetailScreen() {
         )}
       </Card>
 
-      {/* ─── ÚLTIMA CONSULTA (destacada) ─── */}
-        <Card style={[styles.sectionCard, { backgroundColor: colors.surface, borderLeftColor: colors.primary }]}>
+      {mostRecentRecord && (
+      <Card style={[styles.sectionCard, { backgroundColor: colors.surface, borderLeftColor: colors.primary }]}>
           <Card.Content>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleRow}>
@@ -503,7 +503,7 @@ export default function PetDetailScreen() {
               <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando recetas...</Text>
             ) : filteredPrescriptions.length === 0 ? (
               <View style={styles.emptyRx}>
-                <MaterialCommunityIcons name="document-text-outline" size={32} color={colors.textLight} />
+                <MaterialCommunityIcons name="file-document-outline" size={32} color={colors.textLight} />
                 <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Sin recetas</Text>
               </View>
             ) : (
