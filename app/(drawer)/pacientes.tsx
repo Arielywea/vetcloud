@@ -15,9 +15,17 @@ export default function PacientesScreen() {
   const calculateAge = (birthDate: string): string => {
     if (!birthDate) return '';
     try {
-      const parts = birthDate.split('/');
-      if (parts.length !== 3) return '';
-      const birth = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+      let birth: Date;
+      if (birthDate.includes('-')) {
+        birth = new Date(birthDate);
+      } else if (birthDate.includes('/')) {
+        const parts = birthDate.split('/');
+        if (parts.length !== 3) return '';
+        birth = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+      } else {
+        return '';
+      }
+      if (isNaN(birth.getTime())) return '';
       const now = new Date();
       const years = Math.floor((now.getTime() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
       return years >= 0 ? `${years} año${years !== 1 ? 's' : ''}` : '';
