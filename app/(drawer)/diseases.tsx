@@ -6,6 +6,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDiseases } from '../../hooks/useDirectus';
 import { SEVERITY_COLORS, SEVERITY_LABELS } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useResponsive } from '../../components/ScreenContainer';
 import { DISEASE_CATEGORIES, SPECIES_INFO } from '../../constants/diseases';
 import { DirectusDisease } from '../../services/directus';
 import { DiseaseCategory } from '../../types';
@@ -14,6 +15,7 @@ export default function DiseasesScreen() {
   const router = useRouter();
   const { diseases, loading } = useDiseases();
   const { colors } = useTheme();
+  const { isDesktop } = useResponsive();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecies, setSelectedSpecies] = useState<'dog' | 'cat' | 'all'>('all');
   const [selectedCategories, setSelectedCategories] = useState<DiseaseCategory[]>([]);
@@ -77,12 +79,12 @@ export default function DiseasesScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }, isDesktop && styles.containerDesktop]}>
       <Searchbar
         placeholder="Buscar enfermedades..."
         onChangeText={setSearchQuery}
         value={searchQuery}
-        style={[styles.searchbar, { backgroundColor: colors.surface }]}
+        style={[styles.searchbar, { backgroundColor: colors.surface }, isDesktop && styles.searchbarDesktop]}
         inputStyle={styles.searchInput}
         icon="magnify"
       />
@@ -132,7 +134,7 @@ export default function DiseasesScreen() {
         data={filteredDiseases}
         renderItem={renderDiseaseCard}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -150,7 +152,9 @@ export default function DiseasesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  containerDesktop: { alignItems: 'center' },
   searchbar: { margin: 12, elevation: 2, borderRadius: 12 },
+  searchbarDesktop: { maxWidth: 800, width: '100%', alignSelf: 'center' },
   searchInput: { fontSize: 15 },
   filterRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, marginBottom: 8 },
   filterButton: { flexDirection: 'row', alignItems: 'center', padding: 8, marginRight: 8, borderRadius: 8 },
@@ -162,6 +166,7 @@ const styles = StyleSheet.create({
   categoryChip: { marginRight: 4, marginBottom: 4 },
   resultsCount: { paddingHorizontal: 16, paddingBottom: 4 },
   listContent: { padding: 12, paddingBottom: 24 },
+  listContentDesktop: { maxWidth: 800, width: '100%', alignSelf: 'center' },
   diseaseCard: { marginBottom: 10, borderRadius: 12, elevation: 1 },
   cardHeader: { marginBottom: 6 },
   cardTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

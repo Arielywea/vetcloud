@@ -225,13 +225,13 @@ app.post('/items/pets', authMiddleware, async (req, res) => {
   try {
     const p = req.body;
     const result = await pool.query(
-       `INSERT INTO pets (name, species, breed, birth_date, weight, color, photo, allergies, notes, tutor_name, phone, email, address, clinic_location, reproductive_status, anamnesis, user_id,
+       `INSERT INTO pets (name, species, breed, birth_date, weight, color, photo, allergies, notes, tutor_name, phone, email, address, clinic_location, reproductive_status, status, anamnesis, user_id,
         id_number, sex, temperament, habitat, habitat_other, food, food_frequency, water_consumption, urination, lives_with_other_animals, vaccines, deworming, flea_treatment, last_heat, surgeries, other_diseases, medications)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34) RETURNING *`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35) RETURNING *`,
        [p.name, p.species, p.breed, p.birth_date, p.weight, p.color, p.photo,
         JSON.stringify(p.allergies || []), p.notes,
         p.tutor_name || null, p.phone || null, p.email || null, p.address || null, p.clinic_location || null,
-        p.reproductive_status || 'intacto', p.anamnesis || null,
+        p.reproductive_status || 'intacto', p.status || 'alive', p.anamnesis || null,
         req.userId,
         p.id_number || null, p.sex || null, JSON.stringify(p.temperament || []),
         p.habitat || null, p.habitat_other || null,

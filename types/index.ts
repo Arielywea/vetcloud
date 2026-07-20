@@ -19,7 +19,9 @@ export type DiseaseCategory =
   | 'neurological'
   | 'musculoskeletal'
   | 'renal'
-  | 'reproductive';
+  | 'reproductive'
+  | 'toxic'
+  | 'urological';
 
 export type Prognosis = 'excellent' | 'good' | 'guarded' | 'poor' | 'grave';
 
@@ -35,7 +37,7 @@ export interface DiagnosisInfo {
 export interface TreatmentInfo {
   firstLine: string[];
   secondLine: string[];
-  emergency: string;
+  emergency?: string;
   duration: string;
   notes: string;
 }
