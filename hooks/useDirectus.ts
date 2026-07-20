@@ -6,6 +6,8 @@ import {
   DirectusMedicalRecord,
   DirectusNote,
   DirectusFavorite,
+  Appointment,
+  ClinicalRecord,
 } from '../services/directus';
 
 // ─────────────────────────────────────────────────────────
@@ -290,4 +292,99 @@ export function useFavorites() {
   };
 
   return { favorites, favoriteIds, isFavorite, toggleFavorite, loading, refresh: fetchFavorites };
+}
+
+// ─────────────────────────────────────────────────────────
+// Hook: Appointments
+// ─────────────────────────────────────────────────────────
+
+export function useAppointments(startDate?: string, endDate?: string) {
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchAppointments = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params: { start?: string; end?: string } = {};
+      if (startDate) params.start = startDate;
+      if (endDate) params.end = endDate;
+      const result = await api.appointments.list(Object.keys(params).length ? params : undefined);
+      setAppointments(result as Appointment[]);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
+
+  const addAppointment = async (appt: Omit<Appointment, 'id' | 'user_id' | 'created_at'>) => {
+    const result = await api.appointments.create(appt);
+    await fetchAppointments();
+    return result;
+  };
+
+  const updateAppointment = async (id: string, data: Partial<Appointment>) => {
+    const result = await api.appointments.update(id, data);
+    await fetchAppointments();
+    return result;
+  };
+
+  const removeAppointment = async (id: string) => {
+    await api.appointments.delete(id);
+    await fetchAppointments();
+  };
+
+  return { appointments, loading, error, addAppointment, updateAppointment, removeAppointment, refresh: fetchAppointments };
+}
+
+// ─────────────────────────────────────────────────────────
+// Hook: Clinical Records
+// ─────────────────────────────────────────────────────────
+
+export function useClinicalRecords(petId?: string, recordType?: string) {
+  const [records, setRecords] = useState<ClinicalRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchRecords = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await api.clinicalRecords.list(petId, recordType);
+      setRecords(result as ClinicalRecord[]);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [petId, recordType]);
+
+  useEffect(() => {
+    fetchRecords();
+  }, [fetchRecords]);
+
+  const addRecord = async (record: Omit<ClinicalRecord, 'id' | 'user_id' | 'created_at'>) => {
+    const result = await api.clinicalRecords.create(record);
+    await fetchRecords();
+    return result;
+  };
+
+  const updateRecord = async (id: string, data: Partial<ClinicalRecord>) => {
+    const result = await api.clinicalRecords.update(id, data);
+    await fetchRecords();
+    return result;
+  };
+
+  const removeRecord = async (id: string) => {
+    await api.clinicalRecords.delete(id);
+    await fetchRecords();
+  };
+
+  return { records, loading, error, addRecord, updateRecord, removeRecord, refresh: fetchRecords };
 }

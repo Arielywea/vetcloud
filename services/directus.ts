@@ -51,16 +51,31 @@ export interface DirectusPet {
   clinic_location: string | null;
   reproductive_status: string;
   anamnesis: string | null;
-  clinical_history: ClinicalEntry[];
   created_at: string;
   updated_at: string;
 }
 
-export interface ClinicalEntry {
+export interface Appointment {
+  id: string;
+  user_id: string;
+  patient_name: string;
+  tutor_phone: string | null;
+  start_time: string;
+  end_time: string | null;
+  appointment_type: 'consulta' | 'vacuna' | 'cirugia' | 'control';
+  description: string | null;
+  created_at: string;
+}
+
+export interface ClinicalRecord {
+  id: string;
+  pet_id: string;
+  user_id: string;
+  record_type: 'consulta' | 'vacuna' | 'cirugia' | 'control';
   date: string;
-  notes: string;
-  veterinarian?: string;
-  weight?: number;
+  veterinarian: string | null;
+  details: { notes?: string; weight?: number; [key: string]: any };
+  created_at: string;
 }
 
 export interface DirectusMedicalRecord {
@@ -175,6 +190,25 @@ export const api = {
     list: () => apiGet('/items/favorites'),
     create: (data: any) => apiPost('/items/favorites', data),
     delete: (id: string) => apiDelete(`/items/favorites/${id}`),
+  },
+  appointments: {
+    list: (params?: { start?: string; end?: string }) =>
+      apiGet('/items/appointments', params),
+    get: (id: string) => apiGet('/items/appointments', { id }).then((a: any[]) => a[0] || null),
+    create: (data: any) => apiPost('/items/appointments', data),
+    update: (id: string, data: any) => apiPatch(`/items/appointments/${id}`, data),
+    delete: (id: string) => apiDelete(`/items/appointments/${id}`),
+  },
+  clinicalRecords: {
+    list: (petId?: string, recordType?: string) => {
+      const params: Record<string, string> = {};
+      if (petId) params.pet_id = petId;
+      if (recordType) params.record_type = recordType;
+      return apiGet('/items/clinical_records', Object.keys(params).length ? params : undefined);
+    },
+    create: (data: any) => apiPost('/items/clinical_records', data),
+    update: (id: string, data: any) => apiPatch(`/items/clinical_records/${id}`, data),
+    delete: (id: string) => apiDelete(`/items/clinical_records/${id}`),
   },
 };
 

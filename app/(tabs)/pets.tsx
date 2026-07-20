@@ -66,7 +66,6 @@ export default function PetsScreen() {
         notes: '',
         reproductive_status: reproductiveStatus,
         anamnesis: anamnesis.trim(),
-        clinical_history: [],
         tutor_name: tutorName.trim() || null,
         phone: phone.trim() || null,
         email: email.trim() || null,
