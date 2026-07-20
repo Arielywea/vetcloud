@@ -4,6 +4,7 @@ import { Text, Card } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { DirectusPet } from '../services/directus';
 import { useTheme } from '../contexts/ThemeContext';
+import { calculateAge } from '../utils/age';
 
 interface PetHeaderProps {
   pet: DirectusPet;
@@ -20,28 +21,6 @@ const SEX_LABELS: Record<string, string> = {
   macho: 'Macho',
   hembra: 'Hembra',
 };
-
-function calculateAge(birthDate: string): string {
-  if (!birthDate) return 'N/D';
-  try {
-    let birth: Date;
-    if (birthDate.includes('-')) {
-      birth = new Date(birthDate);
-    } else if (birthDate.includes('/')) {
-      const parts = birthDate.split('/');
-      if (parts.length !== 3) return 'N/D';
-      birth = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-    } else {
-      return 'N/D';
-    }
-    if (isNaN(birth.getTime())) return 'N/D';
-    const now = new Date();
-    const years = Math.floor((now.getTime() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-    return years >= 0 ? `${years} año${years !== 1 ? 's' : ''}` : 'N/D';
-  } catch {
-    return 'N/D';
-  }
-}
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return 'N/D';

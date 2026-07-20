@@ -16,6 +16,8 @@ const REPRODUCTIVE_OPTIONS = [
   { value: 'esterilizado', label: 'Esterilizado/a' },
   { value: 'gestante', label: 'Gestante' },
 ];
+const REPRODUCTIVE_MACHO = ['intacto', 'castrado'];
+const REPRODUCTIVE_HEMBRA = ['intacto', 'castrado', 'esterilizado', 'gestante'];
 
 export default function AddPacienteScreen() {
   const router = useRouter();
@@ -37,6 +39,7 @@ export default function AddPacienteScreen() {
   const [color, setColor] = useState('');
   const [reproductiveStatus, setReproductiveStatus] = useState('intacto');
   const [statusMenuVisible, setStatusMenuVisible] = useState(false);
+  const [petStatus, setPetStatus] = useState<'alive' | 'deceased'>('alive');
 
   // Identificación
   const [idNumber, setIdNumber] = useState('');
@@ -128,6 +131,7 @@ export default function AddPacienteScreen() {
         allergies: [],
         notes: '',
         reproductive_status: reproductiveStatus,
+        status: petStatus,
         anamnesis: anamnesis.trim() || null,
         tutor_name: tutorName.trim() || null,
         phone: phone.trim() || null,
@@ -228,7 +232,7 @@ export default function AddPacienteScreen() {
         <View style={styles.sexRow}>
           <Button
             mode={sex === 'macho' ? 'contained' : 'outlined'}
-            onPress={() => setSex('macho')}
+            onPress={() => { setSex('macho'); if (!REPRODUCTIVE_MACHO.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
             style={[styles.sexPill, sex === 'macho' && { backgroundColor: colors.primary }]}
             labelStyle={sex === 'macho' ? { color: '#FFFFFF' } : { color: colors.primary }}
             icon={({ size }) => <MaterialCommunityIcons name="gender-male" size={size} color={sex === 'macho' ? '#FFFFFF' : colors.primary} />}
@@ -237,7 +241,7 @@ export default function AddPacienteScreen() {
           </Button>
           <Button
             mode={sex === 'hembra' ? 'contained' : 'outlined'}
-            onPress={() => setSex('hembra')}
+            onPress={() => { setSex('hembra'); if (!REPRODUCTIVE_HEMBRA.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
             style={[styles.sexPill, sex === 'hembra' && { backgroundColor: colors.primary }]}
             labelStyle={sex === 'hembra' ? { color: '#FFFFFF' } : { color: colors.primary }}
             icon={({ size }) => <MaterialCommunityIcons name="gender-female" size={size} color={sex === 'hembra' ? '#FFFFFF' : colors.primary} />}
@@ -256,9 +260,15 @@ export default function AddPacienteScreen() {
             </Button>
           }
         >
-          {REPRODUCTIVE_OPTIONS.map(opt => (
-            <Menu.Item key={opt.value} onPress={() => { setReproductiveStatus(opt.value); setStatusMenuVisible(false); }} title={opt.label} />
-          ))}
+          {REPRODUCTIVE_OPTIONS
+            .filter(opt => {
+              if (sex === 'macho') return REPRODUCTIVE_MACHO.includes(opt.value);
+              if (sex === 'hembra') return REPRODUCTIVE_HEMBRA.includes(opt.value);
+              return true;
+            })
+            .map(opt => (
+              <Menu.Item key={opt.value} onPress={() => { setReproductiveStatus(opt.value); setStatusMenuVisible(false); }} title={opt.label} />
+            ))}
         </Menu>
       </View>
 
