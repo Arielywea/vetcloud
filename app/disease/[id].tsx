@@ -214,6 +214,19 @@ export default function DiseaseDetailScreen() {
         </Card.Content>
       </Card>
 
+      {/* Pathophysiology */}
+      {disease.pathophysiology && (
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <View style={styles.listItem}>
+              <MaterialCommunityIcons name="dna" size={20} color={colors.primary} />
+              <Text variant="titleSmall" style={styles.sectionTitle}>Fisiopatología</Text>
+            </View>
+            <Text style={styles.description}>{disease.pathophysiology}</Text>
+          </Card.Content>
+        </Card>
+      )}
+
       {/* Tab Navigation */}
       <View style={styles.tabBar}>
         {tabs.map(tab => (
