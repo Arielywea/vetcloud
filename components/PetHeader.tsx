@@ -195,6 +195,7 @@ const styles = StyleSheet.create({
   clinicLabel: { fontSize: 12, marginTop: 2 },
   infoGrid: {
     flexDirection: 'row', flexWrap: 'wrap', gap: 8,
+    justifyContent: 'space-between',
     borderTopWidth: 1, paddingTop: 12,
   },
   infoItem: {
