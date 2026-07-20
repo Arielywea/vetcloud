@@ -25,6 +25,12 @@ const pool = new Pool(
       }
 );
 
+app.get('/debug/db', (req, res) => {
+  const url = process.env.DATABASE_URL || 'NOT SET';
+  const masked = url.replace(/:[^:@]+@/, ':***@');
+  res.json({ url: masked, hasUrl: !!process.env.DATABASE_URL });
+});
+
 app.use(cors());
 app.use(express.json());
 
