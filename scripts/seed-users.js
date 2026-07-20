@@ -2,8 +2,10 @@ const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
 
 const hash = bcrypt.hashSync('1245', 10);
-const connStr = '$DATABASE_URL';
-const pool = new Pool({ connectionString: connStr, ssl: { rejectUnauthorized: false } });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
 (async () => {
   await pool.query('DELETE FROM users');
