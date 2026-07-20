@@ -24,9 +24,17 @@ const SEX_LABELS: Record<string, string> = {
 function calculateAge(birthDate: string): string {
   if (!birthDate) return 'N/D';
   try {
-    const parts = birthDate.split('/');
-    if (parts.length !== 3) return 'N/D';
-    const birth = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+    let birth: Date;
+    if (birthDate.includes('-')) {
+      birth = new Date(birthDate);
+    } else if (birthDate.includes('/')) {
+      const parts = birthDate.split('/');
+      if (parts.length !== 3) return 'N/D';
+      birth = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+    } else {
+      return 'N/D';
+    }
+    if (isNaN(birth.getTime())) return 'N/D';
     const now = new Date();
     const years = Math.floor((now.getTime() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
     return years >= 0 ? `${years} año${years !== 1 ? 's' : ''}` : 'N/D';
@@ -35,8 +43,20 @@ function calculateAge(birthDate: string): string {
   }
 }
 
+function formatDate(dateStr: string): string {
+  if (!dateStr) return 'N/D';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+}
+
 export default function PetHeader({ pet }: PetHeaderProps) {
   const { colors } = useTheme();
+  const age = calculateAge(pet.birth_date);
 
   return (
     <Card style={[styles.card, { backgroundColor: colors.surface, borderLeftColor: colors.primary }]}>
@@ -87,7 +107,12 @@ export default function PetHeader({ pet }: PetHeaderProps) {
           <View style={[styles.infoItem, { backgroundColor: colors.surfaceVariant }]}>
             <MaterialCommunityIcons name="calendar" size={14} color={colors.primary} />
             <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>NACIMIENTO</Text>
-            <Text style={[styles.infoValue, { color: colors.text }]}>{pet.birth_date || 'N/D'}</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{formatDate(pet.birth_date)}</Text>
+          </View>
+          <View style={[styles.infoItem, { backgroundColor: colors.surfaceVariant }]}>
+            <MaterialCommunityIcons name="clock-outline" size={14} color={colors.primary} />
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>EDAD</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{age}</Text>
           </View>
           <View style={[styles.infoItem, { backgroundColor: colors.surfaceVariant }]}>
             <MaterialCommunityIcons name="baby-face-outline" size={14} color={colors.primary} />
@@ -112,7 +137,7 @@ export default function PetHeader({ pet }: PetHeaderProps) {
 
         {pet.temperament && pet.temperament.length > 0 && (
           <View style={[styles.temperamentSection, { borderTopColor: colors.border }]}>
-            <Text style={[styles.temperamentLabel, { color: colors.textSecondary }]}>TEMPERAMENTE</Text>
+            <Text style={[styles.temperamentLabel, { color: colors.textSecondary }]}>TEMPERAMENTO</Text>
             <View style={styles.chipRow}>
               {pet.temperament.map((t: string, i: number) => (
                 <View key={i} style={[styles.chip, { backgroundColor: colors.primaryContainer }]}>
@@ -123,13 +148,15 @@ export default function PetHeader({ pet }: PetHeaderProps) {
           </View>
         )}
 
-        {(pet.tutor_name || pet.phone || pet.address) && (
+        {(pet.tutor_name || pet.phone || pet.email || pet.address || pet.clinic_location) && (
           <View style={[styles.tutorSection, { borderTopColor: colors.border }]}>
-            <View style={styles.tutorRow}>
-              <MaterialCommunityIcons name="account" size={14} color={colors.primary} />
-              <Text style={[styles.tutorLabel, { color: colors.textSecondary }]}>TUTOR</Text>
-              <Text style={[styles.tutorValue, { color: colors.text }]}>{pet.tutor_name || 'N/D'}</Text>
-            </View>
+            {pet.tutor_name && (
+              <View style={styles.tutorRow}>
+                <MaterialCommunityIcons name="account" size={14} color={colors.primary} />
+                <Text style={[styles.tutorLabel, { color: colors.textSecondary }]}>TUTOR</Text>
+                <Text style={[styles.tutorValue, { color: colors.text }]}>{pet.tutor_name}</Text>
+              </View>
+            )}
             {pet.phone && (
               <View style={styles.tutorRow}>
                 <MaterialCommunityIcons name="phone" size={14} color={colors.primary} />
@@ -137,11 +164,25 @@ export default function PetHeader({ pet }: PetHeaderProps) {
                 <Text style={[styles.tutorValue, { color: colors.text }]}>{pet.phone}</Text>
               </View>
             )}
+            {pet.email && (
+              <View style={styles.tutorRow}>
+                <MaterialCommunityIcons name="email-outline" size={14} color={colors.primary} />
+                <Text style={[styles.tutorLabel, { color: colors.textSecondary }]}>CORREO</Text>
+                <Text style={[styles.tutorValue, { color: colors.text }]}>{pet.email}</Text>
+              </View>
+            )}
             {pet.address && (
               <View style={styles.tutorRow}>
                 <MaterialCommunityIcons name="map-marker" size={14} color={colors.primary} />
                 <Text style={[styles.tutorLabel, { color: colors.textSecondary }]}>DIRECCIÓN</Text>
                 <Text style={[styles.tutorValue, { color: colors.text }]}>{pet.address}</Text>
+              </View>
+            )}
+            {pet.clinic_location && (
+              <View style={styles.tutorRow}>
+                <MaterialCommunityIcons name="hospital-box-outline" size={14} color={colors.primary} />
+                <Text style={[styles.tutorLabel, { color: colors.textSecondary }]}>CLÍNICA</Text>
+                <Text style={[styles.tutorValue, { color: colors.text }]}>{pet.clinic_location}</Text>
               </View>
             )}
           </View>

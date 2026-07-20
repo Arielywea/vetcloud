@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Card, Button, TextInput, Portal, Modal, Dialog } from 'react-native-paper';
+import { Text, Card, Button, TextInput, Portal, Modal, Dialog, Divider } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { usePet, useClinicalRecords, usePrescriptions } from '../../hooks/useDirectus';
@@ -47,6 +47,11 @@ export default function PetDetailScreen() {
     cirugias: records.filter(r => r.record_type === 'cirugia').length,
     recetas: prescriptions.length,
   }), [records, prescriptions]);
+
+  const mostRecentRecord = useMemo(() => {
+    const sorted = [...records].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return sorted[0] || null;
+  }, [records]);
 
   const lastAnamnesis = useMemo(() => {
     const sorted = [...records].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -156,36 +161,292 @@ export default function PetDetailScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+      {/* ─── RESEÑA ─── */}
       <PetHeader pet={pet} />
 
-      {pet.anamnesis && (
-        <Card style={[styles.sectionCard, { backgroundColor: colors.surface }]}>
-          <Card.Content>
-            <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.text }]}>Anamnesis</Text>
-            <Text style={[styles.description, { color: colors.text }]}>{pet.anamnesis}</Text>
-          </Card.Content>
-        </Card>
-      )}
+      {/* ─── HISTORIA CLÍNICA INICIAL (datos completos del paciente) ─── */}
+      <Card style={[styles.sectionCard, { backgroundColor: colors.surface }]}>
+        <Card.Content>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionAccent, { backgroundColor: colors.primary }]} />
+              <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.primary }]}>
+                Historia Clínica Inicial
+              </Text>
+            </View>
+          </View>
 
-      {pet.allergies && pet.allergies.length > 0 && (
-        <Card style={[styles.sectionCard, { backgroundColor: colors.surface }]}>
+          {/* Anamnesis */}
+          {pet.anamnesis && (
+            <View style={styles.fieldBlock}>
+              <View style={styles.fieldHeader}>
+                <MaterialCommunityIcons name="stethoscope" size={16} color={colors.primary} />
+                <Text style={[styles.fieldLabel, { color: colors.primary }]}>Anamnesis / Motivo de consulta</Text>
+              </View>
+              <Text style={[styles.fieldText, { color: colors.text }]}>{pet.anamnesis}</Text>
+            </View>
+          )}
+
+          {/* Alergias */}
+          {pet.allergies && pet.allergies.length > 0 && (
+            <View style={styles.fieldBlock}>
+              <View style={styles.fieldHeader}>
+                <MaterialCommunityIcons name="alert-circle-outline" size={16} color={colors.error} />
+                <Text style={[styles.fieldLabel, { color: colors.error }]}>Alergias</Text>
+              </View>
+              <View style={styles.chipRow}>
+                {pet.allergies.map((a: string, i: number) => (
+                  <View key={i} style={[styles.chip, { backgroundColor: colors.error + '15', borderColor: colors.error }]}>
+                    <Text style={[styles.chipText, { color: colors.error }]}>{a}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Hábitat */}
+          {pet.habitat && (
+            <View style={styles.fieldBlock}>
+              <View style={styles.fieldHeader}>
+                <MaterialCommunityIcons name="home" size={16} color={colors.primary} />
+                <Text style={[styles.fieldLabel, { color: colors.primary }]}>Hábitat</Text>
+              </View>
+              <Text style={[styles.fieldText, { color: colors.text }]}>
+                {pet.habitat}{pet.habitat_other ? ` — ${pet.habitat_other}` : ''}
+              </Text>
+            </View>
+          )}
+
+          {/* Alimentación */}
+          {(pet.food || pet.food_frequency) && (
+            <View style={styles.fieldBlock}>
+              <View style={styles.fieldHeader}>
+                <MaterialCommunityIcons name="food" size={16} color={colors.primary} />
+                <Text style={[styles.fieldLabel, { color: colors.primary }]}>Alimentación</Text>
+              </View>
+              {pet.food && <Text style={[styles.fieldText, { color: colors.text }]}>Tipo: {pet.food}</Text>}
+              {pet.food_frequency && <Text style={[styles.fieldText, { color: colors.text }]}>Frecuencia: {pet.food_frequency}</Text>}
+            </View>
+          )}
+
+          {/* Consumo de agua */}
+          {pet.water_consumption && (
+            <View style={styles.fieldBlock}>
+              <View style={styles.fieldHeader}>
+                <MaterialCommunityIcons name="cup-water" size={16} color={colors.info} />
+                <Text style={[styles.fieldLabel, { color: colors.info }]}>Consumo de agua</Text>
+              </View>
+              <Text style={[styles.fieldText, { color: colors.text }]}>{pet.water_consumption}</Text>
+            </View>
+          )}
+
+          {/* Micción */}
+          {pet.urination && (
+            <View style={styles.fieldBlock}>
+              <View style={styles.fieldHeader}>
+                <MaterialCommunityIcons name="water-opacity" size={16} color={colors.info} />
+                <Text style={[styles.fieldLabel, { color: colors.info }]}>Micción</Text>
+              </View>
+              <Text style={[styles.fieldText, { color: colors.text }]}>{pet.urination}</Text>
+            </View>
+          )}
+
+          {/* Vive con otros animales */}
+          {pet.lives_with_other_animals && (
+            <View style={styles.fieldBlock}>
+              <View style={styles.fieldHeader}>
+                <MaterialCommunityIcons name="paw" size={16} color={colors.primary} />
+                <Text style={[styles.fieldLabel, { color: colors.primary }]}>Vive con otros animales</Text>
+              </View>
+              <Text style={[styles.fieldText, { color: colors.text }]}>{pet.lives_with_other_animals}</Text>
+            </View>
+          )}
+
+          {/* Vacunas */}
+          {pet.vaccines && (
+            <View style={styles.fieldBlock}>
+              <View style={styles.fieldHeader}>
+                <MaterialCommunityIcons name="needle" size={16} color={colors.success} />
+                <Text style={[styles.fieldLabel, { color: colors.success }]}>Vacunas</Text>
+              </View>
+              <Text style={[styles.fieldText, { color: colors.text }]}>{pet.vaccines}</Text>
+            </View>
+          )}
+
+          {/* Desparasitación */}
+          {pet.deworming && (
+            <View style={styles.fieldBlock}>
+              <View style={styles.fieldHeader}>
+                <MaterialCommunityIcons name="bug" size={16} color={colors.warning} />
+                <Text style={[styles.fieldLabel, { color: colors.warning }]}>Desparasitación</Text>
+              </View>
+              <Text style={[styles.fieldText, { color: colors.text }]}>{pet.deworming}</Text>
+            </View>
+          )}
+
+          {/* Antipulgas */}
+          {pet.flea_treatment && (
+            <View style={styles.fieldBlock}>
+              <View style={styles.fieldHeader}>
+                <MaterialCommunityIcons name="shield-bug" size={16} color={colors.warning} />
+                <Text style={[styles.fieldLabel, { color: colors.warning }]}>Antipulgas</Text>
+              </View>
+              <Text style={[styles.fieldText, { color: colors.text }]}>{pet.flea_treatment}</Text>
+            </View>
+          )}
+
+          {/* Último celo */}
+          {pet.last_heat && (
+            <View style={styles.fieldBlock}>
+              <View style={styles.fieldHeader}>
+                <MaterialCommunityIcons name="calendar-heart" size={16} color={colors.primary} />
+                <Text style={[styles.fieldLabel, { color: colors.primary }]}>Último celo</Text>
+              </View>
+              <Text style={[styles.fieldText, { color: colors.text }]}>{pet.last_heat}</Text>
+            </View>
+          )}
+
+          {/* Cirugías previas */}
+          {pet.surgeries && (
+            <View style={styles.fieldBlock}>
+              <View style={styles.fieldHeader}>
+                <MaterialCommunityIcons name="scissors-cutting" size={16} color={colors.error} />
+                <Text style={[styles.fieldLabel, { color: colors.error }]}>Cirugías previas</Text>
+              </View>
+              <Text style={[styles.fieldText, { color: colors.text }]}>{pet.surgeries}</Text>
+            </View>
+          )}
+
+          {/* Otras enfermedades */}
+          {pet.other_diseases && (
+            <View style={styles.fieldBlock}>
+              <View style={styles.fieldHeader}>
+                <MaterialCommunityIcons name="hospital-box-outline" size={16} color={colors.warning} />
+                <Text style={[styles.fieldLabel, { color: colors.warning }]}>Otras enfermedades</Text>
+              </View>
+              <Text style={[styles.fieldText, { color: colors.text }]}>{pet.other_diseases}</Text>
+            </View>
+          )}
+
+          {/* Medicamentos actuales */}
+          {pet.medications && (
+            <View style={styles.fieldBlock}>
+              <View style={styles.fieldHeader}>
+                <MaterialCommunityIcons name="pill" size={16} color={colors.info} />
+                <Text style={[styles.fieldLabel, { color: colors.info }]}>Medicamentos actuales</Text>
+              </View>
+              <Text style={[styles.fieldText, { color: colors.text }]}>{pet.medications}</Text>
+            </View>
+          )}
+
+          {/* Notas */}
+          {pet.notes && (
+            <View style={styles.fieldBlock}>
+              <View style={styles.fieldHeader}>
+                <MaterialCommunityIcons name="note-text-outline" size={16} color={colors.textSecondary} />
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Notas</Text>
+              </View>
+              <Text style={[styles.fieldText, { color: colors.text }]}>{pet.notes}</Text>
+            </View>
+          )}
+
+          {/* Empty state */}
+          {!pet.anamnesis && (!pet.allergies || pet.allergies.length === 0) && !pet.habitat && !pet.food && !pet.vaccines && !pet.surgeries && !pet.medications && !pet.notes && (
+            <View style={styles.emptySection}>
+              <MaterialCommunityIcons name="file-document-outline" size={32} color={colors.textLight} />
+              <Text style={[styles.emptySectionText, { color: colors.textSecondary }]}>
+                Sin datos clínicos iniciales registrados
+              </Text>
+              <Text style={[styles.emptySectionHint, { color: colors.textLight }]}>
+                Edita el paciente para completar la historia clínica
+              </Text>
+            </View>
+          )}
+        </Card.Content>
+      </Card>
+
+      {/* ─── ÚLTIMA CONSULTA (destacada) ─── */}
+      {mostRecentRecord && (
+        <Card style={[styles.sectionCard, { backgroundColor: colors.surface, borderLeftColor: colors.primary }]}>
           <Card.Content>
-            <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.text }]}>Alergias</Text>
-            <View style={styles.chipRow}>
-              {pet.allergies.map((a: string, i: number) => (
-                <View key={i} style={[styles.chip, { backgroundColor: colors.primaryContainer }]}>
-                  <Text style={[styles.chipText, { color: colors.text }]}>{a}</Text>
-                </View>
-              ))}
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <View style={[styles.sectionAccent, { backgroundColor: colors.primary }]} />
+                <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.primary }]}>
+                  Última Consulta
+                </Text>
+              </View>
+              <Button compact mode="text" onPress={() => setSelectedRecord(mostRecentRecord)}>
+                Ver todo
+              </Button>
+            </View>
+
+            <View style={styles.recentRecordMeta}>
+              <View style={[styles.recentTypeBadge, { backgroundColor: getRecordColor(mostRecentRecord.record_type) + '18' }]}>
+                <MaterialCommunityIcons name={getRecordIcon(mostRecentRecord.record_type) as any} size={14} color={getRecordColor(mostRecentRecord.record_type)} />
+                <Text style={[styles.recentTypeText, { color: getRecordColor(mostRecentRecord.record_type) }]}>
+                  {getRecordLabel(mostRecentRecord.record_type)}
+                </Text>
+              </View>
+              <Text style={[styles.recentDate, { color: colors.textSecondary }]}>
+                {new Date(mostRecentRecord.date).toLocaleDateString('es-CL')}
+              </Text>
+            </View>
+
+            {mostRecentRecord.veterinarian && (
+              <View style={styles.recentField}>
+                <Text style={[styles.recentFieldLabel, { color: colors.textSecondary }]}>Veterinario:</Text>
+                <Text style={[styles.recentFieldValue, { color: colors.text }]}>{mostRecentRecord.veterinarian}</Text>
+              </View>
+            )}
+
+            {mostRecentRecord.details?.weight && (
+              <View style={styles.recentField}>
+                <Text style={[styles.recentFieldLabel, { color: colors.textSecondary }]}>Peso:</Text>
+                <Text style={[styles.recentFieldValue, { color: colors.text }]}>{mostRecentRecord.details.weight} kg</Text>
+              </View>
+            )}
+
+            {mostRecentRecord.details?.anamnesis && (
+              <View style={styles.recentField}>
+                <Text style={[styles.recentFieldLabel, { color: colors.textSecondary }]}>Anamnesis:</Text>
+                <Text style={[styles.recentFieldValue, { color: colors.text }]} numberOfLines={4}>
+                  {mostRecentRecord.details.anamnesis}
+                </Text>
+              </View>
+            )}
+
+            {mostRecentRecord.details?.notes && (
+              <View style={styles.recentField}>
+                <Text style={[styles.recentFieldLabel, { color: colors.textSecondary }]}>Notas:</Text>
+                <Text style={[styles.recentFieldValue, { color: colors.text }]} numberOfLines={4}>
+                  {mostRecentRecord.details.notes}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.recentActions}>
+              <Button compact mode="outlined" onPress={() => { setSelectedRecord(mostRecentRecord); }} style={{ marginRight: 8 }}>
+                Detalle
+              </Button>
+              <Button compact mode="outlined" onPress={() => openRxModal(mostRecentRecord.id)}>
+                Generar Receta
+              </Button>
             </View>
           </Card.Content>
         </Card>
       )}
 
+      {/* ─── HISTORIAL COMPLETO (tabs) ─── */}
       <Card style={[styles.sectionCard, { backgroundColor: colors.surface }]}>
         <Card.Content>
           <View style={styles.sectionHeader}>
-            <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.text }]}>Historia Clínica</Text>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionAccent, { backgroundColor: colors.primary }]} />
+              <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.primary }]}>
+                Historial Completo
+              </Text>
+            </View>
             <View style={styles.headerButtons}>
               <Button mode="outlined" compact onPress={() => openRxModal()} style={{ marginRight: 8 }}>
                 Receta
@@ -244,26 +505,32 @@ export default function PetDetailScreen() {
         </Card.Content>
       </Card>
 
-      {pet.notes && (
-        <Card style={[styles.sectionCard, { backgroundColor: colors.surface }]}>
-          <Card.Content>
-            <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.text }]}>Notas</Text>
-            <Text style={[styles.description, { color: colors.text }]}>{pet.notes}</Text>
-          </Card.Content>
-        </Card>
-      )}
+      {/* ─── MODALS ─── */}
 
       {/* Modal: Nuevo Registro Clínico */}
       <Portal>
         <Modal visible={showRecordModal} onDismiss={() => setShowRecordModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
           <ScrollView>
-            <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Nuevo Registro Clínico</Text>
+            <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Nueva Consulta</Text>
+
+            {/* Preview del paciente */}
+            <Card style={[styles.previewCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <Card.Content style={styles.previewContent}>
+                <MaterialCommunityIcons name={pet.species === 'dog' ? 'dog' : 'cat'} size={20} color={colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.previewName, { color: colors.text }]}>{pet.name}</Text>
+                  <Text style={[styles.previewDetail, { color: colors.textSecondary }]}>
+                    {pet.species === 'dog' ? 'Canino' : 'Felino'} — {pet.breed || 'N/D'} | {pet.weight || 'N/D'} kg
+                  </Text>
+                </View>
+              </Card.Content>
+            </Card>
 
             {lastAnamnesis && (
               <Card style={[styles.lastAnamnesisCard, { backgroundColor: colors.primaryContainer + '40', borderColor: colors.primary }]}>
                 <Card.Content>
                   <Text style={[styles.lastAnamnesisLabel, { color: colors.primary }]}>
-                    📋 Última anamnesis ({new Date(lastAnamnesis.date).toLocaleDateString('es-CL')})
+                    Última anamnesis ({new Date(lastAnamnesis.date).toLocaleDateString('es-CL')})
                   </Text>
                   <Text style={[styles.lastAnamnesisText, { color: colors.text }]} numberOfLines={3}>
                     {lastAnamnesis.details?.anamnesis || lastAnamnesis.details?.notes || 'Sin anamnesis registrada'}
@@ -297,7 +564,7 @@ export default function PetDetailScreen() {
               <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Detalle del Registro</Text>
               <View style={styles.detailRow}>
                 <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Tipo:</Text>
-                <Text style={[styles.detailValue, { color: colors.text }]}>{selectedRecord.record_type}</Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>{getRecordLabel(selectedRecord.record_type)}</Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Fecha:</Text>
@@ -344,21 +611,21 @@ export default function PetDetailScreen() {
           <ScrollView>
             <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Nueva Receta</Text>
 
-            <Card style={[styles.rxPreviewCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            <Card style={[styles.previewCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <Card.Content>
-                <View style={styles.rxPreviewRow}>
+                <View style={styles.previewContent}>
                   <MaterialCommunityIcons name={pet.species === 'dog' ? 'dog' : 'cat'} size={24} color={colors.primary} />
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.rxPreviewName, { color: colors.text }]}>{pet.name}</Text>
-                    <Text style={[styles.rxPreviewDetail, { color: colors.textSecondary }]}>
+                    <Text style={[styles.previewName, { color: colors.text }]}>{pet.name}</Text>
+                    <Text style={[styles.previewDetail, { color: colors.textSecondary }]}>
                       {pet.species === 'dog' ? 'Canino' : 'Felino'} — {pet.breed || 'N/D'} | {pet.weight || 'N/D'} kg
                     </Text>
                   </View>
                 </View>
                 {pet.tutor_name && (
-                  <View style={styles.rxPreviewTutor}>
+                  <View style={styles.previewTutor}>
                     <MaterialCommunityIcons name="account" size={14} color={colors.textSecondary} />
-                    <Text style={[styles.rxPreviewTutorText, { color: colors.textSecondary }]}>
+                    <Text style={[styles.previewTutorText, { color: colors.textSecondary }]}>
                       {pet.tutor_name}{pet.phone ? ` — ${pet.phone}` : ''}{pet.email ? ` — ${pet.email}` : ''}
                     </Text>
                   </View>
@@ -440,19 +707,79 @@ export default function PetDetailScreen() {
   );
 }
 
+function getRecordColor(type: string): string {
+  switch (type) {
+    case 'consulta': return '#1976D2';
+    case 'vacuna': return '#43A047';
+    case 'cirugia': return '#E53935';
+    case 'control': return '#F57C00';
+    default: return '#757575';
+  }
+}
+
+function getRecordIcon(type: string): string {
+  switch (type) {
+    case 'consulta': return 'stethoscope';
+    case 'vacuna': return 'needle';
+    case 'cirugia': return 'scissors-cutting';
+    case 'control': return 'clipboard-check';
+    default: return 'file-document';
+  }
+}
+
+function getRecordLabel(type: string): string {
+  switch (type) {
+    case 'consulta': return 'Consulta';
+    case 'vacuna': return 'Vacuna';
+    case 'cirugia': return 'Cirugía';
+    case 'control': return 'Control';
+    default: return type;
+  }
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingBottom: 32 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { textAlign: 'center', marginTop: 40 },
   sectionCard: { marginHorizontal: 12, marginBottom: 12, borderRadius: 12 },
-  sectionTitle: { fontWeight: '700', marginBottom: 8, fontSize: 16 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sectionAccent: { width: 3, height: 18, borderRadius: 2 },
+  sectionTitle: { fontWeight: '700', fontSize: 15 },
   headerButtons: { flexDirection: 'row', alignItems: 'center' },
-  description: { lineHeight: 22 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  chipText: { fontSize: 12 },
+
+  // Clinical fields
+  fieldBlock: { marginBottom: 14 },
+  fieldHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  fieldLabel: { fontSize: 12, fontWeight: '700' },
+  fieldText: { fontSize: 13, lineHeight: 20, marginLeft: 22 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginLeft: 22 },
+  chip: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1 },
+  chipText: { fontSize: 12, fontWeight: '600' },
+  emptySection: { alignItems: 'center', paddingVertical: 20, gap: 6 },
+  emptySectionText: { fontSize: 13, fontWeight: '600' },
+  emptySectionHint: { fontSize: 11 },
+
+  // Recent record
+  recentRecordMeta: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+  recentTypeBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+  recentTypeText: { fontSize: 11, fontWeight: '700' },
+  recentDate: { fontSize: 12 },
+  recentField: { marginBottom: 8 },
+  recentFieldLabel: { fontSize: 11, fontWeight: '600', marginBottom: 2 },
+  recentFieldValue: { fontSize: 13, lineHeight: 18 },
+  recentActions: { flexDirection: 'row', marginTop: 8 },
+
+  // Preview cards
+  previewCard: { marginBottom: 12, borderRadius: 8, borderWidth: 1 },
+  previewContent: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  previewName: { fontWeight: '700', fontSize: 15 },
+  previewDetail: { fontSize: 12, marginTop: 2 },
+  previewTutor: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  previewTutorText: { fontSize: 12 },
+
+  // Modals
   typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
   typeBtn: { flex: 1, minWidth: 70 },
   input: { marginBottom: 12 },
@@ -466,6 +793,8 @@ const styles = StyleSheet.create({
   lastAnamnesisCard: { marginBottom: 12, borderRadius: 8, borderWidth: 1 },
   lastAnamnesisLabel: { fontSize: 12, fontWeight: '700', marginBottom: 4 },
   lastAnamnesisText: { fontSize: 13, lineHeight: 18 },
+
+  // Prescriptions
   emptyRx: { alignItems: 'center', paddingVertical: 24, gap: 6 },
   emptyText: { fontSize: 13 },
   rxCard: { marginBottom: 8, borderRadius: 10, borderLeftWidth: 3 },
@@ -475,12 +804,6 @@ const styles = StyleSheet.create({
   rxVet: { fontWeight: '600', fontSize: 13, marginTop: 2 },
   rxPreview: { fontSize: 12, marginTop: 2 },
   rxActions: { flexDirection: 'row' },
-  rxPreviewCard: { marginBottom: 12, borderRadius: 8, borderWidth: 1 },
-  rxPreviewRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  rxPreviewName: { fontWeight: '700', fontSize: 15 },
-  rxPreviewDetail: { fontSize: 12, marginTop: 2 },
-  rxPreviewTutor: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
-  rxPreviewTutorText: { fontSize: 12 },
   rxActionRow: { flexDirection: 'row', marginTop: 8 },
   rxBodyCard: { marginTop: 8, marginBottom: 8, borderRadius: 8, borderWidth: 1 },
   rxBodyText: { lineHeight: 22, whiteSpace: 'pre-wrap' },

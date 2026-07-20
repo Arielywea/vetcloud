@@ -214,7 +214,7 @@ export const api = {
   },
   pets: {
     list: () => apiGet('/items/pets'),
-    get: (id: string) => apiGet('/items/pets', { id }).then((p: any[]) => p[0] || null),
+    get: (id: string) => apiGet(`/items/pets/${id}`),
     create: (data: any) => apiPost('/items/pets', data),
     update: (id: string, data: any) => apiPatch(`/items/pets/${id}`, data),
     delete: (id: string) => apiDelete(`/items/pets/${id}`),
