@@ -4,11 +4,14 @@ const { Pool } = require('pg');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 try { require('dotenv').config(); } catch (e) { /* dotenv optional */ }
 
 const app = express();
 const PORT = process.env.PORT || 8055;
+const JWT_SECRET = process.env.JWT_SECRET || 'vetcloud-secret-2026';
 
 const pool = new Pool(
   process.env.DATABASE_URL
@@ -32,6 +35,54 @@ try {
 } catch (e) {}
 
 const upload = multer({ storage: multer.memoryStorage() });
+
+// ─── AUTH MIDDLEWARE ──────────────────────────────────────
+function authMiddleware(req, res, next) {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token requerido' });
+  }
+  try {
+    const token = header.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.userId = decoded.userId;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Token inválido' });
+  }
+}
+
+// ─── AUTH ENDPOINTS ───────────────────────────────────────
+app.post('/auth/login', async (req, res) => {
+  try {
+    const { rut, password } = req.body;
+    if (!rut || !password) return res.status(400).json({ error: 'RUT y contraseña requeridos' });
+    const result = await pool.query('SELECT * FROM users WHERE rut = $1', [rut]);
+    if (!result.rows.length) return res.status(401).json({ error: 'Credenciales inválidas' });
+    const user = result.rows[0];
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) return res.status(401).json({ error: 'Credenciales inválidas' });
+    const token = jwt.sign({ userId: user.id, rut: user.rut, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({
+      data: {
+        token,
+        user: { id: user.id, rut: user.rut, name: user.name, email: user.email, role: user.role },
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/auth/me', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, rut, name, email, role, created_at FROM users WHERE id = $1', [req.userId]);
+    if (!result.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ─── DISEASES ────────────────────────────────────────────
 app.get('/items/diseases', async (req, res) => {
@@ -136,18 +187,18 @@ app.delete('/items/diseases/:id', async (req, res) => {
 });
 
 // ─── PETS ────────────────────────────────────────────────
-app.get('/items/pets', async (req, res) => {
+app.get('/items/pets', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM pets ORDER BY name');
+    const result = await pool.query('SELECT * FROM pets WHERE user_id = $1 ORDER BY name', [req.userId]);
     res.json({ data: result.rows });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.get('/items/pets/:id', async (req, res) => {
+app.get('/items/pets/:id', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM pets WHERE id = $1', [req.params.id]);
+    const result = await pool.query('SELECT * FROM pets WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
   } catch (err) {
@@ -155,16 +206,17 @@ app.get('/items/pets/:id', async (req, res) => {
   }
 });
 
-app.post('/items/pets', async (req, res) => {
+app.post('/items/pets', authMiddleware, async (req, res) => {
   try {
     const p = req.body;
     const result = await pool.query(
-      `INSERT INTO pets (name, species, breed, birth_date, weight, color, photo, allergies, notes, tutor_name, phone, email, address, clinic_location, reproductive_status, anamnesis, clinical_history)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+      `INSERT INTO pets (name, species, breed, birth_date, weight, color, photo, allergies, notes, tutor_name, phone, email, address, clinic_location, reproductive_status, anamnesis, clinical_history, user_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
       [p.name, p.species, p.breed, p.birth_date, p.weight, p.color, p.photo,
        JSON.stringify(p.allergies || []), p.notes,
        p.tutor_name || null, p.phone || null, p.email || null, p.address || null, p.clinic_location || null,
-       p.reproductive_status || 'intacto', p.anamnesis || null, JSON.stringify(p.clinical_history || [])]
+       p.reproductive_status || 'intacto', p.anamnesis || null, JSON.stringify(p.clinical_history || []),
+       req.userId]
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
@@ -172,7 +224,7 @@ app.post('/items/pets', async (req, res) => {
   }
 });
 
-app.patch('/items/pets/:id', async (req, res) => {
+app.patch('/items/pets/:id', authMiddleware, async (req, res) => {
   try {
     const p = req.body;
     const fields = [];
@@ -187,18 +239,21 @@ app.patch('/items/pets/:id', async (req, res) => {
     }
     fields.push(`updated_at = NOW()`);
     values.push(req.params.id);
+    values.push(req.userId);
     const result = await pool.query(
-      `UPDATE pets SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`, values
+      `UPDATE pets SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`, values
     );
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.delete('/items/pets/:id', async (req, res) => {
+app.delete('/items/pets/:id', authMiddleware, async (req, res) => {
   try {
-    await pool.query('DELETE FROM pets WHERE id = $1', [req.params.id]);
+    const result = await pool.query('DELETE FROM pets WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: null });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -206,15 +261,15 @@ app.delete('/items/pets/:id', async (req, res) => {
 });
 
 // ─── MEDICAL RECORDS ─────────────────────────────────────
-app.get('/items/medical_records', async (req, res) => {
+app.get('/items/medical_records', authMiddleware, async (req, res) => {
   try {
-    let query = 'SELECT * FROM medical_records';
-    const params = [];
+    let query = 'SELECT mr.* FROM medical_records mr JOIN pets p ON p.id = mr.pet_id WHERE p.user_id = $1';
+    const params = [req.userId];
     if (req.query.pet_id) {
-      query += ' WHERE pet_id = $1';
+      query += ' AND mr.pet_id = $2';
       params.push(req.query.pet_id);
     }
-    query += ' ORDER BY date DESC';
+    query += ' ORDER BY mr.date DESC';
     const result = await pool.query(query, params);
     res.json({ data: result.rows });
   } catch (err) {
@@ -222,9 +277,11 @@ app.get('/items/medical_records', async (req, res) => {
   }
 });
 
-app.post('/items/medical_records', async (req, res) => {
+app.post('/items/medical_records', authMiddleware, async (req, res) => {
   try {
     const r = req.body;
+    const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [r.pet_id, req.userId]);
+    if (!ownerCheck.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa mascota' });
     const result = await pool.query(
       `INSERT INTO medical_records (pet_id, disease_id, date, veterinarian, symptoms, diagnosis, treatment, notes)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
@@ -238,22 +295,22 @@ app.post('/items/medical_records', async (req, res) => {
 });
 
 // ─── NOTES ───────────────────────────────────────────────
-app.get('/items/personal_notes', async (req, res) => {
+app.get('/items/personal_notes', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM personal_notes ORDER BY updated_at DESC');
+    const result = await pool.query('SELECT * FROM personal_notes WHERE user_id = $1 ORDER BY updated_at DESC', [req.userId]);
     res.json({ data: result.rows });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/items/personal_notes', async (req, res) => {
+app.post('/items/personal_notes', authMiddleware, async (req, res) => {
   try {
     const n = req.body;
     const result = await pool.query(
-      `INSERT INTO personal_notes (title, content, tags, disease_id, pet_id)
-       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [n.title, n.content, JSON.stringify(n.tags || []), n.disease_id, n.pet_id]
+      `INSERT INTO personal_notes (title, content, tags, disease_id, pet_id, user_id)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [n.title, n.content, JSON.stringify(n.tags || []), n.disease_id, n.pet_id, req.userId]
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
@@ -261,7 +318,7 @@ app.post('/items/personal_notes', async (req, res) => {
   }
 });
 
-app.patch('/items/personal_notes/:id', async (req, res) => {
+app.patch('/items/personal_notes/:id', authMiddleware, async (req, res) => {
   try {
     const n = req.body;
     const fields = [];
@@ -276,18 +333,21 @@ app.patch('/items/personal_notes/:id', async (req, res) => {
     }
     fields.push(`updated_at = NOW()`);
     values.push(req.params.id);
+    values.push(req.userId);
     const result = await pool.query(
-      `UPDATE personal_notes SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`, values
+      `UPDATE personal_notes SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`, values
     );
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.delete('/items/personal_notes/:id', async (req, res) => {
+app.delete('/items/personal_notes/:id', authMiddleware, async (req, res) => {
   try {
-    await pool.query('DELETE FROM personal_notes WHERE id = $1', [req.params.id]);
+    const result = await pool.query('DELETE FROM personal_notes WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: null });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -295,21 +355,21 @@ app.delete('/items/personal_notes/:id', async (req, res) => {
 });
 
 // ─── FAVORITES ───────────────────────────────────────────
-app.get('/items/favorites', async (req, res) => {
+app.get('/items/favorites', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM favorites ORDER BY added_at DESC');
+    const result = await pool.query('SELECT * FROM favorites WHERE user_id = $1 ORDER BY added_at DESC', [req.userId]);
     res.json({ data: result.rows });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/items/favorites', async (req, res) => {
+app.post('/items/favorites', authMiddleware, async (req, res) => {
   try {
     const f = req.body;
     const result = await pool.query(
-      `INSERT INTO favorites (disease_id, category, added_at) VALUES ($1,$2,$3) RETURNING *`,
-      [f.disease_id, f.category || 'frequently_used', f.added_at || new Date().toISOString()]
+      `INSERT INTO favorites (disease_id, category, added_at, user_id) VALUES ($1,$2,$3,$4) RETURNING *`,
+      [f.disease_id, f.category || 'frequently_used', f.added_at || new Date().toISOString(), req.userId]
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
@@ -317,9 +377,10 @@ app.post('/items/favorites', async (req, res) => {
   }
 });
 
-app.delete('/items/favorites/:id', async (req, res) => {
+app.delete('/items/favorites/:id', authMiddleware, async (req, res) => {
   try {
-    await pool.query('DELETE FROM favorites WHERE id = $1', [req.params.id]);
+    const result = await pool.query('DELETE FROM favorites WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: null });
   } catch (err) {
     res.status(500).json({ error: err.message });
