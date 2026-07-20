@@ -51,6 +51,7 @@ export interface DirectusPet {
   address: string | null;
   clinic_location: string | null;
   reproductive_status: string;
+  status: 'alive' | 'deceased';
   anamnesis: string | null;
   id_number: string | null;
   sex: 'macho' | 'hembra' | null;
