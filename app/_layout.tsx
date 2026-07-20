@@ -48,7 +48,7 @@ function AppContent() {
         contentStyle: { backgroundColor: APP_COLORS.background },
       }}
     >
-      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(drawer)" />
       <Stack.Screen
         name="disease/[id]"
         options={{
@@ -64,7 +64,7 @@ function AppContent() {
           headerShown: true,
           headerStyle: { backgroundColor: APP_COLORS.primary },
           headerTintColor: '#FFFFFF',
-          headerTitle: 'Detalle de Mascota',
+          headerTitle: 'Ficha Clínica',
         }}
       />
     </Stack>

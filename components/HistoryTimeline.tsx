@@ -10,17 +10,17 @@ interface HistoryTimelineProps {
   onViewRecord?: (record: ClinicalRecord) => void;
 }
 
-const RECORD_TYPE_CONFIG: Record<string, { icon: string; color: string; label: string }> = {
-  consulta: { icon: 'stethoscope', color: '#1976D2', label: 'Consulta' },
-  vacuna: { icon: 'needle', color: '#43A047', label: 'Vacuna' },
-  cirugia: { icon: 'scissors-cutting', color: '#E53935', label: 'Cirugía' },
-  control: { icon: 'clipboard-check', color: '#F57C00', label: 'Control' },
+const RECORD_TYPE_CONFIG: Record<string, { icon: string; color: string; bg: string; label: string }> = {
+  consulta: { icon: 'stethoscope', color: '#1976D2', bg: '#DBEAFE', label: 'Consulta' },
+  vacuna: { icon: 'needle', color: '#43A047', bg: '#D1FAE5', label: 'Vacuna' },
+  cirugia: { icon: 'scissors-cutting', color: '#E53935', bg: '#FCE7F3', label: 'Cirugía' },
+  control: { icon: 'clipboard-check', color: '#F57C00', bg: '#FEF3C7', label: 'Control' },
 };
 
 function formatDate(dateStr: string): string {
   try {
     const d = new Date(dateStr);
-    return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   } catch {
     return dateStr;
   }
@@ -44,31 +44,28 @@ export default function HistoryTimeline({ records, onViewRecord }: HistoryTimeli
           <View key={record.id} style={styles.timelineItem}>
             {i < records.length - 1 && <View style={styles.line} />}
             <View style={[styles.dot, { backgroundColor: config.color }]}>
-              <MaterialCommunityIcons name={config.icon as any} size={14} color="#FFF" />
+              <MaterialCommunityIcons name={config.icon as any} size={12} color="#FFF" />
             </View>
             <Card style={styles.card}>
               <Card.Content>
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardType}>
-                    <MaterialCommunityIcons name={config.icon as any} size={16} color={config.color} />
-                    <Text style={[styles.typeLabel, { color: config.color }]}>{config.label}</Text>
+                <View style={styles.cardRow}>
+                  <View style={styles.cardLeft}>
+                    <View style={[styles.typeIcon, { backgroundColor: config.bg }]}>
+                      <MaterialCommunityIcons name={config.icon as any} size={16} color={config.color} />
+                    </View>
+                    <View>
+                      <Text style={styles.recordTitle}>
+                        {config.label}{record.details?.notes ? ` — ${record.details.notes.substring(0, 40)}` : ''}
+                      </Text>
+                      <Text style={styles.recordDate}>{formatDate(record.date)}</Text>
+                    </View>
                   </View>
-                  <Text style={styles.date}>{formatDate(record.date)}</Text>
+                  {onViewRecord && (
+                    <Button compact mode="text" onPress={() => onViewRecord(record)} style={styles.viewBtn}>
+                      Ver módulo →
+                    </Button>
+                  )}
                 </View>
-                {record.veterinarian && (
-                  <Text style={styles.vet}>Dr(a). {record.veterinarian}</Text>
-                )}
-                {record.details?.notes && (
-                  <Text style={styles.notes} numberOfLines={2}>{record.details.notes}</Text>
-                )}
-                {record.details?.weight && (
-                  <Text style={styles.weight}>Peso: {record.details.weight} kg</Text>
-                )}
-                {onViewRecord && (
-                  <Button mode="text" compact onPress={() => onViewRecord(record)} style={styles.viewBtn}>
-                    Ver detalle
-                  </Button>
-                )}
               </Card.Content>
             </Card>
           </View>
@@ -79,82 +76,30 @@ export default function HistoryTimeline({ records, onViewRecord }: HistoryTimeli
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingLeft: 20,
-  },
-  empty: {
-    alignItems: 'center',
-    paddingVertical: 32,
-  },
-  emptyText: {
-    color: APP_COLORS.textSecondary,
-    marginTop: 8,
-    fontStyle: 'italic',
-  },
-  timelineItem: {
-    position: 'relative',
-    marginBottom: 12,
-    paddingLeft: 24,
-  },
+  container: { paddingLeft: 20 },
+  empty: { alignItems: 'center', paddingVertical: 32 },
+  emptyText: { color: APP_COLORS.textSecondary, marginTop: 8, fontStyle: 'italic' },
+  timelineItem: { position: 'relative', marginBottom: 8, paddingLeft: 24 },
   line: {
-    position: 'absolute',
-    left: 7,
-    top: 20,
-    bottom: -12,
-    width: 2,
-    backgroundColor: APP_COLORS.border,
+    position: 'absolute', left: 7, top: 20, bottom: -8,
+    width: 2, backgroundColor: APP_COLORS.border,
   },
   dot: {
-    position: 'absolute',
-    left: 0,
-    top: 12,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: 'absolute', left: 0, top: 12,
+    width: 16, height: 16, borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
   },
   card: {
-    borderRadius: 10,
-    backgroundColor: APP_COLORS.surface,
+    borderRadius: 10, backgroundColor: APP_COLORS.surface,
+    borderLeftWidth: 3, borderLeftColor: APP_COLORS.border,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
+  cardRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  cardLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  typeIcon: {
+    width: 32, height: 32, borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
   },
-  cardType: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  typeLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  date: {
-    fontSize: 12,
-    color: APP_COLORS.textSecondary,
-  },
-  vet: {
-    fontSize: 12,
-    color: APP_COLORS.textSecondary,
-    marginBottom: 4,
-  },
-  notes: {
-    fontSize: 13,
-    color: APP_COLORS.text,
-    lineHeight: 18,
-  },
-  weight: {
-    fontSize: 12,
-    color: APP_COLORS.textSecondary,
-    marginTop: 4,
-  },
-  viewBtn: {
-    alignSelf: 'flex-start',
-    marginTop: 4,
-    paddingVertical: 0,
-  },
+  recordTitle: { fontSize: 13, fontWeight: '600', color: APP_COLORS.text },
+  recordDate: { fontSize: 11, color: APP_COLORS.textSecondary, marginTop: 2 },
+  viewBtn: { paddingVertical: 0 },
 });
