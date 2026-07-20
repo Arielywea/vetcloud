@@ -9,6 +9,7 @@ import {
   Appointment,
   ClinicalRecord,
   InventoryItem,
+  Prescription,
 } from '../services/directus';
 
 // ─────────────────────────────────────────────────────────
@@ -436,4 +437,54 @@ export function useInventory() {
   };
 
   return { items, lowStockItems, loading, error, addItem, updateItem, removeItem, refresh: fetchItems };
+}
+
+// ─────────────────────────────────────────────────────────
+// Hook: Prescriptions
+// ─────────────────────────────────────────────────────────
+
+export function usePrescriptions(petId?: string) {
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchPrescriptions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await api.prescriptions.list(petId);
+      setPrescriptions(result as Prescription[]);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [petId]);
+
+  useEffect(() => {
+    fetchPrescriptions();
+  }, [fetchPrescriptions]);
+
+  const addPrescription = async (data: Omit<Prescription, 'id' | 'created_at'>) => {
+    const result = await api.prescriptions.create(data);
+    await fetchPrescriptions();
+    return result;
+  };
+
+  const updatePrescription = async (id: string, data: Partial<Prescription>) => {
+    const result = await api.prescriptions.update(id, data);
+    await fetchPrescriptions();
+    return result;
+  };
+
+  const removePrescription = async (id: string) => {
+    await api.prescriptions.delete(id);
+    await fetchPrescriptions();
+  };
+
+  const sendEmail = async (id: string) => {
+    return await api.prescriptions.sendEmail(id);
+  };
+
+  return { prescriptions, loading, error, addPrescription, updatePrescription, removePrescription, sendEmail, refresh: fetchPrescriptions };
 }

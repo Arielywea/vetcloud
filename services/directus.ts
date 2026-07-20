@@ -91,7 +91,21 @@ export interface ClinicalRecord {
   record_type: 'consulta' | 'vacuna' | 'cirugia' | 'control';
   date: string;
   veterinarian: string | null;
-  details: { notes?: string; weight?: number; [key: string]: any };
+  details: { notes?: string; weight?: number; anamnesis?: string; [key: string]: any };
+  created_at: string;
+}
+
+export interface Prescription {
+  id: string;
+  pet_id: string;
+  user_id: string;
+  clinical_record_id: string | null;
+  veterinarian_name: string | null;
+  clinic_branch: string | null;
+  prescription_body: string;
+  format: string;
+  status: string;
+  issued_at: string;
   created_at: string;
 }
 
@@ -245,6 +259,14 @@ export const api = {
     create: (data: any) => apiPost('/items/inventory', data),
     update: (id: string, data: any) => apiPatch(`/items/inventory/${id}`, data),
     delete: (id: string) => apiDelete(`/items/inventory/${id}`),
+  },
+  prescriptions: {
+    list: (petId?: string) => apiGet('/items/prescriptions', petId ? { pet_id: petId } : undefined),
+    get: (id: string) => apiGet('/items/prescriptions', { id }).then((r: any[]) => r[0] || null),
+    create: (data: any) => apiPost('/items/prescriptions', data),
+    update: (id: string, data: any) => apiPatch(`/items/prescriptions/${id}`, data),
+    delete: (id: string) => apiDelete(`/items/prescriptions/${id}`),
+    sendEmail: (id: string) => apiPost(`/items/prescriptions/${id}/email`, {}),
   },
 };
 

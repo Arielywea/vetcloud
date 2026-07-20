@@ -92,11 +92,15 @@ export default function AddPacienteScreen() {
       Alert.alert('Error', 'El nombre es obligatorio');
       return;
     }
-    try {
-      let photoUrl = null;
-      if (photo) {
+    let photoUrl = null;
+    if (photo) {
+      try {
         photoUrl = await uploadPetPhoto(photo);
+      } catch (e: any) {
+        console.warn('Photo upload failed, saving without photo:', e.message);
       }
+    }
+    try {
       await addPet({
         name: name.trim(),
         species,
