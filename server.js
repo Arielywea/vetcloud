@@ -216,13 +216,13 @@ app.post('/items/pets', authMiddleware, async (req, res) => {
   try {
     const p = req.body;
     const result = await pool.query(
-      `INSERT INTO pets (name, species, breed, birth_date, weight, color, photo, allergies, notes, tutor_name, phone, email, address, clinic_location, reproductive_status, anamnesis, clinical_history, user_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
-      [p.name, p.species, p.breed, p.birth_date, p.weight, p.color, p.photo,
-       JSON.stringify(p.allergies || []), p.notes,
-       p.tutor_name || null, p.phone || null, p.email || null, p.address || null, p.clinic_location || null,
-       p.reproductive_status || 'intacto', p.anamnesis || null, JSON.stringify(p.clinical_history || []),
-       req.userId]
+       `INSERT INTO pets (name, species, breed, birth_date, weight, color, photo, allergies, notes, tutor_name, phone, email, address, clinic_location, reproductive_status, anamnesis, user_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+       [p.name, p.species, p.breed, p.birth_date, p.weight, p.color, p.photo,
+        JSON.stringify(p.allergies || []), p.notes,
+        p.tutor_name || null, p.phone || null, p.email || null, p.address || null, p.clinic_location || null,
+        p.reproductive_status || 'intacto', p.anamnesis || null,
+        req.userId]
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
@@ -386,6 +386,162 @@ app.post('/items/favorites', authMiddleware, async (req, res) => {
 app.delete('/items/favorites/:id', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM favorites WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    res.json({ data: null });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── APPOINTMENTS ────────────────────────────────────────
+app.get('/items/appointments', authMiddleware, async (req, res) => {
+  try {
+    let query = 'SELECT * FROM appointments WHERE user_id = $1';
+    const params = [req.userId];
+    if (req.query.start) {
+      params.push(req.query.start);
+      query += ` AND start_time >= $${params.length}`;
+    }
+    if (req.query.end) {
+      params.push(req.query.end);
+      query += ` AND start_time <= $${params.length}`;
+    }
+    query += ' ORDER BY start_time ASC';
+    const result = await pool.query(query, params);
+    res.json({ data: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/items/appointments/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM appointments WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/items/appointments', authMiddleware, async (req, res) => {
+  try {
+    const a = req.body;
+    const result = await pool.query(
+      `INSERT INTO appointments (user_id, patient_name, tutor_phone, start_time, end_time, appointment_type, description)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [req.userId, a.patient_name, a.tutor_phone || null, a.start_time, a.end_time || null,
+       a.appointment_type || 'consulta', a.description || null]
+    );
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/items/appointments/:id', authMiddleware, async (req, res) => {
+  try {
+    const a = req.body;
+    const fields = [];
+    const values = [];
+    let idx = 1;
+    for (const [key, val] of Object.entries(a)) {
+      if (key === 'id' || key === 'created_at' || key === 'user_id') continue;
+      const valStr = typeof val === 'object' ? JSON.stringify(val) : val;
+      fields.push(`${key} = $${idx}`);
+      values.push(valStr);
+      idx++;
+    }
+    if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
+    values.push(req.params.id);
+    values.push(req.userId);
+    const result = await pool.query(
+      `UPDATE appointments SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`, values
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/items/appointments/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM appointments WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    res.json({ data: null });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── CLINICAL RECORDS ───────────────────────────────────
+app.get('/items/clinical_records', authMiddleware, async (req, res) => {
+  try {
+    let query = 'SELECT cr.* FROM clinical_records cr JOIN pets p ON p.id = cr.pet_id WHERE p.user_id = $1';
+    const params = [req.userId];
+    if (req.query.pet_id) {
+      params.push(req.query.pet_id);
+      query += ` AND cr.pet_id = $${params.length}`;
+    }
+    if (req.query.record_type) {
+      params.push(req.query.record_type);
+      query += ` AND cr.record_type = $${params.length}`;
+    }
+    query += ' ORDER BY cr.date DESC';
+    const result = await pool.query(query, params);
+    res.json({ data: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/items/clinical_records', authMiddleware, async (req, res) => {
+  try {
+    const r = req.body;
+    const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [r.pet_id, req.userId]);
+    if (!ownerCheck.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa mascota' });
+    const result = await pool.query(
+      `INSERT INTO clinical_records (pet_id, user_id, record_type, date, veterinarian, details)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [r.pet_id, req.userId, r.record_type || 'consulta', r.date || new Date().toISOString(),
+       r.veterinarian || null, JSON.stringify(r.details || {})]
+    );
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/items/clinical_records/:id', authMiddleware, async (req, res) => {
+  try {
+    const r = req.body;
+    const fields = [];
+    const values = [];
+    let idx = 1;
+    for (const [key, val] of Object.entries(r)) {
+      if (key === 'id' || key === 'created_at' || key === 'user_id' || key === 'pet_id') continue;
+      const valStr = key === 'details' ? JSON.stringify(val) : (typeof val === 'object' ? JSON.stringify(val) : val);
+      fields.push(`${key} = $${idx}`);
+      values.push(valStr);
+      idx++;
+    }
+    if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
+    values.push(req.params.id);
+    values.push(req.userId);
+    const result = await pool.query(
+      `UPDATE clinical_records SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`, values
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/items/clinical_records/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM clinical_records WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: null });
   } catch (err) {

@@ -64,6 +64,16 @@ export default function TabLayout() {
           headerTitle: 'Mis Notas',
         }}
       />
+      <Tabs.Screen
+        name="agenda"
+        options={{
+          title: 'Agenda',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="calendar-clock" size={size} color={color} />
+          ),
+          headerTitle: 'Agenda Médica',
+        }}
+      />
     </Tabs>
   );
 }

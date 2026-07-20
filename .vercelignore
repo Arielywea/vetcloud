@@ -1,0 +1,11 @@
+node_modules
+.expo
+dist
+.git
+scripts
+uploads
+docker
+*.sql
+*.md
+.env
+.env.local

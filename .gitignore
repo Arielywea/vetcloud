@@ -10,3 +10,5 @@ server.log
 docker/*.exe
 backup.sql
 api/.env
+
+.vercel
