@@ -7,13 +7,11 @@ import { usePets } from '../../hooks/useDirectus';
 import { DirectusPet } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { calculateAge } from '../../utils/age';
-import { useResponsive } from '../../components/ScreenContainer';
 
 export default function PacientesScreen() {
   const router = useRouter();
   const { pets, loading, removePet } = usePets();
   const { colors } = useTheme();
-  const { isDesktop } = useResponsive();
   const [deleteTarget, setDeleteTarget] = useState<DirectusPet | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecies, setSelectedSpecies] = useState<'all' | 'dog' | 'cat'>('all');
@@ -83,7 +81,7 @@ export default function PacientesScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }, isDesktop && styles.containerDesktop]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Searchbar
         placeholder="Buscar por nombre, raza, tutor..."
         onChangeText={setSearchQuery}
@@ -119,7 +117,7 @@ export default function PacientesScreen() {
         data={filteredPets}
         renderItem={renderPetCard}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
+        contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <MaterialCommunityIcons name="dog" size={64} color={colors.textLight} />
@@ -162,14 +160,12 @@ export default function PacientesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  containerDesktop: { alignItems: 'center' },
-  searchbar: { margin: 12, marginBottom: 4, elevation: 2, borderRadius: 12, maxWidth: 800, width: '100%', alignSelf: 'center' },
+  searchbar: { margin: 12, marginBottom: 4, elevation: 2, borderRadius: 12 },
   searchInput: { fontSize: 15 },
   filterRow: { paddingHorizontal: 12, marginBottom: 4 },
   speciesChip: { marginRight: 6 },
   resultsCount: { paddingHorizontal: 16, paddingBottom: 4 },
   listContent: { padding: 12, paddingBottom: 80 },
-  listContentDesktop: { maxWidth: 800, width: '100%', alignSelf: 'center' },
   petCard: {
     marginBottom: 8,
     borderRadius: 12,
