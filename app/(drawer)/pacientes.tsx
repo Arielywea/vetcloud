@@ -1,38 +1,45 @@
-import React from 'react';
-import { View, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
-import { Text, Card, FAB } from 'react-native-paper';
+import React, { useState, useMemo } from 'react';
+import { View, FlatList, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Text, Card, FAB, Button, Dialog, Portal, Searchbar, Chip } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePets } from '../../hooks/useDirectus';
 import { DirectusPet } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
+import { calculateAge } from '../../utils/age';
+import { useResponsive } from '../../components/ScreenContainer';
 
 export default function PacientesScreen() {
   const router = useRouter();
   const { pets, loading, removePet } = usePets();
   const { colors } = useTheme();
+  const { isDesktop } = useResponsive();
+  const [deleteTarget, setDeleteTarget] = useState<DirectusPet | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSpecies, setSelectedSpecies] = useState<'all' | 'dog' | 'cat'>('all');
 
-  const calculateAge = (birthDate: string): string => {
-    if (!birthDate) return '';
-    try {
-      let birth: Date;
-      if (birthDate.includes('-')) {
-        birth = new Date(birthDate);
-      } else if (birthDate.includes('/')) {
-        const parts = birthDate.split('/');
-        if (parts.length !== 3) return '';
-        birth = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-      } else {
-        return '';
-      }
-      if (isNaN(birth.getTime())) return '';
-      const now = new Date();
-      const years = Math.floor((now.getTime() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-      return years >= 0 ? `${years} año${years !== 1 ? 's' : ''}` : '';
-    } catch {
-      return '';
-    }
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    await removePet(deleteTarget.id);
+    setDeleteTarget(null);
   };
+
+  const filteredPets = useMemo(() => {
+    let results = [...pets];
+    if (selectedSpecies !== 'all') {
+      results = results.filter(p => p.species === selectedSpecies);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      results = results.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        (p.breed && p.breed.toLowerCase().includes(q)) ||
+        (p.tutor_name && p.tutor_name.toLowerCase().includes(q)) ||
+        (p.id_number && p.id_number.toLowerCase().includes(q))
+      );
+    }
+    return results;
+  }, [pets, searchQuery, selectedSpecies]);
 
   const renderPetCard = ({ item }: { item: DirectusPet }) => {
     const age = item.birth_date ? calculateAge(item.birth_date) : '';
@@ -54,12 +61,17 @@ export default function PacientesScreen() {
                 <Text variant="bodySmall" style={[styles.petBreed, { color: colors.textSecondary }]}>
                   {item.breed || 'Sin raza especificada'}{age ? ` · ${age}` : ''}
                 </Text>
+                {item.tutor_name && (
+                  <Text variant="bodySmall" style={[styles.petTutor, { color: colors.textSecondary }]}>
+                    Tutor: {item.tutor_name}
+                  </Text>
+                )}
                 {item.weight > 0 && (
                   <Text variant="bodySmall" style={[styles.petWeight, { color: colors.textSecondary }]}>{item.weight} kg</Text>
                 )}
               </View>
               <View style={styles.petActions}>
-                <TouchableOpacity onPress={() => removePet(item.id)} style={styles.actionButton}>
+                <TouchableOpacity onPress={() => setDeleteTarget(item)} style={styles.actionButton}>
                   <MaterialCommunityIcons name="delete" size={18} color={colors.error} />
                 </TouchableOpacity>
               </View>
@@ -71,18 +83,51 @@ export default function PacientesScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }, isDesktop && styles.containerDesktop]}>
+      <Searchbar
+        placeholder="Buscar por nombre, raza, tutor..."
+        onChangeText={setSearchQuery}
+        value={searchQuery}
+        style={[styles.searchbar, { backgroundColor: colors.surface }]}
+        inputStyle={styles.searchInput}
+        icon="magnify"
+      />
+
+      <View style={styles.filterRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {(['all', 'dog', 'cat'] as const).map(sp => (
+            <Chip
+              key={sp}
+              selected={selectedSpecies === sp}
+              onPress={() => setSelectedSpecies(sp)}
+              style={[styles.speciesChip, { backgroundColor: colors.surfaceVariant }, selectedSpecies === sp && { backgroundColor: colors.primary }]}
+              textStyle={selectedSpecies === sp ? { color: '#FFFFFF' } : undefined}
+            >
+              {sp === 'all' ? 'Todos' : sp === 'dog' ? 'Perros' : 'Gatos'}
+            </Chip>
+          ))}
+        </ScrollView>
+      </View>
+
+      <View style={styles.resultsCount}>
+        <Text variant="bodySmall" style={{ color: colors.textSecondary }}>
+          {loading ? 'Cargando...' : `${filteredPets.length} paciente${filteredPets.length !== 1 ? 's' : ''}`}
+        </Text>
+      </View>
+
       <FlatList
-        data={pets}
+        data={filteredPets}
         renderItem={renderPetCard}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, isDesktop && styles.listContentDesktop]}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <MaterialCommunityIcons name="dog" size={64} color={colors.textLight} />
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>No tienes pacientes registrados</Text>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              {searchQuery ? 'No se encontraron pacientes' : 'No tienes pacientes registrados'}
+            </Text>
             <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-              Registra a tu paciente para llevar un seguimiento de su historial médico
+              {searchQuery ? 'Intenta con otros términos de búsqueda' : 'Registra a tu paciente para llevar un seguimiento de su historial médico'}
             </Text>
           </View>
         }
@@ -94,13 +139,37 @@ export default function PacientesScreen() {
         onPress={() => router.push('/(drawer)/add-paciente')}
         color="#FFFFFF"
       />
+
+      <Portal>
+        <Dialog visible={!!deleteTarget} onDismiss={() => setDeleteTarget(null)}>
+          <Dialog.Icon icon="alert-circle-outline" />
+          <Dialog.Title style={{ textAlign: 'center' }}>Eliminar paciente</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ textAlign: 'center' }}>
+              ¿Estás seguro de eliminar a <Text style={{ fontWeight: '700' }}>{deleteTarget?.name}</Text>?
+              Se borrará todo su historial médico.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteTarget(null)}>Cancelar</Button>
+            <Button onPress={confirmDelete} textColor={colors.error}>Eliminar</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  listContent: { padding: 10, paddingBottom: 80 },
+  containerDesktop: { alignItems: 'center' },
+  searchbar: { margin: 12, marginBottom: 4, elevation: 2, borderRadius: 12, maxWidth: 800, width: '100%', alignSelf: 'center' },
+  searchInput: { fontSize: 15 },
+  filterRow: { paddingHorizontal: 12, marginBottom: 4 },
+  speciesChip: { marginRight: 6 },
+  resultsCount: { paddingHorizontal: 16, paddingBottom: 4 },
+  listContent: { padding: 12, paddingBottom: 80 },
+  listContentDesktop: { maxWidth: 800, width: '100%', alignSelf: 'center' },
   petCard: {
     marginBottom: 8,
     borderRadius: 12,
@@ -114,6 +183,7 @@ const styles = StyleSheet.create({
   petInfo: { flex: 1, marginLeft: 12 },
   petName: { fontWeight: '700' },
   petBreed: { marginTop: 2 },
+  petTutor: { marginTop: 2 },
   petWeight: { marginTop: 2 },
   petActions: { flexDirection: 'row' },
   actionButton: { padding: 8 },
