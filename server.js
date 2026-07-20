@@ -72,7 +72,7 @@ app.post('/auth/login', async (req, res) => {
     res.json({
       data: {
         token,
-        user: { id: user.id, rut: user.rut, name: user.name, email: user.email, role: user.role },
+        user: { id: user.id, rut: user.rut, name: user.name, email: user.email, role: user.role, theme_preference: user.theme_preference || 'light' },
       },
     });
   } catch (err) {
@@ -82,7 +82,7 @@ app.post('/auth/login', async (req, res) => {
 
 app.get('/auth/me', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, rut, name, email, role, created_at FROM users WHERE id = $1', [req.userId]);
+    const result = await pool.query('SELECT id, rut, name, email, role, theme_preference, created_at FROM users WHERE id = $1', [req.userId]);
     if (!result.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
     res.json({ data: result.rows[0] });
   } catch (err) {

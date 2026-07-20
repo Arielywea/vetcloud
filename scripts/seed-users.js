@@ -11,7 +11,7 @@ const pool = new Pool({
   await pool.query('DELETE FROM users');
   await pool.query(
     'INSERT INTO users (rut, name, password_hash, role) VALUES ($1,$2,$3,$4), ($5,$6,$7,$8)',
-    ['21293992-7', 'Ariel', hash, 'admin', '21392885-6', 'Novia', hash, 'admin']
+    ['21293992-7', 'Ariel', hash, 'admin', '21392885-6', 'Paz Quintana', hash, 'admin']
   );
   const r = await pool.query('SELECT rut, name, role FROM users');
   console.log('Users created:', JSON.stringify(r.rows));

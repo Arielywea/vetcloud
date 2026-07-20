@@ -1,3 +1,6 @@
+// ─────────────────────────────────────────────────────────
+// Light Theme (Paz — purple + beige background)
+// ─────────────────────────────────────────────────────────
 export const APP_COLORS = {
   primary: '#6741D9',
   primaryLight: '#845EF7',
@@ -5,7 +8,7 @@ export const APP_COLORS = {
   primaryContainer: '#EDE9FE',
   accent: '#00C853',
   success: '#00C853',
-  background: '#F5F7FA',
+  background: '#F5F0EB',
   surface: '#FFFFFF',
   surfaceVariant: '#E8EDF2',
   text: '#1A1D21',
@@ -18,6 +21,33 @@ export const APP_COLORS = {
   disabled: '#C4C8CF',
   cardShadow: '#000000',
 };
+
+// ─────────────────────────────────────────────────────────
+// Dark Theme (Ariel — NERV Operations Console aesthetic)
+// Adapted from nerv-ui SKILL.md design tokens
+// ─────────────────────────────────────────────────────────
+export const APP_COLORS_DARK = {
+  primary: '#FF9830',
+  primaryLight: '#FFCC50',
+  primaryDark: '#C87020',
+  primaryContainer: '#2A2018',
+  accent: '#50FF50',
+  success: '#50FF50',
+  background: '#000000',
+  surface: '#0C0C0A',
+  surfaceVariant: '#1A1A18',
+  text: '#D8D8D0',
+  textSecondary: '#888880',
+  textLight: '#585850',
+  error: '#FF3030',
+  warning: '#FFCC50',
+  info: '#20F0FF',
+  border: '#2A2A28',
+  disabled: '#444440',
+  cardShadow: '#000000',
+};
+
+export type AppColors = typeof APP_COLORS;
 
 export const CATEGORY_COLORS: Record<string, string> = {
   infectious: '#E53935',

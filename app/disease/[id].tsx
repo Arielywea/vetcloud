@@ -6,13 +6,15 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDisease, useFavorites } from '../../hooks/useDirectus';
 import { DirectusDisease } from '../../services/directus';
 import { DISEASE_CATEGORIES, SPECIES_INFO } from '../../constants/diseases';
-import { APP_COLORS, CATEGORY_COLORS, SEVERITY_COLORS, SEVERITY_LABELS, PROGNOSIS_LABELS } from '../../constants/colors';
+import { CATEGORY_COLORS, SEVERITY_COLORS, SEVERITY_LABELS, PROGNOSIS_LABELS } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function DiseaseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { disease, loading, updateDisease } = useDisease(id || null);
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<'signs' | 'diagnosis' | 'treatment' | 'prevention'>('signs');
   const [editVisible, setEditVisible] = useState(false);
   const [editData, setEditData] = useState<Partial<DirectusDisease>>({});
@@ -69,6 +71,49 @@ export default function DiseaseDetailScreen() {
     }));
   };
 
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    content: { paddingBottom: 32 },
+    loadingText: { textAlign: 'center', marginTop: 40, color: colors.textSecondary },
+    headerCard: { margin: 12, borderRadius: 12, backgroundColor: colors.surface },
+    headerTop: { marginBottom: 8 },
+    headerTitle: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+    headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    editBtn: { padding: 4 },
+    diseaseName: { fontWeight: '800', color: colors.text, flex: 1, marginRight: 8 },
+    scientificName: { fontStyle: 'italic', color: colors.textSecondary, marginTop: 4 },
+    badgeRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 6 },
+    badge: { color: '#FFFFFF', fontSize: 11, paddingHorizontal: 8 },
+    prognosisRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border },
+    prognosisLabel: { color: colors.textSecondary, marginLeft: 4 },
+    prognosisValue: { fontWeight: '600' },
+    sectionCard: { marginHorizontal: 12, marginBottom: 12, borderRadius: 12, backgroundColor: colors.surface },
+    sectionTitle: { fontWeight: '700', color: colors.text, marginBottom: 12, fontSize: 16 },
+    description: { color: colors.text, lineHeight: 22 },
+    tabBar: { flexDirection: 'row', marginHorizontal: 12, marginBottom: 12, backgroundColor: colors.surface, borderRadius: 12, padding: 4 },
+    tab: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 8 },
+    activeTab: { backgroundColor: colors.primaryContainer || '#E0F2F1' },
+    tabLabel: { fontSize: 11, color: colors.textSecondary, marginTop: 4 },
+    activeTabLabel: { color: colors.primary, fontWeight: '600' },
+    listItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10, gap: 10 },
+    listItemText: { flex: 1, color: colors.text, lineHeight: 20 },
+    emergencyCard: { borderColor: colors.error, borderWidth: 1, backgroundColor: '#FFF5F5' },
+    emergencyHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
+    emergencyTitle: { fontWeight: '700', color: colors.error },
+    emergencyText: { color: colors.text, lineHeight: 20 },
+    reference: { color: colors.textSecondary, fontSize: 12, marginBottom: 4, lineHeight: 18 },
+    modalContent: { backgroundColor: colors.surface, margin: 16, borderRadius: 16, padding: 20, maxHeight: '90%' },
+    modalTitle: { fontWeight: '700', color: colors.text, marginBottom: 16 },
+    editField: { marginBottom: 12 },
+    editLabel: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 6 },
+    editInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, fontSize: 14 },
+    editTextarea: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, fontSize: 14, minHeight: 60, textAlignVertical: 'top' },
+    editSection: { fontSize: 15, fontWeight: '700', color: colors.primary, marginTop: 16, marginBottom: 8, paddingBottom: 6, borderBottomWidth: 2, borderBottomColor: colors.primaryContainer || '#E0F2F1' },
+    modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border },
+    cancelBtn: { borderColor: colors.border },
+    saveBtn: { backgroundColor: colors.primary },
+  });
+
   if (loading) {
     return (
       <View style={styles.container}>
@@ -120,13 +165,13 @@ export default function DiseaseDetailScreen() {
               <Text variant="headlineSmall" style={styles.diseaseName}>{disease.name}</Text>
               <View style={styles.headerActions}>
                 <TouchableOpacity onPress={openEdit} style={styles.editBtn}>
-                  <MaterialCommunityIcons name="pencil" size={22} color={APP_COLORS.primary} />
+                  <MaterialCommunityIcons name="pencil" size={22} color={colors.primary} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => toggleFavorite(disease.id)}>
                   <MaterialCommunityIcons
                     name={favorite ? 'heart' : 'heart-outline'}
                     size={28}
-                    color={favorite ? APP_COLORS.error : APP_COLORS.textSecondary}
+                    color={favorite ? colors.error : colors.textSecondary}
                   />
                 </TouchableOpacity>
               </View>
@@ -135,26 +180,26 @@ export default function DiseaseDetailScreen() {
           </View>
 
           <View style={styles.badgeRow}>
-            <Badge style={[styles.badge, { backgroundColor: SPECIES_INFO[disease.species as keyof typeof SPECIES_INFO]?.color || APP_COLORS.textSecondary }]}>
+            <Badge style={[styles.badge, { backgroundColor: SPECIES_INFO[disease.species as keyof typeof SPECIES_INFO]?.color || colors.textSecondary }]}>
               {SPECIES_INFO[disease.species as keyof typeof SPECIES_INFO]?.label || disease.species}
             </Badge>
-            <Badge style={[styles.badge, { backgroundColor: CATEGORY_COLORS[disease.category] || APP_COLORS.textSecondary }]}>
+            <Badge style={[styles.badge, { backgroundColor: CATEGORY_COLORS[disease.category] || colors.textSecondary }]}>
               {DISEASE_CATEGORIES[disease.category as keyof typeof DISEASE_CATEGORIES]?.label || disease.category}
             </Badge>
-            <Badge style={[styles.badge, { backgroundColor: SEVERITY_COLORS[disease.severity as keyof typeof SEVERITY_COLORS] || APP_COLORS.textSecondary }]}>
+            <Badge style={[styles.badge, { backgroundColor: SEVERITY_COLORS[disease.severity as keyof typeof SEVERITY_COLORS] || colors.textSecondary }]}>
               {SEVERITY_LABELS[disease.severity as keyof typeof SEVERITY_LABELS] || disease.severity}
             </Badge>
             {disease.is_zoonotic && (
-              <Badge style={[styles.badge, { backgroundColor: APP_COLORS.error }]}>
+              <Badge style={[styles.badge, { backgroundColor: colors.error }]}>
                 Zoonótica
               </Badge>
             )}
           </View>
 
           <View style={styles.prognosisRow}>
-            <MaterialCommunityIcons name="chart-line-variant" size={16} color={APP_COLORS.textSecondary} />
+            <MaterialCommunityIcons name="chart-line-variant" size={16} color={colors.textSecondary} />
             <Text style={styles.prognosisLabel}>Pronóstico: </Text>
-            <Text style={[styles.prognosisValue, { color: APP_COLORS.primary }]}>
+            <Text style={[styles.prognosisValue, { color: colors.primary }]}>
               {PROGNOSIS_LABELS[disease.prognosis as keyof typeof PROGNOSIS_LABELS] || disease.prognosis}
             </Text>
           </View>
@@ -180,7 +225,7 @@ export default function DiseaseDetailScreen() {
             <MaterialCommunityIcons
               name={tab.icon}
               size={20}
-              color={activeTab === tab.key ? APP_COLORS.primary : APP_COLORS.textSecondary}
+              color={activeTab === tab.key ? colors.primary : colors.textSecondary}
             />
             <Text style={[styles.tabLabel, activeTab === tab.key && styles.activeTabLabel]}>
               {tab.label}
@@ -199,7 +244,7 @@ export default function DiseaseDetailScreen() {
                 <MaterialCommunityIcons
                   name="alert-circle-outline"
                   size={16}
-                  color={SEVERITY_COLORS[disease.severity as keyof typeof SEVERITY_COLORS] || APP_COLORS.textSecondary}
+                  color={SEVERITY_COLORS[disease.severity as keyof typeof SEVERITY_COLORS] || colors.textSecondary}
                 />
                 <Text style={styles.listItemText}>{sign}</Text>
               </View>
@@ -223,7 +268,7 @@ export default function DiseaseDetailScreen() {
                 <Text variant="titleSmall" style={styles.sectionTitle}>Exámenes de Laboratorio</Text>
                 {diagnosis.labTests.map((test: string, index: number) => (
                   <View key={index} style={styles.listItem}>
-                    <MaterialCommunityIcons name="flask" size={16} color={APP_COLORS.info} />
+                    <MaterialCommunityIcons name="flask" size={16} color={colors.info} />
                     <Text style={styles.listItemText}>{test}</Text>
                   </View>
                 ))}
@@ -237,7 +282,7 @@ export default function DiseaseDetailScreen() {
                 <Text variant="titleSmall" style={styles.sectionTitle}>Imagenología</Text>
                 {diagnosis.imaging.map((img: string, index: number) => (
                   <View key={index} style={styles.listItem}>
-                    <MaterialCommunityIcons name="camera" size={16} color={APP_COLORS.warning} />
+                    <MaterialCommunityIcons name="camera" size={16} color={colors.warning} />
                     <Text style={styles.listItemText}>{img}</Text>
                   </View>
                 ))}
@@ -251,7 +296,7 @@ export default function DiseaseDetailScreen() {
                 <Text variant="titleSmall" style={styles.sectionTitle}>Diagnóstico Diferencial</Text>
                 {diagnosis.differentialDiagnosis.map((dd: string, index: number) => (
                   <View key={index} style={styles.listItem}>
-                    <MaterialCommunityIcons name="help-circle-outline" size={16} color={APP_COLORS.textSecondary} />
+                    <MaterialCommunityIcons name="help-circle-outline" size={16} color={colors.textSecondary} />
                     <Text style={styles.listItemText}>{dd}</Text>
                   </View>
                 ))}
@@ -269,7 +314,7 @@ export default function DiseaseDetailScreen() {
                 <Text variant="titleSmall" style={styles.sectionTitle}>Tratamiento Primera Línea</Text>
                 {treatment.firstLine.map((tx: string, index: number) => (
                   <View key={index} style={styles.listItem}>
-                    <MaterialCommunityIcons name="check-circle" size={16} color={APP_COLORS.success} />
+                    <MaterialCommunityIcons name="check-circle" size={16} color={colors.success} />
                     <Text style={styles.listItemText}>{tx}</Text>
                   </View>
                 ))}
@@ -283,7 +328,7 @@ export default function DiseaseDetailScreen() {
                 <Text variant="titleSmall" style={styles.sectionTitle}>Tratamiento Segunda Línea</Text>
                 {treatment.secondLine.map((tx: string, index: number) => (
                   <View key={index} style={styles.listItem}>
-                    <MaterialCommunityIcons name="circle-outline" size={16} color={APP_COLORS.info} />
+                    <MaterialCommunityIcons name="circle-outline" size={16} color={colors.info} />
                     <Text style={styles.listItemText}>{tx}</Text>
                   </View>
                 ))}
@@ -295,7 +340,7 @@ export default function DiseaseDetailScreen() {
             <Card style={[styles.sectionCard, styles.emergencyCard]}>
               <Card.Content>
                 <View style={styles.emergencyHeader}>
-                  <MaterialCommunityIcons name="alert" size={20} color={APP_COLORS.error} />
+                  <MaterialCommunityIcons name="alert" size={20} color={colors.error} />
                   <Text variant="titleSmall" style={styles.emergencyTitle}>Emergencia</Text>
                 </View>
                 <Text style={styles.emergencyText}>{treatment.emergency}</Text>
@@ -320,7 +365,7 @@ export default function DiseaseDetailScreen() {
             <Text variant="titleSmall" style={styles.sectionTitle}>Medidas Preventivas</Text>
             {disease.prevention.map((prev: string, index: number) => (
               <View key={index} style={styles.listItem}>
-                <MaterialCommunityIcons name="shield-check" size={16} color={APP_COLORS.success} />
+                <MaterialCommunityIcons name="shield-check" size={16} color={colors.success} />
                 <Text style={styles.listItemText}>{prev}</Text>
               </View>
             ))}
@@ -401,46 +446,3 @@ export default function DiseaseDetailScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: APP_COLORS.background },
-  content: { paddingBottom: 32 },
-  loadingText: { textAlign: 'center', marginTop: 40, color: APP_COLORS.textSecondary },
-  headerCard: { margin: 12, borderRadius: 12, backgroundColor: APP_COLORS.surface },
-  headerTop: { marginBottom: 8 },
-  headerTitle: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  editBtn: { padding: 4 },
-  diseaseName: { fontWeight: '800', color: APP_COLORS.text, flex: 1, marginRight: 8 },
-  scientificName: { fontStyle: 'italic', color: APP_COLORS.textSecondary, marginTop: 4 },
-  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 6 },
-  badge: { color: '#FFFFFF', fontSize: 11, paddingHorizontal: 8 },
-  prognosisRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: APP_COLORS.border },
-  prognosisLabel: { color: APP_COLORS.textSecondary, marginLeft: 4 },
-  prognosisValue: { fontWeight: '600' },
-  sectionCard: { marginHorizontal: 12, marginBottom: 12, borderRadius: 12, backgroundColor: APP_COLORS.surface },
-  sectionTitle: { fontWeight: '700', color: APP_COLORS.text, marginBottom: 12, fontSize: 16 },
-  description: { color: APP_COLORS.text, lineHeight: 22 },
-  tabBar: { flexDirection: 'row', marginHorizontal: 12, marginBottom: 12, backgroundColor: APP_COLORS.surface, borderRadius: 12, padding: 4 },
-  tab: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 8 },
-  activeTab: { backgroundColor: APP_COLORS.primaryContainer || '#E0F2F1' },
-  tabLabel: { fontSize: 11, color: APP_COLORS.textSecondary, marginTop: 4 },
-  activeTabLabel: { color: APP_COLORS.primary, fontWeight: '600' },
-  listItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10, gap: 10 },
-  listItemText: { flex: 1, color: APP_COLORS.text, lineHeight: 20 },
-  emergencyCard: { borderColor: APP_COLORS.error, borderWidth: 1, backgroundColor: '#FFF5F5' },
-  emergencyHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
-  emergencyTitle: { fontWeight: '700', color: APP_COLORS.error },
-  emergencyText: { color: APP_COLORS.text, lineHeight: 20 },
-  reference: { color: APP_COLORS.textSecondary, fontSize: 12, marginBottom: 4, lineHeight: 18 },
-  modalContent: { backgroundColor: APP_COLORS.surface, margin: 16, borderRadius: 16, padding: 20, maxHeight: '90%' },
-  modalTitle: { fontWeight: '700', color: APP_COLORS.text, marginBottom: 16 },
-  editField: { marginBottom: 12 },
-  editLabel: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 6 },
-  editInput: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, fontSize: 14 },
-  editTextarea: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, fontSize: 14, minHeight: 60, textAlignVertical: 'top' },
-  editSection: { fontSize: 15, fontWeight: '700', color: APP_COLORS.primary, marginTop: 16, marginBottom: 8, paddingBottom: 6, borderBottomWidth: 2, borderBottomColor: '#E0F2F1' },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#eee' },
-  cancelBtn: { borderColor: '#ddd' },
-  saveBtn: { backgroundColor: APP_COLORS.primary },
-});

@@ -62,7 +62,7 @@ export interface Appointment {
   tutor_phone: string | null;
   start_time: string;
   end_time: string | null;
-  appointment_type: 'consulta' | 'vacuna' | 'cirugia' | 'control';
+  appointment_type: 'consulta' | 'vacuna' | 'cirugia' | 'control' | 'terreno';
   description: string | null;
   created_at: string;
 }
