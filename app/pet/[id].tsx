@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { View, ScrollView, StyleSheet, Alert } from 'react-native';
-import { Text, Card, Button, TextInput, Portal, Modal } from 'react-native-paper';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { Text, Card, Button, TextInput, Portal, Modal, Dialog } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { usePet, useClinicalRecords, usePrescriptions } from '../../hooks/useDirectus';
@@ -24,6 +24,8 @@ export default function PetDetailScreen() {
   const [selectedRecord, setSelectedRecord] = useState<ClinicalRecord | null>(null);
   const [selectedRx, setSelectedRx] = useState<Prescription | null>(null);
   const [rxLinkedRecordId, setRxLinkedRecordId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [errorDialog, setErrorDialog] = useState<string | null>(null);
 
   // Clinical record form
   const [recordType, setRecordType] = useState<ClinicalRecord['record_type']>('consulta');
@@ -64,10 +66,11 @@ export default function PetDetailScreen() {
 
   const handleAddRecord = async () => {
     if (!recordNotes.trim()) {
-      Alert.alert('Error', 'Las notas son obligatorias');
+      setErrorDialog('Las notas son obligatorias');
       return;
     }
     if (!id) return;
+    setSaving(true);
     try {
       await addRecord({
         pet_id: id,
@@ -86,7 +89,9 @@ export default function PetDetailScreen() {
       setRecordAnamnesis('');
       setShowRecordModal(false);
     } catch (error) {
-      Alert.alert('Error', 'No se pudo guardar el registro');
+      setErrorDialog('No se pudo guardar el registro');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -100,10 +105,11 @@ export default function PetDetailScreen() {
 
   const handleSaveRx = async () => {
     if (!rxBody.trim()) {
-      Alert.alert('Error', 'El cuerpo de la receta es obligatorio');
+      setErrorDialog('El cuerpo de la receta es obligatorio');
       return;
     }
     if (!id) return;
+    setSaving(true);
     try {
       await addPrescription({
         pet_id: id,
@@ -118,16 +124,17 @@ export default function PetDetailScreen() {
       });
       setShowRxModal(false);
     } catch (error) {
-      Alert.alert('Error', 'No se pudo guardar la receta');
+      setErrorDialog('No se pudo guardar la receta');
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleSendRxEmail = async (rx: Prescription) => {
     try {
       await sendEmail(rx.id);
-      Alert.alert('Éxito', 'Receta enviada por correo al tutor');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'No se pudo enviar el correo');
+      setErrorDialog(error.message || 'No se pudo enviar el correo');
     }
   };
 
@@ -277,7 +284,7 @@ export default function PetDetailScreen() {
             <TextInput label="Peso (kg, opcional)" value={recordWeight} onChangeText={setRecordWeight} mode="outlined" style={styles.input} keyboardType="numeric" />
             <TextInput label="Anamnesis / Motivo de consulta" value={recordAnamnesis} onChangeText={setRecordAnamnesis} mode="outlined" multiline numberOfLines={3} style={styles.input} />
             <TextInput label="Notas *" value={recordNotes} onChangeText={setRecordNotes} mode="outlined" multiline numberOfLines={4} style={styles.input} />
-            <Button mode="contained" onPress={handleAddRecord} style={styles.saveButton}>Guardar Registro</Button>
+            <Button mode="contained" onPress={handleAddRecord} style={styles.saveButton} loading={saving} disabled={saving}>Guardar Registro</Button>
           </ScrollView>
         </Modal>
       </Portal>
@@ -364,10 +371,10 @@ export default function PetDetailScreen() {
             <TextInput label="Receta *" value={rxBody} onChangeText={setRxBody} mode="outlined" multiline numberOfLines={10} style={styles.input} placeholder={"Uso Veterinario\nRimadyl (Carprofeno en comprimidos 100 mg):\nDar vía oral 1 comprimido cada 24 horas x 7 días.\n\nUso humano\nMetamizol sodico 300 mg (Comprimido):\nDar vía oral 2 comprimidos cada 12 horas x 5 días."} />
 
             <View style={styles.rxActionRow}>
-              <Button mode="contained" onPress={handleSaveRx} style={{ flex: 1, marginRight: 8 }}>
+              <Button mode="contained" onPress={handleSaveRx} style={{ flex: 1, marginRight: 8 }} loading={saving} disabled={saving}>
                 Guardar
               </Button>
-              <Button mode="outlined" onPress={() => { handleSaveRx().then(() => { if (id) { const latest = prescriptions[0]; if (latest) handleSendRxEmail(latest); } }); }} style={{ flex: 1 }}>
+              <Button mode="outlined" onPress={async () => { await handleSaveRx(); if (id && prescriptions.length > 0) { handleSendRxEmail(prescriptions[0]); } }} style={{ flex: 1 }} disabled={saving}>
                 Guardar + Enviar
               </Button>
             </View>
@@ -414,6 +421,20 @@ export default function PetDetailScreen() {
             </ScrollView>
           )}
         </Modal>
+      </Portal>
+
+      {/* Error Dialog */}
+      <Portal>
+        <Dialog visible={!!errorDialog} onDismiss={() => setErrorDialog(null)}>
+          <Dialog.Icon icon="alert-circle-outline" />
+          <Dialog.Title style={{ textAlign: 'center' }}>Error</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ textAlign: 'center' }}>{errorDialog}</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setErrorDialog(null)}>OK</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </ScrollView>
   );
