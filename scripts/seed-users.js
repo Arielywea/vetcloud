@@ -2,8 +2,10 @@ const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
 
 const hash = bcrypt.hashSync('1245', 10);
-const connStr = 'postgresql://neondb_owner:npg_fwsiId68AqXY@ep-aged-river-ac7edlxd.sa-east-1.aws.neon.tech/neondb?sslmode=require';
-const pool = new Pool({ connectionString: connStr, ssl: { rejectUnauthorized: false } });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
 (async () => {
   await pool.query('DELETE FROM users');
