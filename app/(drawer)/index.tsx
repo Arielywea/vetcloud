@@ -4,7 +4,7 @@ import { Text, Card } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
-import { usePets, useAppointments, useNotes, useFavorites, useClinicalRecords } from '../../hooks/useDirectus';
+import { usePets, useAppointments, useNotes, useFavorites, useClinicalRecords, useInventory } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import TaskWidget from '../../components/TaskWidget';
 import AgendaWidget from '../../components/AgendaWidget';
@@ -18,6 +18,7 @@ export default function DashboardScreen() {
   const { notes } = useNotes();
   const { favorites } = useFavorites();
   const { records: clinicalRecords } = useClinicalRecords();
+  const { lowStockItems } = useInventory();
 
   const recentRecords = useMemo(() => {
     return [...clinicalRecords]
@@ -39,6 +40,7 @@ export default function DashboardScreen() {
     { label: 'Agenda', icon: 'calendar-clock', color: colors.info, route: '/(drawer)/agenda' },
     { label: 'Nuevo Paciente', icon: 'plus-circle', color: colors.success, route: '/(drawer)/add-paciente' },
     { label: 'Notas', icon: 'note-text', color: colors.warning, route: '/(drawer)/notes' },
+    { label: 'Inventario', icon: 'package-variant', color: colors.info, route: '/(drawer)/inventario' },
   ];
 
   const RECORD_TYPE_CONFIG: Record<string, { icon: string; color: string }> = {
@@ -80,7 +82,7 @@ export default function DashboardScreen() {
       </View>
 
       {/* Task Widget */}
-      <TaskWidget appointments={appointments} clinicalRecords={clinicalRecords} />
+      <TaskWidget appointments={appointments} clinicalRecords={clinicalRecords} lowStockItems={lowStockItems} />
 
       {/* Agenda Widget */}
       <AgendaWidget appointments={appointments} />

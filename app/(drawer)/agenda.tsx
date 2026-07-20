@@ -7,12 +7,12 @@ import { useAppointments } from '../../hooks/useDirectus';
 import { Appointment } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 
-const TYPE_CONFIG: Record<string, { icon: string; color: string; bg: string }> = {
-  consulta: { icon: 'stethoscope', color: '#1976D2', bg: '#E3F2FD' },
-  vacuna: { icon: 'needle', color: '#43A047', bg: '#E8F5E9' },
-  cirugia: { icon: 'scissors-cutting', color: '#E53935', bg: '#FCE4EC' },
-  control: { icon: 'clipboard-check', color: '#F57C00', bg: '#FFF3E0' },
-  terreno: { icon: 'tractor', color: '#8D6E63', bg: '#EFEBE9' },
+const TYPE_CONFIG: Record<string, { icon: string; color: string }> = {
+  consulta: { icon: 'stethoscope', color: '#1976D2' },
+  vacuna: { icon: 'needle', color: '#43A047' },
+  cirugia: { icon: 'scissors-cutting', color: '#E53935' },
+  control: { icon: 'clipboard-check', color: '#F57C00' },
+  terreno: { icon: 'tractor', color: '#8D6E63' },
 };
 
 function formatTime(dateStr: string): string {
@@ -102,7 +102,7 @@ export default function AgendaScreen() {
               <Card key={appt.id} style={[styles.apptCard, { backgroundColor: colors.surface, borderLeftColor: config.color, borderLeftWidth: 4 }]}>
                 <Card.Content>
                   <View style={styles.apptHeader}>
-                    <View style={[styles.apptIcon, { backgroundColor: config.bg }]}>
+                    <View style={[styles.apptIcon, { backgroundColor: config.color + '18' }]}>
                       <MaterialCommunityIcons name={config.icon as any} size={18} color={config.color} />
                     </View>
                     <View style={styles.apptInfo}>

@@ -97,7 +97,7 @@ export default function DiseaseDetailScreen() {
     activeTabLabel: { color: colors.primary, fontWeight: '600' },
     listItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10, gap: 10 },
     listItemText: { flex: 1, color: colors.text, lineHeight: 20 },
-    emergencyCard: { borderColor: colors.error, borderWidth: 1, backgroundColor: '#FFF5F5' },
+    emergencyCard: { borderColor: colors.error, borderWidth: 1, backgroundColor: colors.error + '10' },
     emergencyHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
     emergencyTitle: { fontWeight: '700', color: colors.error },
     emergencyText: { color: colors.text, lineHeight: 20 },

@@ -51,6 +51,23 @@ export interface DirectusPet {
   clinic_location: string | null;
   reproductive_status: string;
   anamnesis: string | null;
+  id_number: string | null;
+  sex: 'macho' | 'hembra' | null;
+  temperament: string[];
+  habitat: string | null;
+  habitat_other: string | null;
+  food: string | null;
+  food_frequency: string | null;
+  water_consumption: string | null;
+  urination: string | null;
+  lives_with_other_animals: string | null;
+  vaccines: string | null;
+  deworming: string | null;
+  flea_treatment: string | null;
+  last_heat: string | null;
+  surgeries: string | null;
+  other_diseases: string | null;
+  medications: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -107,6 +124,18 @@ export interface DirectusFavorite {
   disease_id: DirectusDisease | string;
   category: 'frequently_used' | 'important' | 'study' | 'emergency';
   added_at: string;
+}
+
+export interface InventoryItem {
+  id: string;
+  user_id: string;
+  name: string;
+  category: string;
+  current_stock: number;
+  min_stock: number;
+  unit: string;
+  last_restocked: string | null;
+  created_at: string;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -209,6 +238,13 @@ export const api = {
     create: (data: any) => apiPost('/items/clinical_records', data),
     update: (id: string, data: any) => apiPatch(`/items/clinical_records/${id}`, data),
     delete: (id: string) => apiDelete(`/items/clinical_records/${id}`),
+  },
+  inventory: {
+    list: () => apiGet('/items/inventory'),
+    lowStock: () => apiGet('/items/inventory/low-stock'),
+    create: (data: any) => apiPost('/items/inventory', data),
+    update: (id: string, data: any) => apiPatch(`/items/inventory/${id}`, data),
+    delete: (id: string) => apiDelete(`/items/inventory/${id}`),
   },
 };
 

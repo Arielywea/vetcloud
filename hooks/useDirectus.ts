@@ -8,6 +8,7 @@ import {
   DirectusFavorite,
   Appointment,
   ClinicalRecord,
+  InventoryItem,
 } from '../services/directus';
 
 // ─────────────────────────────────────────────────────────
@@ -387,4 +388,52 @@ export function useClinicalRecords(petId?: string, recordType?: string) {
   };
 
   return { records, loading, error, addRecord, updateRecord, removeRecord, refresh: fetchRecords };
+}
+
+// ─────────────────────────────────────────────────────────
+// Hook: Inventory
+// ─────────────────────────────────────────────────────────
+
+export function useInventory() {
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchItems = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await api.inventory.list();
+      setItems(result as InventoryItem[]);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
+
+  const lowStockItems = items.filter(i => i.current_stock <= i.min_stock);
+
+  const addItem = async (item: Omit<InventoryItem, 'id' | 'user_id' | 'created_at'>) => {
+    const result = await api.inventory.create(item);
+    await fetchItems();
+    return result;
+  };
+
+  const updateItem = async (id: string, data: Partial<InventoryItem>) => {
+    const result = await api.inventory.update(id, data);
+    await fetchItems();
+    return result;
+  };
+
+  const removeItem = async (id: string) => {
+    await api.inventory.delete(id);
+    await fetchItems();
+  };
+
+  return { items, lowStockItems, loading, error, addItem, updateItem, removeItem, refresh: fetchItems };
 }
