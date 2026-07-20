@@ -742,12 +742,13 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
 
     const speciesLabel = rx.species === 'dog' ? 'Canino' : 'Felino';
     const sexLabel = rx.sex === 'macho' ? 'Macho' : rx.sex === 'hembra' ? 'Hembra' : 'N/D';
-    const birthParts = rx.birth_date ? rx.birth_date.split('/') : null;
     let age = 'N/D';
-    if (birthParts && birthParts.length === 3) {
-      const bd = new Date(parseInt(birthParts[2]), parseInt(birthParts[1]) - 1, parseInt(birthParts[0]));
-      const yrs = Math.floor((Date.now() - bd.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-      age = `${yrs} año${yrs !== 1 ? 's' : ''}`;
+    if (rx.birth_date) {
+      const bd = new Date(rx.birth_date);
+      if (!isNaN(bd.getTime())) {
+        const yrs = Math.floor((Date.now() - bd.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+        age = `${yrs} año${yrs !== 1 ? 's' : ''}`;
+      }
     }
 
     const htmlBody = `
