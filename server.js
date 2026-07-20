@@ -629,6 +629,182 @@ app.delete('/items/inventory/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// ─── PRESCRIPTIONS ─────────────────────────────────────
+app.get('/items/prescriptions', authMiddleware, async (req, res) => {
+  try {
+    let query = 'SELECT pr.* FROM prescriptions pr JOIN pets p ON p.id = pr.pet_id WHERE p.user_id = $1';
+    const params = [req.userId];
+    if (req.query.pet_id) {
+      params.push(req.query.pet_id);
+      query += ` AND pr.pet_id = $${params.length}`;
+    }
+    query += ' ORDER BY pr.issued_at DESC';
+    const result = await pool.query(query, params);
+    res.json({ data: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/items/prescriptions/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT pr.* FROM prescriptions pr JOIN pets p ON p.id = pr.pet_id WHERE pr.id = $1 AND p.user_id = $2',
+      [req.params.id, req.userId]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/items/prescriptions', authMiddleware, async (req, res) => {
+  try {
+    const r = req.body;
+    const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [r.pet_id, req.userId]);
+    if (!ownerCheck.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa mascota' });
+    const result = await pool.query(
+      `INSERT INTO prescriptions (pet_id, user_id, clinical_record_id, veterinarian_name, clinic_branch, prescription_body, format, status, issued_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [r.pet_id, req.userId, r.clinical_record_id || null,
+       r.veterinarian_name || null, r.clinic_branch || 'Casa Matriz',
+       r.prescription_body, r.format || 'standard', r.status || 'active',
+       r.issued_at || new Date().toISOString()]
+    );
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/items/prescriptions/:id', authMiddleware, async (req, res) => {
+  try {
+    const r = req.body;
+    const fields = [];
+    const values = [];
+    let idx = 1;
+    for (const [key, val] of Object.entries(r)) {
+      if (key === 'id' || key === 'created_at' || key === 'user_id' || key === 'pet_id') continue;
+      const valStr = typeof val === 'object' ? JSON.stringify(val) : val;
+      fields.push(`${key} = $${idx}`);
+      values.push(valStr);
+      idx++;
+    }
+    if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
+    values.push(req.params.id);
+    values.push(req.userId);
+    const result = await pool.query(
+      `UPDATE prescriptions SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`, values
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/items/prescriptions/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM prescriptions WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    res.json({ data: null });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── PRESCRIPTION EMAIL ───────────────────────────────
+app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT pr.*, p.name AS pet_name, p.species, p.breed, p.weight, p.sex,
+              p.tutor_name, p.email AS tutor_email, p.phone AS tutor_phone,
+              p.birth_date, p.reproductive_status
+       FROM prescriptions pr
+       JOIN pets p ON p.id = pr.pet_id
+       WHERE pr.id = $1 AND pr.user_id = $2`,
+      [req.params.id, req.userId]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Receta no encontrada' });
+
+    const rx = result.rows[0];
+    if (!rx.tutor_email) return res.status(400).json({ error: 'El tutor no tiene correo electrónico registrado' });
+
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      service: process.env.SMTP_SERVICE || 'gmail',
+      auth: {
+        user: process.env.SMTP_EMAIL,
+        pass: process.env.SMTP_PASSWORD,
+      },
+    });
+
+    const speciesLabel = rx.species === 'dog' ? 'Canino' : 'Felino';
+    const sexLabel = rx.sex === 'macho' ? 'Macho' : rx.sex === 'hembra' ? 'Hembra' : 'N/D';
+    const birthParts = rx.birth_date ? rx.birth_date.split('/') : null;
+    let age = 'N/D';
+    if (birthParts && birthParts.length === 3) {
+      const bd = new Date(parseInt(birthParts[2]), parseInt(birthParts[1]) - 1, parseInt(birthParts[0]));
+      const yrs = Math.floor((Date.now() - bd.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+      age = `${yrs} año${yrs !== 1 ? 's' : ''}`;
+    }
+
+    const htmlBody = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; color: #333;">
+  <div style="background: #6741D9; color: white; padding: 20px; border-radius: 12px 12px 0 0; text-align: center;">
+    <h1 style="margin: 0; font-size: 22px;">VetCloud</h1>
+    <p style="margin: 4px 0 0; opacity: 0.9;">Receta Veterinaria</p>
+  </div>
+  <div style="background: #f9f9f9; padding: 20px; border: 1px solid #ddd; border-top: none;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+      <div>
+        <h3 style="margin: 0 0 4px; color: #6741D9;">Paciente</h3>
+        <p style="margin: 0;"><strong>${rx.pet_name}</strong> — ${speciesLabel} ${rx.breed || ''}</p>
+        <p style="margin: 2px 0 0; font-size: 13px;">Edad: ${age} | Sexo: ${sexLabel} | Peso: ${rx.weight || 'N/D'} kg</p>
+        <p style="margin: 2px 0 0; font-size: 13px;">Estado reproductivo: ${rx.reproductive_status || 'N/D'}</p>
+      </div>
+      <div style="text-align: right;">
+        <h3 style="margin: 0 0 4px; color: #6741D9;">Propietario</h3>
+        <p style="margin: 0;"><strong>${rx.tutor_name || 'N/D'}</strong></p>
+        <p style="margin: 2px 0 0; font-size: 13px;">${rx.tutor_email}</p>
+        <p style="margin: 2px 0 0; font-size: 13px;">${rx.tutor_phone || ''}</p>
+      </div>
+    </div>
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 12px 0;">
+    <div style="display: flex; justify-content: space-between; font-size: 13px; color: #666; margin-bottom: 16px;">
+      <span><strong>Sucursal:</strong> ${rx.clinic_branch || 'Casa Matriz'}</span>
+      <span><strong>Prescriptor:</strong> ${rx.veterinarian_name || 'N/D'}</span>
+      <span><strong>Fecha:</strong> ${new Date(rx.issued_at).toLocaleDateString('es-CL')}</span>
+    </div>
+    <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 16px;">
+      <h3 style="margin: 0 0 12px; color: #6741D9;">Receta</h3>
+      <div style="white-space: pre-wrap; line-height: 1.6;">${rx.prescription_body.replace(/\n/g, '<br>')}</div>
+    </div>
+  </div>
+  <div style="text-align: center; padding: 12px; font-size: 11px; color: #999;">
+    Este es un documento electrónico generado por VetCloud
+  </div>
+</body>
+</html>`;
+
+    await transporter.sendMail({
+      from: `"VetCloud" <${process.env.SMTP_EMAIL}>`,
+      to: rx.tutor_email,
+      subject: `Receta veterinaria — ${rx.pet_name}`,
+      html: htmlBody,
+    });
+
+    res.json({ data: { success: true } });
+  } catch (err) {
+    console.error('Email error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── FILE UPLOAD ─────────────────────────────────────────
 app.post('/files', upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file upload' });

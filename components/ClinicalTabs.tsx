@@ -3,7 +3,7 @@ import { ScrollView, TouchableOpacity, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useTheme } from '../contexts/ThemeContext';
 
-export type ClinicalTabType = 'historial' | 'consultas' | 'vacunas' | 'cirugias';
+export type ClinicalTabType = 'historial' | 'consultas' | 'vacunas' | 'cirugias' | 'recetas';
 
 interface ClinicalTabsProps {
   activeTab: ClinicalTabType;
@@ -16,6 +16,7 @@ const TABS: { key: ClinicalTabType; label: string; icon: string }[] = [
   { key: 'consultas', label: 'Consultas', icon: 'stethoscope' },
   { key: 'vacunas', label: 'Vacunas', icon: 'needle' },
   { key: 'cirugias', label: 'Cirugías', icon: 'scissors-cutting' },
+  { key: 'recetas', label: 'Recetas', icon: 'document-text' },
 ];
 
 export default function ClinicalTabs({ activeTab, onTabChange, counts }: ClinicalTabsProps) {
