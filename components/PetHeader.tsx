@@ -77,7 +77,7 @@ export default function PetHeader({ pet }: PetHeaderProps) {
             <Text variant="titleLarge" style={[styles.name, { color: colors.text }]}>{pet.name}</Text>
             <View style={styles.statusBadge}>
               <View style={[styles.statusDot, { backgroundColor: '#43A047' }]} />
-              <Text style={[styles.statusText, { color: '#43A047' }]}>Viva</Text>
+              <Text style={[styles.statusText, { color: '#43A047' }]}>{pet.sex === 'hembra' ? 'Viva' : 'Vivo'}</Text>
             </View>
             <Text style={[styles.clinicLabel, { color: colors.textSecondary }]}>Ficha clínica</Text>
           </View>
