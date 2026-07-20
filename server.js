@@ -16,13 +16,15 @@ const JWT_SECRET = process.env.JWT_SECRET || 'vetcloud-secret-2026';
 const pool = new Pool(
   process.env.DATABASE_URL
     ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }
-    : {
-        host: 'localhost',
-        port: 1245,
-        database: 'vetcloud',
-        user: 'postgres',
-        password: '',
-      }
+    : process.env.VERCEL_ENV
+      ? { connectionString: '$DATABASE_URL', ssl: { rejectUnauthorized: false } }
+      : {
+          host: 'localhost',
+          port: 1245,
+          database: 'vetcloud',
+          user: 'postgres',
+          password: '',
+        }
 );
 
 app.get('/debug/db', (req, res) => {
