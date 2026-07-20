@@ -6,7 +6,6 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { usePets, useAppointments, useNotes, useFavorites, useClinicalRecords, useInventory } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useResponsive } from '../../components/ScreenContainer';
 import TaskWidget from '../../components/TaskWidget';
 import AgendaWidget from '../../components/AgendaWidget';
 
@@ -14,7 +13,6 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { colors, isDark } = useTheme();
-  const { isDesktop } = useResponsive();
   const { pets } = usePets();
   const { appointments } = useAppointments();
   const { notes } = useNotes();
@@ -53,7 +51,7 @@ export default function DashboardScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={[styles.content, isDesktop && styles.contentDesktop]}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* Greeting Card */}
       <Card style={[styles.greetingCard, { backgroundColor: isDark ? colors.surfaceVariant : colors.primary }]}>
         <Card.Content>
@@ -132,7 +130,6 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingBottom: 32 },
-  contentDesktop: { maxWidth: 800, width: '100%', alignSelf: 'center' },
   greetingCard: { margin: 12, borderRadius: 16, elevation: 2 },
   greetingEmoji: { fontSize: 28, marginBottom: 4 },
   greetingText: { fontWeight: '800' },
