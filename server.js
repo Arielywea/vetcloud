@@ -764,39 +764,39 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; color: #333;">
-  <div style="background: #6741D9; color: white; padding: 20px; border-radius: 12px 12px 0 0; text-align: center;">
-    <h1 style="margin: 0; font-size: 22px;">VetCloud</h1>
-    <p style="margin: 4px 0 0; opacity: 0.9;">Receta Veterinaria</p>
+<body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; color: #333; background: #f5f5f5;">
+  <div style="background: linear-gradient(135deg, #FF8F00, #FFA726); color: white; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
+    <h1 style="margin: 0; font-size: 24px; font-weight: 800;">VetCloud</h1>
+    <p style="margin: 4px 0 0; opacity: 0.9; font-size: 14px;">Receta Veterinaria</p>
   </div>
-  <div style="background: #f9f9f9; padding: 20px; border: 1px solid #ddd; border-top: none;">
-    <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
-      <div>
-        <h3 style="margin: 0 0 4px; color: #6741D9;">Paciente</h3>
-        <p style="margin: 0;"><strong>${rx.pet_name}</strong> — ${speciesLabel} ${rx.breed || ''}</p>
-        <p style="margin: 2px 0 0; font-size: 13px;">Edad: ${age} | Sexo: ${sexLabel} | Peso: ${rx.weight || 'N/D'} kg</p>
-        <p style="margin: 2px 0 0; font-size: 13px;">Estado reproductivo: ${rx.reproductive_status || 'N/D'}</p>
+  <div style="background: #ffffff; padding: 24px; border: 1px solid #e0e0e0; border-top: none;">
+    <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+      <div style="flex: 1; background: #FFF8E1; padding: 16px; border-radius: 8px; border-left: 4px solid #FF8F00;">
+        <h3 style="margin: 0 0 8px; color: #FF8F00; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5;">Paciente</h3>
+        <p style="margin: 0; font-size: 16px; font-weight: 700;">${rx.pet_name}</p>
+        <p style="margin: 4px 0 0; font-size: 13px; color: #666;">${speciesLabel} — ${rx.breed || 'N/D'}</p>
+        <p style="margin: 2px 0 0; font-size: 13px; color: #666;">Edad: ${age} | Sexo: ${sexLabel} | Peso: ${rx.weight || 'N/D'} kg</p>
+        <p style="margin: 2px 0 0; font-size: 13px; color: #666;">Estado reproductivo: ${rx.reproductive_status || 'N/D'}</p>
       </div>
-      <div style="text-align: right;">
-        <h3 style="margin: 0 0 4px; color: #6741D9;">Propietario</h3>
-        <p style="margin: 0;"><strong>${rx.tutor_name || 'N/D'}</strong></p>
-        <p style="margin: 2px 0 0; font-size: 13px;">${rx.tutor_email}</p>
-        <p style="margin: 2px 0 0; font-size: 13px;">${rx.tutor_phone || ''}</p>
+      <div style="flex: 1; background: #F3E5F5; padding: 16px; border-radius: 8px; border-left: 4px solid #6741D9;">
+        <h3 style="margin: 0 0 8px; color: #6741D9; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5;">Propietario</h3>
+        <p style="margin: 0; font-size: 16px; font-weight: 700;">${rx.tutor_name || 'N/D'}</p>
+        <p style="margin: 4px 0 0; font-size: 13px; color: #666;">${rx.tutor_email}</p>
+        <p style="margin: 2px 0 0; font-size: 13px; color: #666;">${rx.tutor_phone || ''}</p>
       </div>
     </div>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 12px 0;">
-    <div style="display: flex; justify-content: space-between; font-size: 13px; color: #666; margin-bottom: 16px;">
+    <div style="display: flex; gap: 16px; font-size: 13px; color: #666; margin-bottom: 20px; padding: 12px; background: #fafafa; border-radius: 8px;">
       <span><strong>Sucursal:</strong> ${rx.clinic_branch || 'Casa Matriz'}</span>
       <span><strong>Prescriptor:</strong> ${rx.veterinarian_name || 'N/D'}</span>
       <span><strong>Fecha:</strong> ${new Date(rx.issued_at).toLocaleDateString('es-CL')}</span>
     </div>
-    <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 16px;">
-      <h3 style="margin: 0 0 12px; color: #6741D9;">Receta</h3>
-      <div style="white-space: pre-wrap; line-height: 1.6;">${rx.prescription_body.replace(/\n/g, '<br>')}</div>
+    <div style="background: #FAFAFA; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+      <h3 style="margin: 0 0 12px; color: #FF8F00; font-size: 14px; font-weight: 700;">Receta</h3>
+      <div style="white-space: pre-wrap; line-height: 1.8; font-size: 14px;">${rx.prescription_body.replace(/\n/g, '<br>')}</div>
     </div>
   </div>
-  <div style="text-align: center; padding: 12px; font-size: 11px; color: #999;">
-    Este es un documento electrónico generado por VetCloud
+  <div style="text-align: center; padding: 16px; font-size: 11px; color: #999; background: #fff; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 12px 12px;">
+    Este es un documento electrónico generado por <strong style="color: #FF8F00;">VetCloud</strong>
   </div>
 </body>
 </html>`;
@@ -804,7 +804,7 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
     await transporter.sendMail({
       from: `"VetCloud" <${process.env.SMTP_EMAIL}>`,
       to: rx.tutor_email,
-      subject: `Receta veterinaria — ${rx.pet_name}`,
+      subject: `Receta veterinaria — ${rx.pet_name} — ${new Date(rx.issued_at).toLocaleDateString('es-CL')}`,
       html: htmlBody,
     });
 

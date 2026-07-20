@@ -7,6 +7,7 @@ import { usePet, useClinicalRecords, usePrescriptions } from '../../hooks/useDir
 import { ClinicalRecord, Prescription } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
+import { calculateAge } from '../../utils/age';
 import PetHeader from '../../components/PetHeader';
 import ClinicalTabs, { ClinicalTabType } from '../../components/ClinicalTabs';
 import HistoryTimeline from '../../components/HistoryTimeline';
@@ -40,6 +41,11 @@ export default function PetDetailScreen() {
   const [rxVet, setRxVet] = useState('');
   const [rxBranch, setRxBranch] = useState('Casa Matriz');
   const [rxBody, setRxBody] = useState('');
+  const [rxFormat, setRxFormat] = useState('standard');
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailTarget, setEmailTarget] = useState<Prescription | null>(null);
+  const [emailRecipient, setEmailRecipient] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const counts = useMemo(() => ({
     historial: records.length,
@@ -127,6 +133,7 @@ export default function PetDetailScreen() {
     setRxLinkedRecordId(linkedRecordId || null);
     setRxVet(lastAnamnesis?.veterinarian || user?.name || '');
     setRxBranch('Casa Matriz');
+    setRxFormat('standard');
     setRxBody('');
     setShowRxModal(true);
   };
@@ -146,7 +153,7 @@ export default function PetDetailScreen() {
         veterinarian_name: rxVet.trim() || null,
         clinic_branch: rxBranch.trim() || null,
         prescription_body: rxBody.trim(),
-        format: 'standard',
+        format: rxFormat,
         status: 'active',
         issued_at: new Date().toISOString(),
       });
@@ -159,10 +166,22 @@ export default function PetDetailScreen() {
   };
 
   const handleSendRxEmail = async (rx: Prescription) => {
+    setEmailTarget(rx);
+    setEmailRecipient(pet?.email || '');
+    setShowEmailModal(true);
+  };
+
+  const confirmSendEmail = async () => {
+    if (!emailTarget) return;
+    setSendingEmail(true);
     try {
-      await sendEmail(rx.id);
+      await sendEmail(emailTarget.id);
+      setShowEmailModal(false);
+      setEmailTarget(null);
     } catch (error: any) {
       setErrorDialog(error.message || 'No se pudo enviar el correo');
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -648,44 +667,138 @@ export default function PetDetailScreen() {
       {/* Modal: Nueva Receta */}
       <Portal>
         <Modal visible={showRxModal} onDismiss={() => setShowRxModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
-          <ScrollView>
+          <ScrollView showsVerticalScrollIndicator={false}>
             <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Nueva Receta</Text>
 
-            <Card style={[styles.previewCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <Card.Content>
-                <View style={styles.previewContent}>
-                  <MaterialCommunityIcons name={pet.species === 'dog' ? 'dog' : 'cat'} size={24} color={colors.primary} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.previewName, { color: colors.text }]}>{pet.name}</Text>
-                    <Text style={[styles.previewDetail, { color: colors.textSecondary }]}>
-                      {pet.species === 'dog' ? 'Canino' : 'Felino'} — {pet.breed || 'N/D'} | {pet.weight || 'N/D'} kg
-                    </Text>
-                  </View>
-                </View>
-                {pet.tutor_name && (
-                  <View style={styles.previewTutor}>
-                    <MaterialCommunityIcons name="account" size={14} color={colors.textSecondary} />
-                    <Text style={[styles.previewTutorText, { color: colors.textSecondary }]}>
-                      {pet.tutor_name}{pet.phone ? ` — ${pet.phone}` : ''}{pet.email ? ` — ${pet.email}` : ''}
-                    </Text>
-                  </View>
+            {/* Patient + Owner info */}
+            <View style={styles.rxInfoRow}>
+              <View style={styles.rxInfoCol}>
+                <Text style={[styles.rxInfoSectionTitle, { color: colors.primary }]}>Paciente</Text>
+                <Text style={[styles.rxInfoName, { color: colors.text }]}>{pet.name}</Text>
+                <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>
+                  {pet.species === 'dog' ? 'Canino' : 'Felino'} — {pet.breed || 'N/D'}
+                </Text>
+                <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>
+                  Edad: {calculateAge(pet.birth_date)}
+                </Text>
+                <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>
+                  Peso: {pet.weight > 0 ? `${pet.weight} kg` : 'N/D'}
+                </Text>
+                {pet.sex && (
+                  <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>
+                    Sexo: {pet.sex === 'macho' ? 'Macho' : 'Hembra'}
+                  </Text>
                 )}
-              </Card.Content>
-            </Card>
+                <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>
+                  Estado reproductivo: {pet.reproductive_status || 'N/D'}
+                </Text>
+              </View>
+              <View style={styles.rxInfoCol}>
+                <Text style={[styles.rxInfoSectionTitle, { color: colors.primary }]}>Propietario</Text>
+                <Text style={[styles.rxInfoName, { color: colors.text }]}>{pet.tutor_name || 'N/D'}</Text>
+                {pet.email && (
+                  <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>
+                    {pet.email}
+                  </Text>
+                )}
+                {pet.phone && (
+                  <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>
+                    {pet.phone}
+                  </Text>
+                )}
+              </View>
+            </View>
 
-            <TextInput label="Prescriptor" value={rxVet} onChangeText={setRxVet} mode="outlined" style={styles.input} />
-            <TextInput label="Sucursal" value={rxBranch} onChangeText={setRxBranch} mode="outlined" style={styles.input} />
-            <TextInput label="Receta *" value={rxBody} onChangeText={setRxBody} mode="outlined" multiline numberOfLines={10} style={styles.input} placeholder={"Uso Veterinario\nRimadyl (Carprofeno en comprimidos 100 mg):\nDar vía oral 1 comprimido cada 24 horas x 7 días.\n\nUso humano\nMetamizol sodico 300 mg (Comprimido):\nDar vía oral 2 comprimidos cada 12 horas x 5 días."} />
+            <Divider style={[styles.rxDivider, { backgroundColor: colors.border }]} />
 
+            {/* Form fields row */}
+            <View style={styles.rxFieldRow}>
+              <View style={styles.rxFieldHalf}>
+                <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Sucursal</Text>
+                <View style={styles.rxSelectRow}>
+                  {['Casa Matriz', 'Sucursal 2'].map(branch => (
+                    <Button
+                      key={branch}
+                      mode={rxBranch === branch ? 'contained' : 'outlined'}
+                      onPress={() => setRxBranch(branch)}
+                      style={[styles.rxSelectBtn, rxBranch === branch && { backgroundColor: colors.primary }]}
+                      labelStyle={[styles.rxSelectLabel, rxBranch === branch ? { color: '#FFF' } : { color: colors.primary }]}
+                      compact
+                    >
+                      {branch}
+                    </Button>
+                  ))}
+                </View>
+              </View>
+              <View style={styles.rxFieldHalf}>
+                <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Formato</Text>
+                <View style={styles.rxSelectRow}>
+                  {[
+                    { value: 'standard', label: 'Estándar' },
+                    { value: 'compact', label: 'Compacto' },
+                  ].map(f => (
+                    <Button
+                      key={f.value}
+                      mode={rxFormat === f.value ? 'contained' : 'outlined'}
+                      onPress={() => setRxFormat(f.value)}
+                      style={[styles.rxSelectBtn, rxFormat === f.value && { backgroundColor: colors.primary }]}
+                      labelStyle={[styles.rxSelectLabel, rxFormat === f.value ? { color: '#FFF' } : { color: colors.primary }]}
+                      compact
+                    >
+                      {f.label}
+                    </Button>
+                  ))}
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.rxFieldRow}>
+              <View style={styles.rxFieldHalf}>
+                <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Prescriptor</Text>
+                <TextInput
+                  value={rxVet}
+                  onChangeText={setRxVet}
+                  mode="outlined"
+                  dense
+                  placeholder="Nombre del veterinario"
+                  style={styles.rxInput}
+                />
+              </View>
+              <View style={styles.rxFieldHalf}>
+                <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Fecha Emisión</Text>
+                <TextInput
+                  value={new Date().toLocaleDateString('es-CL')}
+                  mode="outlined"
+                  dense
+                  disabled
+                  style={styles.rxInput}
+                />
+              </View>
+            </View>
+
+            <Divider style={[styles.rxDivider, { backgroundColor: colors.border }]} />
+
+            {/* Prescription body */}
+            <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Receta *</Text>
+            <TextInput
+              value={rxBody}
+              onChangeText={setRxBody}
+              mode="outlined"
+              multiline
+              numberOfLines={12}
+              style={styles.rxBodyInput}
+              placeholder={"Uso Veterinario\nRimadyl (Carprofeno en comprimidos 100 mg):\nDar vía oral 1 comprimido cada 24 horas x 7 días.\n\nUso humano\nMetamizol sodico 300 mg (Comprimido):\nDar vía oral 2 comprimidos cada 12 horas x 5 días."}
+            />
+
+            {/* Action buttons */}
             <View style={styles.rxActionRow}>
-              <Button mode="contained" onPress={handleSaveRx} style={{ flex: 1, marginRight: 8 }} loading={saving} disabled={saving}>
+              <Button mode="outlined" onPress={() => setShowRxModal(false)} style={{ flex: 1, marginRight: 8 }}>
+                Volver
+              </Button>
+              <Button mode="contained" onPress={handleSaveRx} style={{ flex: 1 }} loading={saving} disabled={saving} icon="content-save">
                 Guardar
               </Button>
-              <Button mode="outlined" onPress={async () => { await handleSaveRx(); if (id && prescriptions.length > 0) { handleSendRxEmail(prescriptions[0]); } }} style={{ flex: 1 }} disabled={saving}>
-                Guardar + Enviar
-              </Button>
             </View>
-            <Button mode="text" onPress={() => setShowRxModal(false)} style={{ marginTop: 4 }}>Cerrar</Button>
           </ScrollView>
         </Modal>
       </Portal>
@@ -727,6 +840,97 @@ export default function PetDetailScreen() {
               </View>
             </ScrollView>
           )}
+        </Modal>
+      </Portal>
+
+      {/* Modal: Enviar Correo */}
+      <Portal>
+        <Modal visible={showEmailModal} onDismiss={() => setShowEmailModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={styles.emailHeader}>
+              <MaterialCommunityIcons name="email-outline" size={28} color={colors.primary} />
+              <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text, marginBottom: 0 }]}>Enviar por correo</Text>
+            </View>
+
+            {emailTarget && (
+              <>
+                {/* Patient + Owner info */}
+                <View style={styles.rxInfoRow}>
+                  <View style={styles.rxInfoCol}>
+                    <Text style={[styles.rxInfoSectionTitle, { color: colors.primary }]}>Paciente</Text>
+                    <Text style={[styles.rxInfoName, { color: colors.text }]}>{pet.name}</Text>
+                    <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>
+                      {pet.species === 'dog' ? 'Canino' : 'Felino'} — {pet.breed || 'N/D'}
+                    </Text>
+                    <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>
+                      Edad: {calculateAge(pet.birth_date)}
+                    </Text>
+                  </View>
+                  <View style={styles.rxInfoCol}>
+                    <Text style={[styles.rxInfoSectionTitle, { color: colors.primary }]}>Propietario</Text>
+                    <Text style={[styles.rxInfoName, { color: colors.text }]}>{pet.tutor_name || 'N/D'}</Text>
+                    {pet.phone && (
+                      <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>{pet.phone}</Text>
+                    )}
+                  </View>
+                </View>
+
+                <Divider style={[styles.rxDivider, { backgroundColor: colors.border }]} />
+
+                {/* Prescription preview */}
+                <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Vista previa de la receta</Text>
+                <Card style={[styles.emailPreviewCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Card.Content>
+                    <View style={styles.emailPreviewRow}>
+                      <Text style={[styles.emailPreviewLabel, { color: colors.textSecondary }]}>Fecha:</Text>
+                      <Text style={[styles.emailPreviewValue, { color: colors.text }]}>{new Date(emailTarget.issued_at).toLocaleDateString('es-CL')}</Text>
+                    </View>
+                    {emailTarget.veterinarian_name && (
+                      <View style={styles.emailPreviewRow}>
+                        <Text style={[styles.emailPreviewLabel, { color: colors.textSecondary }]}>Prescriptor:</Text>
+                        <Text style={[styles.emailPreviewValue, { color: colors.text }]}>{emailTarget.veterinarian_name}</Text>
+                      </View>
+                    )}
+                    {emailTarget.clinic_branch && (
+                      <View style={styles.emailPreviewRow}>
+                        <Text style={[styles.emailPreviewLabel, { color: colors.textSecondary }]}>Sucursal:</Text>
+                        <Text style={[styles.emailPreviewValue, { color: colors.text }]}>{emailTarget.clinic_branch}</Text>
+                      </View>
+                    )}
+                    <Divider style={{ marginVertical: 8 }} />
+                    <Text style={[styles.emailPreviewBody, { color: colors.text }]}>{emailTarget.prescription_body}</Text>
+                  </Card.Content>
+                </Card>
+
+                {/* Recipient */}
+                <TextInput
+                  label="Correo del destinatario"
+                  value={emailRecipient}
+                  onChangeText={setEmailRecipient}
+                  mode="outlined"
+                  keyboardType="email-address"
+                  style={styles.rxInput}
+                  left={<TextInput.Icon icon="email" />}
+                />
+
+                <View style={styles.rxActionRow}>
+                  <Button mode="outlined" onPress={() => setShowEmailModal(false)} style={{ flex: 1, marginRight: 8 }}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    mode="contained"
+                    onPress={confirmSendEmail}
+                    style={{ flex: 1 }}
+                    loading={sendingEmail}
+                    disabled={sendingEmail || !emailRecipient.trim()}
+                    icon="send"
+                  >
+                    Enviar
+                  </Button>
+                </View>
+              </>
+            )}
+          </ScrollView>
         </Modal>
       </Portal>
 
@@ -846,7 +1050,31 @@ const styles = StyleSheet.create({
   rxVet: { fontWeight: '600', fontSize: 13, marginTop: 2 },
   rxPreview: { fontSize: 12, marginTop: 2 },
   rxActions: { flexDirection: 'row' },
-  rxActionRow: { flexDirection: 'row', marginTop: 8 },
+  rxActionRow: { flexDirection: 'row', marginTop: 12 },
   rxBodyCard: { marginTop: 8, marginBottom: 8, borderRadius: 8, borderWidth: 1 },
   rxBodyText: { lineHeight: 22, whiteSpace: 'pre-wrap' },
+
+  // Redesigned Rx modal
+  rxInfoRow: { flexDirection: 'row', gap: 16, marginBottom: 12 },
+  rxInfoCol: { flex: 1 },
+  rxInfoSectionTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, marginBottom: 4, textTransform: 'uppercase' },
+  rxInfoName: { fontWeight: '700', fontSize: 15, marginBottom: 2 },
+  rxInfoDetail: { fontSize: 12, lineHeight: 18 },
+  rxDivider: { marginVertical: 12 },
+  rxFieldRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  rxFieldHalf: { flex: 1 },
+  rxFieldLabel: { fontSize: 12, fontWeight: '700', marginBottom: 6 },
+  rxSelectRow: { flexDirection: 'row', gap: 6 },
+  rxSelectBtn: { flex: 1 },
+  rxSelectLabel: { fontSize: 12 },
+  rxInput: { marginBottom: 12 },
+  rxBodyInput: { marginBottom: 12, minHeight: 200 },
+
+  // Email modal
+  emailHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  emailPreviewCard: { marginBottom: 12, borderRadius: 8, borderWidth: 1 },
+  emailPreviewRow: { flexDirection: 'row', marginBottom: 4 },
+  emailPreviewLabel: { width: 90, fontSize: 12 },
+  emailPreviewValue: { fontWeight: '600', fontSize: 13, flex: 1 },
+  emailPreviewBody: { fontSize: 13, lineHeight: 20, whiteSpace: 'pre-wrap' },
 });
