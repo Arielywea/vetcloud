@@ -3,19 +3,21 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
 import DrawerContent from '../../components/DrawerContent';
-import { APP_COLORS } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function DrawerLayout() {
+  const { colors, isDark } = useTheme();
+
   return (
     <GestureHandlerRootView style={styles.container}>
       <Drawer
         drawerContent={(props) => <DrawerContent {...props} />}
         screenOptions={{
-          headerStyle: { backgroundColor: APP_COLORS.primary },
-          headerTintColor: '#FFFFFF',
+          headerStyle: { backgroundColor: colors.primary },
+          headerTintColor: isDark ? '#000000' : '#FFFFFF',
           headerTitleStyle: { fontWeight: '600' },
           drawerStyle: {
-            backgroundColor: APP_COLORS.primaryDark,
+            backgroundColor: isDark ? '#0A0A14' : colors.primaryDark,
             width: 280,
           },
           headerShown: true,
@@ -45,8 +47,16 @@ export default function DrawerLayout() {
         <Drawer.Screen
           name="add-paciente"
           options={{
-            title: 'Nueva Mascota',
-            headerTitle: 'Nueva Mascota',
+            title: 'Nuevo Paciente',
+            headerTitle: 'Nuevo Paciente',
+            drawerItemStyle: { display: 'none' },
+          }}
+        />
+        <Drawer.Screen
+          name="add-disease"
+          options={{
+            title: 'Nueva Enfermedad',
+            headerTitle: 'Nueva Enfermedad',
             drawerItemStyle: { display: 'none' },
           }}
         />

@@ -4,12 +4,13 @@ import { Text, Card, Button, TextInput, Portal, Modal } from 'react-native-paper
 import { useLocalSearchParams } from 'expo-router';
 import { usePet, useClinicalRecords } from '../../hooks/useDirectus';
 import { ClinicalRecord } from '../../services/directus';
-import { APP_COLORS } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
 import PetHeader from '../../components/PetHeader';
 import ClinicalTabs, { ClinicalTabType } from '../../components/ClinicalTabs';
 import HistoryTimeline from '../../components/HistoryTimeline';
 
 export default function PetDetailScreen() {
+  const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { pet, loading } = usePet(id || null);
   const { records, loading: recordsLoading, addRecord } = useClinicalRecords(id || undefined);
@@ -62,41 +63,41 @@ export default function PetDetailScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.loadingText}>Cargando...</Text>
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando...</Text>
       </View>
     );
   }
 
   if (!pet) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.loadingText}>Mascota no encontrada</Text>
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Paciente no encontrado</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       <PetHeader pet={pet} />
 
       {pet.anamnesis && (
-        <Card style={styles.sectionCard}>
+        <Card style={[styles.sectionCard, { backgroundColor: colors.surface }]}>
           <Card.Content>
-            <Text variant="titleSmall" style={styles.sectionTitle}>Anamnesis</Text>
-            <Text style={styles.description}>{pet.anamnesis}</Text>
+            <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.text }]}>Anamnesis</Text>
+            <Text style={[styles.description, { color: colors.text }]}>{pet.anamnesis}</Text>
           </Card.Content>
         </Card>
       )}
 
       {pet.allergies && pet.allergies.length > 0 && (
-        <Card style={styles.sectionCard}>
+        <Card style={[styles.sectionCard, { backgroundColor: colors.surface }]}>
           <Card.Content>
-            <Text variant="titleSmall" style={styles.sectionTitle}>Alergias</Text>
+            <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.text }]}>Alergias</Text>
             <View style={styles.chipRow}>
               {pet.allergies.map((a: string, i: number) => (
                 <View key={i} style={styles.chip}>
-                  <Text style={styles.chipText}>{a}</Text>
+                  <Text style={[styles.chipText, { color: colors.text }]}>{a}</Text>
                 </View>
               ))}
             </View>
@@ -104,17 +105,17 @@ export default function PetDetailScreen() {
         </Card>
       )}
 
-      <Card style={styles.sectionCard}>
+      <Card style={[styles.sectionCard, { backgroundColor: colors.surface }]}>
         <Card.Content>
           <View style={styles.sectionHeader}>
-            <Text variant="titleSmall" style={styles.sectionTitle}>Historia Clínica</Text>
+            <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.text }]}>Historia Clínica</Text>
             <Button mode="contained" compact onPress={() => setShowModal(true)}>
               Agregar
             </Button>
           </View>
           <ClinicalTabs activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
           {recordsLoading ? (
-            <Text style={styles.loadingText}>Cargando registros...</Text>
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando registros...</Text>
           ) : (
             <HistoryTimeline records={filteredRecords} onViewRecord={setSelectedRecord} />
           )}
@@ -122,18 +123,18 @@ export default function PetDetailScreen() {
       </Card>
 
       {pet.notes && (
-        <Card style={styles.sectionCard}>
+        <Card style={[styles.sectionCard, { backgroundColor: colors.surface }]}>
           <Card.Content>
-            <Text variant="titleSmall" style={styles.sectionTitle}>Notas</Text>
-            <Text style={styles.description}>{pet.notes}</Text>
+            <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.text }]}>Notas</Text>
+            <Text style={[styles.description, { color: colors.text }]}>{pet.notes}</Text>
           </Card.Content>
         </Card>
       )}
 
       <Portal>
-        <Modal visible={showModal} onDismiss={() => setShowModal(false)} contentContainerStyle={styles.modal}>
+        <Modal visible={showModal} onDismiss={() => setShowModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
           <ScrollView>
-            <Text variant="titleMedium" style={styles.modalTitle}>Nuevo Registro Clínico</Text>
+            <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Nuevo Registro Clínico</Text>
             <View style={styles.typeRow}>
               {(['consulta', 'vacuna', 'cirugia', 'control'] as const).map((t) => (
                 <Button key={t} mode={recordType === t ? 'contained' : 'outlined'} compact onPress={() => setRecordType(t)} style={styles.typeBtn}>
@@ -151,34 +152,34 @@ export default function PetDetailScreen() {
       </Portal>
 
       <Portal>
-        <Modal visible={!!selectedRecord} onDismiss={() => setSelectedRecord(null)} contentContainerStyle={styles.modal}>
+        <Modal visible={!!selectedRecord} onDismiss={() => setSelectedRecord(null)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
           {selectedRecord && (
             <ScrollView>
-              <Text variant="titleMedium" style={styles.modalTitle}>Detalle del Registro</Text>
+              <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Detalle del Registro</Text>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Tipo:</Text>
-                <Text style={styles.detailValue}>{selectedRecord.record_type}</Text>
+                <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Tipo:</Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>{selectedRecord.record_type}</Text>
               </View>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Fecha:</Text>
-                <Text style={styles.detailValue}>{new Date(selectedRecord.date).toLocaleString('es-CL')}</Text>
+                <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Fecha:</Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>{new Date(selectedRecord.date).toLocaleString('es-CL')}</Text>
               </View>
               {selectedRecord.veterinarian && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Veterinario:</Text>
-                  <Text style={styles.detailValue}>{selectedRecord.veterinarian}</Text>
+                  <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Veterinario:</Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>{selectedRecord.veterinarian}</Text>
                 </View>
               )}
               {selectedRecord.details?.weight && (
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Peso:</Text>
-                  <Text style={styles.detailValue}>{selectedRecord.details.weight} kg</Text>
+                  <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Peso:</Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>{selectedRecord.details.weight} kg</Text>
                 </View>
               )}
               {selectedRecord.details?.notes && (
                 <View style={{ marginBottom: 8 }}>
-                  <Text style={styles.detailLabel}>Notas:</Text>
-                  <Text style={{ color: APP_COLORS.text, lineHeight: 22, marginTop: 4 }}>{selectedRecord.details.notes}</Text>
+                  <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Notas:</Text>
+                  <Text style={{ color: colors.text, lineHeight: 22, marginTop: 4 }}>{selectedRecord.details.notes}</Text>
                 </View>
               )}
               <Button mode="outlined" onPress={() => setSelectedRecord(null)} style={{ marginTop: 16 }}>Cerrar</Button>
@@ -191,24 +192,24 @@ export default function PetDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: APP_COLORS.background },
+  container: { flex: 1 },
   content: { paddingBottom: 32 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: APP_COLORS.textSecondary, textAlign: 'center', marginTop: 40 },
-  sectionCard: { marginHorizontal: 12, marginBottom: 12, borderRadius: 12, backgroundColor: APP_COLORS.surface },
-  sectionTitle: { fontWeight: '700', color: APP_COLORS.text, marginBottom: 8, fontSize: 16 },
+  loadingText: { textAlign: 'center', marginTop: 40 },
+  sectionCard: { marginHorizontal: 12, marginBottom: 12, borderRadius: 12 },
+  sectionTitle: { fontWeight: '700', marginBottom: 8, fontSize: 16 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  description: { color: APP_COLORS.text, lineHeight: 22 },
+  description: { lineHeight: 22 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: { backgroundColor: '#FFF3E0', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  chipText: { fontSize: 12, color: APP_COLORS.text },
+  chipText: { fontSize: 12 },
   typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
   typeBtn: { flex: 1, minWidth: 70 },
   input: { marginBottom: 12 },
   saveButton: { marginTop: 8 },
-  modal: { backgroundColor: 'white', padding: 24, margin: 20, borderRadius: 12, maxHeight: '85%' },
+  modal: { padding: 24, margin: 20, borderRadius: 12, maxHeight: '85%' },
   modalTitle: { fontWeight: '700', marginBottom: 16 },
   detailRow: { flexDirection: 'row', marginBottom: 8 },
-  detailLabel: { color: APP_COLORS.textSecondary, width: 100 },
-  detailValue: { color: APP_COLORS.text, fontWeight: '500', flex: 1 },
+  detailLabel: { width: 100 },
+  detailValue: { fontWeight: '500', flex: 1 },
 });

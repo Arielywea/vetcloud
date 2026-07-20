@@ -1,38 +1,21 @@
 import { Stack } from 'expo-router';
-import { PaperProvider, MD3LightTheme } from 'react-native-paper';
+import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, ActivityIndicator, View } from 'react-native';
 import { AuthProvider, useAuth } from '../hooks/useAuth';
+import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { APP_COLORS } from '../constants/colors';
 import LoginScreen from './auth/login';
 
-const theme = {
-  ...MD3LightTheme,
-  colors: {
-    ...MD3LightTheme.colors,
-    primary: APP_COLORS.primary,
-    primaryContainer: '#B2EBF2',
-    secondary: APP_COLORS.accent,
-    secondaryContainer: '#FFE0DB',
-    background: APP_COLORS.background,
-    surface: APP_COLORS.surface,
-    surfaceVariant: APP_COLORS.surfaceVariant,
-    error: APP_COLORS.error,
-    onPrimary: '#FFFFFF',
-    onBackground: APP_COLORS.text,
-    onSurface: APP_COLORS.text,
-    outline: APP_COLORS.border,
-  },
-};
-
 function AppContent() {
   const { isAuthenticated, loading } = useAuth();
+  const { colors, isDark } = useTheme();
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: APP_COLORS.background }}>
-        <ActivityIndicator size="large" color={APP_COLORS.primary} />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -45,7 +28,7 @@ function AppContent() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: APP_COLORS.background },
+        contentStyle: { backgroundColor: colors.background },
       }}
     >
       <Stack.Screen name="(drawer)" />
@@ -53,8 +36,8 @@ function AppContent() {
         name="disease/[id]"
         options={{
           headerShown: true,
-          headerStyle: { backgroundColor: APP_COLORS.primary },
-          headerTintColor: '#FFFFFF',
+          headerStyle: { backgroundColor: colors.primary },
+          headerTintColor: isDark ? '#000000' : '#FFFFFF',
           headerTitle: 'Detalle de Enfermedad',
         }}
       />
@@ -62,8 +45,8 @@ function AppContent() {
         name="pet/[id]"
         options={{
           headerShown: true,
-          headerStyle: { backgroundColor: APP_COLORS.primary },
-          headerTintColor: '#FFFFFF',
+          headerStyle: { backgroundColor: colors.primary },
+          headerTintColor: isDark ? '#000000' : '#FFFFFF',
           headerTitle: 'Ficha Clínica',
         }}
       />
@@ -74,13 +57,43 @@ function AppContent() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.container}>
-      <PaperProvider theme={theme}>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-        <StatusBar style="auto" />
-      </PaperProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <ThemedPaperProvider>
+            <AppContent />
+            <StatusBar style="auto" />
+          </ThemedPaperProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </GestureHandlerRootView>
+  );
+}
+
+function ThemedPaperProvider({ children }: { children: React.ReactNode }) {
+  const { colors, isDark } = useTheme();
+
+  const paperTheme = {
+    ...(isDark ? MD3DarkTheme : MD3LightTheme),
+    colors: {
+      ...(isDark ? MD3DarkTheme.colors : MD3LightTheme.colors),
+      primary: colors.primary,
+      primaryContainer: colors.primaryContainer,
+      secondary: colors.accent,
+      background: colors.background,
+      surface: colors.surface,
+      surfaceVariant: colors.surfaceVariant,
+      error: colors.error,
+      onPrimary: isDark ? '#000000' : '#FFFFFF',
+      onBackground: colors.text,
+      onSurface: colors.text,
+      outline: colors.border,
+    },
+  };
+
+  return (
+    <PaperProvider theme={paperTheme}>
+      {children}
+    </PaperProvider>
   );
 }
 

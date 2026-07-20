@@ -5,11 +5,12 @@ import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePets } from '../../hooks/useDirectus';
 import { DirectusPet } from '../../services/directus';
-import { APP_COLORS } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function PacientesScreen() {
   const router = useRouter();
   const { pets, loading, removePet } = usePets();
+  const { colors } = useTheme();
 
   const calculateAge = (birthDate: string): string => {
     if (!birthDate) return '';
@@ -30,28 +31,28 @@ export default function PacientesScreen() {
 
     return (
       <TouchableOpacity onPress={() => router.push(`/pet/${item.id}`)}>
-        <Card style={styles.petCard}>
+        <Card style={[styles.petCard, { backgroundColor: colors.surface }]}>
           <Card.Content>
             <View style={styles.petHeader}>
-              <View style={styles.petAvatar}>
+              <View style={[styles.petAvatar, { backgroundColor: colors.primaryContainer }]}>
                 <MaterialCommunityIcons
                   name={item.species === 'dog' ? 'dog' : 'cat'}
                   size={32}
-                  color={APP_COLORS.primary}
+                  color={colors.primary}
                 />
               </View>
               <View style={styles.petInfo}>
-                <Text variant="titleMedium" style={styles.petName}>{item.name}</Text>
-                <Text variant="bodySmall" style={styles.petBreed}>
+                <Text variant="titleMedium" style={[styles.petName, { color: colors.text }]}>{item.name}</Text>
+                <Text variant="bodySmall" style={[styles.petBreed, { color: colors.textSecondary }]}>
                   {item.breed || 'Sin raza especificada'}{age ? ` · ${age}` : ''}
                 </Text>
                 {item.weight > 0 && (
-                  <Text variant="bodySmall" style={styles.petWeight}>{item.weight} kg</Text>
+                  <Text variant="bodySmall" style={[styles.petWeight, { color: colors.textSecondary }]}>{item.weight} kg</Text>
                 )}
               </View>
               <View style={styles.petActions}>
                 <TouchableOpacity onPress={() => removePet(item.id)} style={styles.actionButton}>
-                  <MaterialCommunityIcons name="delete" size={18} color={APP_COLORS.error} />
+                  <MaterialCommunityIcons name="delete" size={18} color={colors.error} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -62,7 +63,7 @@ export default function PacientesScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
         data={pets}
         renderItem={renderPetCard}
@@ -70,10 +71,10 @@ export default function PacientesScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons name="dog" size={64} color={APP_COLORS.textLight} />
-            <Text style={styles.emptyTitle}>No tienes pacientes registrados</Text>
-            <Text style={styles.emptySubtitle}>
-              Registra a tu mascota para llevar un seguimiento de su historial médico
+            <MaterialCommunityIcons name="dog" size={64} color={colors.textLight} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>No tienes pacientes registrados</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+              Registra a tu paciente para llevar un seguimiento de su historial médico
             </Text>
           </View>
         }
@@ -81,7 +82,7 @@ export default function PacientesScreen() {
 
       <FAB
         icon="plus"
-        style={styles.fab}
+        style={[styles.fab, { backgroundColor: colors.primary }]}
         onPress={() => router.push('/(drawer)/add-paciente')}
         color="#FFFFFF"
       />
@@ -90,28 +91,26 @@ export default function PacientesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: APP_COLORS.background },
-  listContent: { padding: 12, paddingBottom: 80 },
+  container: { flex: 1 },
+  listContent: { padding: 10, paddingBottom: 80 },
   petCard: {
-    marginBottom: 12,
+    marginBottom: 8,
     borderRadius: 12,
-    backgroundColor: APP_COLORS.surface,
     elevation: 1,
   },
   petHeader: { flexDirection: 'row', alignItems: 'center' },
   petAvatar: {
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: APP_COLORS.primaryContainer,
+    width: 50, height: 50, borderRadius: 25,
     alignItems: 'center', justifyContent: 'center',
   },
   petInfo: { flex: 1, marginLeft: 12 },
-  petName: { fontWeight: '700', color: APP_COLORS.text },
-  petBreed: { color: APP_COLORS.textSecondary, marginTop: 2 },
-  petWeight: { color: APP_COLORS.textSecondary, marginTop: 2 },
+  petName: { fontWeight: '700' },
+  petBreed: { marginTop: 2 },
+  petWeight: { marginTop: 2 },
   petActions: { flexDirection: 'row' },
   actionButton: { padding: 8 },
   emptyContainer: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 40 },
-  emptyTitle: { marginTop: 16, fontSize: 18, fontWeight: '600', color: APP_COLORS.text, textAlign: 'center' },
-  emptySubtitle: { marginTop: 8, color: APP_COLORS.textSecondary, textAlign: 'center', lineHeight: 20 },
-  fab: { position: 'absolute', right: 16, bottom: 16, backgroundColor: APP_COLORS.primary, borderRadius: 16 },
+  emptyTitle: { marginTop: 16, fontSize: 18, fontWeight: '600', textAlign: 'center' },
+  emptySubtitle: { marginTop: 8, textAlign: 'center', lineHeight: 20 },
+  fab: { position: 'absolute', right: 16, bottom: 16, borderRadius: 16 },
 });
