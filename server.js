@@ -27,8 +27,15 @@ const pool = new Pool(
 
 app.get('/debug/db', (req, res) => {
   const url = process.env.DATABASE_URL || 'NOT SET';
-  const masked = url.replace(/:[^:@]+@/, ':***@');
-  res.json({ url: masked, hasUrl: !!process.env.DATABASE_URL });
+  const masked = url.length > 5 ? url.replace(/:[^:@]+@/, ':***@') : url;
+  const allKeys = Object.keys(process.env).filter(k => k.includes('DATABASE') || k.includes('POSTGRES') || k.includes('NEON') || k.includes('VERCEL'));
+  res.json({
+    databaseUrl: masked,
+    hasUrl: !!process.env.DATABASE_URL,
+    urlLength: url.length,
+    vercelEnv: process.env.VERCEL_ENV || 'not set',
+    relevantKeys: allKeys,
+  });
 });
 
 app.use(cors());
