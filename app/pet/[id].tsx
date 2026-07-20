@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
 import { Text, Card, Button, TextInput, Portal, Modal } from 'react-native-paper';
 import { useLocalSearchParams } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePet, useClinicalRecords } from '../../hooks/useDirectus';
 import { ClinicalRecord } from '../../services/directus';
 import { APP_COLORS } from '../../constants/colors';
@@ -23,6 +22,13 @@ export default function PetDetailScreen() {
   const [recordVet, setRecordVet] = useState('');
   const [recordNotes, setRecordNotes] = useState('');
   const [recordWeight, setRecordWeight] = useState('');
+
+  const counts = useMemo(() => ({
+    historial: records.length,
+    consultas: records.filter(r => r.record_type === 'consulta').length,
+    vacunas: records.filter(r => r.record_type === 'vacuna').length,
+    cirugias: records.filter(r => r.record_type === 'cirugia').length,
+  }), [records]);
 
   const filteredRecords = activeTab === 'historial'
     ? records
@@ -106,7 +112,7 @@ export default function PetDetailScreen() {
               Agregar
             </Button>
           </View>
-          <ClinicalTabs activeTab={activeTab} onTabChange={setActiveTab} />
+          <ClinicalTabs activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
           {recordsLoading ? (
             <Text style={styles.loadingText}>Cargando registros...</Text>
           ) : (
@@ -128,56 +134,18 @@ export default function PetDetailScreen() {
         <Modal visible={showModal} onDismiss={() => setShowModal(false)} contentContainerStyle={styles.modal}>
           <ScrollView>
             <Text variant="titleMedium" style={styles.modalTitle}>Nuevo Registro Clínico</Text>
-
-            <Text style={styles.fieldLabel}>Tipo de registro</Text>
             <View style={styles.typeRow}>
               {(['consulta', 'vacuna', 'cirugia', 'control'] as const).map((t) => (
-                <Button
-                  key={t}
-                  mode={recordType === t ? 'contained' : 'outlined'}
-                  compact
-                  onPress={() => setRecordType(t)}
-                  style={styles.typeBtn}
-                >
+                <Button key={t} mode={recordType === t ? 'contained' : 'outlined'} compact onPress={() => setRecordType(t)} style={styles.typeBtn}>
                   {t.charAt(0).toUpperCase() + t.slice(1)}
                 </Button>
               ))}
             </View>
-
-            <TextInput
-              label="Fecha y hora"
-              value={recordDate}
-              onChangeText={setRecordDate}
-              mode="outlined"
-              style={styles.input}
-            />
-            <TextInput
-              label="Veterinario (opcional)"
-              value={recordVet}
-              onChangeText={setRecordVet}
-              mode="outlined"
-              style={styles.input}
-            />
-            <TextInput
-              label="Peso (kg, opcional)"
-              value={recordWeight}
-              onChangeText={setRecordWeight}
-              mode="outlined"
-              style={styles.input}
-              keyboardType="numeric"
-            />
-            <TextInput
-              label="Notas *"
-              value={recordNotes}
-              onChangeText={setRecordNotes}
-              mode="outlined"
-              multiline
-              numberOfLines={4}
-              style={styles.input}
-            />
-            <Button mode="contained" onPress={handleAddRecord} style={styles.saveButton}>
-              Guardar Registro
-            </Button>
+            <TextInput label="Fecha y hora" value={recordDate} onChangeText={setRecordDate} mode="outlined" style={styles.input} />
+            <TextInput label="Veterinario (opcional)" value={recordVet} onChangeText={setRecordVet} mode="outlined" style={styles.input} />
+            <TextInput label="Peso (kg, opcional)" value={recordWeight} onChangeText={setRecordWeight} mode="outlined" style={styles.input} keyboardType="numeric" />
+            <TextInput label="Notas *" value={recordNotes} onChangeText={setRecordNotes} mode="outlined" multiline numberOfLines={4} style={styles.input} />
+            <Button mode="contained" onPress={handleAddRecord} style={styles.saveButton}>Guardar Registro</Button>
           </ScrollView>
         </Modal>
       </Portal>
@@ -208,14 +176,12 @@ export default function PetDetailScreen() {
                 </View>
               )}
               {selectedRecord.details?.notes && (
-                <View style={styles.detailSection}>
+                <View style={{ marginBottom: 8 }}>
                   <Text style={styles.detailLabel}>Notas:</Text>
-                  <Text style={styles.detailNotes}>{selectedRecord.details.notes}</Text>
+                  <Text style={{ color: APP_COLORS.text, lineHeight: 22, marginTop: 4 }}>{selectedRecord.details.notes}</Text>
                 </View>
               )}
-              <Button mode="outlined" onPress={() => setSelectedRecord(null)} style={{ marginTop: 16 }}>
-                Cerrar
-              </Button>
+              <Button mode="outlined" onPress={() => setSelectedRecord(null)} style={{ marginTop: 16 }}>Cerrar</Button>
             </ScrollView>
           )}
         </Modal>
@@ -236,7 +202,6 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: { backgroundColor: '#FFF3E0', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
   chipText: { fontSize: 12, color: APP_COLORS.text },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: APP_COLORS.textSecondary, marginBottom: 6 },
   typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
   typeBtn: { flex: 1, minWidth: 70 },
   input: { marginBottom: 12 },
@@ -246,6 +211,4 @@ const styles = StyleSheet.create({
   detailRow: { flexDirection: 'row', marginBottom: 8 },
   detailLabel: { color: APP_COLORS.textSecondary, width: 100 },
   detailValue: { color: APP_COLORS.text, fontWeight: '500', flex: 1 },
-  detailSection: { marginBottom: 8 },
-  detailNotes: { color: APP_COLORS.text, lineHeight: 22, marginTop: 4 },
 });

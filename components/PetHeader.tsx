@@ -17,16 +17,16 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 function calculateAge(birthDate: string): string {
-  if (!birthDate) return 'Desconocida';
+  if (!birthDate) return 'N/D';
   try {
     const parts = birthDate.split('/');
-    if (parts.length !== 3) return 'Desconocida';
+    if (parts.length !== 3) return 'N/D';
     const birth = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
     const now = new Date();
     const years = Math.floor((now.getTime() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-    return years >= 0 ? `${years} año${years !== 1 ? 's' : ''}` : 'Desconocida';
+    return years >= 0 ? `${years} año${years !== 1 ? 's' : ''}` : 'N/D';
   } catch {
-    return 'Desconocida';
+    return 'N/D';
   }
 }
 
@@ -34,82 +34,76 @@ export default function PetHeader({ pet }: PetHeaderProps) {
   return (
     <Card style={styles.card}>
       <Card.Content>
-        <View style={styles.header}>
-          <View style={styles.avatar}>
-            <MaterialCommunityIcons
-              name={pet.species === 'dog' ? 'dog' : 'cat'}
-              size={48}
-              color={APP_COLORS.primary}
-            />
-          </View>
-          <View style={styles.info}>
-            <Text variant="headlineSmall" style={styles.name}>{pet.name}</Text>
-            <Text variant="bodyMedium" style={styles.breed}>{pet.breed || 'Sin raza especificada'}</Text>
+        <View style={styles.topRow}>
+          <View style={styles.avatarSection}>
+            <View style={styles.avatar}>
+              <MaterialCommunityIcons
+                name={pet.species === 'dog' ? 'dog' : 'cat'}
+                size={40}
+                color="#FFFFFF"
+              />
+            </View>
+            <Text variant="titleLarge" style={styles.name}>{pet.name}</Text>
+            <View style={styles.statusBadge}>
+              <View style={[styles.statusDot, { backgroundColor: '#43A047' }]} />
+              <Text style={styles.statusText}>Viva</Text>
+            </View>
+            <Text style={styles.clinicLabel}>Ficha clínica</Text>
           </View>
         </View>
 
-        <View style={styles.grid}>
-          <View style={styles.gridItem}>
+        <View style={styles.infoGrid}>
+          <View style={styles.infoItem}>
             <MaterialCommunityIcons name="paw" size={14} color={APP_COLORS.primary} />
-            <Text style={styles.gridLabel}>Especie</Text>
-            <Text style={styles.gridValue}>{pet.species === 'dog' ? 'Perro' : 'Gato'}</Text>
+            <Text style={styles.infoLabel}>ESPECIE</Text>
+            <Text style={styles.infoValue}>{pet.species === 'dog' ? 'Canino' : 'Felino'}</Text>
           </View>
-          <View style={styles.gridItem}>
-            <MaterialCommunityIcons name="calendar" size={14} color={APP_COLORS.primary} />
-            <Text style={styles.gridLabel}>Edad</Text>
-            <Text style={styles.gridValue}>{calculateAge(pet.birth_date)}</Text>
+          <View style={styles.infoItem}>
+            <MaterialCommunityIcons name="shape" size={14} color={APP_COLORS.primary} />
+            <Text style={styles.infoLabel}>RAZA</Text>
+            <Text style={styles.infoValue}>{pet.breed || 'N/D'}</Text>
           </View>
-          <View style={styles.gridItem}>
-            <MaterialCommunityIcons name="weight" size={14} color={APP_COLORS.primary} />
-            <Text style={styles.gridLabel}>Peso</Text>
-            <Text style={styles.gridValue}>{pet.weight > 0 ? `${pet.weight} kg` : '-'}</Text>
-          </View>
-          <View style={styles.gridItem}>
+          <View style={styles.infoItem}>
             <MaterialCommunityIcons name="palette" size={14} color={APP_COLORS.primary} />
-            <Text style={styles.gridLabel}>Color</Text>
-            <Text style={styles.gridValue}>{pet.color || '-'}</Text>
+            <Text style={styles.infoLabel}>COLOR</Text>
+            <Text style={styles.infoValue}>{pet.color || 'N/D'}</Text>
           </View>
-          <View style={styles.gridItem}>
+          <View style={styles.infoItem}>
+            <MaterialCommunityIcons name="weight" size={14} color={APP_COLORS.primary} />
+            <Text style={styles.infoLabel}>PESO</Text>
+            <Text style={styles.infoValue}>{pet.weight > 0 ? `${pet.weight} kg` : 'N/D'}</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <MaterialCommunityIcons name="calendar" size={14} color={APP_COLORS.primary} />
+            <Text style={styles.infoLabel}>NACIMIENTO</Text>
+            <Text style={styles.infoValue}>{pet.birth_date || 'N/D'}</Text>
+          </View>
+          <View style={styles.infoItem}>
             <MaterialCommunityIcons name="baby-face-outline" size={14} color={APP_COLORS.primary} />
-            <Text style={styles.gridLabel}>Reproductivo</Text>
-            <Text style={styles.gridValue}>{STATUS_LABELS[pet.reproductive_status] || pet.reproductive_status || '-'}</Text>
-          </View>
-          <View style={styles.gridItem}>
-            <MaterialCommunityIcons name="heart-pulse" size={14} color={APP_COLORS.primary} />
-            <Text style={styles.gridLabel}>Nacimiento</Text>
-            <Text style={styles.gridValue}>{pet.birth_date || '-'}</Text>
+            <Text style={styles.infoLabel}>REPRODUCTIVO</Text>
+            <Text style={styles.infoValue}>{STATUS_LABELS[pet.reproductive_status] || 'N/D'}</Text>
           </View>
         </View>
 
         {(pet.tutor_name || pet.phone || pet.address) && (
           <View style={styles.tutorSection}>
-            <Text variant="titleSmall" style={styles.tutorTitle}>Datos del Tutor</Text>
-            {pet.tutor_name && (
-              <View style={styles.tutorRow}>
-                <MaterialCommunityIcons name="account" size={14} color={APP_COLORS.primary} />
-                <Text style={styles.tutorLabel}>Nombre:</Text>
-                <Text style={styles.tutorValue}>{pet.tutor_name}</Text>
-              </View>
-            )}
+            <View style={styles.tutorRow}>
+              <MaterialCommunityIcons name="account" size={14} color={APP_COLORS.primary} />
+              <Text style={styles.tutorLabel}>TUTOR</Text>
+              <Text style={styles.tutorValue}>{pet.tutor_name || 'N/D'}</Text>
+            </View>
             {pet.phone && (
               <View style={styles.tutorRow}>
                 <MaterialCommunityIcons name="phone" size={14} color={APP_COLORS.primary} />
-                <Text style={styles.tutorLabel}>Teléfono:</Text>
+                <Text style={styles.tutorLabel}>TELÉFONO</Text>
                 <Text style={styles.tutorValue}>{pet.phone}</Text>
               </View>
             )}
             {pet.address && (
               <View style={styles.tutorRow}>
                 <MaterialCommunityIcons name="map-marker" size={14} color={APP_COLORS.primary} />
-                <Text style={styles.tutorLabel}>Dirección:</Text>
+                <Text style={styles.tutorLabel}>DIRECCIÓN</Text>
                 <Text style={styles.tutorValue}>{pet.address}</Text>
-              </View>
-            )}
-            {pet.clinic_location && (
-              <View style={styles.tutorRow}>
-                <MaterialCommunityIcons name="hospital-box" size={14} color={APP_COLORS.primary} />
-                <Text style={styles.tutorLabel}>Clínica:</Text>
-                <Text style={styles.tutorValue}>{pet.clinic_location}</Text>
               </View>
             )}
           </View>
@@ -124,82 +118,36 @@ const styles = StyleSheet.create({
     margin: 12,
     borderRadius: 12,
     backgroundColor: APP_COLORS.surface,
+    borderLeftWidth: 4,
+    borderLeftColor: APP_COLORS.primary,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
+  topRow: { alignItems: 'center', marginBottom: 16 },
+  avatarSection: { alignItems: 'center' },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: APP_COLORS.primaryContainer,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: APP_COLORS.primary,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 10,
   },
-  info: {
-    flex: 1,
-    marginLeft: 16,
+  name: { fontWeight: '800', color: APP_COLORS.text, fontSize: 20 },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  statusDot: { width: 8, height: 8, borderRadius: 4 },
+  statusText: { fontSize: 12, color: '#43A047', fontWeight: '600' },
+  clinicLabel: { fontSize: 12, color: APP_COLORS.textSecondary, marginTop: 2 },
+  infoGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 8,
+    borderTopWidth: 1, borderTopColor: APP_COLORS.border, paddingTop: 12,
   },
-  name: {
-    fontWeight: '800',
-    color: APP_COLORS.text,
+  infoItem: {
+    width: '30%', backgroundColor: APP_COLORS.surfaceVariant,
+    borderRadius: 8, padding: 10, alignItems: 'center',
   },
-  breed: {
-    color: APP_COLORS.textSecondary,
-    marginTop: 4,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
-  },
-  gridItem: {
-    width: '30%',
-    backgroundColor: APP_COLORS.surfaceVariant,
-    borderRadius: 8,
-    padding: 8,
-    alignItems: 'center',
-  },
-  gridLabel: {
-    fontSize: 10,
-    color: APP_COLORS.textSecondary,
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  gridValue: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: APP_COLORS.text,
-    marginTop: 2,
-    textAlign: 'center',
-  },
+  infoLabel: { fontSize: 9, color: APP_COLORS.textSecondary, marginTop: 4, letterSpacing: 0.5 },
+  infoValue: { fontSize: 12, fontWeight: '700', color: APP_COLORS.text, marginTop: 2, textAlign: 'center' },
   tutorSection: {
-    borderTopWidth: 1,
-    borderTopColor: APP_COLORS.border,
-    paddingTop: 12,
-    marginTop: 4,
+    borderTopWidth: 1, borderTopColor: APP_COLORS.border, paddingTop: 12, marginTop: 8,
   },
-  tutorTitle: {
-    fontWeight: '700',
-    color: APP_COLORS.text,
-    marginBottom: 8,
-  },
-  tutorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  tutorLabel: {
-    color: APP_COLORS.textSecondary,
-    marginLeft: 8,
-    width: 70,
-  },
-  tutorValue: {
-    color: APP_COLORS.text,
-    fontWeight: '500',
-    flex: 1,
-  },
+  tutorRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
+  tutorLabel: { fontSize: 10, color: APP_COLORS.textSecondary, width: 70, letterSpacing: 0.5 },
+  tutorValue: { color: APP_COLORS.text, fontWeight: '600', flex: 1, fontSize: 13 },
 });
