@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { View, ScrollView, StyleSheet, Alert } from 'react-native';
-import { Text, Card, Button, FAB, Portal, Modal, TextInput, Menu } from 'react-native-paper';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { Text, Card, Button, FAB, Portal, Modal, TextInput, Menu, Dialog } from 'react-native-paper';
 import { Calendar, DateData } from 'react-native-calendars';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppointments } from '../../hooks/useDirectus';
@@ -34,6 +34,8 @@ export default function AgendaScreen() {
   const [apptDescription, setApptDescription] = useState('');
 
   const { appointments, loading, addAppointment, removeAppointment } = useAppointments();
+  const [errorDialog, setErrorDialog] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ name: string; id: string } | null>(null);
 
   const markedDates = useMemo(() => {
     const marks: Record<string, any> = {};
@@ -54,7 +56,7 @@ export default function AgendaScreen() {
   }, [appointments, selectedDate]);
 
   const handleSave = async () => {
-    if (!apptName.trim()) { Alert.alert('Error', 'El nombre del paciente es obligatorio'); return; }
+    if (!apptName.trim()) { setErrorDialog('El nombre del paciente es obligatorio'); return; }
     try {
       await addAppointment({
         patient_name: apptName.trim(), tutor_phone: apptPhone.trim() || null,
@@ -62,14 +64,11 @@ export default function AgendaScreen() {
         appointment_type: apptType, description: apptDescription.trim() || null,
       });
       setApptName(''); setApptPhone(''); setApptDescription(''); setShowModal(false);
-    } catch { Alert.alert('Error', 'No se pudo guardar la cita'); }
+    } catch { setErrorDialog('No se pudo guardar la cita'); }
   };
 
   const handleDelete = (appt: Appointment) => {
-    Alert.alert('Eliminar cita', `¿Eliminar cita de ${appt.patient_name}?`, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Eliminar', style: 'destructive', onPress: () => removeAppointment(appt.id) },
-    ]);
+    setConfirmDelete({ name: appt.patient_name, id: appt.id });
   };
 
   return (
@@ -151,6 +150,35 @@ export default function AgendaScreen() {
             <Button mode="contained" onPress={handleSave} style={[styles.saveButton, { backgroundColor: colors.primary }]}>Guardar Cita</Button>
           </ScrollView>
         </Modal>
+      </Portal>
+
+      {/* Error Dialog */}
+      <Portal>
+        <Dialog visible={!!errorDialog} onDismiss={() => setErrorDialog(null)}>
+          <Dialog.Icon icon="alert-circle-outline" />
+          <Dialog.Title style={{ textAlign: 'center' }}>Error</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ textAlign: 'center' }}>{errorDialog}</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setErrorDialog(null)}>OK</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
+      {/* Confirm Delete Dialog */}
+      <Portal>
+        <Dialog visible={!!confirmDelete} onDismiss={() => setConfirmDelete(null)}>
+          <Dialog.Icon icon="alert" />
+          <Dialog.Title style={{ textAlign: 'center' }}>Eliminar cita</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ textAlign: 'center' }}>¿Eliminar cita de {confirmDelete?.name}?</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setConfirmDelete(null)}>Cancelar</Button>
+            <Button textColor={colors.error} onPress={() => { if (confirmDelete) removeAppointment(confirmDelete.id); setConfirmDelete(null); }}>Eliminar</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </View>
   );

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, Alert } from 'react-native';
-import { Text, Card, Button, FAB, Portal, Modal, TextInput, Menu } from 'react-native-paper';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { Text, Card, Button, FAB, Portal, Modal, TextInput, Menu, Dialog } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useInventory } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -29,6 +29,8 @@ export default function InventarioScreen() {
   const [itemStock, setItemStock] = useState('');
   const [itemMinStock, setItemMinStock] = useState('5');
   const [itemUnit, setItemUnit] = useState('unidades');
+  const [errorDialog, setErrorDialog] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ name: string; id: string } | null>(null);
 
   const resetForm = () => {
     setItemName('');
@@ -51,7 +53,7 @@ export default function InventarioScreen() {
 
   const handleSave = async () => {
     if (!itemName.trim()) {
-      Alert.alert('Error', 'El nombre es obligatorio');
+      setErrorDialog('El nombre es obligatorio');
       return;
     }
     try {
@@ -71,15 +73,12 @@ export default function InventarioScreen() {
       resetForm();
       setShowModal(false);
     } catch {
-      Alert.alert('Error', 'No se pudo guardar el item');
+      setErrorDialog('No se pudo guardar el item');
     }
   };
 
   const handleDelete = (item: any) => {
-    Alert.alert('Eliminar item', `¿Eliminar "${item.name}"?`, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Eliminar', style: 'destructive', onPress: () => removeItem(item.id) },
-    ]);
+    setConfirmDelete({ name: item.name, id: item.id });
   };
 
   const getStockColor = (current: number, min: number) => {
@@ -204,6 +203,35 @@ export default function InventarioScreen() {
             </View>
           </ScrollView>
         </Modal>
+      </Portal>
+
+      {/* Error Dialog */}
+      <Portal>
+        <Dialog visible={!!errorDialog} onDismiss={() => setErrorDialog(null)}>
+          <Dialog.Icon icon="alert-circle-outline" />
+          <Dialog.Title style={{ textAlign: 'center' }}>Error</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ textAlign: 'center' }}>{errorDialog}</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setErrorDialog(null)}>OK</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
+      {/* Confirm Delete Dialog */}
+      <Portal>
+        <Dialog visible={!!confirmDelete} onDismiss={() => setConfirmDelete(null)}>
+          <Dialog.Icon icon="alert" />
+          <Dialog.Title style={{ textAlign: 'center' }}>Eliminar item</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ textAlign: 'center' }}>¿Eliminar "{confirmDelete?.name}"?</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setConfirmDelete(null)}>Cancelar</Button>
+            <Button textColor={colors.error} onPress={() => { if (confirmDelete) removeItem(confirmDelete.id); setConfirmDelete(null); }}>Eliminar</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </View>
   );

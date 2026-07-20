@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity, Alert, TextInput } from 'react-native';
-import { Text, Card, Badge, Button, Modal, Portal } from 'react-native-paper';
+import { View, ScrollView, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { Text, Card, Badge, Button, Modal, Portal, Dialog } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDisease, useFavorites } from '../../hooks/useDirectus';
@@ -19,6 +19,7 @@ export default function DiseaseDetailScreen() {
   const [editVisible, setEditVisible] = useState(false);
   const [editData, setEditData] = useState<Partial<DirectusDisease>>({});
   const [saving, setSaving] = useState(false);
+  const [errorDialog, setErrorDialog] = useState<string | null>(null);
 
   useEffect(() => {
     if (disease) {
@@ -45,16 +46,15 @@ export default function DiseaseDetailScreen() {
 
   const handleSave = async () => {
     if (!editData.name?.trim()) {
-      Alert.alert('Error', 'El nombre es obligatorio');
+      setErrorDialog('El nombre es obligatorio');
       return;
     }
     setSaving(true);
     try {
       await updateDisease(editData);
       closeEdit();
-      Alert.alert('Éxito', 'Enfermedad actualizada');
     } catch (e: any) {
-      Alert.alert('Error', e.message);
+      setErrorDialog(e.message);
     } finally {
       setSaving(false);
     }
@@ -442,6 +442,20 @@ export default function DiseaseDetailScreen() {
             </View>
           </ScrollView>
         </Modal>
+      </Portal>
+
+      {/* Error Dialog */}
+      <Portal>
+        <Dialog visible={!!errorDialog} onDismiss={() => setErrorDialog(null)}>
+          <Dialog.Icon icon="alert-circle-outline" />
+          <Dialog.Title style={{ textAlign: 'center' }}>Error</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ textAlign: 'center' }}>{errorDialog}</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setErrorDialog(null)}>OK</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </ScrollView>
   );

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, Alert, TouchableOpacity, Image } from 'react-native';
-import { Text, TextInput, Button, Menu, Checkbox } from 'react-native-paper';
+import { View, ScrollView, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { Text, TextInput, Button, Menu, Dialog, Portal } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -24,6 +24,8 @@ export default function AddPacienteScreen() {
 
   // Photo
   const [photo, setPhoto] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Reseña del Paciente
   const [name, setName] = useState('');
@@ -73,7 +75,7 @@ export default function AddPacienteScreen() {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permiso requerido', 'Necesitamos acceso a tus fotos para agregar una imagen del paciente.');
+      setErrorMsg('Necesitamos acceso a tus fotos para agregar una imagen del paciente.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -89,23 +91,37 @@ export default function AddPacienteScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'El nombre es obligatorio');
+      setErrorMsg('El nombre es obligatorio');
       return;
     }
-    let photoUrl = null;
-    if (photo) {
-      try {
-        photoUrl = await uploadPetPhoto(photo);
-      } catch (e: any) {
-        console.warn('Photo upload failed, saving without photo:', e.message);
-      }
-    }
+    setSaving(true);
+    setErrorMsg(null);
     try {
+      let photoUrl = null;
+      if (photo) {
+        try {
+          photoUrl = await uploadPetPhoto(photo);
+        } catch (e: any) {
+          console.warn('Photo upload failed, saving without photo:', e.message);
+        }
+      }
+
+      // Convert DD/MM/YYYY → YYYY-MM-DD for PostgreSQL
+      let isoDate = null;
+      if (birthDate.trim()) {
+        const parts = birthDate.split('/');
+        if (parts.length === 3) {
+          isoDate = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+        } else {
+          isoDate = birthDate.trim();
+        }
+      }
+
       await addPet({
         name: name.trim(),
         species,
         breed: breed.trim(),
-        birth_date: birthDate,
+        birth_date: isoDate,
         weight: parseFloat(weight) || 0,
         color: color.trim(),
         photo: photoUrl,
@@ -138,7 +154,10 @@ export default function AddPacienteScreen() {
       });
       router.back();
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'No se pudo guardar el paciente');
+      console.error('Save patient error:', error);
+      setErrorMsg(error.message || 'No se pudo guardar el paciente');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -332,13 +351,27 @@ export default function AddPacienteScreen() {
 
       {/* Actions */}
       <View style={styles.actions}>
-        <Button mode="outlined" onPress={() => router.back()} style={[styles.cancelButton, { borderColor: colors.border }]} labelStyle={{ color: colors.text }}>
+        <Button mode="outlined" onPress={() => router.back()} style={[styles.cancelButton, { borderColor: colors.border }]} labelStyle={{ color: colors.text }} disabled={saving}>
           Cancelar
         </Button>
-        <Button mode="contained" onPress={handleSave} style={[styles.saveButton, { backgroundColor: colors.primary }]} labelStyle={{ color: '#FFFFFF' }}>
+        <Button mode="contained" onPress={handleSave} style={[styles.saveButton, { backgroundColor: colors.primary }]} labelStyle={{ color: '#FFFFFF' }} loading={saving} disabled={saving}>
           Guardar Paciente
         </Button>
       </View>
+
+      {/* Error Dialog */}
+      <Portal>
+        <Dialog visible={!!errorMsg} onDismiss={() => setErrorMsg(null)}>
+          <Dialog.Icon icon="alert-circle-outline" />
+          <Dialog.Title style={{ textAlign: 'center' }}>Error</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ textAlign: 'center' }}>{errorMsg}</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setErrorMsg(null)}>OK</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </ScrollView>
   );
 }
