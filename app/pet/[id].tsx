@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text, Card, Button, TextInput, Portal, Modal, Dialog, Divider } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
@@ -26,6 +26,7 @@ export default function PetDetailScreen() {
   const [rxLinkedRecordId, setRxLinkedRecordId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [errorDialog, setErrorDialog] = useState<string | null>(null);
+  const [clinicalHistoryExpanded, setClinicalHistoryExpanded] = useState(false);
 
   // Clinical record form
   const [recordType, setRecordType] = useState<ClinicalRecord['record_type']>('consulta');
@@ -68,6 +69,28 @@ export default function PetDetailScreen() {
     : records.filter(r => r.record_type === activeTab.slice(0, -1));
 
   const filteredPrescriptions = activeTab === 'recetas' ? prescriptions : [];
+
+  const clinicalFieldCount = useMemo(() => {
+    if (!pet) return 0;
+    let count = 0;
+    if (pet.anamnesis) count++;
+    if (pet.allergies && pet.allergies.length > 0) count++;
+    if (pet.habitat) count++;
+    if (pet.food) count++;
+    if (pet.food_frequency) count++;
+    if (pet.water_consumption) count++;
+    if (pet.urination) count++;
+    if (pet.lives_with_other_animals) count++;
+    if (pet.vaccines) count++;
+    if (pet.deworming) count++;
+    if (pet.flea_treatment) count++;
+    if (pet.last_heat) count++;
+    if (pet.surgeries) count++;
+    if (pet.other_diseases) count++;
+    if (pet.medications) count++;
+    if (pet.notes) count++;
+    return count;
+  }, [pet]);
 
   const handleAddRecord = async () => {
     if (!recordNotes.trim()) {
@@ -164,20 +187,37 @@ export default function PetDetailScreen() {
       {/* ─── RESEÑA ─── */}
       <PetHeader pet={pet} />
 
-      {/* ─── HISTORIA CLÍNICA INICIAL (datos completos del paciente) ─── */}
+      {/* ─── HISTORIA CLÍNICA INICIAL (colapsable) ─── */}
       <Card style={[styles.sectionCard, { backgroundColor: colors.surface }]}>
-        <Card.Content>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionAccent, { backgroundColor: colors.primary }]} />
-              <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.primary }]}>
-                Historia Clínica Inicial
-              </Text>
+        <TouchableOpacity onPress={() => setClinicalHistoryExpanded(!clinicalHistoryExpanded)} activeOpacity={0.7}>
+          <Card.Content>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <View style={[styles.sectionAccent, { backgroundColor: colors.primary }]} />
+                <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.primary }]}>
+                  Historia Clínica Inicial
+                </Text>
+                {clinicalFieldCount > 0 && (
+                  <View style={[styles.countBadge, { backgroundColor: colors.primaryContainer }]}>
+                    <Text style={[styles.countBadgeText, { color: colors.primary }]}>{clinicalFieldCount}</Text>
+                  </View>
+                )}
+              </View>
+              <MaterialCommunityIcons
+                name={clinicalHistoryExpanded ? 'chevron-up' : 'chevron-down'}
+                size={22}
+                color={colors.textSecondary}
+              />
             </View>
-          </View>
+          </Card.Content>
+        </TouchableOpacity>
 
-          {/* Anamnesis */}
-          {pet.anamnesis && (
+        {clinicalHistoryExpanded && (
+          <Card.Content style={{ paddingTop: 0 }}>
+            <Divider style={{ marginBottom: 12 }} />
+
+            {/* Anamnesis */}
+            {pet.anamnesis && (
             <View style={styles.fieldBlock}>
               <View style={styles.fieldHeader}>
                 <MaterialCommunityIcons name="stethoscope" size={16} color={colors.primary} />
@@ -363,10 +403,10 @@ export default function PetDetailScreen() {
             </View>
           )}
         </Card.Content>
+        )}
       </Card>
 
       {/* ─── ÚLTIMA CONSULTA (destacada) ─── */}
-      {mostRecentRecord && (
         <Card style={[styles.sectionCard, { backgroundColor: colors.surface, borderLeftColor: colors.primary }]}>
           <Card.Content>
             <View style={styles.sectionHeader}>
@@ -747,6 +787,8 @@ const styles = StyleSheet.create({
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionAccent: { width: 3, height: 18, borderRadius: 2 },
   sectionTitle: { fontWeight: '700', fontSize: 15 },
+  countBadge: { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, marginLeft: 6 },
+  countBadgeText: { fontSize: 11, fontWeight: '700' },
   headerButtons: { flexDirection: 'row', alignItems: 'center' },
 
   // Clinical fields
