@@ -216,13 +216,20 @@ app.post('/items/pets', authMiddleware, async (req, res) => {
   try {
     const p = req.body;
     const result = await pool.query(
-       `INSERT INTO pets (name, species, breed, birth_date, weight, color, photo, allergies, notes, tutor_name, phone, email, address, clinic_location, reproductive_status, anamnesis, user_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+       `INSERT INTO pets (name, species, breed, birth_date, weight, color, photo, allergies, notes, tutor_name, phone, email, address, clinic_location, reproductive_status, anamnesis, user_id,
+        id_number, sex, temperament, habitat, habitat_other, food, food_frequency, water_consumption, urination, lives_with_other_animals, vaccines, deworming, flea_treatment, last_heat, surgeries, other_diseases, medications)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34) RETURNING *`,
        [p.name, p.species, p.breed, p.birth_date, p.weight, p.color, p.photo,
         JSON.stringify(p.allergies || []), p.notes,
         p.tutor_name || null, p.phone || null, p.email || null, p.address || null, p.clinic_location || null,
         p.reproductive_status || 'intacto', p.anamnesis || null,
-        req.userId]
+        req.userId,
+        p.id_number || null, p.sex || null, JSON.stringify(p.temperament || []),
+        p.habitat || null, p.habitat_other || null,
+        p.food || null, p.food_frequency || null, p.water_consumption || null, p.urination || null,
+        p.lives_with_other_animals || null,
+        p.vaccines || null, p.deworming || null, p.flea_treatment || null, p.last_heat || null,
+        p.surgeries || null, p.other_diseases || null, p.medications || null]
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
@@ -542,6 +549,79 @@ app.patch('/items/clinical_records/:id', authMiddleware, async (req, res) => {
 app.delete('/items/clinical_records/:id', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM clinical_records WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    res.json({ data: null });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── INVENTORY ──────────────────────────────────────────
+app.get('/items/inventory', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM inventory WHERE user_id = $1 ORDER BY name', [req.userId]);
+    res.json({ data: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/items/inventory/low-stock', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM inventory WHERE user_id = $1 AND current_stock <= min_stock ORDER BY name',
+      [req.userId]
+    );
+    res.json({ data: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/items/inventory', authMiddleware, async (req, res) => {
+  try {
+    const i = req.body;
+    const result = await pool.query(
+      `INSERT INTO inventory (user_id, name, category, current_stock, min_stock, unit, last_restocked)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [req.userId, i.name, i.category || 'insumo', i.current_stock || 0, i.min_stock || 5,
+       i.unit || 'unidades', i.last_restocked || null]
+    );
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/items/inventory/:id', authMiddleware, async (req, res) => {
+  try {
+    const i = req.body;
+    const fields = [];
+    const values = [];
+    let idx = 1;
+    for (const [key, val] of Object.entries(i)) {
+      if (key === 'id' || key === 'created_at' || key === 'user_id') continue;
+      const valStr = typeof val === 'object' ? JSON.stringify(val) : val;
+      fields.push(`${key} = $${idx}`);
+      values.push(valStr);
+      idx++;
+    }
+    if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
+    values.push(req.params.id);
+    values.push(req.userId);
+    const result = await pool.query(
+      `UPDATE inventory SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`, values
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/items/inventory/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM inventory WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: null });
   } catch (err) {

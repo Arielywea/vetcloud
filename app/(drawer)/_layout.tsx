@@ -81,6 +81,13 @@ export default function DrawerLayout() {
             headerTitle: 'Agenda Médica',
           }}
         />
+        <Drawer.Screen
+          name="inventario"
+          options={{
+            title: 'Inventario',
+            headerTitle: 'Inventario de Insumos',
+          }}
+        />
       </Drawer>
     </GestureHandlerRootView>
   );

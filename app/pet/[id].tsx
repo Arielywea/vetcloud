@@ -96,7 +96,7 @@ export default function PetDetailScreen() {
             <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.text }]}>Alergias</Text>
             <View style={styles.chipRow}>
               {pet.allergies.map((a: string, i: number) => (
-                <View key={i} style={styles.chip}>
+                <View key={i} style={[styles.chip, { backgroundColor: colors.primaryContainer }]}>
                   <Text style={[styles.chipText, { color: colors.text }]}>{a}</Text>
                 </View>
               ))}
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   description: { lineHeight: 22 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip: { backgroundColor: '#FFF3E0', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  chip: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
   chipText: { fontSize: 12 },
   typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
   typeBtn: { flex: 1, minWidth: 70 },
