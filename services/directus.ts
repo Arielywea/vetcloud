@@ -1,4 +1,5 @@
 import { API_URL } from '../config';
+import { authHeaders } from './auth';
 
 // ─────────────────────────────────────────────────────────
 // Schema Types
@@ -104,7 +105,7 @@ async function apiGet(endpoint: string, params?: Record<string, string>) {
       if (v && v !== 'all') url.searchParams.set(k, v);
     });
   }
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), { headers: authHeaders() });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
   const json = await res.json();
   return json.data;
@@ -113,7 +114,7 @@ async function apiGet(endpoint: string, params?: Record<string, string>) {
 async function apiPost(endpoint: string, body: any) {
   const res = await fetch(`${API_URL}${endpoint}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -127,7 +128,7 @@ async function apiPost(endpoint: string, body: any) {
 async function apiPatch(endpoint: string, body: any) {
   const res = await fetch(`${API_URL}${endpoint}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
@@ -136,7 +137,7 @@ async function apiPatch(endpoint: string, body: any) {
 }
 
 async function apiDelete(endpoint: string) {
-  const res = await fetch(`${API_URL}${endpoint}`, { method: 'DELETE' });
+  const res = await fetch(`${API_URL}${endpoint}`, { method: 'DELETE', headers: authHeaders() });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
 }
 
