@@ -9,6 +9,7 @@
   },
   "rewrites": [
     { "source": "/auth/(.*)", "destination": "/api" },
+    { "source": "/debug/(.*)", "destination": "/api" },
     { "source": "/items/(.*)", "destination": "/api" },
     { "source": "/admin", "destination": "/api" },
     { "source": "/admin/(.*)", "destination": "/api" },
