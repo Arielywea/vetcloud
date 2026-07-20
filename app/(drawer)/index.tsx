@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   greetingText: { fontWeight: '800' },
   dateText: { marginTop: 4, textTransform: 'capitalize', fontSize: 13 },
   subtitleText: { marginTop: 6, fontSize: 14 },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 12, marginBottom: 10 },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 12, marginBottom: 10, justifyContent: 'space-between' },
   statCard: { width: '47%', borderRadius: 12, elevation: 1 },
   statContent: { alignItems: 'center', paddingVertical: 10 },
   statIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   recordInfo: { flex: 1 },
   recordType: { fontWeight: '600', fontSize: 13 },
   recordDate: { fontSize: 11, marginTop: 2 },
-  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 12 },
+  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 12, justifyContent: 'space-between' },
   quickCard: { width: '47%', borderRadius: 12, padding: 16, alignItems: 'center', elevation: 1, gap: 6 },
   quickLabel: { fontSize: 12, fontWeight: '600', textAlign: 'center' },
 });
