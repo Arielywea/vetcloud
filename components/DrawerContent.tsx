@@ -27,6 +27,12 @@ const MENU_SECTIONS = [
       { label: 'Agenda', icon: 'calendar-clock', route: '/(drawer)/agenda' },
     ],
   },
+  {
+    title: 'CUENTA',
+    items: [
+      { label: 'Mi Perfil', icon: 'account-cog', route: '/(drawer)/profile' },
+    ],
+  },
 ];
 
 export default function DrawerContent(props: any) {
