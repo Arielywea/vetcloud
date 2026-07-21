@@ -17,7 +17,7 @@ const pool = new Pool(
   process.env.DATABASE_URL
     ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }
     : process.env.VERCEL_ENV
-      ? { connectionString: 'postgresql://neondb_owner:npg_3C7BEuHeRvPO@ep-aged-river-ac7edlxd.sa-east-1.aws.neon.tech/neondb?sslmode=require', ssl: { rejectUnauthorized: false } }
+      ? { connectionString: 'postgresql://neondb_owner:npg_7KCSNkRegUy9@ep-aged-river-ac7edlxd-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require', ssl: { rejectUnauthorized: false } }
       : {
           host: 'localhost',
           port: 1245,
