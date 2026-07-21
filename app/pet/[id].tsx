@@ -17,7 +17,7 @@ export default function PetDetailScreen() {
   const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { pet, loading } = usePet(id || null);
-  const { records, loading: recordsLoading, addRecord } = useClinicalRecords(id || undefined);
+  const { records, loading: recordsLoading, addRecord, removeRecord } = useClinicalRecords(id || undefined);
   const { prescriptions, loading: rxLoading, addPrescription, sendEmail } = usePrescriptions(id || undefined);
   const [activeTab, setActiveTab] = useState<ClinicalTabType>('historial');
   const [showRecordModal, setShowRecordModal] = useState(false);
@@ -27,6 +27,7 @@ export default function PetDetailScreen() {
   const [rxLinkedRecordId, setRxLinkedRecordId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [errorDialog, setErrorDialog] = useState<string | null>(null);
+  const [deleteRecordTarget, setDeleteRecordTarget] = useState<ClinicalRecord | null>(null);
   const [clinicalHistoryExpanded, setClinicalHistoryExpanded] = useState(false);
 
   // Clinical record form
@@ -182,6 +183,17 @@ export default function PetDetailScreen() {
       setErrorDialog(error.message || 'No se pudo enviar el correo');
     } finally {
       setSendingEmail(false);
+    }
+  };
+
+  const confirmDeleteRecord = async () => {
+    if (!deleteRecordTarget) return;
+    try {
+      await removeRecord(deleteRecordTarget.id);
+      setDeleteRecordTarget(null);
+      setSelectedRecord(null);
+    } catch (error) {
+      setErrorDialog('No se pudo eliminar el registro');
     }
   };
 
@@ -654,9 +666,14 @@ export default function PetDetailScreen() {
                 </View>
               )}
               <View style={styles.detailActions}>
-                <Button mode="contained" compact onPress={() => { setSelectedRecord(null); openRxModal(selectedRecord.id); }}>
-                  Generar Receta
-                </Button>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <Button mode="contained" compact onPress={() => { setSelectedRecord(null); openRxModal(selectedRecord.id); }}>
+                    Generar Receta
+                  </Button>
+                  <Button mode="outlined" compact onPress={() => setDeleteRecordTarget(selectedRecord)} textColor={colors.error}>
+                    Eliminar
+                  </Button>
+                </View>
                 <Button mode="outlined" onPress={() => setSelectedRecord(null)} style={{ marginTop: 8 }}>Cerrar</Button>
               </View>
             </ScrollView>
@@ -932,6 +949,24 @@ export default function PetDetailScreen() {
             )}
           </ScrollView>
         </Modal>
+      </Portal>
+
+      {/* Dialog: Confirmar eliminar registro */}
+      <Portal>
+        <Dialog visible={!!deleteRecordTarget} onDismiss={() => setDeleteRecordTarget(null)}>
+          <Dialog.Icon icon="alert-circle-outline" />
+          <Dialog.Title style={{ textAlign: 'center' }}>Eliminar registro</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ textAlign: 'center' }}>
+              ¿Estás seguro de eliminar este registro de <Text style={{ fontWeight: '700' }}>{deleteRecordTarget?.record_type}</Text>?
+              Esta acción no se puede deshacer.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteRecordTarget(null)}>Cancelar</Button>
+            <Button onPress={confirmDeleteRecord} textColor={colors.error}>Eliminar</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
 
       {/* Error Dialog */}
