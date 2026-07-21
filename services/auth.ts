@@ -44,3 +44,16 @@ export async function apiAuthMe() {
 export function authHeaders(): Record<string, string> {
   return storedToken ? { Authorization: `Bearer ${storedToken}` } : {};
 }
+
+export async function apiAuthUpdateProfile(data: Record<string, any>) {
+  const token = await getToken();
+  if (!token) throw new Error('No hay token');
+  const res = await fetch(`${API_URL}/auth/profile`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Error al actualizar perfil');
+  return json.data;
+}

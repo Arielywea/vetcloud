@@ -88,6 +88,13 @@ export default function DrawerLayout() {
             headerTitle: 'Inventario de Insumos',
           }}
         />
+        <Drawer.Screen
+          name="profile"
+          options={{
+            title: 'Mi Perfil',
+            headerTitle: 'Mi Perfil',
+          }}
+        />
       </Drawer>
     </GestureHandlerRootView>
   );

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { apiAuthLogin, apiAuthMe, getToken, setToken, clearToken } from '../services/auth';
+import { apiAuthLogin, apiAuthMe, apiAuthUpdateProfile, getToken, setToken, clearToken } from '../services/auth';
 
 interface User {
   id: string;
@@ -8,6 +8,11 @@ interface User {
   email: string | null;
   role: string;
   theme_preference: 'light' | 'dark';
+  clinic_name: string | null;
+  veterinarian_name: string | null;
+  clinic_phone: string | null;
+  clinic_address: string | null;
+  smtp_email: string | null;
 }
 
 interface AuthContextType {
@@ -16,6 +21,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (rut: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (data: Record<string, any>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -24,6 +30,7 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   login: async () => {},
   logout: async () => {},
+  updateProfile: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -56,8 +63,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
+  const updateProfile = async (data: Record<string, any>) => {
+    const updated = await apiAuthUpdateProfile(data);
+    setUser(updated);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
