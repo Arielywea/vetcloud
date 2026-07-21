@@ -91,9 +91,40 @@ app.post('/auth/login', async (req, res) => {
 
 app.get('/auth/me', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, rut, name, email, role, theme_preference, created_at FROM users WHERE id = $1', [req.userId]);
+    const result = await pool.query('SELECT id, rut, name, email, role, theme_preference, created_at, smtp_email, clinic_name, veterinarian_name, clinic_phone, clinic_address FROM users WHERE id = $1', [req.userId]);
     if (!result.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
-    res.json({ data: result.rows[0] });
+    const user = result.rows[0];
+    if (user.smtp_password) user.smtp_password = '••••••••';
+    res.json({ data: user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/auth/profile', authMiddleware, async (req, res) => {
+  try {
+    const { name, email, clinic_name, veterinarian_name, clinic_phone, clinic_address, smtp_email, smtp_password } = req.body;
+    const fields = [];
+    const values = [];
+    let idx = 1;
+    if (name !== undefined) { fields.push(`name = $${idx}`); values.push(name); idx++; }
+    if (email !== undefined) { fields.push(`email = $${idx}`); values.push(email); idx++; }
+    if (clinic_name !== undefined) { fields.push(`clinic_name = $${idx}`); values.push(clinic_name); idx++; }
+    if (veterinarian_name !== undefined) { fields.push(`veterinarian_name = $${idx}`); values.push(veterinarian_name); idx++; }
+    if (clinic_phone !== undefined) { fields.push(`clinic_phone = $${idx}`); values.push(clinic_phone); idx++; }
+    if (clinic_address !== undefined) { fields.push(`clinic_address = $${idx}`); values.push(clinic_address); idx++; }
+    if (smtp_email !== undefined) { fields.push(`smtp_email = $${idx}`); values.push(smtp_email); idx++; }
+    if (smtp_password !== undefined && smtp_password !== '••••••••') { fields.push(`smtp_password = $${idx}`); values.push(smtp_password); idx++; }
+    if (!fields.length) return res.status(400).json({ error: 'No hay campos para actualizar' });
+    values.push(req.userId);
+    const result = await pool.query(
+      `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, rut, name, email, role, theme_preference, created_at, smtp_email, clinic_name, veterinarian_name, clinic_phone, clinic_address`,
+      values
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
+    const user = result.rows[0];
+    if (user.smtp_password) user.smtp_password = '••••••••';
+    res.json({ data: user });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -741,12 +772,23 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
     if (!rx.tutor_email) return res.status(400).json({ error: 'El tutor no tiene correo electrónico registrado' });
 
     const nodemailer = require('nodemailer');
+    const { generatePrescriptionPdf } = require('./utils/generatePrescriptionPdf');
+
+    const userResult = await pool.query(
+      'SELECT smtp_email, smtp_password, clinic_name, veterinarian_name, clinic_phone, clinic_address FROM users WHERE id = $1',
+      [req.userId]
+    );
+    const userProfile = userResult.rows[0] || {};
+    const smtpUser = userProfile.smtp_email || process.env.SMTP_EMAIL;
+    const smtpPass = userProfile.smtp_password || process.env.SMTP_PASSWORD;
+
+    if (!smtpUser || !smtpPass) {
+      return res.status(400).json({ error: 'No hay configuración de correo. Ve a Mi Perfil para configurar tu SMTP.' });
+    }
+
     const transporter = nodemailer.createTransport({
       service: process.env.SMTP_SERVICE || 'gmail',
-      auth: {
-        user: process.env.SMTP_EMAIL,
-        pass: process.env.SMTP_PASSWORD,
-      },
+      auth: { user: smtpUser, pass: smtpPass },
     });
 
     const speciesLabel = rx.species === 'dog' ? 'Canino' : 'Felino';
@@ -759,6 +801,12 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
         age = `${yrs} año${yrs !== 1 ? 's' : ''}`;
       }
     }
+
+    const pdfBuffer = await generatePrescriptionPdf(
+      { ...rx, veterinarian_name: rx.veterinarian_name || userProfile.veterinarian_name },
+      { name: rx.pet_name, species: rx.species, breed: rx.breed, weight: rx.weight, sex: rx.sex, birth_date: rx.birth_date, reproductive_status: rx.reproductive_status, tutor_name: rx.tutor_name, tutor_email: rx.tutor_email, tutor_phone: rx.tutor_phone, id: rx.pet_id },
+      { veterinarian_name: userProfile.veterinarian_name, clinic_name: userProfile.clinic_name, clinic_phone: userProfile.clinic_phone }
+    );
 
     const htmlBody = `
 <!DOCTYPE html>
@@ -787,7 +835,7 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
     </div>
     <div style="display: flex; gap: 16px; font-size: 13px; color: #666; margin-bottom: 20px; padding: 12px; background: #fafafa; border-radius: 8px;">
       <span><strong>Sucursal:</strong> ${rx.clinic_branch || 'Casa Matriz'}</span>
-      <span><strong>Prescriptor:</strong> ${rx.veterinarian_name || 'N/D'}</span>
+      <span><strong>Prescriptor:</strong> ${rx.veterinarian_name || userProfile.veterinarian_name || 'N/D'}</span>
       <span><strong>Fecha:</strong> ${new Date(rx.issued_at).toLocaleDateString('es-CL')}</span>
     </div>
     <div style="background: #FAFAFA; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
@@ -801,11 +849,18 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
 </body>
 </html>`;
 
+    const issuedDate = new Date(rx.issued_at).toLocaleDateString('es-CL');
+    const attachments = pdfBuffer ? [{
+      filename: `receta_${rx.pet_name.replace(/\s+/g, '_')}_${issuedDate.replace(/\//g, '-')}.pdf`,
+      content: pdfBuffer,
+    }] : [];
+
     await transporter.sendMail({
-      from: `"VetCloud" <${process.env.SMTP_EMAIL}>`,
+      from: `"${userProfile.clinic_name || 'VetCloud'}" <${smtpUser}>`,
       to: rx.tutor_email,
-      subject: `Receta veterinaria — ${rx.pet_name} — ${new Date(rx.issued_at).toLocaleDateString('es-CL')}`,
+      subject: `Receta veterinaria — ${rx.pet_name} — ${issuedDate}`,
       html: htmlBody,
+      attachments,
     });
 
     res.json({ data: { success: true } });
