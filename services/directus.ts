@@ -70,6 +70,11 @@ export interface DirectusPet {
   surgeries: string | null;
   other_diseases: string | null;
   medications: string | null;
+  motivo_consulta: string | null;
+  entorno: string | null;
+  areneros: string | null;
+  vital_signs: { temperature?: number; heart_rate?: number; respiratory_rate?: number; blood_pressure?: string; spo2?: number; mucous_membranes?: string; hydration?: string; body_condition?: string } | null;
+  hallazgos_examen_fisico: string | null;
   created_at: string;
   updated_at: string;
 }
