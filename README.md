@@ -1,96 +1,99 @@
-# VetCloud - App Veterinaria Personal
+# VetCloud 🐶
 
-Aplicación veterinaria con base de datos Directus + PostgreSQL, desplegada localmente con Docker.
+Sistema de gestión veterinaria web y móvil. App de React Native (Expo) con API Express.js, desplegada en Vercel con Neon PostgreSQL.
 
 ## Características
 
-- 📚 **Catálogo de enfermedades** (perros y gatos) con signos, diagnóstico, tratamiento y prevención
-- 🐾 **Gestión de mascotas** con perfil y historial médico
-- 🔍 **Búsqueda avanzada** por nombre o síntomas
-- 📝 **Notas personales** para casos clínicos
-- ❤️ **Favoritos** para acceso rápido
-- 📸 **Almacenamiento de archivos** (imágenes, PDFs, documentos)
-- ✏️ **Edición desde Admin UI** (Directus Studio)
+- 🐾 **Gestión de pacientes** — Registro completo con perfil, historial clínico y estado reproductivo
+- 📋 **Catálogo de enfermedades** — 39+ enfermedades caninas y felinas con patofisiología, signos, diagnóstico y tratamiento
+- 💊 **Recetas veterinarias** — Generación de recetas con PDF adjunto y envío por correo
+- 📅 **Agenda médica** — Calendario de citas y consultas
+- 📝 **Notas personales** — Casos clínicos con vinculación a mascotas/enfermedades
+- 📦 **Inventario** — Control de stock con alertas de bajo inventario
+- 🎨 **12 paletas de temáticas** — One Piece, Gurren Lagann, Slam Dunk, Dragon Ball Z, Vinland Saga, 86, Fate, Frieren, Pandora Hearts, Saber/Artoria, NERV y predeterminada
+- 🐕 **Logo beagle** — Branding minimalista con SVG
+- 🔒 **Seguridad** — JWT auth, bcrypt passwords, endpoints protegidos
 
 ## Arquitectura
 
 ```
-┌─────────────────────────────────────────────────┐
-│              Docker Compose (Local)              │
-├─────────────────────────────────────────────────┤
-│  PostgreSQL 16  │  Redis 6  │  Directus 11      │
-│  Puerto: 5432   │  6379     │  Puerto: 8055     │
-└─────────────────────────────────────────────────┘
-                        │
-                        ▼
-┌─────────────────────────────────────────────────┐
-│           VetCloud App (React Native)            │
-│           Puerto: 8081 (Expo)                    │
-└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                    Vercel (Deploy)                       │
+│  ┌─────────────────┐  ┌──────────────────────────────┐  │
+│  │  React Native    │  │  Express.js API (server.js)  │  │
+│  │  (Expo Web)      │  │  Puerto: 8055                │  │
+│  └─────────────────┘  └──────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+                           │
+                    ┌──────┴──────┐
+                    │  Neon DB    │
+                    │  PostgreSQL │
+                    └─────────────┘
 ```
 
-## Requisitos Previos
+## Requisitos
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado
-- [Node.js](https://nodejs.org/) v18+ instalado
-- npm o yarn
+- [Node.js](https://nodejs.org/) v18+
+- npm
+- Cuenta en [Vercel](https://vercel.com) (deploy)
+- Cuenta en [Neon](https://neon.tech) (base de datos)
 
 ## Instalación
 
-### 1. Instalar dependencias de la app
+### 1. Instalar dependencias
 
 ```bash
-cd C:\Users\Ariel\vet-cloud
 npm install
 ```
 
-### 2. Iniciar Docker (Directus + PostgreSQL)
+### 2. Configurar variables de entorno
+
+Copia `.env.example` a `.env` y completa:
 
 ```bash
-cd docker
-docker compose up -d
+cp .env.example .env
 ```
 
-Espera a que todos los servicios estén listos (~1-2 minutos).
+Variables requeridas:
 
-### 3. Verificar que Directus está corriendo
+| Variable | Descripción |
+|----------|-------------|
+| `DATABASE_URL` | URL de conexión a Neon PostgreSQL |
+| `JWT_SECRET` | Secreto para JWT (generar con `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) |
+| `SMTP_EMAIL` | Correo Gmail para envío de recetas |
+| `SMTP_PASSWORD` | Contraseña de aplicación de Google |
 
-Abre en tu navegador:
+### 3. Ejecutar migraciones
+
+```bash
+node -e "const {Pool}=require('pg');const p=new Pool({connectionString:process.env.DATABASE_URL,ssl:{rejectUnauthorized:false}});p.query('SQL_AQUI').then(r=>{console.log('OK');p.end()})"
 ```
-http://localhost:8055
+
+Migraciones disponibles en `scripts/`:
+- `add-auth.sql` — Tabla users con auth
+- `add-theme-column.sql` — Preferencia de tema
+- `add-pet-status.sql` — Estado de mascota (vivo/fallecido)
+- `add-prescriptions-table.sql` — Tabla de recetas
+- `add-user-profile-columns.sql` — Campos de perfil (clínica, SMTP)
+- `add-color-palette-column.sql` — Paleta de colores personalizada
+
+### 4. Sembrar usuarios
+
+```bash
+node scripts/seed-users.js
 ```
 
-Credenciales:
-- **Email:** admin@vetcloud.local
-- **Password:** Admin123!
+Usuarios por defecto:
+- **Ariel** — RUT: `21293992-7`, Password: `1245`
+- **Paz Quintana** — RUT: `21392885-6`, Password: `1245`
 
-### 4. Crear las tablas en Directus
-
-Opción A: Usar el script SQL (recomendado)
-
-1. Abre Directus Studio en `http://localhost:8055`
-2. Ve a **Settings** → **Data Model**
-3. Crea las collections manualmente siguiendo el esquema en `scripts/schema.sql`
-
-Opción B: Crear desde el Admin UI
-
-1. Ve a **Content** → **Create Collection**
-2. Crea las siguientes collections:
-   - `diseases`
-   - `pets`
-   - `medical_records`
-   - `personal_notes`
-   - `favorites`
-
-### 5. Sembrar datos de enfermedades
+### 5. Sembrar enfermedades
 
 ```bash
 npx ts-node scripts/seed-diseases.ts
 ```
 
-Esto importará las 30+ enfermedades (perros y gatos) a la base de datos.
-
-### 6. Iniciar la app
+### 6. Iniciar desarrollo
 
 ```bash
 npx expo start
@@ -102,111 +105,120 @@ Presiona `w` para abrir en navegador web.
 
 ```
 vet-cloud/
-├── docker/
-│   ├── docker-compose.yml    # Configuración Docker
-│   ├── .env                  # Variables de entorno
-│   ├── data/database/        # Datos PostgreSQL
-│   ├── uploads/              # Archivos subidos
-│   └── extensions/           # Extensiones Directus
 ├── app/
-│   ├── (tabs)/              # Pantallas principales
-│   ├── disease/[id].tsx     # Detalle de enfermedad
-│   └── pet/[id].tsx         # Detalle de mascota
-├── services/
-│   ├── directus.ts          # Cliente Directus SDK
-│   └── files.ts             # Servicio de archivos
-├── hooks/
-│   └── useDirectus.ts       # Hooks para datos
-├── scripts/
-│   ├── schema.sql           # Esquema de base de datos
-│   └── seed-diseases.ts     # Script de importación
+│   ├── (drawer)/           # Pantallas principales (drawer navigation)
+│   │   ├── index.tsx       # Dashboard
+│   │   ├── pacientes.tsx   # Lista de pacientes
+│   │   ├── diseases.tsx    # Catálogo de enfermedades
+│   │   ├── agenda.tsx      # Calendario de citas
+│   │   ├── notes.tsx       # Notas personales
+│   │   ├── inventario.tsx  # Control de inventario
+│   │   ├── profile.tsx     # Perfil y personalización
+│   │   ├── search.tsx      # Búsqueda global
+│   │   ├── add-paciente.tsx
+│   │   └── add-disease.tsx
+│   ├── auth/
+│   │   └── login.tsx       # Pantalla de login
+│   ├── pet/[id].tsx        # Detalle de mascota + recetas
+│   ├── disease/[id].tsx    # Detalle de enfermedad
+│   └── _layout.tsx         # Root layout
+├── components/
+│   ├── BeagleLogo.tsx      # Logo SVG beagle
+│   ├── DrawerContent.tsx   # Menú drawer
+│   ├── PetHeader.tsx       # Header de mascota
+│   ├── ClinicalTabs.tsx    # Tabs de historial clínico
+│   ├── AgendaWidget.tsx    # Widget de agenda
+│   └── TaskWidget.tsx      # Widget de tareas
 ├── constants/
-│   ├── diseases.ts          # Datos de enfermedades
-│   ├── colors.ts            # Colores de la app
-│   ├── breeds.ts            # Razas de mascotas
-│   └── vaccinations.ts      # Protocolos de vacunación
-└── config.ts                # Configuración de Directus
+│   ├── colors.ts           # Temas de colores (12 paletas)
+│   ├── diseases.ts         # Datos de enfermedades
+│   ├── breeds.ts           # Razas
+│   └── vaccinations.ts     # Protocolos de vacunación
+├── contexts/
+│   └── ThemeContext.tsx     # Proveedor de temas
+├── hooks/
+│   ├── useAuth.tsx         # Autenticación
+│   └── useDirectus.ts      # Hooks de datos
+├── services/
+│   ├── auth.ts             # API de autenticación
+│   ├── directus.ts         # API de datos
+│   ├── files.ts            # Subida de archivos
+│   └── cloudinary.ts       # Cloudinary
+├── utils/
+│   ├── age.ts              # Cálculo de edad
+│   └── generatePrescriptionPdf.js  # Generación PDF
+├── server.js               # API Express.js
+├── admin.html              # Panel admin
+├── package.json
+└── .env.example
 ```
 
-## Edición de Datos
+## Paletas de Colores
 
-### Desde Directus Admin UI (http://localhost:8055)
+| # | Paleta | Light | Dark |
+|---|--------|-------|------|
+| — | Predeterminada | Purple/beige | — |
+| 1 | One Piece | Rojo pirata | Rojo oscuro/azul |
+| 2 | Gurren Lagann | Rojo mecha | Rojo neón/negro |
+| 3 | Slam Dunk | Naranja cancha | Naranja/negro |
+| 4 | Dragon Ball Z | Naranja/azul | Dorado/negro |
+| 5 | Vinland Saga | Tierra/madera | Marrón/negro |
+| 6 | 86 | Militar rojo | Gris/rojo |
+| 7 | Fate Series | Dorado/azul | Dorado/azul oscuro |
+| 8 | Frieren | Púrpura etéreo | Púrpura/negro |
+| 9 | Pandora Hearts | Gótico rosa | Rosa/negro |
+| 10 | Saber/Artoria | Azul royal/dorado | Púrpura/dorado |
+| 11 | NERV | — | Naranja/negro |
 
-1. **Enfermedades:**
-   - Content → Diseases → Click "+" para agregar
-   - Editar campos: nombre, signos (JSON), tratamiento (JSON)
-   - Subir imágenes desde Files
+## API Endpoints
 
-2. **Mascotas:**
-   - Content → Pets → Click "+" para registrar
-   - Editar datos, subir foto
+### Auth
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/auth/login` | Login con RUT + password |
+| GET | `/auth/me` | Obtener usuario actual |
+| PATCH | `/auth/profile` | Actualizar perfil |
+| PATCH | `/auth/password` | Cambiar contraseña |
 
-3. **Historial Médico:**
-   - Content → Medical Records → Click "+"
-   - Vincular mascota y enfermedad
-   - Subir PDFs de exámenes
+### Datos (requieren JWT)
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET/POST | `/items/pets` | Pacientes |
+| GET/POST | `/items/clinical_records` | Registros clínicos |
+| GET/POST | `/items/prescriptions` | Recetas |
+| POST | `/items/prescriptions/:id/email` | Enviar receta por correo |
+| GET/POST | `/items/appointments` | Citas |
+| GET/POST | `/items/personal_notes` | Notas |
+| GET/POST | `/items/inventory` | Inventario |
 
-4. **Notas:**
-   - Content → Personal Notes → Click "+"
-   - Agregar etiquetas para organizar
+### Enfermedades (lectura pública, escritura requiere auth)
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/items/diseases` | Listar enfermedades |
+| GET | `/items/diseases/:id` | Detalle de enfermedad |
+| POST | `/items/diseases` | Crear (auth) |
+| PATCH | `/items/diseases/:id` | Actualizar (auth) |
+| DELETE | `/items/diseases/:id` | Eliminar (auth) |
 
-### Desde la App
+## Deploy en Vercel
 
-- Los cambios en Directus se reflejan automáticamente en la app
-- La app usa la API REST de Directus para obtener datos
-- Soporte para real-time vía WebSocket
+1. Conectar repositorio GitHub a Vercel
+2. Configurar variables de entorno en Vercel Dashboard
+3. Deploy automático al hacer push a `master`
 
-## Comandos Útiles
+Variables de entorno en Vercel:
+- `DATABASE_URL` — Neon PostgreSQL connection string
+- `JWT_SECRET` — Secreto JWT
+- `SMTP_EMAIL` — noreply.vetcloud@gmail.com
+- `SMTP_PASSWORD` — Contraseña de aplicación Gmail
 
-```bash
-# Iniciar servicios Docker
-docker compose up -d
+## Seguridad
 
-# Detener servicios Docker
-docker compose down
-
-# Ver logs de Directus
-docker logs vetcloud-directus
-
-# Ver logs de PostgreSQL
-docker logs vetcloud-postgres
-
-# Reiniciar Directus
-docker compose restart directus
-
-# Ejecutar seed de datos
-npx ts-node scripts/seed-diseases.ts
-
-# Iniciar app en modo desarrollo
-npx expo start
-```
-
-## Solución de Problemas
-
-### Directus no carga
-
-```bash
-# Verificar que los contenedores están corriendo
-docker ps
-
-# Ver logs de error
-docker logs vetcloud-directus
-
-# Reiniciar todo
-docker compose down && docker compose up -d
-```
-
-### Error de conexión a base de datos
-
-1. Verifica que PostgreSQL está corriendo: `docker logs vetcloud-postgres`
-2. Verifica las credenciales en `docker/.env`
-3. Espera 30 segundos después de iniciar para que la DB esté lista
-
-### App no conecta con Directus
-
-1. Verifica que Directus está en `http://localhost:8055`
-2. Verifica la IP en `config.ts`
-3. Si usas emulador, usa `10.0.2.2:8055` en lugar de `localhost`
+- JWT authentication con bcrypt password hashing
+- Endpoints de datos protegidos con auth middleware
+- CORS restringido
+- Errores sanitizados (no exponen detalles internos)
+- Credenciales nunca hardcodeadas en el repo
 
 ## Licencia
 
