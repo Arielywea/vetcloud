@@ -4,7 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, View } from 'react-native';
 import DrawerContent from '../../components/DrawerContent';
 import BeagleLogo from '../../components/BeagleLogo';
-import ChatWidget from '../../components/ChatWidget';
+import VetAssistantWidget from '../../components/VetAssistantWidget';
 import { useTheme } from '../../contexts/ThemeContext';
 
 export default function DrawerLayout() {
@@ -103,13 +103,6 @@ export default function DrawerLayout() {
           }}
         />
         <Drawer.Screen
-          name="chat"
-          options={{
-            title: 'Chat',
-            headerTitle: 'Chat (Admin)',
-          }}
-        />
-        <Drawer.Screen
           name="profile"
           options={{
             title: 'Mi Perfil',
@@ -117,7 +110,7 @@ export default function DrawerLayout() {
           }}
         />
       </Drawer>
-      <ChatWidget />
+      <VetAssistantWidget />
     </GestureHandlerRootView>
   );
 }
