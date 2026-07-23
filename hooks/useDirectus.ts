@@ -11,6 +11,8 @@ import {
   InventoryItem,
   Prescription,
   Reminder,
+  ChatConversation,
+  ChatMessage,
 } from '../services/directus';
 
 // ─────────────────────────────────────────────────────────
@@ -545,4 +547,53 @@ export function useReminders(params?: { status?: string; type?: string; upcoming
   };
 
   return { reminders, loading, error, addReminder, autoGenerate, updateReminder, removeReminder, sendPending, refresh: fetchReminders };
+}
+
+// ─────────────────────────────────────────────────────────
+// Hook: Chat
+// ─────────────────────────────────────────────────────────
+
+export function useChat() {
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchConversations = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await api.chat.listConversations();
+      setConversations(result as ChatConversation[]);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchConversations(); }, [fetchConversations]);
+
+  const getConversation = async (id: string) => {
+    return await api.chat.getConversation(id);
+  };
+
+  const createConversation = async (data: any) => {
+    const result = await api.chat.createConversation(data);
+    await fetchConversations();
+    return result;
+  };
+
+  const updateConversation = async (id: string, data: any) => {
+    await api.chat.updateConversation(id, data);
+    await fetchConversations();
+  };
+
+  const sendMessage = async (conversationId: string, message: string) => {
+    return await api.chat.sendMessage(conversationId, message);
+  };
+
+  const agentReply = async (conversationId: string, message: string) => {
+    return await api.chat.agentReply(conversationId, message);
+  };
+
+  return { conversations, loading, error, getConversation, createConversation, updateConversation, sendMessage, agentReply, refresh: fetchConversations };
 }

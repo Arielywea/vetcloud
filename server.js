@@ -892,6 +892,150 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
   }
 });
 
+// ─── CHATBOT ────────────────────────────────────────────
+function processChatMessage(message) {
+  const lower = message.toLowerCase().trim();
+
+  if (/emergenc|urgen|sangr|no camina|vomit|convuls|no respir|inconscien|accidente|atropell|envenen|ahog/.test(lower)) {
+    return { intent: 'emergencia', response: '⚠️ Esto parece una emergencia. Llame al número de emergencia de su clínica inmediatamente. Si no lo tiene, contacte a su veterinario de confianza.' };
+  }
+  if (/agendar|cita|consultar|reservar|turno|disponibilidad|horario.*cita|cuándo.*ver|cuando.*ver/.test(lower)) {
+    return { intent: 'agendar', response: 'Puede agendar una cita llamando a la clínica o escribiendo "cita" con los datos de su mascota. ¿Para qué mascota es la cita y cuál es el motivo?' };
+  }
+  if (/horario|abren|cierran|a qué hora|hora.*atención|funcionan/.test(lower)) {
+    return { intent: 'horario', response: 'Nuestro horario de atención es de lunes a viernes de 9:00 a 18:00 y sábados de 9:00 a 13:00. Para emergencias, contáctenos directamente.' };
+  }
+  if (/precio|costo|cuánto|tarifa|presupuesto|valor|cuanto.*cuesta/.test(lower)) {
+    return { intent: 'precio', response: 'Los precios varían según el servicio y la condición del paciente. Le recomendamos llamar para obtener una cotización personalizada.' };
+  }
+  if (/vacuna|vacunación|vacun|refuerzo|antirrábica|moquillo/.test(lower)) {
+    return { intent: 'vacuna', response: 'Las vacunas son esenciales para la salud de su mascota. Agende una cita para evaluar el esquema de vacunación según la edad y riesgo de su mascota.' };
+  }
+  if (/desparasit|parásit|lombriz|tenia|gusano/.test(lower)) {
+    return { intent: 'desparasitacion', response: 'La desparasitación se recomienda cada 3 meses para mascotas adultas. Si es un cachorro, puede necesitar frecuencia mayor. Agende su cita.' };
+  }
+  if (/medicamento|receta|medicina|pastilla|inyección|antibiótico/.test(lower)) {
+    return { intent: 'medicamento', response: 'Las recetas son emitidas por nuestros veterinarios tras una evaluación. Agende una consulta para que pueda ser evaluado y tratado correctamente.' };
+  }
+  if (/hola|buenos|buenas|hello|hi/.test(lower)) {
+    return { intent: 'saludo', response: '¡Hola! Bienvenido a VetCloud. ¿En qué puedo ayudarle? Puede preguntar por horarios, citas, precios, vacunas o emergencias.' };
+  }
+  if (/gracias|agradezco|thank/.test(lower)) {
+    return { intent: 'agradecimiento', response: '¡De nada! Estamos aquí para ayudarle. Si tiene otra pregunta, no dude en escribirnos.' };
+  }
+  return { intent: 'otro', response: 'No entendí su mensaje. Puede preguntar por: horarios, citas, precios, vacunas, desparasitación o emergencias.' };
+}
+
+// Public chat endpoint (no auth needed for pet owners)
+app.post('/chat/conversations', async (req, res) => {
+  try {
+    const { tutor_name, tutor_phone, tutor_email, pet_name } = req.body;
+    const result = await pool.query(
+      `INSERT INTO chat_conversations (user_id, tutor_name, tutor_phone, tutor_email, pet_name)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [null, tutor_name || null, tutor_phone || null, tutor_email || null, pet_name || null]
+    );
+    const conv = result.rows[0];
+    await pool.query(
+      `INSERT INTO chat_messages (conversation_id, sender, message, intent) VALUES ($1, 'bot', $2, 'bienvenida')`,
+      [conv.id, `¡Hola${tutor_name ? ' ' + tutor_name : ''}! Bienvenido a VetCloud. ¿En qué puedo ayudarle? Puede preguntar por horarios, citas, precios, vacunas o emergencias.`]
+    );
+    const messages = await pool.query('SELECT * FROM chat_messages WHERE conversation_id = $1 ORDER BY created_at', [conv.id]);
+    res.json({ data: { ...conv, messages: messages.rows } });
+  } catch (err) {
+    console.error('Create chat error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/chat/conversations/:id/messages', async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message?.trim()) return res.status(400).json({ error: 'Mensaje requerido' });
+    const conv = await pool.query('SELECT * FROM chat_conversations WHERE id = $1', [req.params.id]);
+    if (!conv.rows.length) return res.status(404).json({ error: 'Conversación no encontrada' });
+
+    await pool.query(
+      `INSERT INTO chat_messages (conversation_id, sender, message) VALUES ($1, 'user', $2)`,
+      [req.params.id, message.trim()]
+    );
+
+    const { intent, response } = processChatMessage(message);
+
+    await pool.query(
+      `INSERT INTO chat_messages (conversation_id, sender, message, intent) VALUES ($1, 'bot', $2, $3)`,
+      [req.params.id, response, intent]
+    );
+
+    await pool.query(`UPDATE chat_conversations SET updated_at = NOW() WHERE id = $1`, [req.params.id]);
+
+    if (intent === 'emergencia') {
+      await pool.query(`UPDATE chat_conversations SET status = 'pending' WHERE id = $1`, [req.params.id]);
+    }
+
+    const messages = await pool.query('SELECT * FROM chat_messages WHERE conversation_id = $1 ORDER BY created_at', [req.params.id]);
+    res.json({ data: { messages: messages.rows, intent } });
+  } catch (err) {
+    console.error('Chat message error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Auth-required chat endpoints (for admin/vet)
+app.get('/chat/conversations', authMiddleware, async (req, res) => {
+  try {
+    const { status } = req.query;
+    let query = 'SELECT * FROM chat_conversations WHERE user_id = $1';
+    const params = [req.userId];
+    if (status) { query += ' AND status = $2'; params.push(status); }
+    query += ' ORDER BY updated_at DESC';
+    const result = await pool.query(query, params);
+    res.json({ data: result.rows });
+  } catch (err) {
+    console.error('List chat error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.get('/chat/conversations/:id', authMiddleware, async (req, res) => {
+  try {
+    const conv = await pool.query('SELECT * FROM chat_conversations WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
+    if (!conv.rows.length) return res.status(404).json({ error: 'No encontrada' });
+    const messages = await pool.query('SELECT * FROM chat_messages WHERE conversation_id = $1 ORDER BY created_at', [req.params.id]);
+    res.json({ data: { ...conv.rows[0], messages: messages.rows } });
+  } catch (err) {
+    console.error('Get chat error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.patch('/chat/conversations/:id', authMiddleware, async (req, res) => {
+  try {
+    const { status } = req.body;
+    await pool.query('UPDATE chat_conversations SET status = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3', [status, req.params.id, req.userId]);
+    res.json({ data: { success: true } });
+  } catch (err) {
+    console.error('Update chat error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/chat/agent-reply', authMiddleware, async (req, res) => {
+  try {
+    const { conversation_id, message } = req.body;
+    if (!conversation_id || !message?.trim()) return res.status(400).json({ error: 'Faltan campos' });
+    await pool.query(
+      `INSERT INTO chat_messages (conversation_id, sender, message) VALUES ($1, 'agent', $2)`,
+      [conversation_id, message.trim()]
+    );
+    await pool.query(`UPDATE chat_conversations SET updated_at = NOW() WHERE id = $1`, [conversation_id]);
+    res.json({ data: { success: true } });
+  } catch (err) {
+    console.error('Agent reply error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 // ─── REMINDERS ──────────────────────────────────────────
 app.get('/items/reminders', authMiddleware, async (req, res) => {
   try {
