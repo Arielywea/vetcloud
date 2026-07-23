@@ -1,17 +1,30 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { APP_COLORS, APP_COLORS_DARK, PALETTES, AppColors } from '../constants/colors';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, ANIMATION, Z_INDEX } from '../constants/tokens';
 
 interface ThemeContextType {
   isDark: boolean;
   colors: AppColors;
   themeName: string;
+  spacing: typeof SPACING;
+  radius: typeof RADIUS;
+  typography: typeof TYPOGRAPHY;
+  shadows: typeof SHADOWS;
+  animation: typeof ANIMATION;
+  zIndex: typeof Z_INDEX;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
   isDark: false,
   colors: APP_COLORS,
   themeName: 'default',
+  spacing: SPACING,
+  radius: RADIUS,
+  typography: TYPOGRAPHY,
+  shadows: SHADOWS,
+  animation: ANIMATION,
+  zIndex: Z_INDEX,
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -32,7 +45,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       themeName = isDark ? 'dark' : 'default';
     }
 
-    return { isDark, colors, themeName };
+    return { isDark, colors, themeName, spacing: SPACING, radius: RADIUS, typography: TYPOGRAPHY, shadows: SHADOWS, animation: ANIMATION, zIndex: Z_INDEX };
   }, [user?.theme_preference, user?.color_palette]);
 
   return (

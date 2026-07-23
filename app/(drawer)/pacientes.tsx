@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { View, FlatList, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Text, Card, FAB, Button, Dialog, Portal, Searchbar, Chip } from 'react-native-paper';
+import { Text, FAB, Searchbar, Chip, Dialog, Portal, Button } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { PawPrint, Cat, Dog, Trash2, AlertCircle } from 'lucide-react-native';
 import { usePets } from '../../hooks/useDirectus';
 import { DirectusPet } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
+import VAvatar from '../../components/ui/Avatar';
 import { calculateAge } from '../../utils/age';
 
 export default function PacientesScreen() {
@@ -43,76 +45,95 @@ export default function PacientesScreen() {
     const age = item.birth_date ? calculateAge(item.birth_date) : '';
 
     return (
-      <TouchableOpacity onPress={() => router.push(`/pet/${item.id}`)}>
-        <Card style={[styles.petCard, { backgroundColor: colors.surface }]}>
-          <Card.Content>
-            <View style={styles.petHeader}>
-              <View style={[styles.petAvatar, { backgroundColor: colors.primaryContainer }]}>
-                <MaterialCommunityIcons
-                  name={item.species === 'dog' ? 'dog' : 'cat'}
-                  size={32}
-                  color={colors.primary}
-                />
-              </View>
-              <View style={styles.petInfo}>
-                <Text variant="titleMedium" style={[styles.petName, { color: colors.text }]}>{item.name}</Text>
-                <Text variant="bodySmall" style={[styles.petBreed, { color: colors.textSecondary }]}>
-                  {item.breed || 'Sin raza especificada'}{age ? ` · ${age}` : ''}
-                </Text>
-                {item.tutor_name && (
-                  <Text variant="bodySmall" style={[styles.petTutor, { color: colors.textSecondary }]}>
-                    Tutor: {item.tutor_name}
-                  </Text>
-                )}
-                {item.weight > 0 && (
-                  <Text variant="bodySmall" style={[styles.petWeight, { color: colors.textSecondary }]}>{item.weight} kg</Text>
-                )}
-              </View>
-              <View style={styles.petActions}>
-                <TouchableOpacity onPress={() => setDeleteTarget(item)} style={styles.actionButton}>
-                  <MaterialCommunityIcons name="delete" size={18} color={colors.error} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Card.Content>
-        </Card>
+      <TouchableOpacity
+        onPress={() => router.push(`/pet/${item.id}`)}
+        activeOpacity={0.7}
+        style={[styles.petCard, { backgroundColor: colors.surface }, SHADOWS.sm]}
+      >
+        <View style={styles.petHeader}>
+          <VAvatar
+            name={item.name}
+            size={50}
+            style={{ backgroundColor: colors.primaryContainer }}
+          />
+          <View style={styles.petInfo}>
+            <Text style={[styles.petName, { color: colors.text }]}>{item.name}</Text>
+            <Text style={[styles.petBreed, { color: colors.textSecondary }]}>
+              {item.breed || 'Sin raza especificada'}{age ? ` · ${age}` : ''}
+            </Text>
+            {item.tutor_name && (
+              <Text style={[styles.petTutor, { color: colors.textSecondary }]}>
+                Tutor: {item.tutor_name}
+              </Text>
+            )}
+          </View>
+          <TouchableOpacity
+            onPress={() => setDeleteTarget(item)}
+            style={[styles.deleteButton, { backgroundColor: colors.error + '12' }]}
+            activeOpacity={0.7}
+          >
+            <Trash2 size={18} color={colors.error} />
+          </TouchableOpacity>
+        </View>
       </TouchableOpacity>
     );
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Searchbar
-        placeholder="Buscar por nombre, raza, tutor..."
-        onChangeText={setSearchQuery}
-        value={searchQuery}
-        style={[styles.searchbar, { backgroundColor: colors.surface }]}
-        inputStyle={styles.searchInput}
-        icon="magnify"
-      />
+      {/* Search */}
+      <View style={styles.searchContainer}>
+        <View style={[styles.searchbar, { backgroundColor: colors.surface }]}>
+          <PawPrint size={18} color={colors.textLight} />
+          <View style={styles.searchInputWrap}>
+            <Text style={[styles.searchPlaceholder, { color: colors.textLight }]}>
+              Buscar por nombre, raza, tutor...
+            </Text>
+          </View>
+        </View>
+      </View>
 
+      {/* Filters */}
       <View style={styles.filterRow}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {(['all', 'dog', 'cat'] as const).map(sp => (
-            <Chip
-              key={sp}
-              selected={selectedSpecies === sp}
-              onPress={() => setSelectedSpecies(sp)}
-              style={[styles.speciesChip, { backgroundColor: colors.surfaceVariant }, selectedSpecies === sp && { backgroundColor: colors.primary }]}
-              textStyle={selectedSpecies === sp ? { color: '#FFFFFF' } : undefined}
+          {([
+            { key: 'all', label: 'Todos', icon: <PawPrint size={14} color={selectedSpecies === 'all' ? '#FFF' : colors.textSecondary} /> },
+            { key: 'dog', label: 'Perros', icon: <Dog size={14} color={selectedSpecies === 'dog' ? '#FFF' : colors.textSecondary} /> },
+            { key: 'cat', label: 'Gatos', icon: <Cat size={14} color={selectedSpecies === 'cat' ? '#FFF' : colors.textSecondary} /> },
+          ] as const).map(filter => (
+            <TouchableOpacity
+              key={filter.key}
+              style={[
+                styles.filterChip,
+                {
+                  backgroundColor: selectedSpecies === filter.key ? colors.primary : colors.surface,
+                  borderWidth: 1,
+                  borderColor: selectedSpecies === filter.key ? colors.primary : colors.border,
+                },
+              ]}
+              onPress={() => setSelectedSpecies(filter.key)}
+              activeOpacity={0.7}
             >
-              {sp === 'all' ? 'Todos' : sp === 'dog' ? 'Perros' : 'Gatos'}
-            </Chip>
+              {filter.icon}
+              <Text style={[
+                styles.filterLabel,
+                { color: selectedSpecies === filter.key ? '#FFF' : colors.text }
+              ]}>
+                {filter.label}
+              </Text>
+            </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
 
-      <View style={styles.resultsCount}>
-        <Text variant="bodySmall" style={{ color: colors.textSecondary }}>
+      {/* Results Count */}
+      <View style={styles.resultsRow}>
+        <Text style={[styles.resultsCount, { color: colors.textSecondary }]}>
           {loading ? 'Cargando...' : `${filteredPets.length} paciente${filteredPets.length !== 1 ? 's' : ''}`}
         </Text>
       </View>
 
+      {/* List */}
       <FlatList
         data={filteredPets}
         renderItem={renderPetCard}
@@ -120,7 +141,9 @@ export default function PacientesScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons name="dog" size={64} color={colors.textLight} />
+            <View style={[styles.emptyIcon, { backgroundColor: colors.surfaceVariant }]}>
+              <PawPrint size={32} color={colors.textLight} />
+            </View>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>
               {searchQuery ? 'No se encontraron pacientes' : 'No tienes pacientes registrados'}
             </Text>
@@ -131,6 +154,7 @@ export default function PacientesScreen() {
         }
       />
 
+      {/* FAB */}
       <FAB
         icon="plus"
         style={[styles.fab, { backgroundColor: colors.primary }]}
@@ -138,6 +162,7 @@ export default function PacientesScreen() {
         color="#FFFFFF"
       />
 
+      {/* Delete Dialog */}
       <Portal>
         <Dialog visible={!!deleteTarget} onDismiss={() => setDeleteTarget(null)}>
           <Dialog.Icon icon="alert-circle-outline" />
@@ -160,31 +185,58 @@ export default function PacientesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  searchbar: { margin: 12, marginBottom: 4, elevation: 2, borderRadius: 12 },
-  searchInput: { fontSize: 15 },
-  filterRow: { paddingHorizontal: 12, marginBottom: 4 },
-  speciesChip: { marginRight: 6 },
-  resultsCount: { paddingHorizontal: 16, paddingBottom: 4 },
-  listContent: { padding: 12, paddingBottom: 80 },
+  searchContainer: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: SPACING.sm },
+  searchbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.lg,
+    gap: SPACING.sm,
+  },
+  searchInputWrap: { flex: 1 },
+  searchPlaceholder: { fontSize: TYPOGRAPHY.sizes.md },
+  filterRow: { paddingHorizontal: SPACING.lg, marginBottom: SPACING.sm },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full,
+    marginRight: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  filterLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.medium },
+  resultsRow: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.sm },
+  resultsCount: { fontSize: TYPOGRAPHY.sizes.sm },
+  listContent: { padding: SPACING.lg, paddingBottom: 100 },
   petCard: {
-    marginBottom: 8,
-    borderRadius: 12,
-    elevation: 1,
+    marginBottom: SPACING.md,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
   },
-  petHeader: { flexDirection: 'row', alignItems: 'center' },
-  petAvatar: {
-    width: 50, height: 50, borderRadius: 25,
-    alignItems: 'center', justifyContent: 'center',
+  petHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  petInfo: { flex: 1 },
+  petName: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.bold },
+  petBreed: { fontSize: TYPOGRAPHY.sizes.sm, marginTop: 2 },
+  petTutor: { fontSize: TYPOGRAPHY.sizes.sm, marginTop: 2 },
+  deleteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: RADIUS.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  petInfo: { flex: 1, marginLeft: 12 },
-  petName: { fontWeight: '700' },
-  petBreed: { marginTop: 2 },
-  petTutor: { marginTop: 2 },
-  petWeight: { marginTop: 2 },
-  petActions: { flexDirection: 'row' },
-  actionButton: { padding: 8 },
-  emptyContainer: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 40 },
-  emptyTitle: { marginTop: 16, fontSize: 18, fontWeight: '600', textAlign: 'center' },
-  emptySubtitle: { marginTop: 8, textAlign: 'center', lineHeight: 20 },
-  fab: { position: 'absolute', right: 16, bottom: 16, borderRadius: 16 },
+  emptyContainer: { alignItems: 'center', paddingTop: 60, paddingHorizontal: SPACING['2xl'] },
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.lg,
+  },
+  emptyTitle: { marginTop: SPACING.md, fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.semibold, textAlign: 'center' },
+  emptySubtitle: { marginTop: SPACING.sm, textAlign: 'center', lineHeight: 22, fontSize: TYPOGRAPHY.sizes.md },
+  fab: { position: 'absolute', right: SPACING.xl, bottom: SPACING.xl, borderRadius: RADIUS.lg },
 });
