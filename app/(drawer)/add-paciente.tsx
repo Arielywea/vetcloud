@@ -75,6 +75,23 @@ export default function AddPacienteScreen() {
   const [otherDiseases, setOtherDiseases] = useState('');
   const [medications, setMedications] = useState('');
 
+  // Collapsible sections
+  const [historialSanitarioExpanded, setHistorialSanitarioExpanded] = useState(false);
+  const [examenFisicoExpanded, setExamenFisicoExpanded] = useState(false);
+
+  // Constantes fisiológicas
+  const [vitalTemp, setVitalTemp] = useState('');
+  const [vitalFC, setVitalFC] = useState('');
+  const [vitalFR, setVitalFR] = useState('');
+  const [vitalPA, setVitalPA] = useState('');
+  const [vitalSpO2, setVitalSpO2] = useState('');
+  const [vitalMucosas, setVitalMucosas] = useState('');
+  const [vitalHidratacion, setVitalHidratacion] = useState('');
+  const [vitalCondicionCorporal, setVitalCondicionCorporal] = useState('');
+
+  // Hallazgos examen físico
+  const [hallazgosExamenFisico, setHallazgosExamenFisico] = useState('');
+
   const toggleTemperament = (t: string) => {
     setTemperament(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
   };
@@ -162,6 +179,17 @@ export default function AddPacienteScreen() {
         surgeries: surgeries.trim() || null,
         other_diseases: otherDiseases.trim() || null,
         medications: medications.trim() || null,
+        hallazgos_examen_fisico: hallazgosExamenFisico.trim() || null,
+        vital_signs: (vitalTemp || vitalFC || vitalFR || vitalPA || vitalSpO2 || vitalMucosas || vitalHidratacion || vitalCondicionCorporal) ? {
+          temperature: vitalTemp ? parseFloat(vitalTemp) : undefined,
+          heart_rate: vitalFC ? parseInt(vitalFC) : undefined,
+          respiratory_rate: vitalFR ? parseInt(vitalFR) : undefined,
+          blood_pressure: vitalPA.trim() || undefined,
+          spo2: vitalSpO2 ? parseInt(vitalSpO2) : undefined,
+          mucous_membranes: vitalMucosas.trim() || undefined,
+          hydration: vitalHidratacion.trim() || undefined,
+          body_condition: vitalCondicionCorporal.trim() || undefined,
+        } : null,
       });
       router.back();
     } catch (error: any) {
@@ -324,14 +352,15 @@ export default function AddPacienteScreen() {
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <SectionHeader title="Historia Clínica" />
 
-        <TextInput label="Motivo de consulta" value={motivoConsulta} onChangeText={setMotivoConsulta} mode="outlined" multiline numberOfLines={3} style={[styles.input, { backgroundColor: colors.surface }]} />
-
+        {/* 1. Notas de voz */}
         <VoiceNotes
           onTranscription={(text) => setMotivoConsulta(prev => prev ? prev + ' ' + text : text)}
         />
 
-        <TextInput label="Anamnesis" value={anamnesis} onChangeText={setAnamnesis} mode="outlined" multiline numberOfLines={4} style={[styles.input, { backgroundColor: colors.surface }]} />
+        {/* 2. Motivo de consulta */}
+        <TextInput label="Motivo de consulta" value={motivoConsulta} onChangeText={setMotivoConsulta} mode="outlined" multiline numberOfLines={3} style={[styles.input, { backgroundColor: colors.surface }]} />
 
+        {/* 3. Hábitat */}
         <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Hábitat</Text>
         <View style={styles.chipRow}>
           {HABITAT_OPTIONS.map(h => (
@@ -353,6 +382,20 @@ export default function AddPacienteScreen() {
           <TextInput label="Especificar hábitat" value={habitatOther} onChangeText={setHabitatOther} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
         )}
 
+        {/* 4. Alimentación */}
+        <TextInput label="Alimento (tipo / marca)" value={food} onChangeText={setFood} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
+        <TextInput label="Frecuencia de alimentación" value={foodFrequency} onChangeText={setFoodFrequency} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
+
+        {/* 5. Agua */}
+        <TextInput label="Consumo de agua" value={waterConsumption} onChangeText={setWaterConsumption} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
+
+        {/* 6. Micción */}
+        <TextInput label="Micción" value={urination} onChangeText={setUrination} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
+
+        {/* 7. Otros animales */}
+        <TextInput label="Vive con otros animales" value={livesWithOtherAnimals} onChangeText={setLivesWithOtherAnimals} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
+
+        {/* 8-9. Entorno + Areneros (solo gatos) */}
         {species === 'cat' && (
           <>
             <TextInput label="Entorno (interior/exterior/mixto)" value={entorno} onChangeText={setEntorno} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
@@ -360,23 +403,71 @@ export default function AddPacienteScreen() {
           </>
         )}
 
-        <TextInput label="Alimento (tipo / marca)" value={food} onChangeText={setFood} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-        <TextInput label="Frecuencia de alimentación" value={foodFrequency} onChangeText={setFoodFrequency} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-        <TextInput label="Consumo de agua" value={waterConsumption} onChangeText={setWaterConsumption} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-        <TextInput label="Micción" value={urination} onChangeText={setUrination} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-        <TextInput label="Vive con otros animales" value={livesWithOtherAnimals} onChangeText={setLivesWithOtherAnimals} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-
-        <TextInput label="Vacunas" value={vaccines} onChangeText={setVaccines} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} />
-        <TextInput label="Desparasitación" value={deworming} onChangeText={setDeworming} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-        <TextInput label="Antipulgas" value={fleaTreatment} onChangeText={setFleaTreatment} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-
-        {sex === 'hembra' && (
-          <TextInput label="Último celo" value={lastHeat} onChangeText={setLastHeat} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
+        {/* 10. Historial sanitario (colapsable) */}
+        <TouchableOpacity onPress={() => setHistorialSanitarioExpanded(!historialSanitarioExpanded)} style={styles.subSectionHeader}>
+          <View style={styles.subSectionTitleRow}>
+            <MaterialCommunityIcons name="shield-check-outline" size={16} color={colors.success} />
+            <Text style={[styles.fieldLabel, { color: colors.success, marginBottom: 0 }]}>Historial sanitario</Text>
+          </View>
+          <MaterialCommunityIcons
+            name={historialSanitarioExpanded ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
+        {historialSanitarioExpanded && (
+          <View style={styles.subSectionContent}>
+            <TextInput label="Vacunas" value={vaccines} onChangeText={setVaccines} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} />
+            <TextInput label="Desparasitación" value={deworming} onChangeText={setDeworming} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
+            <TextInput label="Antipulgas" value={fleaTreatment} onChangeText={setFleaTreatment} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
+            {sex === 'hembra' && (
+              <TextInput label="Último celo" value={lastHeat} onChangeText={setLastHeat} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
+            )}
+            <TextInput label="Cirugías previas" value={surgeries} onChangeText={setSurgeries} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} />
+            <TextInput label="Otras enfermedades" value={otherDiseases} onChangeText={setOtherDiseases} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} />
+            <TextInput label="Medicamentos actuales" value={medications} onChangeText={setMedications} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} />
+          </View>
         )}
 
-        <TextInput label="Cirugías previas" value={surgeries} onChangeText={setSurgeries} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} />
-        <TextInput label="Otras enfermedades" value={otherDiseases} onChangeText={setOtherDiseases} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} />
-        <TextInput label="Medicamentos actuales" value={medications} onChangeText={setMedications} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} />
+        {/* 11. Anamnesis */}
+        <TextInput label="Anamnesis" value={anamnesis} onChangeText={setAnamnesis} mode="outlined" multiline numberOfLines={4} style={[styles.input, { backgroundColor: colors.surface }]} />
+
+        {/* 12. Examen físico (colapsable) */}
+        <TouchableOpacity onPress={() => setExamenFisicoExpanded(!examenFisicoExpanded)} style={styles.subSectionHeader}>
+          <View style={styles.subSectionTitleRow}>
+            <MaterialCommunityIcons name="stethoscope" size={16} color={colors.warning} />
+            <Text style={[styles.fieldLabel, { color: colors.warning, marginBottom: 0 }]}>Examen físico</Text>
+          </View>
+          <MaterialCommunityIcons
+            name={examenFisicoExpanded ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
+        {examenFisicoExpanded && (
+          <View style={styles.subSectionContent}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Constantes fisiológicas</Text>
+            <View style={styles.row}>
+              <TextInput label="Temp (°C)" value={vitalTemp} onChangeText={setVitalTemp} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
+              <TextInput label="FC (lpm)" value={vitalFC} onChangeText={setVitalFC} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
+            </View>
+            <View style={styles.row}>
+              <TextInput label="FR (rpm)" value={vitalFR} onChangeText={setVitalFR} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
+              <TextInput label="PA (mmHg)" value={vitalPA} onChangeText={setVitalPA} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
+            </View>
+            <View style={styles.row}>
+              <TextInput label="SpO₂ (%)" value={vitalSpO2} onChangeText={setVitalSpO2} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
+              <TextInput label="Mucosas" value={vitalMucosas} onChangeText={setVitalMucosas} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
+            </View>
+            <View style={styles.row}>
+              <TextInput label="Hidratación" value={vitalHidratacion} onChangeText={setVitalHidratacion} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
+              <TextInput label="Condición corporal" value={vitalCondicionCorporal} onChangeText={setVitalCondicionCorporal} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
+            </View>
+
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginTop: 4 }]}>Hallazgos examen físico</Text>
+            <TextInput label="Hallazgos examen físico" value={hallazgosExamenFisico} onChangeText={setHallazgosExamenFisico} mode="outlined" multiline numberOfLines={4} style={[styles.input, { backgroundColor: colors.surface }]} />
+          </View>
+        )}
       </View>
 
       {/* Actions */}
@@ -439,4 +530,7 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 4, gap: 12 },
   cancelButton: { borderWidth: 1.5, borderRadius: 20 },
   saveButton: { borderRadius: 20 },
+  subSectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#00000010', marginTop: 8 },
+  subSectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  subSectionContent: { paddingBottom: 4 },
 });
