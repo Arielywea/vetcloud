@@ -1,181 +1,232 @@
-import React, { useState, useMemo } from 'react';
-import { View, FlatList, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Text, FAB, Searchbar, Chip, Dialog, Portal, Button } from 'react-native-paper';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text, Button, Dialog, Portal } from 'react-native-paper';
+import { Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { PawPrint, Cat, Dog, Trash2, AlertCircle } from 'lucide-react-native';
 import { usePets } from '../../hooks/useDirectus';
-import { DirectusPet } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
-import VAvatar from '../../components/ui/Avatar';
-import { calculateAge } from '../../utils/age';
+import { exportCsv } from '../../utils/exportCsv';
+import { isActive, filterByStatus, StatusFilter } from '../../utils/patientFilters';
+import PatientTabs, { TabKey } from '../../components/pacientes/PatientTabs';
+import PatientFilters, { SpeciesFilter } from '../../components/pacientes/PatientFilters';
+import PatientTable from '../../components/pacientes/PatientTable';
+import PatientSidePanel from '../../components/pacientes/PatientSidePanel';
+import { DirectusPet } from '../../services/directus';
+
+const ITEMS_PER_PAGE = 10;
 
 export default function PacientesScreen() {
   const router = useRouter();
   const { pets, loading, removePet } = usePets();
   const { colors } = useTheme();
-  const [deleteTarget, setDeleteTarget] = useState<DirectusPet | null>(null);
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSpecies, setSelectedSpecies] = useState<'all' | 'dog' | 'cat'>('all');
+  const [species, setSpecies] = useState<SpeciesFilter>('all');
+  const [selectedBreed, setSelectedBreed] = useState('all');
+  const [ownerFilter, setOwnerFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [activeTab, setActiveTab] = useState<TabKey>('all');
+  const [selectedPatient, setSelectedPatient] = useState<DirectusPet | null>(null);
+  const [sidePanelVisible, setSidePanelVisible] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleteTarget, setDeleteTarget] = useState<DirectusPet | null>(null);
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-    await removePet(deleteTarget.id);
-    setDeleteTarget(null);
-  };
+  const effectiveStatus: StatusFilter = useMemo(() => {
+    if (activeTab === 'active') return 'active';
+    if (activeTab === 'inactive') return 'inactive';
+    return statusFilter;
+  }, [activeTab, statusFilter]);
 
-  const filteredPets = useMemo(() => {
+  const uniqueBreeds = useMemo(() => {
+    const speciesFiltered = species === 'all' ? pets : pets.filter(p => p.species === species);
+    const breeds = new Set<string>();
+    speciesFiltered.forEach(p => { if (p.breed) breeds.add(p.breed); });
+    return Array.from(breeds).sort();
+  }, [pets, species]);
+
+  const filteredPatients = useMemo(() => {
     let results = [...pets];
-    if (selectedSpecies !== 'all') {
-      results = results.filter(p => p.species === selectedSpecies);
+
+    if (species !== 'all') {
+      results = results.filter(p => p.species === species);
     }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       results = results.filter(p =>
         p.name.toLowerCase().includes(q) ||
         (p.breed && p.breed.toLowerCase().includes(q)) ||
-        (p.tutor_name && p.tutor_name.toLowerCase().includes(q)) ||
-        (p.id_number && p.id_number.toLowerCase().includes(q))
+        (p.tutor_name && p.tutor_name.toLowerCase().includes(q))
       );
     }
+
+    if (selectedBreed !== 'all') {
+      results = results.filter(p => p.breed === selectedBreed);
+    }
+
+    if (ownerFilter.trim()) {
+      const q = ownerFilter.toLowerCase();
+      results = results.filter(p =>
+        p.tutor_name && p.tutor_name.toLowerCase().includes(q)
+      );
+    }
+
+    results = filterByStatus(results, effectiveStatus);
+
     return results;
-  }, [pets, searchQuery, selectedSpecies]);
+  }, [pets, species, searchQuery, selectedBreed, ownerFilter, effectiveStatus]);
 
-  const renderPetCard = ({ item }: { item: DirectusPet }) => {
-    const age = item.birth_date ? calculateAge(item.birth_date) : '';
+  const totalPages = Math.ceil(filteredPatients.length / ITEMS_PER_PAGE);
+  const paginatedPatients = filteredPatients.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
-    return (
-      <TouchableOpacity
-        onPress={() => router.push(`/pet/${item.id}`)}
-        activeOpacity={0.7}
-        style={[styles.petCard, { backgroundColor: colors.surface }, SHADOWS.sm]}
-      >
-        <View style={styles.petHeader}>
-          <VAvatar
-            name={item.name}
-            size={50}
-            style={{ backgroundColor: colors.primaryContainer }}
-          />
-          <View style={styles.petInfo}>
-            <Text style={[styles.petName, { color: colors.text }]}>{item.name}</Text>
-            <Text style={[styles.petBreed, { color: colors.textSecondary }]}>
-              {item.breed || 'Sin raza especificada'}{age ? ` · ${age}` : ''}
-            </Text>
-            {item.tutor_name && (
-              <Text style={[styles.petTutor, { color: colors.textSecondary }]}>
-                Tutor: {item.tutor_name}
-              </Text>
-            )}
-          </View>
-          <TouchableOpacity
-            onPress={() => setDeleteTarget(item)}
-            style={[styles.deleteButton, { backgroundColor: colors.error + '12' }]}
-            activeOpacity={0.7}
-          >
-            <Trash2 size={18} color={colors.error} />
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
-    );
-  };
+  const tabCounts = useMemo(() => {
+    const speciesFiltered = species === 'all' ? pets : pets.filter(p => p.species === species);
+    return {
+      all: speciesFiltered.length,
+      active: speciesFiltered.filter(p => isActive(p)).length,
+      inactive: speciesFiltered.filter(p => !isActive(p)).length,
+    };
+  }, [pets, species]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, species, selectedBreed, ownerFilter, statusFilter, activeTab]);
+
+  const clearFilters = useCallback(() => {
+    setSearchQuery('');
+    setSpecies('all');
+    setSelectedBreed('all');
+    setOwnerFilter('');
+    setStatusFilter('all');
+    setActiveTab('all');
+    setSelectedIds(new Set());
+  }, []);
+
+  const handleExport = useCallback(() => {
+    exportCsv(filteredPatients, 'pacientes');
+  }, [filteredPatients]);
+
+  const handleDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    await removePet(deleteTarget.id);
+    setDeleteTarget(null);
+  }, [deleteTarget, removePet]);
+
+  const handleClickPatient = useCallback((pet: DirectusPet) => {
+    setSelectedPatient(pet);
+    setSidePanelVisible(true);
+  }, []);
+
+  const handleToggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const hasFilters = searchQuery.trim() !== '' || species !== 'all' || selectedBreed !== 'all' || ownerFilter.trim() !== '' || statusFilter !== 'all';
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Search */}
-      <View style={styles.searchContainer}>
-        <View style={[styles.searchbar, { backgroundColor: colors.surface }]}>
-          <PawPrint size={18} color={colors.textLight} />
-          <View style={styles.searchInputWrap}>
-            <Text style={[styles.searchPlaceholder, { color: colors.textLight }]}>
-              Buscar por nombre, raza, tutor...
-            </Text>
-          </View>
+      <View style={styles.header}>
+        <View style={styles.headerTextWrap}>
+          <Text style={[styles.title, { color: colors.text }]}>Pacientes</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            {loading ? 'Cargando...' : `${filteredPatients.length} paciente${filteredPatients.length !== 1 ? 's' : ''}`}
+          </Text>
         </View>
+        <Button
+          mode="contained"
+          onPress={() => router.push('/(drawer)/add-paciente')}
+          style={[styles.newButton, { backgroundColor: colors.primary }]}
+          labelStyle={styles.newButtonText}
+          contentStyle={styles.newButtonContent}
+        >
+          <Plus size={16} color="#FFFFFF" />
+          Nuevo Paciente
+        </Button>
       </View>
 
-      {/* Filters */}
-      <View style={styles.filterRow}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {([
-            { key: 'all', label: 'Todos', icon: <PawPrint size={14} color={selectedSpecies === 'all' ? '#FFF' : colors.textSecondary} /> },
-            { key: 'dog', label: 'Perros', icon: <Dog size={14} color={selectedSpecies === 'dog' ? '#FFF' : colors.textSecondary} /> },
-            { key: 'cat', label: 'Gatos', icon: <Cat size={14} color={selectedSpecies === 'cat' ? '#FFF' : colors.textSecondary} /> },
-          ] as const).map(filter => (
-            <TouchableOpacity
-              key={filter.key}
-              style={[
-                styles.filterChip,
-                {
-                  backgroundColor: selectedSpecies === filter.key ? colors.primary : colors.surface,
-                  borderWidth: 1,
-                  borderColor: selectedSpecies === filter.key ? colors.primary : colors.border,
-                },
-              ]}
-              onPress={() => setSelectedSpecies(filter.key)}
-              activeOpacity={0.7}
-            >
-              {filter.icon}
-              <Text style={[
-                styles.filterLabel,
-                { color: selectedSpecies === filter.key ? '#FFF' : colors.text }
-              ]}>
-                {filter.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+      <View style={styles.content}>
+        <PatientTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          counts={tabCounts}
+          onExport={handleExport}
+        />
+
+        <ScrollView contentContainerStyle={styles.filtersScroll}>
+          <PatientFilters
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            species={species}
+            onSpeciesChange={(s) => { setSpecies(s); setSelectedBreed('all'); }}
+            breeds={uniqueBreeds}
+            selectedBreed={selectedBreed}
+            onBreedChange={setSelectedBreed}
+            ownerFilter={ownerFilter}
+            onOwnerFilterChange={setOwnerFilter}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+          />
         </ScrollView>
+
+        <PatientTable
+          patients={filteredPatients}
+          paginatedPatients={paginatedPatients}
+          loading={loading}
+          selectedPatient={selectedPatient}
+          selectedIds={selectedIds}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredPatients.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          hasFilters={hasFilters}
+          onSelectPatient={handleClickPatient}
+          onClickPatient={handleClickPatient}
+          onDeletePatient={setDeleteTarget}
+          onToggleSelect={handleToggleSelect}
+          onPageChange={setCurrentPage}
+          onClearFilters={clearFilters}
+        />
       </View>
 
-      {/* Results Count */}
-      <View style={styles.resultsRow}>
-        <Text style={[styles.resultsCount, { color: colors.textSecondary }]}>
-          {loading ? 'Cargando...' : `${filteredPets.length} paciente${filteredPets.length !== 1 ? 's' : ''}`}
-        </Text>
-      </View>
-
-      {/* List */}
-      <FlatList
-        data={filteredPets}
-        renderItem={renderPetCard}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <View style={[styles.emptyIcon, { backgroundColor: colors.surfaceVariant }]}>
-              <PawPrint size={32} color={colors.textLight} />
-            </View>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              {searchQuery ? 'No se encontraron pacientes' : 'No tienes pacientes registrados'}
-            </Text>
-            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-              {searchQuery ? 'Intenta con otros términos de búsqueda' : 'Registra a tu paciente para llevar un seguimiento de su historial médico'}
-            </Text>
-          </View>
-        }
+      <PatientSidePanel
+        patient={selectedPatient}
+        visible={sidePanelVisible}
+        onClose={() => setSidePanelVisible(false)}
       />
 
-      {/* FAB */}
-      <FAB
-        icon="plus"
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-        onPress={() => router.push('/(drawer)/add-paciente')}
-        color="#FFFFFF"
-      />
-
-      {/* Delete Dialog */}
       <Portal>
-        <Dialog visible={!!deleteTarget} onDismiss={() => setDeleteTarget(null)}>
+        <Dialog visible={!!deleteTarget} onDismiss={() => setDeleteTarget(null)} style={[styles.dialog, { backgroundColor: colors.surface }]}>
           <Dialog.Icon icon="alert-circle-outline" />
-          <Dialog.Title style={{ textAlign: 'center' }}>Eliminar paciente</Dialog.Title>
+          <Dialog.Title style={[styles.dialogTitle, { color: colors.text }]}>Eliminar paciente</Dialog.Title>
           <Dialog.Content>
-            <Text style={{ textAlign: 'center' }}>
-              ¿Estás seguro de eliminar a <Text style={{ fontWeight: '700' }}>{deleteTarget?.name}</Text>?
-              Se borrará todo su historial médico.
+            <Text style={[styles.dialogText, { color: colors.textSecondary }]}>
+              ¿Estás seguro de eliminar a{' '}
+              <Text style={{ fontWeight: TYPOGRAPHY.weights.bold, color: colors.text }}>
+                {deleteTarget?.name}
+              </Text>
+              ? Se borrará todo su historial médico.
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setDeleteTarget(null)}>Cancelar</Button>
-            <Button onPress={confirmDelete} textColor={colors.error}>Eliminar</Button>
+            <Button onPress={() => setDeleteTarget(null)} textColor={colors.textSecondary}>
+              Cancelar
+            </Button>
+            <Button onPress={handleDelete} textColor={colors.error}>
+              Eliminar
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -184,59 +235,59 @@ export default function PacientesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  searchContainer: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: SPACING.sm },
-  searchbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    borderRadius: RADIUS.lg,
-    gap: SPACING.sm,
+  container: {
+    flex: 1,
   },
-  searchInputWrap: { flex: 1 },
-  searchPlaceholder: { fontSize: TYPOGRAPHY.sizes.md },
-  filterRow: { paddingHorizontal: SPACING.lg, marginBottom: SPACING.sm },
-  filterChip: {
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.md,
+  },
+  headerTextWrap: {
+    flex: 1,
+  },
+  title: {
+    fontSize: TYPOGRAPHY.sizes['2xl'],
+    fontWeight: TYPOGRAPHY.weights.bold,
+  },
+  subtitle: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    marginTop: SPACING['2xs'],
+  },
+  newButton: {
+    borderRadius: RADIUS.md,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.full,
-    marginRight: SPACING.sm,
+  },
+  newButtonText: {
+    color: '#FFFFFF',
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: TYPOGRAPHY.weights.semibold,
+  },
+  newButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: SPACING.xs,
   },
-  filterLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.medium },
-  resultsRow: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.sm },
-  resultsCount: { fontSize: TYPOGRAPHY.sizes.sm },
-  listContent: { padding: SPACING.lg, paddingBottom: 100 },
-  petCard: {
-    marginBottom: SPACING.md,
+  content: {
+    flex: 1,
+    paddingHorizontal: SPACING.lg,
+    gap: SPACING.md,
+  },
+  filtersScroll: {
+    paddingBottom: SPACING.xs,
+  },
+  dialog: {
     borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
   },
-  petHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
-  petInfo: { flex: 1 },
-  petName: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.bold },
-  petBreed: { fontSize: TYPOGRAPHY.sizes.sm, marginTop: 2 },
-  petTutor: { fontSize: TYPOGRAPHY.sizes.sm, marginTop: 2 },
-  deleteButton: {
-    width: 36,
-    height: 36,
-    borderRadius: RADIUS.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+  dialogTitle: {
+    textAlign: 'center',
   },
-  emptyContainer: { alignItems: 'center', paddingTop: 60, paddingHorizontal: SPACING['2xl'] },
-  emptyIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SPACING.lg,
+  dialogText: {
+    textAlign: 'center',
+    lineHeight: 22,
   },
-  emptyTitle: { marginTop: SPACING.md, fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.semibold, textAlign: 'center' },
-  emptySubtitle: { marginTop: SPACING.sm, textAlign: 'center', lineHeight: 22, fontSize: TYPOGRAPHY.sizes.md },
-  fab: { position: 'absolute', right: SPACING.xl, bottom: SPACING.xl, borderRadius: RADIUS.lg },
 });
