@@ -8,6 +8,7 @@ server.log
 .DS_Store
 *.log
 docker/*.exe
+docker/.env
 backup.sql
 api/.env
 
