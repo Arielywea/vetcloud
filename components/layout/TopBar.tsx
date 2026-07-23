@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
-import { Search, Bell, Menu, Command } from 'lucide-react-native';
+import { Search, Bell, Menu, Command, Plus, Calendar } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
+import { TEXT_ON_PRIMARY } from '../../constants/colors';
 
 interface TopBarProps {
   onMenuPress?: () => void;
@@ -13,6 +15,7 @@ interface TopBarProps {
 }
 
 export default function TopBar({ onMenuPress, onSearchPress, title, rightContent }: TopBarProps) {
+  const router = useRouter();
   const { colors } = useTheme();
 
   return (
@@ -37,7 +40,7 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
       >
         <Search size={16} color={colors.textLight} />
         <Text style={[styles.searchPlaceholder, { color: colors.textLight }]}>
-          Buscar pacientes, citas...
+          Buscar pacientes, propietarios, citas...
         </Text>
         <View style={[styles.shortcut, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Command size={12} color={colors.textSecondary} />
@@ -45,7 +48,7 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
         </View>
       </TouchableOpacity>
 
-      {/* Right: notifications + actions */}
+      {/* Right: notifications + calendar + new patient */}
       <View style={styles.right}>
         {rightContent}
         <TouchableOpacity style={styles.iconBtn}>
@@ -53,6 +56,19 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
           <View style={[styles.badge, { backgroundColor: colors.error }]}>
             <Text style={styles.badgeText}>3</Text>
           </View>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.iconBtn}>
+          <Calendar size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.newPatientBtn, { backgroundColor: colors.primary }]}
+          onPress={() => router.push('/(drawer)/add-paciente')}
+          activeOpacity={0.7}
+        >
+          <Plus size={18} color={TEXT_ON_PRIMARY.light.default} />
+          <Text style={[styles.newPatientText, { color: TEXT_ON_PRIMARY.light.default }]}>
+            Nuevo Paciente
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -131,5 +147,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 10,
     fontWeight: TYPOGRAPHY.weights.bold,
+  },
+  newPatientBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm + 2,
+    borderRadius: RADIUS.md,
+    gap: SPACING.sm,
+  },
+  newPatientText: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
 });
