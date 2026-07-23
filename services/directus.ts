@@ -154,6 +154,24 @@ export interface InventoryItem {
   created_at: string;
 }
 
+export interface Reminder {
+  id: string;
+  user_id: string;
+  pet_id: string;
+  pet_name?: string;
+  species?: string;
+  breed?: string;
+  tutor_email: string;
+  reminder_type: 'vacuna' | 'desparasitacion' | 'cita' | 'post_operatorio' | 'control';
+  title: string;
+  message: string;
+  scheduled_for: string;
+  sent_at: string | null;
+  status: 'pending' | 'sent' | 'cancelled';
+  related_record_id: string | null;
+  created_at: string;
+}
+
 // ─────────────────────────────────────────────────────────
 // API Client
 // ─────────────────────────────────────────────────────────
@@ -269,6 +287,16 @@ export const api = {
     update: (id: string, data: any) => apiPatch(`/items/prescriptions/${id}`, data),
     delete: (id: string) => apiDelete(`/items/prescriptions/${id}`),
     sendEmail: (id: string) => apiPost(`/items/prescriptions/${id}/email`, {}),
+  },
+  reminders: {
+    list: (params?: { status?: string; type?: string; upcoming?: string }) =>
+      apiGet('/items/reminders', params),
+    upcoming: () => apiGet('/items/reminders/upcoming'),
+    create: (data: any) => apiPost('/items/reminders', data),
+    autoGenerate: (petId: string) => apiPost('/items/reminders/auto-generate', { pet_id: petId }),
+    update: (id: string, data: any) => apiPatch(`/items/reminders/${id}`, data),
+    delete: (id: string) => apiDelete(`/items/reminders/${id}`),
+    sendPending: () => apiPost('/items/reminders/send-pending', {}),
   },
 };
 

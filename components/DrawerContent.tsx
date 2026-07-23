@@ -26,6 +26,7 @@ const MENU_SECTIONS = [
     title: 'GESTIÓN',
     items: [
       { label: 'Agenda', icon: 'calendar-clock', route: '/(drawer)/agenda' },
+      { label: 'Recordatorios', icon: 'bell-ring', route: '/(drawer)/reminders' },
     ],
   },
   {

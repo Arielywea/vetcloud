@@ -10,6 +10,7 @@ import {
   ClinicalRecord,
   InventoryItem,
   Prescription,
+  Reminder,
 } from '../services/directus';
 
 // ─────────────────────────────────────────────────────────
@@ -487,4 +488,61 @@ export function usePrescriptions(petId?: string) {
   };
 
   return { prescriptions, loading, error, addPrescription, updatePrescription, removePrescription, sendEmail, refresh: fetchPrescriptions };
+}
+
+// ─────────────────────────────────────────────────────────
+// Hook: Reminders
+// ─────────────────────────────────────────────────────────
+
+export function useReminders(params?: { status?: string; type?: string; upcoming?: string }) {
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchReminders = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await api.reminders.list(params);
+      setReminders(result as Reminder[]);
+    } catch (err: any) {
+      console.error('Error fetching reminders:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [params?.status, params?.type, params?.upcoming]);
+
+  useEffect(() => { fetchReminders(); }, [fetchReminders]);
+
+  const addReminder = async (data: any) => {
+    const result = await api.reminders.create(data);
+    await fetchReminders();
+    return result;
+  };
+
+  const autoGenerate = async (petId: string) => {
+    const result = await api.reminders.autoGenerate(petId);
+    await fetchReminders();
+    return result;
+  };
+
+  const updateReminder = async (id: string, data: any) => {
+    const result = await api.reminders.update(id, data);
+    await fetchReminders();
+    return result;
+  };
+
+  const removeReminder = async (id: string) => {
+    await api.reminders.delete(id);
+    await fetchReminders();
+  };
+
+  const sendPending = async () => {
+    const result = await api.reminders.sendPending();
+    await fetchReminders();
+    return result;
+  };
+
+  return { reminders, loading, error, addReminder, autoGenerate, updateReminder, removeReminder, sendPending, refresh: fetchReminders };
 }

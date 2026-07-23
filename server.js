@@ -892,6 +892,219 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
   }
 });
 
+// ─── REMINDERS ──────────────────────────────────────────
+app.get('/items/reminders', authMiddleware, async (req, res) => {
+  try {
+    const { status, type, upcoming } = req.query;
+    let query = 'SELECT r.*, p.name AS pet_name, p.species, p.breed FROM reminders r JOIN pets p ON p.id = r.pet_id WHERE r.user_id = $1';
+    const params = [req.userId];
+    let idx = 2;
+    if (status) { query += ` AND r.status = $${idx++}`; params.push(status); }
+    if (type) { query += ` AND r.reminder_type = $${idx++}`; params.push(type); }
+    if (upcoming === 'true') { query += ` AND r.scheduled_for >= NOW() AND r.status = 'pending'`; }
+    query += ' ORDER BY r.scheduled_for ASC';
+    const result = await pool.query(query, params);
+    res.json({ data: result.rows });
+  } catch (err) {
+    console.error('List reminders error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.get('/items/reminders/upcoming', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT r.*, p.name AS pet_name, p.species, p.breed
+       FROM reminders r JOIN pets p ON p.id = r.pet_id
+       WHERE r.user_id = $1 AND r.scheduled_for >= NOW() AND r.status = 'pending'
+       ORDER BY r.scheduled_for ASC LIMIT 10`,
+      [req.userId]
+    );
+    res.json({ data: result.rows });
+  } catch (err) {
+    console.error('Upcoming reminders error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/items/reminders', authMiddleware, async (req, res) => {
+  try {
+    const { pet_id, tutor_email, reminder_type, title, message, scheduled_for } = req.body;
+    if (!pet_id || !tutor_email || !reminder_type || !title || !message || !scheduled_for) {
+      return res.status(400).json({ error: 'Faltan campos obligatorios' });
+    }
+    const petCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [pet_id, req.userId]);
+    if (!petCheck.rows.length) return res.status(403).json({ error: 'No autorizado' });
+    const result = await pool.query(
+      `INSERT INTO reminders (user_id, pet_id, tutor_email, reminder_type, title, message, scheduled_for)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [req.userId, pet_id, tutor_email, reminder_type, title, message, scheduled_for]
+    );
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    console.error('Create reminder error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/items/reminders/auto-generate', authMiddleware, async (req, res) => {
+  try {
+    const { pet_id } = req.body;
+    if (!pet_id) return res.status(400).json({ error: 'pet_id requerido' });
+    const petCheck = await pool.query(
+      'SELECT id, name, species, breed, birth_date, email, receive_reminders FROM pets WHERE id = $1 AND user_id = $2',
+      [pet_id, req.userId]
+    );
+    if (!petCheck.rows.length) return res.status(403).json({ error: 'No autorizado' });
+    const pet = petCheck.rows[0];
+    if (!pet.receive_reminders) return res.status(400).json({ error: 'El tutor no desea recibir recordatorios' });
+    if (!pet.email) return res.status(400).json({ error: 'El tutor no tiene email registrado' });
+
+    const records = await pool.query(
+      `SELECT * FROM clinical_records WHERE pet_id = $1 AND user_id = $2 AND record_type = 'vacuna'
+       ORDER BY date DESC`,
+      [pet_id, req.userId]
+    );
+
+    const reminders = [];
+    for (const rec of records.rows) {
+      const vaccineName = rec.details?.notes?.split('\n')[0] || 'Vacuna';
+      const recDate = new Date(rec.date);
+      const nextDate = new Date(recDate);
+      nextDate.setMonth(nextDate.getMonth() + 12);
+
+      if (nextDate > new Date()) {
+        const existing = await pool.query(
+          `SELECT id FROM reminders WHERE pet_id = $1 AND related_record_id = $2 AND status = 'pending'`,
+          [pet_id, rec.id]
+        );
+        if (!existing.rows.length) {
+          const r = await pool.query(
+            `INSERT INTO reminders (user_id, pet_id, tutor_email, reminder_type, title, message, scheduled_for, related_record_id)
+             VALUES ($1, $2, $3, 'vacuna', $4, $5, $6, $7) RETURNING *`,
+            [req.userId, pet_id, pet.email,
+             `Refuerzo de ${vaccineName} — ${pet.name}`,
+             `Es hora del refuerzo de ${vaccineName} para ${pet.name} (${pet.breed || 'N/D'}). Agende su cita.`,
+             nextDate.toISOString(), rec.id]
+          );
+          reminders.push(r.rows[0]);
+        }
+      }
+    }
+    res.json({ data: reminders });
+  } catch (err) {
+    console.error('Auto-generate reminders error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.patch('/items/reminders/:id', authMiddleware, async (req, res) => {
+  try {
+    const check = await pool.query('SELECT id FROM reminders WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
+    if (!check.rows.length) return res.status(404).json({ error: 'Recordatorio no encontrado' });
+    const { status, scheduled_for } = req.body;
+    const updates = [];
+    const params = [];
+    let idx = 1;
+    if (status) { updates.push(`status = $${idx++}`); params.push(status); }
+    if (scheduled_for) { updates.push(`scheduled_for = $${idx++}`); params.push(scheduled_for); }
+    if (status === 'sent') { updates.push(`sent_at = NOW()`); }
+    if (!updates.length) return res.status(400).json({ error: 'Sin cambios' });
+    params.push(req.params.id);
+    const result = await pool.query(`UPDATE reminders SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`, params);
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    console.error('Update reminder error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.delete('/items/reminders/:id', authMiddleware, async (req, res) => {
+  try {
+    const check = await pool.query('SELECT id FROM reminders WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
+    if (!check.rows.length) return res.status(404).json({ error: 'Recordatorio no encontrado' });
+    await pool.query('DELETE FROM reminders WHERE id = $1', [req.params.id]);
+    res.json({ data: { success: true } });
+  } catch (err) {
+    console.error('Delete reminder error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/items/reminders/send-pending', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT r.*, p.name AS pet_name, p.species, p.breed
+       FROM reminders r JOIN pets p ON p.id = r.pet_id
+       WHERE r.user_id = $1 AND r.status = 'pending' AND r.scheduled_for <= NOW()`,
+      [req.userId]
+    );
+    if (!result.rows.length) return res.json({ data: { sent: 0 } });
+
+    const nodemailer = require('nodemailer');
+    if (!process.env.SMTP_EMAIL || !process.env.SMTP_PASSWORD) {
+      return res.status(400).json({ error: 'SMTP no configurado' });
+    }
+    const transporter = nodemailer.createTransport({
+      service: process.env.SMTP_SERVICE || 'gmail',
+      auth: { user: process.env.SMTP_EMAIL, pass: process.env.SMTP_PASSWORD },
+    });
+
+    const userResult = await pool.query(
+      'SELECT clinic_name, veterinarian_name, clinic_phone FROM users WHERE id = $1',
+      [req.userId]
+    );
+    const userProfile = userResult.rows[0] || {};
+
+    let sentCount = 0;
+    for (const reminder of result.rows) {
+      try {
+        const speciesLabel = reminder.species === 'dog' ? 'Canino' : 'Felino';
+        const htmlBody = `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+  <div style="background: linear-gradient(135deg, #FF8F00, #FFA726); color: white; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
+    <h1 style="margin: 0; font-size: 22px;">🐶 VetCloud</h1>
+    <p style="margin: 4px 0 0; opacity: 0.9; font-size: 14px;">Recordatorio</p>
+  </div>
+  <div style="background: #fff; padding: 24px; border: 1px solid #e0e0e0; border-top: none;">
+    <div style="background: #FFF8E1; padding: 16px; border-radius: 8px; border-left: 4px solid #FF8F00; margin-bottom: 16px;">
+      <h3 style="margin: 0 0 8px; color: #FF8F00; font-size: 12px; text-transform: uppercase;">Paciente</h3>
+      <p style="margin: 0; font-size: 18px; font-weight: 700;">${reminder.pet_name}</p>
+      <p style="margin: 4px 0 0; font-size: 13px; color: #666;">${speciesLabel} — ${reminder.breed || 'N/D'}</p>
+    </div>
+    <div style="background: #FAFAFA; padding: 16px; border-radius: 8px; border: 1px solid #e0e0e0;">
+      <h3 style="margin: 0 0 8px; color: #333; font-size: 14px;">${reminder.title}</h3>
+      <p style="margin: 0; font-size: 14px; line-height: 1.6;">${reminder.message}</p>
+      <p style="margin: 12px 0 0; font-size: 13px; color: #999;">Fecha: ${new Date(reminder.scheduled_for).toLocaleDateString('es-CL')}</p>
+    </div>
+  </div>
+  <div style="text-align: center; padding: 16px; font-size: 11px; color: #999; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 12px 12px;">
+    <p style="margin: 0;">Para cancelar este recordatorio, responda a este correo.</p>
+    <p style="margin: 4px 0 0;">Documento generado por <strong style="color: #FF8F00;">VetCloud</strong></p>
+  </div>
+</body></html>`;
+
+        await transporter.sendMail({
+          from: `"VetCloud" <${process.env.SMTP_EMAIL}>`,
+          to: reminder.tutor_email,
+          subject: `Recordatorio: ${reminder.title}`,
+          html: htmlBody,
+        });
+        await pool.query(`UPDATE reminders SET status = 'sent', sent_at = NOW() WHERE id = $1`, [reminder.id]);
+        sentCount++;
+      } catch (e) {
+        console.error(`Failed to send reminder ${reminder.id}:`, e.message);
+      }
+    }
+    res.json({ data: { sent: sentCount } });
+  } catch (err) {
+    console.error('Send reminders error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 // ─── FILE UPLOAD ─────────────────────────────────────────
 app.post('/files', authMiddleware, upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file upload' });

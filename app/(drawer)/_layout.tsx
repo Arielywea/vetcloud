@@ -95,6 +95,13 @@ export default function DrawerLayout() {
           }}
         />
         <Drawer.Screen
+          name="reminders"
+          options={{
+            title: 'Recordatorios',
+            headerTitle: 'Recordatorios',
+          }}
+        />
+        <Drawer.Screen
           name="profile"
           options={{
             title: 'Mi Perfil',
