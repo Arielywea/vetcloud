@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ViewStyle, TouchableOpacity, Animated } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, SHADOWS } from '../../constants/tokens';
+import { SPACING, RADIUS, SHADOWS, ANIMATION } from '../../constants/tokens';
 
 interface VCardProps {
   children: React.ReactNode;
@@ -9,16 +9,37 @@ interface VCardProps {
   padding?: number;
   style?: ViewStyle;
   variant?: 'default' | 'outlined' | 'elevated';
+  hoverable?: boolean;
 }
 
 export default function VCard({
   children,
   onPress,
-  padding = SPACING.lg,
+  padding = SPACING.xl,
   style,
   variant = 'default',
+  hoverable = true,
 }: VCardProps) {
   const { colors } = useTheme();
+  const elevation = React.useRef(new Animated.Value(0)).current;
+
+  const onHoverIn = React.useCallback(() => {
+    if (!hoverable) return;
+    Animated.timing(elevation, {
+      toValue: 4,
+      duration: ANIMATION.normal,
+      useNativeDriver: false,
+    }).start();
+  }, [hoverable, elevation]);
+
+  const onHoverOut = React.useCallback(() => {
+    if (!hoverable) return;
+    Animated.timing(elevation, {
+      toValue: 0,
+      duration: ANIMATION.normal,
+      useNativeDriver: false,
+    }).start();
+  }, [hoverable, elevation]);
 
   const getCardStyle = (): ViewStyle => {
     const base: ViewStyle = {
@@ -28,21 +49,46 @@ export default function VCard({
     };
 
     const variants = {
-      default: SHADOWS.sm,
+      default: SHADOWS.xs,
       outlined: { borderWidth: 1, borderColor: colors.border },
-      elevated: SHADOWS.md,
+      elevated: SHADOWS.sm,
     };
 
     return { ...base, ...variants[variant] };
   };
 
+  const animatedStyle = {
+    shadowOffset: { width: 0, height: elevation },
+    shadowOpacity: elevation.interpolate({
+      inputRange: [0, 4],
+      outputRange: [0.05, 0.12],
+    }),
+    shadowRadius: elevation.interpolate({
+      inputRange: [0, 4],
+      outputRange: [2, 8],
+    }),
+    elevation,
+  };
+
   if (onPress) {
     return (
-      <TouchableOpacity activeOpacity={0.7} onPress={onPress} style={[getCardStyle(), style]}>
-        {children}
-      </TouchableOpacity>
+      <Animated.View style={[animatedStyle]}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={onPress}
+          onPressIn={onHoverIn}
+          onPressOut={onHoverOut}
+          style={[getCardStyle(), style]}
+        >
+          {children}
+        </TouchableOpacity>
+      </Animated.View>
     );
   }
 
-  return <View style={[getCardStyle(), style]}>{children}</View>;
+  return (
+    <Animated.View style={[animatedStyle, getCardStyle(), style]}>
+      {children}
+    </Animated.View>
+  );
 }

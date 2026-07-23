@@ -7,6 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { usePets, useAppointments, useNotes, useFavorites, useClinicalRecords, useInventory } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
+import { RECORD_TYPE_COLORS, TEXT_ON_PRIMARY } from '../../constants/colors';
 import VCard from '../../components/ui/Card';
 import VSectionHeader from '../../components/ui/SectionHeader';
 import TaskWidget from '../../components/TaskWidget';
@@ -16,7 +17,7 @@ import ReminderWidget from '../../components/ReminderWidget';
 export default function DashboardScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { colors, isDark, radius, shadows, spacing } = useTheme();
+  const { colors, radius, shadows, spacing } = useTheme();
   const { pets } = usePets();
   const { appointments } = useAppointments();
   const { notes } = useNotes();
@@ -33,10 +34,10 @@ export default function DashboardScreen() {
   const todayStr = new Date().toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
 
   const STATS = [
-    { label: 'Pacientes', value: pets.length, icon: <PawPrint size={22} color="#FFFFFF" />, color: colors.primary, route: '/(drawer)/pacientes' },
-    { label: 'Citas Hoy', value: appointments.filter(a => a.start_time.slice(0, 10) === new Date().toISOString().slice(0, 10)).length, icon: <Calendar size={22} color="#FFFFFF" />, color: colors.info, route: '/(drawer)/agenda' },
-    { label: 'Notas', value: notes.length, icon: <StickyNote size={22} color="#FFFFFF" />, color: colors.accent, route: '/(drawer)/notes' },
-    { label: 'Favoritas', value: favorites.length, icon: <Heart size={22} color="#FFFFFF" />, color: colors.error, route: undefined },
+    { label: 'Pacientes', value: pets.length, icon: <PawPrint size={22} color={TEXT_ON_PRIMARY.light.default} />, color: colors.primary, route: '/(drawer)/pacientes' },
+    { label: 'Citas Hoy', value: appointments.filter(a => a.start_time.slice(0, 10) === new Date().toISOString().slice(0, 10)).length, icon: <Calendar size={22} color={TEXT_ON_PRIMARY.light.default} />, color: colors.info, route: '/(drawer)/agenda' },
+    { label: 'Notas', value: notes.length, icon: <StickyNote size={22} color={TEXT_ON_PRIMARY.light.default} />, color: colors.accent, route: '/(drawer)/notes' },
+    { label: 'Favoritas', value: favorites.length, icon: <Heart size={22} color={TEXT_ON_PRIMARY.light.default} />, color: colors.error, route: undefined },
   ];
 
   const QUICK_ACTIONS = [
@@ -47,30 +48,23 @@ export default function DashboardScreen() {
   ];
 
   const RECORD_ICONS: Record<string, React.ReactNode> = {
-    consulta: <Stethoscope size={18} color="#3B82F6" />,
-    vacuna: <Syringe size={18} color="#10B981" />,
-    cirugia: <Scissors size={18} color="#EF4444" />,
-    control: <ClipboardCheck size={18} color="#F59E0B" />,
-  };
-
-  const RECORD_COLORS: Record<string, string> = {
-    consulta: '#3B82F6',
-    vacuna: '#10B981',
-    cirugia: '#EF4444',
-    control: '#F59E0B',
+    consulta: <Stethoscope size={18} color={RECORD_TYPE_COLORS.consulta} />,
+    vacuna: <Syringe size={18} color={RECORD_TYPE_COLORS.vacuna} />,
+    cirugia: <Scissors size={18} color={RECORD_TYPE_COLORS.cirugia} />,
+    control: <ClipboardCheck size={18} color={RECORD_TYPE_COLORS.control} />,
   };
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* Hero Greeting */}
-      <View style={[styles.hero, { backgroundColor: isDark ? colors.surfaceVariant : colors.primary }]}>
+      <View style={[styles.hero, { backgroundColor: colors.primary }]}>
         <View style={styles.heroContent}>
           <Text style={styles.heroEmoji}>🐶</Text>
-          <Text style={[styles.heroName, { color: '#FFFFFF' }]}>
+          <Text style={[styles.heroName, { color: TEXT_ON_PRIMARY.light.default }]}>
             Hola, {user?.name?.split(' ')[0] || 'Usuario'}
           </Text>
-          <Text style={[styles.heroDate, { color: '#FFFFFFBB' }]}>{todayStr}</Text>
-          <Text style={[styles.heroSubtitle, { color: '#FFFFFF99' }]}>
+          <Text style={[styles.heroDate, { color: TEXT_ON_PRIMARY.light.muted }]}>{todayStr}</Text>
+          <Text style={[styles.heroSubtitle, { color: TEXT_ON_PRIMARY.light.subtle }]}>
             ¿Cómo podemos ayudar hoy?
           </Text>
         </View>
@@ -81,7 +75,7 @@ export default function DashboardScreen() {
         {STATS.map((stat) => (
           <TouchableOpacity
             key={stat.label}
-            style={[styles.statCard, { backgroundColor: colors.surface }, shadows.sm]}
+            style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs]}
             onPress={() => stat.route && router.push(stat.route as any)}
             activeOpacity={0.7}
           >
@@ -109,12 +103,12 @@ export default function DashboardScreen() {
             icon={<ClipboardCheck size={20} color={colors.primary} />}
           />
           {recentRecords.map((record) => {
-            const configColor = RECORD_COLORS[record.record_type] || RECORD_COLORS.consulta;
+            const configColor = RECORD_TYPE_COLORS[record.record_type] || RECORD_TYPE_COLORS.consulta;
             const configIcon = RECORD_ICONS[record.record_type] || RECORD_ICONS.consulta;
             return (
               <TouchableOpacity
                 key={record.id}
-                style={[styles.recordCard, { backgroundColor: colors.surface }, shadows.sm]}
+                style={[styles.recordCard, { backgroundColor: colors.surface }, SHADOWS.xs]}
                 onPress={() => router.push(`/pet/${record.pet_id}`)}
                 activeOpacity={0.7}
               >
@@ -144,7 +138,7 @@ export default function DashboardScreen() {
           {QUICK_ACTIONS.map((action) => (
             <TouchableOpacity
               key={action.label}
-              style={[styles.quickCard, { backgroundColor: colors.surface }, shadows.sm]}
+              style={[styles.quickCard, { backgroundColor: colors.surface }, SHADOWS.xs]}
               onPress={() => router.push(action.route as any)}
               activeOpacity={0.7}
             >
@@ -160,79 +154,79 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { paddingBottom: 32 },
+  content: { paddingBottom: SPACING['4xl'] },
   hero: {
-    marginHorizontal: SPACING.lg,
-    marginTop: SPACING.lg,
+    marginHorizontal: SPACING.xl,
+    marginTop: SPACING.xl,
     borderRadius: RADIUS.xl,
     padding: SPACING['2xl'],
     paddingBottom: SPACING['3xl'],
   },
-  heroContent: { gap: 4 },
-  heroEmoji: { fontSize: 32, marginBottom: 4 },
-  heroName: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.extrabold },
-  heroDate: { fontSize: TYPOGRAPHY.sizes.sm, textTransform: 'capitalize', marginTop: 4 },
-  heroSubtitle: { fontSize: TYPOGRAPHY.sizes.base, marginTop: 6 },
+  heroContent: { gap: SPACING.sm },
+  heroEmoji: { fontSize: 32, marginBottom: SPACING.xs },
+  heroName: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.bold },
+  heroDate: { fontSize: TYPOGRAPHY.sizes.sm, textTransform: 'capitalize', marginTop: SPACING.xs },
+  heroSubtitle: { fontSize: TYPOGRAPHY.sizes.base, marginTop: SPACING.sm },
   statsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    marginTop: SPACING.lg,
-    marginBottom: SPACING.lg,
+    gap: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
+    marginTop: SPACING.xl,
+    marginBottom: SPACING.xl,
   },
   statCard: {
     width: '47%',
     borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
+    padding: SPACING.xl,
     alignItems: 'center',
     marginBottom: SPACING.sm,
   },
   statIcon: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     borderRadius: RADIUS.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
   },
-  statValue: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.extrabold },
-  statLabel: { fontSize: TYPOGRAPHY.sizes.sm, marginTop: SPACING.xs, fontWeight: TYPOGRAPHY.weights.medium },
-  section: { marginHorizontal: SPACING.lg, marginBottom: SPACING.lg },
+  statValue: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.bold },
+  statLabel: { fontSize: TYPOGRAPHY.sizes.sm, marginTop: SPACING.sm, fontWeight: TYPOGRAPHY.weights.regular },
+  section: { marginHorizontal: SPACING.xl, marginBottom: SPACING.xl },
   recordCard: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: RADIUS.lg,
-    padding: SPACING.md,
+    padding: SPACING.lg,
     marginBottom: SPACING.sm,
     gap: SPACING.md,
   },
   recordIcon: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: RADIUS.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   recordInfo: { flex: 1 },
   recordType: { fontWeight: TYPOGRAPHY.weights.semibold, fontSize: TYPOGRAPHY.sizes.md },
-  recordDate: { fontSize: TYPOGRAPHY.sizes.sm, marginTop: 2 },
+  recordDate: { fontSize: TYPOGRAPHY.sizes.sm, marginTop: SPACING.xs },
   quickGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: SPACING.md,
+    gap: SPACING.lg,
     justifyContent: 'space-between',
   },
   quickCard: {
     width: '47%',
     borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
+    padding: SPACING.xl,
     alignItems: 'center',
-    gap: SPACING.sm,
+    gap: SPACING.md,
   },
   quickIcon: {
-    width: 48,
-    height: 48,
+    width: 52,
+    height: 52,
     borderRadius: RADIUS.md,
     alignItems: 'center',
     justifyContent: 'center',

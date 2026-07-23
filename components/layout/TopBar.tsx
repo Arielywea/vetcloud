@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import { Search, Bell, Menu, Command } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 
 interface TopBarProps {
   onMenuPress?: () => void;
@@ -13,10 +13,10 @@ interface TopBarProps {
 }
 
 export default function TopBar({ onMenuPress, onSearchPress, title, rightContent }: TopBarProps) {
-  const { colors, isDark, spacing, radius, typography } = useTheme();
+  const { colors } = useTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+    <View style={[styles.container, { backgroundColor: colors.surface, borderBottomColor: colors.border }, SHADOWS.xs]}>
       {/* Left: hamburger (mobile) or title */}
       <View style={styles.left}>
         {onMenuPress && (
@@ -61,12 +61,12 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
 
 const styles = StyleSheet.create({
   container: {
-    height: 56,
+    height: 64,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
     borderBottomWidth: 1,
-    gap: SPACING.md,
+    gap: SPACING.lg,
   },
   left: {
     flexDirection: 'row',
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   menuBtn: {
-    padding: SPACING.xs,
+    padding: SPACING.sm,
   },
   title: {
     fontSize: TYPOGRAPHY.sizes.lg,
@@ -84,9 +84,9 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    height: 36,
+    height: 40,
     borderRadius: RADIUS.full,
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     borderWidth: 1,
     gap: SPACING.sm,
     maxWidth: 480,
@@ -98,8 +98,8 @@ const styles = StyleSheet.create({
   shortcut: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: RADIUS.sm,
     borderWidth: 1,
     gap: 2,

@@ -8,7 +8,7 @@ import {
 import { useRouter, usePathname } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import BeagleLogo from '../BeagleLogo';
 
 interface SidebarProps {
@@ -51,14 +51,12 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { colors, isDark, spacing, radius, typography, shadows } = useTheme();
+  const { colors, spacing, radius, typography, shadows } = useTheme();
 
-  const sidebarBg = isDark ? colors.surface : colors.surface;
-  const activeBg = isDark ? colors.primaryContainer : colors.primaryContainer;
-  const activeBorder = colors.primary;
-  const textColor = colors.text;
-  const mutedText = colors.textSecondary;
-  const hoverBg = colors.surfaceVariant;
+  const sidebarBg = colors.primary;
+  const textColor = '#FFFFFF';
+  const mutedText = '#FFFFFF99';
+  const activeIndicator = colors.accent;
 
   const handleNavigate = (route: string) => {
     router.push(route as any);
@@ -71,15 +69,15 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: sidebarBg, borderRightColor: colors.border }]}>
+    <View style={[styles.container, { backgroundColor: sidebarBg, ...shadows.sm }]}>
       {/* Logo */}
-      <View style={[styles.logoSection, { borderBottomColor: colors.border }]}>
-        <View style={[styles.logoWrap, { backgroundColor: colors.primaryContainer }]}>
-          <BeagleLogo size={32} variant={isDark ? 'dark' : 'light'} />
+      <View style={[styles.logoSection, { borderBottomColor: 'rgba(255,255,255,0.1)' }]}>
+        <View style={[styles.logoWrap, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
+          <BeagleLogo size={32} variant="light" />
         </View>
         {!collapsed && (
           <View style={styles.logoText}>
-            <Text style={[styles.logoVet, { color: colors.primary }]}>Vet</Text>
+            <Text style={[styles.logoVet, { color: textColor }]}>Vet</Text>
             <Text style={[styles.logoCloud, { color: colors.accent }]}>Cloud</Text>
           </View>
         )}
@@ -105,22 +103,24 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
                   key={item.label}
                   style={[
                     styles.navItem,
-                    active && { backgroundColor: activeBg, borderLeftColor: activeBorder },
+                    active && {
+                      backgroundColor: 'rgba(255,255,255,0.08)',
+                      borderLeftColor: activeIndicator,
+                    },
                     !active && { borderLeftColor: 'transparent' },
                   ]}
                   onPress={() => handleNavigate(item.route)}
                   activeOpacity={0.7}
                 >
-                  <Icon
-                    size={20}
-                    color={active ? colors.primary : mutedText}
-                  />
+                  <Icon size={20} color={active ? activeIndicator : mutedText} />
                   {!collapsed && (
                     <Text
                       style={[
                         styles.navLabel,
-                        { color: active ? colors.primary : textColor },
-                        active && styles.navLabelActive,
+                        {
+                          color: active ? textColor : '#FFFFFFCC',
+                          fontWeight: active ? TYPOGRAPHY.weights.semibold : TYPOGRAPHY.weights.regular,
+                        },
                       ]}
                     >
                       {item.label}
@@ -134,7 +134,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
       </ScrollView>
 
       {/* Bottom section */}
-      <View style={[styles.bottomSection, { borderTopColor: colors.border }]}>
+      <View style={[styles.bottomSection, { borderTopColor: 'rgba(255,255,255,0.1)' }]}>
         {BOTTOM_ITEMS.map((item) => {
           const active = isActive(item.route);
           const Icon = item.icon;
@@ -143,19 +143,24 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
               key={item.label}
               style={[
                 styles.navItem,
-                active && { backgroundColor: activeBg, borderLeftColor: activeBorder },
+                active && {
+                  backgroundColor: 'rgba(255,255,255,0.08)',
+                  borderLeftColor: activeIndicator,
+                },
                 !active && { borderLeftColor: 'transparent' },
               ]}
               onPress={() => handleNavigate(item.route)}
               activeOpacity={0.7}
             >
-              <Icon size={20} color={active ? colors.primary : mutedText} />
+              <Icon size={20} color={active ? activeIndicator : mutedText} />
               {!collapsed && (
                 <Text
                   style={[
                     styles.navLabel,
-                    { color: active ? colors.primary : textColor },
-                    active && styles.navLabelActive,
+                    {
+                      color: active ? textColor : '#FFFFFFCC',
+                      fontWeight: active ? TYPOGRAPHY.weights.semibold : TYPOGRAPHY.weights.regular,
+                    },
                   ]}
                 >
                   {item.label}
@@ -166,9 +171,9 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
         })}
 
         {/* User + Logout */}
-        <View style={[styles.userSection, { borderTopColor: colors.border }]}>
-          <View style={[styles.avatar, { backgroundColor: colors.primaryContainer }]}>
-            <Text style={[styles.avatarText, { color: colors.primary }]}>
+        <View style={[styles.userSection, { borderTopColor: 'rgba(255,255,255,0.1)' }]}>
+          <View style={[styles.avatar, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
+            <Text style={[styles.avatarText, { color: textColor }]}>
               {user?.name?.charAt(0)?.toUpperCase() || 'U'}
             </Text>
           </View>
@@ -183,7 +188,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
             </View>
           )}
           <TouchableOpacity onPress={logout} style={styles.logoutBtn}>
-            <LogOut size={18} color={colors.error} />
+            <LogOut size={18} color="#FF8A8A" />
           </TouchableOpacity>
         </View>
       </View>
@@ -194,14 +199,13 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
 const styles = StyleSheet.create({
   container: {
     width: 240,
-    borderRightWidth: 1,
     flex: 1,
   },
   logoSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.xl + 4,
     borderBottomWidth: 1,
     gap: SPACING.md,
   },
@@ -230,34 +234,30 @@ const styles = StyleSheet.create({
   },
   navScroll: {
     flex: 1,
-    paddingTop: SPACING.md,
+    paddingTop: SPACING.lg,
   },
   section: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.xl,
   },
   sectionTitle: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
-    letterSpacing: 1,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.sm + 2,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm + 2,
-    gap: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    gap: SPACING.md + 2,
     borderLeftWidth: 3,
     marginLeft: 0,
   },
   navLabel: {
     fontSize: TYPOGRAPHY.sizes.md,
-    fontWeight: TYPOGRAPHY.weights.medium,
-  },
-  navLabelActive: {
-    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   bottomSection: {
     borderTopWidth: 1,
@@ -266,8 +266,8 @@ const styles = StyleSheet.create({
   userSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.lg,
     borderTopWidth: 1,
     marginTop: SPACING.sm,
     gap: SPACING.md,
@@ -294,6 +294,6 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.sizes.xs,
   },
   logoutBtn: {
-    padding: SPACING.xs,
+    padding: SPACING.sm,
   },
 });

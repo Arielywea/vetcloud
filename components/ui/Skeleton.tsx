@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, ViewStyle } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
-import { RADIUS } from '../../constants/tokens';
+import { RADIUS, ANIMATION } from '../../constants/tokens';
 
 interface VSkeletonProps {
   width?: number | string;
@@ -13,7 +13,7 @@ interface VSkeletonProps {
 export default function VSkeleton({
   width = '100%',
   height = 16,
-  borderRadius = RADIUS.sm,
+  borderRadius = RADIUS.lg,
   style,
 }: VSkeletonProps) {
   const { colors } = useTheme();
@@ -23,13 +23,13 @@ export default function VSkeleton({
     const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(opacity, {
-          toValue: 0.7,
-          duration: 800,
+          toValue: 0.6,
+          duration: ANIMATION.slower,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 0.3,
-          duration: 800,
+          duration: ANIMATION.slower,
           useNativeDriver: true,
         }),
       ])
@@ -45,7 +45,7 @@ export default function VSkeleton({
           width: width as any,
           height,
           borderRadius,
-          backgroundColor: colors.surfaceVariant,
+          backgroundColor: colors.primaryContainer,
           opacity,
         },
         style,

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, TYPOGRAPHY } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 
 interface VEmptyStateProps {
   icon: React.ReactNode;
@@ -16,7 +16,7 @@ export default function VEmptyState({ icon, title, description, action }: VEmpty
 
   return (
     <View style={styles.container}>
-      <View style={[styles.iconContainer, { backgroundColor: colors.surfaceVariant }]}>{icon}</View>
+      <View style={[styles.iconContainer, { backgroundColor: colors.primaryContainer }]}>{icon}</View>
       <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
       {description && (
         <Text style={[styles.description, { color: colors.textSecondary }]}>{description}</Text>
@@ -35,10 +35,10 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: RADIUS.full,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.xl,
   },
   title: {
     fontSize: TYPOGRAPHY.sizes.lg,

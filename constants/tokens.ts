@@ -17,12 +17,12 @@ export const SPACING = {
   '6xl': 64,
 } as const;
 
-// Border Radius
+// Border Radius — Cards use 16-20px (lg=18), buttons 10px (md), badges pill (full)
 export const RADIUS = {
   none: 0,
-  sm: 6,
+  sm: 8,
   md: 10,
-  lg: 14,
+  lg: 18,
   xl: 20,
   '2xl': 24,
   full: 9999,
@@ -44,10 +44,8 @@ export const TYPOGRAPHY = {
   },
   weights: {
     regular: '400' as const,
-    medium: '500' as const,
     semibold: '600' as const,
     bold: '700' as const,
-    extrabold: '800' as const,
   },
   lineHeights: {
     tight: 1.2,

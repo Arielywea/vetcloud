@@ -26,7 +26,7 @@ interface PaletteItem {
 
 export default function CommandPalette({ visible, onClose }: CommandPaletteProps) {
   const router = useRouter();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { pets } = usePets();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -125,7 +125,7 @@ export default function CommandPalette({ visible, onClose }: CommandPaletteProps
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-        <View style={[styles.container, { backgroundColor: colors.surface }, SHADOWS.xl]}>
+        <View style={[styles.container, { backgroundColor: colors.surface }, SHADOWS.lg]}>
           {/* Search input */}
           <View style={[styles.inputRow, { borderBottomColor: colors.border }]}>
             <Search size={20} color={colors.textLight} />
@@ -190,7 +190,7 @@ export default function CommandPalette({ visible, onClose }: CommandPaletteProps
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(15,23,42,0.3)',
     justifyContent: 'flex-start',
     paddingTop: 100,
     paddingHorizontal: SPACING.xl,
@@ -206,8 +206,8 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.lg,
     borderBottomWidth: 1,
     gap: SPACING.md,
   },
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     fontWeight: TYPOGRAPHY.weights.semibold,
   },
   results: {
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.md,
     maxHeight: 380,
   },
   empty: {
@@ -241,17 +241,17 @@ const styles = StyleSheet.create({
   categoryLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
     paddingTop: SPACING.md,
-    paddingBottom: SPACING.xs,
+    paddingBottom: SPACING.sm,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm + 2,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
     gap: SPACING.md,
   },
   itemLabel: {
