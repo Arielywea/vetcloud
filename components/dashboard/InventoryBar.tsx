@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
-import { Package } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
@@ -16,14 +15,7 @@ interface InventoryBarProps {
   items?: InventoryItem[];
 }
 
-const DEFAULT_ITEMS: InventoryItem[] = [
-  { label: 'Medicamentos', percentage: 85, icon: '💊' },
-  { label: 'Vacunas', percentage: 72, icon: '💉' },
-  { label: 'Insumos', percentage: 68, icon: '📋' },
-  { label: 'Alimentos', percentage: 90, icon: '🍖' },
-];
-
-export default function InventoryBar({ items = DEFAULT_ITEMS }: InventoryBarProps) {
+export default function InventoryBar({ items = [] }: InventoryBarProps) {
   const router = useRouter();
   const { colors } = useTheme();
 
@@ -35,7 +27,6 @@ export default function InventoryBar({ items = DEFAULT_ITEMS }: InventoryBarProp
 
   return (
     <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.xs]}>
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.headerEmoji}>📦</Text>
@@ -49,29 +40,34 @@ export default function InventoryBar({ items = DEFAULT_ITEMS }: InventoryBarProp
         </TouchableOpacity>
       </View>
 
-      {/* Items */}
-      <View style={styles.itemsGrid}>
-        {items.map((item) => (
-          <View key={item.label} style={styles.item}>
-            <View style={styles.itemHeader}>
-              <Text style={styles.itemIcon}>{item.icon}</Text>
-              <Text style={[styles.itemLabel, { color: colors.text }]}>{item.label}</Text>
-              <Text style={[styles.itemPct, { color: colors.textSecondary }]}>{item.percentage}%</Text>
+      {items.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={[styles.emptyText, { color: colors.textLight }]}>Inventario vacío</Text>
+        </View>
+      ) : (
+        <View style={styles.itemsGrid}>
+          {items.map((item) => (
+            <View key={item.label} style={styles.item}>
+              <View style={styles.itemHeader}>
+                <Text style={styles.itemIcon}>{item.icon}</Text>
+                <Text style={[styles.itemLabel, { color: colors.text }]}>{item.label}</Text>
+                <Text style={[styles.itemPct, { color: colors.textSecondary }]}>{item.percentage}%</Text>
+              </View>
+              <View style={[styles.barBg, { backgroundColor: colors.surfaceVariant }]}>
+                <View
+                  style={[
+                    styles.barFill,
+                    {
+                      width: `${item.percentage}%`,
+                      backgroundColor: getBarColor(item.percentage),
+                    },
+                  ]}
+                />
+              </View>
             </View>
-            <View style={[styles.barBg, { backgroundColor: colors.surfaceVariant }]}>
-              <View
-                style={[
-                  styles.barFill,
-                  {
-                    width: `${item.percentage}%`,
-                    backgroundColor: getBarColor(item.percentage),
-                  },
-                ]}
-              />
-            </View>
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -123,7 +119,7 @@ const styles = StyleSheet.create({
   itemLabel: {
     flex: 1,
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.medium,
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   itemPct: {
     fontSize: TYPOGRAPHY.sizes.sm,
@@ -137,5 +133,12 @@ const styles = StyleSheet.create({
   barFill: {
     height: '100%',
     borderRadius: 4,
+  },
+  emptyState: {
+    paddingVertical: SPACING['2xl'],
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: TYPOGRAPHY.sizes.sm,
   },
 });

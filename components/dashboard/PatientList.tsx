@@ -20,14 +20,7 @@ interface PatientListProps {
   onViewAll?: () => void;
 }
 
-const MOCK_PATIENTS: Patient[] = [
-  { id: '1', name: 'Luna', species: 'Canino', breed: 'Labrador', lastVisit: '20 Jul 2025' },
-  { id: '2', name: 'Michi', species: 'Felino', breed: 'Persa', lastVisit: '19 Jul 2025' },
-  { id: '3', name: 'Rocky', species: 'Canino', breed: 'Bulldog Francés', lastVisit: '18 Jul 2025' },
-  { id: '4', name: 'Nala', species: 'Felino', breed: 'Siamés', lastVisit: '18 Jul 2025' },
-];
-
-export default function PatientList({ patients = MOCK_PATIENTS, onViewAll }: PatientListProps) {
+export default function PatientList({ patients = [], onViewAll }: PatientListProps) {
   const router = useRouter();
   const { colors } = useTheme();
 
@@ -52,32 +45,32 @@ export default function PatientList({ patients = MOCK_PATIENTS, onViewAll }: Pat
         </TouchableOpacity>
       </View>
 
-      {/* Patient list */}
-      {patients.map((patient, idx) => (
-        <View
-          key={patient.id}
-          style={[
-            styles.patientRow,
-            idx < patients.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
-          ]}
-        >
-          {/* Avatar */}
-          <View style={[styles.avatar, { backgroundColor: colors.primaryContainer }]}>
-            <Text style={styles.avatarEmoji}>{getSpeciesEmoji(patient.species)}</Text>
-          </View>
-
-          {/* Info */}
-          <View style={styles.patientInfo}>
-            <Text style={[styles.patientName, { color: colors.text }]}>{patient.name}</Text>
-            <Text style={[styles.patientDetail, { color: colors.textSecondary }]}>
-              {patient.species} · {patient.breed}
-            </Text>
-          </View>
-
-          {/* Date */}
-          <Text style={[styles.patientDate, { color: colors.textLight }]}>{patient.lastVisit}</Text>
+      {patients.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={[styles.emptyText, { color: colors.textLight }]}>Sin pacientes registrados</Text>
         </View>
-      ))}
+      ) : (
+        patients.map((patient, idx) => (
+          <View
+            key={patient.id}
+            style={[
+              styles.patientRow,
+              idx < patients.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+            ]}
+          >
+            <View style={[styles.avatar, { backgroundColor: colors.primaryContainer }]}>
+              <Text style={styles.avatarEmoji}>{getSpeciesEmoji(patient.species)}</Text>
+            </View>
+            <View style={styles.patientInfo}>
+              <Text style={[styles.patientName, { color: colors.text }]}>{patient.name}</Text>
+              <Text style={[styles.patientDetail, { color: colors.textSecondary }]}>
+                {patient.species} · {patient.breed}
+              </Text>
+            </View>
+            <Text style={[styles.patientDate, { color: colors.textLight }]}>{patient.lastVisit}</Text>
+          </View>
+        ))
+      )}
     </View>
   );
 }
@@ -138,5 +131,12 @@ const styles = StyleSheet.create({
   },
   patientDate: {
     fontSize: TYPOGRAPHY.sizes.xs,
+  },
+  emptyState: {
+    paddingVertical: SPACING['2xl'],
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: TYPOGRAPHY.sizes.sm,
   },
 });

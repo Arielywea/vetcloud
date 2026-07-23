@@ -9,12 +9,12 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 
 const ACTIONS = [
-  { label: 'Nueva Consulta', icon: Stethoscope, route: '/(drawer)/agenda', color: '#3B82F6' },
-  { label: 'Nueva Cita', icon: Calendar, route: '/(drawer)/agenda', color: '#10B981' },
-  { label: 'Nuevo Paciente', icon: UserPlus, route: '/(drawer)/add-paciente', color: '#8B5CF6' },
-  { label: 'Inventario', icon: Package, route: '/(drawer)/inventario', color: '#F59E0B' },
-  { label: 'Exám. Laboratorio', icon: FlaskConical, route: '/(drawer)/laboratorio', color: '#EC407A' },
-  { label: 'Reportes', icon: BarChart3, route: '/(drawer)/reportes', color: '#0E3A73' },
+  { label: 'Nueva Consulta', icon: Stethoscope, route: '/(drawer)/agenda', colorKey: 'info' as const },
+  { label: 'Nueva Cita', icon: Calendar, route: '/(drawer)/agenda', colorKey: 'success' as const },
+  { label: 'Nuevo Paciente', icon: UserPlus, route: '/(drawer)/add-paciente', colorKey: 'primary' as const },
+  { label: 'Inventario', icon: Package, route: '/(drawer)/inventario', colorKey: 'warning' as const },
+  { label: 'Exám. Laboratorio', icon: FlaskConical, route: '/(drawer)/laboratorio', colorKey: 'error' as const },
+  { label: 'Reportes', icon: BarChart3, route: '/(drawer)/reportes', colorKey: 'primary' as const },
 ];
 
 export default function QuickActions() {
@@ -33,6 +33,7 @@ export default function QuickActions() {
       <View style={styles.grid}>
         {ACTIONS.map((action) => {
           const Icon = action.icon;
+          const actionColor = colors[action.colorKey];
           return (
             <TouchableOpacity
               key={action.label}
@@ -40,8 +41,8 @@ export default function QuickActions() {
               onPress={() => router.push(action.route as any)}
               activeOpacity={0.7}
             >
-              <View style={[styles.actionIcon, { backgroundColor: action.color + '18' }]}>
-                <Icon size={20} color={action.color} />
+              <View style={[styles.actionIcon, { backgroundColor: actionColor + '18' }]}>
+                <Icon size={20} color={actionColor} />
               </View>
               <Text style={[styles.actionLabel, { color: colors.text }]} numberOfLines={1}>
                 {action.label}
