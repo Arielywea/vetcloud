@@ -1,49 +1,50 @@
 // ─────────────────────────────────────────────────────────
-// Light Theme (Paz — purple + beige background)
+// Light Theme — VetCloud Premium SaaS
+// Navy + Gold + Cool White
 // ─────────────────────────────────────────────────────────
 export const APP_COLORS = {
-  primary: '#6741D9',
-  primaryLight: '#845EF7',
-  primaryDark: '#4C1D95',
-  primaryContainer: '#EDE9FE',
-  accent: '#00C853',
-  success: '#00C853',
-  background: '#F5F0EB',
+  primary: '#0E3A73',
+  primaryLight: '#1E5AA8',
+  primaryDark: '#0A2C5A',
+  primaryContainer: '#E8F0FE',
+  accent: '#D4AF37',
+  success: '#10B981',
+  background: '#F5F7FA',
   surface: '#FFFFFF',
-  surfaceVariant: '#E8EDF2',
-  text: '#1A1D21',
-  textSecondary: '#6B7280',
-  textLight: '#9CA3AF',
-  error: '#E53935',
-  warning: '#F57C00',
-  info: '#1976D2',
-  border: '#E0E4EA',
-  disabled: '#C4C8CF',
-  cardShadow: '#000000',
+  surfaceVariant: '#F0F3F8',
+  text: '#1B2430',
+  textSecondary: '#64748B',
+  textLight: '#94A3B8',
+  error: '#EF4444',
+  warning: '#F59E0B',
+  info: '#3B82F6',
+  border: '#D9E1EA',
+  disabled: '#CBD5E1',
+  cardShadow: '#0F172A',
 };
 
 // ─────────────────────────────────────────────────────────
-// Dark Theme (Ariel — NERV Operations Console aesthetic)
-// Adapted from nerv-ui SKILL.md design tokens
+// Dark Theme — VetCloud Premium SaaS Dark
+// Deep navy + gold accent on dark surfaces
 // ─────────────────────────────────────────────────────────
 export const APP_COLORS_DARK = {
-  primary: '#FF9830',
-  primaryLight: '#FFCC50',
-  primaryDark: '#C87020',
-  primaryContainer: '#2A2018',
-  accent: '#50FF50',
-  success: '#50FF50',
-  background: '#000000',
-  surface: '#0C0C0A',
-  surfaceVariant: '#1A1A18',
-  text: '#D8D8D0',
-  textSecondary: '#888880',
-  textLight: '#585850',
-  error: '#FF3030',
-  warning: '#FFCC50',
-  info: '#20F0FF',
-  border: '#2A2A28',
-  disabled: '#444440',
+  primary: '#4A90D9',
+  primaryLight: '#6BA5E7',
+  primaryDark: '#0E3A73',
+  primaryContainer: '#0F1D32',
+  accent: '#D4AF37',
+  success: '#34D399',
+  background: '#0B1120',
+  surface: '#111827',
+  surfaceVariant: '#1E293B',
+  text: '#F1F5F9',
+  textSecondary: '#94A3B8',
+  textLight: '#475569',
+  error: '#F87171',
+  warning: '#FBBF24',
+  info: '#60A5FA',
+  border: '#1E293B',
+  disabled: '#334155',
   cardShadow: '#000000',
 };
 

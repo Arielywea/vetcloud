@@ -1,5 +1,4 @@
 import { Drawer } from 'expo-router/drawer';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, View } from 'react-native';
 import DrawerContent from '../../components/DrawerContent';
@@ -15,11 +14,11 @@ export default function DrawerLayout() {
       <Drawer
         drawerContent={(props) => <DrawerContent {...props} />}
         screenOptions={{
-          headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: isDark ? '#000000' : '#FFFFFF',
+          headerStyle: { backgroundColor: colors.primary, elevation: 0, shadowOpacity: 0 },
+          headerTintColor: '#FFFFFF',
           headerTitleStyle: { fontWeight: '600' },
           drawerStyle: {
-            backgroundColor: isDark ? '#0A0A14' : colors.primaryDark,
+            backgroundColor: isDark ? '#0B1120' : colors.primary,
             width: 280,
           },
           headerShown: true,
@@ -30,9 +29,15 @@ export default function DrawerLayout() {
           options={{
             title: 'VetCloud',
             headerTitle: () => (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <BeagleLogo size={24} variant={isDark ? 'dark' : 'light'} />
-                <span style={{ color: isDark ? '#000000' : '#FFFFFF', fontSize: 18, fontWeight: '600' }}>VetCloud</span>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <BeagleLogo size={24} variant="light" />
+                <View style={{ width: 1, height: 20, backgroundColor: '#FFFFFF30' }} />
+                <View>
+                  <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                    <span style={{ color: '#FFFFFF', fontSize: 17, fontWeight: '700' }}>Vet</span>
+                    <span style={{ color: colors.accent, fontSize: 17, fontWeight: '700' }}>Cloud</span>
+                  </View>
+                </View>
               </View>
             ),
           }}

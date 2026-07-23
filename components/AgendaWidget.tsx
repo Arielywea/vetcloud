@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, Card } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Text } from 'react-native-paper';
+import { Building2, Tractor, CheckCircle } from 'lucide-react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { Appointment } from '../services/directus';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../constants/tokens';
 
 interface AgendaWidgetProps {
   appointments: Appointment[];
@@ -30,68 +31,68 @@ export default function AgendaWidget({ appointments }: AgendaWidgetProps) {
 
   return (
     <View style={styles.container}>
-      <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.text }]}>Agenda del Día</Text>
+      <View style={styles.header}>
+        <Building2 size={20} color={colors.primary} />
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Agenda del Día</Text>
+      </View>
       <View style={styles.splitRow}>
         {/* Box Column */}
-        <Card style={[styles.halfCard, { backgroundColor: colors.surface, borderLeftColor: colors.primary }]}>
-          <Card.Content>
-            <View style={styles.columnHeader}>
-              <MaterialCommunityIcons name="hospital-box" size={18} color={colors.primary} />
-              <Text style={[styles.columnTitle, { color: colors.text }]}>Box</Text>
+        <View style={[styles.halfCard, { backgroundColor: colors.surface, borderLeftColor: colors.primary }, SHADOWS.sm]}>
+          <View style={styles.columnHeader}>
+            <Building2 size={18} color={colors.primary} />
+            <Text style={[styles.columnTitle, { color: colors.text }]}>Box</Text>
+          </View>
+          {boxAppointments.length === 0 ? (
+            <View style={styles.emptyCol}>
+              <CheckCircle size={22} color={colors.success} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Sin citas en box</Text>
             </View>
-            {boxAppointments.length === 0 ? (
-              <View style={styles.emptyCol}>
-                <MaterialCommunityIcons name="check-circle" size={24} color={colors.success} />
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Sin citas en box</Text>
+          ) : (
+            boxAppointments.slice(0, 3).map(a => (
+              <View key={a.id} style={[styles.apptItem, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.apptTime, { color: colors.primary }]}>{formatTime(a.start_time)}</Text>
+                <Text style={[styles.apptName, { color: colors.text }]} numberOfLines={1}>{a.patient_name}</Text>
               </View>
-            ) : (
-              boxAppointments.slice(0, 3).map(a => (
-                <View key={a.id} style={[styles.apptItem, { borderBottomColor: colors.border }]}>
-                  <Text style={[styles.apptTime, { color: colors.primary }]}>{formatTime(a.start_time)}</Text>
-                  <Text style={[styles.apptName, { color: colors.text }]} numberOfLines={1}>{a.patient_name}</Text>
-                </View>
-              ))
-            )}
-          </Card.Content>
-        </Card>
+            ))
+          )}
+        </View>
 
         {/* Terreno Column */}
-        <Card style={[styles.halfCard, { backgroundColor: colors.surface, borderLeftColor: '#8D6E63' }]}>
-          <Card.Content>
-            <View style={styles.columnHeader}>
-              <MaterialCommunityIcons name="tractor" size={18} color="#8D6E63" />
-              <Text style={[styles.columnTitle, { color: colors.text }]}>Terreno</Text>
+        <View style={[styles.halfCard, { backgroundColor: colors.surface, borderLeftColor: '#8D6E63' }, SHADOWS.sm]}>
+          <View style={styles.columnHeader}>
+            <Tractor size={18} color="#8D6E63" />
+            <Text style={[styles.columnTitle, { color: colors.text }]}>Terreno</Text>
+          </View>
+          {terrenoAppointments.length === 0 ? (
+            <View style={styles.emptyCol}>
+              <CheckCircle size={22} color={colors.success} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Sin agenda de terreno</Text>
             </View>
-            {terrenoAppointments.length === 0 ? (
-              <View style={styles.emptyCol}>
-                <MaterialCommunityIcons name="check-circle" size={24} color={colors.success} />
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Sin agenda de terreno</Text>
+          ) : (
+            terrenoAppointments.slice(0, 3).map(a => (
+              <View key={a.id} style={[styles.apptItem, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.apptTime, { color: '#8D6E63' }]}>{formatTime(a.start_time)}</Text>
+                <Text style={[styles.apptName, { color: colors.text }]} numberOfLines={1}>{a.patient_name}</Text>
               </View>
-            ) : (
-              terrenoAppointments.slice(0, 3).map(a => (
-                <View key={a.id} style={[styles.apptItem, { borderBottomColor: colors.border }]}>
-                  <Text style={[styles.apptTime, { color: '#8D6E63' }]}>{formatTime(a.start_time)}</Text>
-                  <Text style={[styles.apptName, { color: colors.text }]} numberOfLines={1}>{a.patient_name}</Text>
-                </View>
-              ))
-            )}
-          </Card.Content>
-        </Card>
+            ))
+          )}
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { marginHorizontal: 12, marginBottom: 10 },
-  sectionTitle: { fontWeight: '700', marginBottom: 8 },
-  splitRow: { flexDirection: 'row', gap: 8 },
-  halfCard: { flex: 1, borderRadius: 12, borderLeftWidth: 3, elevation: 1 },
-  columnHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  columnTitle: { fontWeight: '700', fontSize: 14 },
-  emptyCol: { alignItems: 'center', paddingVertical: 12, gap: 4 },
-  emptyText: { fontSize: 11 },
-  apptItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 0.5, gap: 8 },
-  apptTime: { fontSize: 12, fontWeight: '700', width: 48 },
-  apptName: { flex: 1, fontSize: 13 },
+  container: { marginHorizontal: SPACING.lg, marginBottom: SPACING.lg },
+  header: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.md },
+  sectionTitle: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.bold },
+  splitRow: { flexDirection: 'row', gap: SPACING.md },
+  halfCard: { flex: 1, borderRadius: RADIUS.lg, padding: SPACING.md, borderLeftWidth: 3 },
+  columnHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.md },
+  columnTitle: { fontWeight: TYPOGRAPHY.weights.bold, fontSize: TYPOGRAPHY.sizes.md },
+  emptyCol: { alignItems: 'center', paddingVertical: SPACING.lg, gap: SPACING.xs },
+  emptyText: { fontSize: TYPOGRAPHY.sizes.xs },
+  apptItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: SPACING.sm, borderBottomWidth: 0.5, gap: SPACING.sm },
+  apptTime: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.bold, width: 48 },
+  apptName: { flex: 1, fontSize: TYPOGRAPHY.sizes.sm },
 });

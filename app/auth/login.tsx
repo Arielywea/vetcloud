@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { Text, TextInput, Button } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Text } from 'react-native-paper';
+import { User, Lock, AlertCircle, LogIn, Eye, EyeOff } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import BeagleLogo from '../../components/BeagleLogo';
+import VInput from '../../components/ui/Input';
+import VButton from '../../components/ui/Button';
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -22,42 +25,68 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={[styles.bgPrimary, { backgroundColor: colors.primary }]}>
-        <View style={styles.logoSection}>
-          <View style={[styles.logoCircle, { backgroundColor: '#FFFFFF25' }]}>
-            <BeagleLogo size={64} variant="light" />
-          </View>
-          <Text style={styles.logoTitle}>VetCloud</Text>
-          <Text style={styles.logoSubtitle}>Sistema de Gestión Veterinaria</Text>
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: colors.primary }]}>
+        <View style={[styles.logoCircle, { backgroundColor: '#FFFFFF18' }]}>
+          <BeagleLogo size={64} variant="light" />
         </View>
+        <Text style={styles.logoTitle}>VetCloud</Text>
+        <Text style={styles.logoSubtitle}>Sistema de Gestión Veterinaria</Text>
       </View>
-      <View style={styles.cardSection}>
-        <View style={[styles.card, { backgroundColor: colors.surface }]}>
-          <Text variant="titleMedium" style={[styles.cardTitle, { color: colors.text }]}>Iniciar Sesión</Text>
+
+      {/* Form */}
+      <View style={styles.formSection}>
+        <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.lg]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Iniciar Sesión</Text>
           <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>Ingresa tus credenciales para acceder</Text>
-          <TextInput
-            label="RUT" placeholder="12345678-9" value={rut} onChangeText={setRut} mode="outlined" style={styles.input}
-            left={<TextInput.Icon icon="account" color={colors.primary} />}
-            outlineColor={colors.border} activeOutlineColor={colors.primary}
+
+          <VInput
+            label="RUT"
+            placeholder="12345678-9"
+            value={rut}
+            onChangeText={setRut}
+            leftIcon={<User size={18} color={colors.primary} />}
           />
-          <TextInput
-            label="Contraseña" value={password} onChangeText={setPassword} mode="outlined" style={styles.input}
+
+          <VInput
+            label="Contraseña"
+            value={password}
+            onChangeText={setPassword}
             secureTextEntry={!showPassword}
-            left={<TextInput.Icon icon="lock" color={colors.primary} />}
-            right={<TextInput.Icon icon={showPassword ? 'eye-off' : 'eye'} color={colors.textSecondary} onPress={() => setShowPassword(!showPassword)} />}
-            outlineColor={colors.border} activeOutlineColor={colors.primary}
+            leftIcon={<Lock size={18} color={colors.primary} />}
+            rightIcon={
+              <View style={{ padding: 4 }}>
+                {showPassword ? (
+                  <EyeOff size={18} color={colors.textSecondary} onPress={() => setShowPassword(false)} />
+                ) : (
+                  <Eye size={18} color={colors.textSecondary} onPress={() => setShowPassword(true)} />
+                )}
+              </View>
+            }
           />
+
           {error ? (
-            <View style={[styles.errorContainer, { backgroundColor: colors.error + '15' }]}>
-              <MaterialCommunityIcons name="alert-circle" size={16} color={colors.error} />
+            <View style={[styles.errorContainer, { backgroundColor: colors.error + '12' }]}>
+              <AlertCircle size={16} color={colors.error} />
               <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
             </View>
           ) : null}
-          <Button mode="contained" onPress={handleLogin} loading={loading} disabled={loading} style={styles.button} buttonColor={colors.primary} contentStyle={{ paddingVertical: 6 }}>
+
+          <VButton
+            onPress={handleLogin}
+            loading={loading}
+            disabled={loading}
+            fullWidth
+            icon={<LogIn size={18} color="#FFFFFF" />}
+          >
             Ingresar
-          </Button>
+          </VButton>
         </View>
+
         <Text style={[styles.footer, { color: colors.textLight }]}>VetCloud © 2026</Text>
       </View>
     </KeyboardAvoidingView>
@@ -66,18 +95,46 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  bgPrimary: { paddingTop: 80, paddingBottom: 60, paddingHorizontal: 24, alignItems: 'center', borderBottomLeftRadius: 32, borderBottomRightRadius: 32 },
-  logoSection: { alignItems: 'center' },
-  logoCircle: { width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  logoTitle: { fontSize: 32, fontWeight: '800', color: '#FFFFFF' },
-  logoSubtitle: { fontSize: 14, color: '#FFFFFFCC', marginTop: 4 },
-  cardSection: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
-  card: { borderRadius: 16, padding: 28, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8 },
-  cardTitle: { fontWeight: '700', fontSize: 20, marginBottom: 4 },
-  cardSubtitle: { fontSize: 13, marginBottom: 24 },
-  input: { marginBottom: 16 },
-  errorContainer: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, padding: 10, borderRadius: 8 },
-  errorText: { fontSize: 13, flex: 1 },
-  button: { marginTop: 4, borderRadius: 10 },
-  footer: { textAlign: 'center', fontSize: 12, marginTop: 24 },
+  header: {
+    paddingTop: 80,
+    paddingBottom: 60,
+    paddingHorizontal: SPACING.xl,
+    alignItems: 'center',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+  },
+  logoCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.lg,
+  },
+  logoTitle: { fontSize: TYPOGRAPHY.sizes['4xl'], fontWeight: TYPOGRAPHY.weights.extrabold, color: '#FFFFFF' },
+  logoSubtitle: { fontSize: TYPOGRAPHY.sizes.md, color: '#FFFFFFBB', marginTop: SPACING.xs },
+  formSection: { flex: 1, justifyContent: 'center', paddingHorizontal: SPACING.xl },
+  card: {
+    borderRadius: RADIUS.xl,
+    padding: SPACING['2xl'],
+  },
+  cardTitle: {
+    fontSize: TYPOGRAPHY.sizes.xl,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    marginBottom: SPACING.xs,
+  },
+  cardSubtitle: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    marginBottom: SPACING['2xl'],
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
+  },
+  errorText: { fontSize: TYPOGRAPHY.sizes.sm, flex: 1 },
+  footer: { textAlign: 'center', fontSize: TYPOGRAPHY.sizes.xs, marginTop: SPACING['2xl'] },
 });
