@@ -14,8 +14,26 @@ function generatePrescriptionPdf(prescription, pet, clinic) {
 
     // ── HEADER ──
     doc.rect(0, 0, doc.page.width, 80).fill(primaryColor);
-    doc.fill('#ffffff').fontSize(22).font('Helvetica-Bold').text('VetCloud', 50, 20);
-    doc.fontSize(10).font('Helvetica').text('Receta Veterinaria', 50, 48);
+
+    // Draw beagle (simplified)
+    const bx = 58, by = 40, bs = 22;
+    // Ears
+    doc.ellipse(bx - bs * 0.7, by + bs * 0.1, bs * 0.32, bs * 0.5).fill('#8D6E63');
+    doc.ellipse(bx + bs * 0.7, by + bs * 0.1, bs * 0.32, bs * 0.5).fill('#8D6E63');
+    // Face
+    doc.circle(bx, by, bs * 0.65).fill('#FFFFFF');
+    // Cap marking
+    doc.circle(bx, by - bs * 0.15, bs * 0.35).fill('#5D4037');
+    // Eyes
+    doc.circle(bx - bs * 0.22, by, bs * 0.1).fill('#FFFFFF');
+    doc.circle(bx - bs * 0.2, by, bs * 0.065).fill('#1A1A1A');
+    doc.circle(bx + bs * 0.22, by, bs * 0.1).fill('#FFFFFF');
+    doc.circle(bx + bs * 0.2, by, bs * 0.065).fill('#1A1A1A');
+    // Nose
+    doc.circle(bx, by + bs * 0.22, bs * 0.08).fill('#1A1A1A');
+
+    doc.fill('#ffffff').fontSize(22).font('Helvetica-Bold').text('VetCloud', 100, 20);
+    doc.fontSize(10).font('Helvetica').text('Receta Veterinaria', 100, 48);
     if (clinic?.veterinarian_name) {
       doc.fontSize(10).text(clinic.veterinarian_name, doc.page.width - 50, 20, { align: 'right', width: doc.page.width - 100 });
     }

@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../contexts/ThemeContext';
+import BeagleLogo from './BeagleLogo';
 import {
   DrawerContentScrollView,
   DrawerItemList,
@@ -49,11 +50,7 @@ export default function DrawerContent(props: any) {
     <View style={[styles.container, { backgroundColor: isDark ? '#0A0A14' : colors.primaryDark }]}>
       <View style={styles.header}>
         <View style={[styles.avatar, { backgroundColor: isDark ? colors.surfaceVariant : '#FFFFFF20' }]}>
-          <MaterialCommunityIcons
-            name={isDark ? 'robot' : 'account-circle'}
-            size={48}
-            color={isDark ? colors.primary : '#FFFFFF'}
-          />
+          <BeagleLogo size={48} variant={isDark ? 'dark' : 'light'} />
         </View>
         <Text style={[styles.userName, { color: '#FFFFFF' }]}>{user?.name || 'Usuario'}</Text>
         <Text style={[styles.userRole, { color: '#FFFFFF99' }]}>

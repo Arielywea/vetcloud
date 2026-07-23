@@ -55,7 +55,7 @@ export default function DashboardScreen() {
       {/* Greeting Card */}
       <Card style={[styles.greetingCard, { backgroundColor: isDark ? colors.surfaceVariant : colors.primary }]}>
         <Card.Content>
-          <Text style={styles.greetingEmoji}>👋</Text>
+          <Text style={styles.greetingEmoji}>🐶</Text>
           <Text variant="headlineSmall" style={[styles.greetingText, { color: isDark ? colors.primary : '#FFFFFF' }]}>
             Hola, {user?.name || 'Usuario'}
           </Text>

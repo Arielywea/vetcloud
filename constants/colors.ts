@@ -188,6 +188,21 @@ export const PALETTES: Record<string, { light: AppColors; dark: AppColors; label
       error: '#FF5252', warning: '#FFB74D', info: '#4DD0E1', border: '#3A0A2A', disabled: '#4A0A3A', cardShadow: '#000000',
     },
   },
+  saber: {
+    label: 'Saber / Artoria',
+    light: {
+      primary: '#1565C0', primaryLight: '#42A5F5', primaryDark: '#0D47A1', primaryContainer: '#E3F2FD',
+      accent: '#FFD54F', success: '#43A047', background: '#F5F5F5', surface: '#FFFFFF', surfaceVariant: '#E8EAF6',
+      text: '#1A1A2E', textSecondary: '#455A64', textLight: '#90A4AE',
+      error: '#C62828', warning: '#FF8F00', info: '#0277BD', border: '#BBDEFB', disabled: '#B0BEC5', cardShadow: '#000000',
+    },
+    dark: {
+      primary: '#7C4DFF', primaryLight: '#B388FF', primaryDark: '#651FFF', primaryContainer: '#1A0A3E',
+      accent: '#FFD740', success: '#69F0AE', background: '#0A0A14', surface: '#12121E', surfaceVariant: '#1A1A2E',
+      text: '#E8EAF6', textSecondary: '#9FA8DA', textLight: '#5C6BC0',
+      error: '#FF5252', warning: '#FFB74D', info: '#448AFF', border: '#2A2A3E', disabled: '#3A3A4E', cardShadow: '#000000',
+    },
+  },
 };
 
 export type PaletteKey = keyof typeof PALETTES;

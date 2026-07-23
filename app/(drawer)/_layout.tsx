@@ -1,8 +1,9 @@
 import { Drawer } from 'expo-router/drawer';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import DrawerContent from '../../components/DrawerContent';
+import BeagleLogo from '../../components/BeagleLogo';
 import { useTheme } from '../../contexts/ThemeContext';
 
 export default function DrawerLayout() {
@@ -27,7 +28,12 @@ export default function DrawerLayout() {
           name="index"
           options={{
             title: 'VetCloud',
-            headerTitle: 'VetCloud - Inicio',
+            headerTitle: () => (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <BeagleLogo size={24} variant={isDark ? 'dark' : 'light'} />
+                <span style={{ color: isDark ? '#000000' : '#FFFFFF', fontSize: 18, fontWeight: '600' }}>VetCloud</span>
+              </View>
+            ),
           }}
         />
         <Drawer.Screen
