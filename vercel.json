@@ -15,6 +15,7 @@
     { "source": "/admin", "destination": "/api" },
     { "source": "/admin/(.*)", "destination": "/api" },
     { "source": "/files", "destination": "/api" },
+    { "source": "/assistant", "destination": "/api" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
