@@ -172,8 +172,27 @@ export interface Reminder {
   created_at: string;
 }
 
-// ─────────────────────────────────────────────────────────
-// API Client
+export interface ChatConversation {
+  id: string;
+  user_id: string;
+  tutor_name: string | null;
+  tutor_phone: string | null;
+  tutor_email: string | null;
+  pet_name: string | null;
+  status: 'open' | 'closed' | 'pending';
+  channel: 'web' | 'email' | 'whatsapp';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  conversation_id: string;
+  sender: 'user' | 'bot' | 'agent';
+  message: string;
+  intent: string | null;
+  created_at: string;
+}
 // ─────────────────────────────────────────────────────────
 
 async function apiGet(endpoint: string, params?: Record<string, string>) {
@@ -297,6 +316,17 @@ export const api = {
     update: (id: string, data: any) => apiPatch(`/items/reminders/${id}`, data),
     delete: (id: string) => apiDelete(`/items/reminders/${id}`),
     sendPending: () => apiPost('/items/reminders/send-pending', {}),
+  },
+  chat: {
+    listConversations: (params?: { status?: string }) =>
+      apiGet('/chat/conversations', params),
+    getConversation: (id: string) => apiGet(`/chat/conversations/${id}`),
+    createConversation: (data: any) => apiPost('/chat/conversations', data),
+    updateConversation: (id: string, data: any) => apiPatch(`/chat/conversations/${id}`, data),
+    sendMessage: (conversationId: string, message: string) =>
+      apiPost(`/chat/conversations/${conversationId}/messages`, { message }),
+    agentReply: (conversationId: string, message: string) =>
+      apiPost('/chat/agent-reply', { conversation_id: conversationId, message }),
   },
 };
 
