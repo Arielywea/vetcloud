@@ -133,7 +133,7 @@ export default function PetDetailScreen() {
   const openRxModal = (linkedRecordId?: string) => {
     setRxLinkedRecordId(linkedRecordId || null);
     setRxVet(lastAnamnesis?.veterinarian || user?.name || '');
-    setRxBranch('Casa Matriz');
+    setRxBranch('');
     setRxFormat('standard');
     setRxBody('');
     setShowRxModal(true);
@@ -732,20 +732,14 @@ export default function PetDetailScreen() {
             <View style={styles.rxFieldRow}>
               <View style={styles.rxFieldHalf}>
                 <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Sucursal</Text>
-                <View style={styles.rxSelectRow}>
-                  {['Casa Matriz', 'Sucursal 2'].map(branch => (
-                    <Button
-                      key={branch}
-                      mode={rxBranch === branch ? 'contained' : 'outlined'}
-                      onPress={() => setRxBranch(branch)}
-                      style={[styles.rxSelectBtn, rxBranch === branch && { backgroundColor: colors.primary }]}
-                      labelStyle={[styles.rxSelectLabel, rxBranch === branch ? { color: '#FFF' } : { color: colors.primary }]}
-                      compact
-                    >
-                      {branch}
-                    </Button>
-                  ))}
-                </View>
+                <TextInput
+                  placeholder="Ej: Clínica Central"
+                  value={rxBranch}
+                  onChangeText={setRxBranch}
+                  mode="outlined"
+                  dense
+                  style={styles.rxInput}
+                />
               </View>
               <View style={styles.rxFieldHalf}>
                 <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Formato</Text>
