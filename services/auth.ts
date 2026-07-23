@@ -57,3 +57,16 @@ export async function apiAuthUpdateProfile(data: Record<string, any>) {
   if (!res.ok) throw new Error(json.error || 'Error al actualizar perfil');
   return json.data;
 }
+
+export async function apiAuthChangePassword(current_password: string, new_password: string) {
+  const token = await getToken();
+  if (!token) throw new Error('No hay token');
+  const res = await fetch(`${API_URL}/auth/password`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ current_password, new_password }),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Error al cambiar contraseña');
+  return json.data;
+}
