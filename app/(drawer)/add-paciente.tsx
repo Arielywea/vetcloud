@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
 import { Text, TextInput, Button, Menu, Dialog, Portal } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, Check } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { usePets } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { uploadPetPhoto } from '../../services/cloudinary';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import VoiceNotes from '../../components/VoiceNotes';
 
 const TEMPERAMENT_OPTIONS = ['Dócil', 'Inquieto', 'Agresivo', 'Nervioso'];
@@ -20,10 +21,18 @@ const REPRODUCTIVE_OPTIONS = [
 const REPRODUCTIVE_MACHO = ['intacto', 'castrado'];
 const REPRODUCTIVE_HEMBRA = ['intacto', 'castrado', 'esterilizado', 'gestante'];
 
+const STEP_LABELS = ['Información básica', 'Propietario', 'Información médica', 'Revisión'];
+
 export default function AddPacienteScreen() {
   const router = useRouter();
   const { addPet } = usePets();
   const { colors } = useTheme();
+
+  // Wizard state
+  const [currentStep, setCurrentStep] = useState(1);
+  const [habitatExpanded, setHabitatExpanded] = useState(true);
+  const [historialExpanded, setHistorialExpanded] = useState(false);
+  const [examenExpanded, setExamenExpanded] = useState(false);
 
   // Photo
   const [photo, setPhoto] = useState<string | null>(null);
@@ -40,7 +49,7 @@ export default function AddPacienteScreen() {
   const [color, setColor] = useState('');
   const [reproductiveStatus, setReproductiveStatus] = useState('intacto');
   const [statusMenuVisible, setStatusMenuVisible] = useState(false);
-  const [petStatus, setPetStatus] = useState<'alive' | 'deceased'>('alive');
+  const [petStatus] = useState<'alive' | 'deceased'>('alive');
 
   // Identificación
   const [idNumber, setIdNumber] = useState('');
@@ -53,13 +62,11 @@ export default function AddPacienteScreen() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
-  const [clinicLocation, setClinicLocation] = useState('');
 
   // Historia Clínica
   const [motivoConsulta, setMotivoConsulta] = useState('');
   const [anamnesis, setAnamnesis] = useState('');
   const [habitat, setHabitat] = useState('');
-  const [habitatOther, setHabitatOther] = useState('');
   const [entorno, setEntorno] = useState('');
   const [areneros, setAreneros] = useState('');
   const [food, setFood] = useState('');
@@ -74,10 +81,6 @@ export default function AddPacienteScreen() {
   const [surgeries, setSurgeries] = useState('');
   const [otherDiseases, setOtherDiseases] = useState('');
   const [medications, setMedications] = useState('');
-
-  // Collapsible sections
-  const [historialSanitarioExpanded, setHistorialSanitarioExpanded] = useState(false);
-  const [examenFisicoExpanded, setExamenFisicoExpanded] = useState(false);
 
   // Constantes fisiológicas
   const [vitalTemp, setVitalTemp] = useState('');
@@ -130,12 +133,11 @@ export default function AddPacienteScreen() {
         }
       }
 
-      // Convert DD/MM/YYYY → YYYY-MM-DD for PostgreSQL
       let isoDate = null;
       if (birthDate.trim()) {
         const parts = birthDate.split('/');
         if (parts.length === 3) {
-          isoDate = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+          isoDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
         } else {
           isoDate = birthDate.trim();
         }
@@ -159,12 +161,12 @@ export default function AddPacienteScreen() {
         phone: phone.trim() || null,
         email: email.trim() || null,
         address: address.trim() || null,
-        clinic_location: clinicLocation.trim() || null,
+        clinic_location: null,
         id_number: idNumber.trim() || null,
         sex,
         temperament,
         habitat: habitat || null,
-        habitat_other: habitatOther.trim() || null,
+        habitat_other: null,
         entorno: entorno.trim() || null,
         areneros: areneros.trim() || null,
         food: food.trim() || null,
@@ -200,116 +202,246 @@ export default function AddPacienteScreen() {
     }
   };
 
-  const SectionHeader = ({ title }: { title: string }) => (
-    <View style={styles.cardHeader}>
-      <View style={[styles.accentLine, { backgroundColor: colors.primary }]} />
-      <Text variant="titleSmall" style={[styles.sectionTitle, { color: colors.primary }]}>
-        {title}
-      </Text>
+  const canAdvance = () => {
+    if (currentStep === 1) return name.trim().length > 0;
+    if (currentStep === 2) return tutorName.trim().length > 0;
+    return true;
+  };
+
+  const handleNext = () => {
+    if (currentStep === 1 && !name.trim()) {
+      Alert.alert('Campo requerido', 'El nombre del paciente es obligatorio');
+      return;
+    }
+    if (currentStep === 2 && !tutorName.trim()) {
+      Alert.alert('Campo requerido', 'El nombre del propietario es obligatorio');
+      return;
+    }
+    if (currentStep < 4) setCurrentStep(currentStep + 1);
+  };
+
+  const handlePrev = () => {
+    if (currentStep > 1) setCurrentStep(currentStep - 1);
+  };
+
+  // ─── Progress Bar ───────────────────────────────────────────
+  const renderProgressBar = () => (
+    <View style={styles.progressContainer}>
+      {STEP_LABELS.map((label, idx) => {
+        const step = idx + 1;
+        const isCompleted = step < currentStep;
+        const isCurrent = step === currentStep;
+        const isLast = idx === STEP_LABELS.length - 1;
+
+        return (
+          <React.Fragment key={step}>
+            <View style={styles.progressStep}>
+              <View style={[
+                styles.progressCircle,
+                {
+                  backgroundColor: isCompleted || isCurrent ? colors.primary : 'transparent',
+                  borderColor: isCompleted || isCurrent ? colors.primary : colors.border,
+                },
+              ]}>
+                {isCompleted ? (
+                  <Check size={14} color="#FFFFFF" strokeWidth={3} />
+                ) : (
+                  <Text style={[styles.progressNumber, { color: isCurrent ? '#FFFFFF' : colors.textSecondary }]}>
+                    {step}
+                  </Text>
+                )}
+              </View>
+              <Text style={[
+                styles.progressLabel,
+                { color: isCurrent ? colors.primary : isCompleted ? colors.primary : colors.textSecondary },
+                isCurrent && styles.progressLabelActive,
+              ]}>
+                {label}
+              </Text>
+            </View>
+            {!isLast && (
+              <View style={[
+                styles.progressLine,
+                {
+                  backgroundColor: step < currentStep ? colors.primary : colors.border,
+                  opacity: step < currentStep ? 1 : 0.5,
+                },
+              ]} />
+            )}
+          </React.Fragment>
+        );
+      })}
     </View>
   );
 
-  return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      {/* Photo Picker */}
-      <TouchableOpacity onPress={pickImage} style={[styles.photoContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        {photo ? (
-          <Image source={{ uri: photo }} style={styles.photoPreview} />
-        ) : (
-          <View style={styles.photoPlaceholder}>
-            <MaterialCommunityIcons name="camera-plus" size={32} color={colors.textSecondary} />
-            <Text style={[styles.photoText, { color: colors.textSecondary }]}>Agregar foto</Text>
-          </View>
-        )}
-      </TouchableOpacity>
+  // ─── Step 1: Información básica ─────────────────────────────
+  const renderStep1 = () => (
+    <View style={styles.stepContent}>
+      <View style={styles.step1Row}>
+        {/* Left column — fields */}
+        <View style={styles.step1Left}>
+          <Text style={[styles.stepSectionTitle, { color: colors.text }]}>Información básica</Text>
 
-      {/* Especie */}
-      <View style={styles.speciesRow}>
-        <Button
-          mode={species === 'dog' ? 'contained' : 'outlined'}
-          onPress={() => setSpecies('dog')}
-          style={[styles.speciesPill, species === 'dog' && { backgroundColor: colors.primary }]}
-          labelStyle={[styles.speciesPillLabel, species === 'dog' ? { color: '#FFFFFF' } : { color: colors.primary }]}
-          icon={({ size }) => (
-            <MaterialCommunityIcons name="dog" size={size} color={species === 'dog' ? '#FFFFFF' : colors.primary} />
-          )}
-        >
-          Perro
-        </Button>
-        <Button
-          mode={species === 'cat' ? 'contained' : 'outlined'}
-          onPress={() => setSpecies('cat')}
-          style={[styles.speciesPill, species === 'cat' && { backgroundColor: colors.primary }]}
-          labelStyle={[styles.speciesPillLabel, species === 'cat' ? { color: '#FFFFFF' } : { color: colors.primary }]}
-          icon={({ size }) => (
-            <MaterialCommunityIcons name="cat" size={size} color={species === 'cat' ? '#FFFFFF' : colors.primary} />
-          )}
-        >
-          Gato
-        </Button>
-      </View>
+          <TextInput
+            label="Nombre del paciente *"
+            value={name}
+            onChangeText={setName}
+            mode="outlined"
+            style={[styles.input, { backgroundColor: colors.surface }]}
+            outlineColor={colors.border}
+            activeOutlineColor={colors.primary}
+          />
 
-      {/* Reseña del Paciente */}
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <SectionHeader title="Reseña del Paciente" />
-        <TextInput label="Nombre *" value={name} onChangeText={setName} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-        <View style={styles.row}>
-          <TextInput label="Raza" value={breed} onChangeText={setBreed} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
-          <TextInput label="Color" value={color} onChangeText={setColor} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
-        </View>
-        <View style={styles.row}>
-          <TextInput label="Fecha nacimiento (DD/MM/AAAA)" value={birthDate} onChangeText={setBirthDate} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
-          <TextInput label="Peso (kg)" value={weight} onChangeText={setWeight} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
-        </View>
-
-        {/* Sexo */}
-        <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Sexo</Text>
-        <View style={styles.sexRow}>
-          <Button
-            mode={sex === 'macho' ? 'contained' : 'outlined'}
-            onPress={() => { setSex('macho'); if (!REPRODUCTIVE_MACHO.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
-            style={[styles.sexPill, sex === 'macho' && { backgroundColor: colors.primary }]}
-            labelStyle={sex === 'macho' ? { color: '#FFFFFF' } : { color: colors.primary }}
-            icon={({ size }) => <MaterialCommunityIcons name="gender-male" size={size} color={sex === 'macho' ? '#FFFFFF' : colors.primary} />}
-          >
-            Macho
-          </Button>
-          <Button
-            mode={sex === 'hembra' ? 'contained' : 'outlined'}
-            onPress={() => { setSex('hembra'); if (!REPRODUCTIVE_HEMBRA.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
-            style={[styles.sexPill, sex === 'hembra' && { backgroundColor: colors.primary }]}
-            labelStyle={sex === 'hembra' ? { color: '#FFFFFF' } : { color: colors.primary }}
-            icon={({ size }) => <MaterialCommunityIcons name="gender-female" size={size} color={sex === 'hembra' ? '#FFFFFF' : colors.primary} />}
-          >
-            Hembra
-          </Button>
-        </View>
-
-        {/* Estado Reproductivo */}
-        <Menu
-          visible={statusMenuVisible}
-          onDismiss={() => setStatusMenuVisible(false)}
-          anchor={
-            <Button mode="outlined" onPress={() => setStatusMenuVisible(true)} style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border }]} labelStyle={{ color: colors.textSecondary }}>
-              {REPRODUCTIVE_OPTIONS.find(o => o.value === reproductiveStatus)?.label || reproductiveStatus}
+          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Especie *</Text>
+          <View style={styles.speciesRow}>
+            <Button
+              mode={species === 'dog' ? 'contained' : 'outlined'}
+              onPress={() => setSpecies('dog')}
+              style={[styles.speciesPill, species === 'dog' && { backgroundColor: colors.primary }]}
+              labelStyle={[styles.speciesPillLabel, species === 'dog' ? { color: '#FFFFFF' } : { color: colors.primary }]}
+              icon={({ size }) => (
+                <MaterialCommunityIcons name="dog" size={size} color={species === 'dog' ? '#FFFFFF' : colors.primary} />
+              )}
+            >
+              Perro
             </Button>
-          }
-        >
-          {REPRODUCTIVE_OPTIONS
-            .filter(opt => {
-              if (sex === 'macho') return REPRODUCTIVE_MACHO.includes(opt.value);
-              if (sex === 'hembra') return REPRODUCTIVE_HEMBRA.includes(opt.value);
-              return true;
-            })
-            .map(opt => (
-              <Menu.Item key={opt.value} onPress={() => { setReproductiveStatus(opt.value); setStatusMenuVisible(false); }} title={opt.label} />
-            ))}
-        </Menu>
+            <Button
+              mode={species === 'cat' ? 'contained' : 'outlined'}
+              onPress={() => setSpecies('cat')}
+              style={[styles.speciesPill, species === 'cat' && { backgroundColor: colors.primary }]}
+              labelStyle={[styles.speciesPillLabel, species === 'cat' ? { color: '#FFFFFF' } : { color: colors.primary }]}
+              icon={({ size }) => (
+                <MaterialCommunityIcons name="cat" size={size} color={species === 'cat' ? '#FFFFFF' : colors.primary} />
+              )}
+            >
+              Gato
+            </Button>
+          </View>
+
+          <TextInput
+            label="Raza"
+            value={breed}
+            onChangeText={setBreed}
+            mode="outlined"
+            style={[styles.input, { backgroundColor: colors.surface }]}
+            outlineColor={colors.border}
+            activeOutlineColor={colors.primary}
+          />
+
+          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Sexo *</Text>
+          <View style={styles.sexRow}>
+            <Button
+              mode={sex === 'macho' ? 'contained' : 'outlined'}
+              onPress={() => { setSex('macho'); if (!REPRODUCTIVE_MACHO.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
+              style={[styles.sexPill, sex === 'macho' && { backgroundColor: colors.primary }]}
+              labelStyle={sex === 'macho' ? { color: '#FFFFFF' } : { color: colors.primary }}
+              icon={({ size }) => <MaterialCommunityIcons name="gender-male" size={size} color={sex === 'macho' ? '#FFFFFF' : colors.primary} />}
+            >
+              Macho
+            </Button>
+            <Button
+              mode={sex === 'hembra' ? 'contained' : 'outlined'}
+              onPress={() => { setSex('hembra'); if (!REPRODUCTIVE_HEMBRA.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
+              style={[styles.sexPill, sex === 'hembra' && { backgroundColor: colors.primary }]}
+              labelStyle={sex === 'hembra' ? { color: '#FFFFFF' } : { color: colors.primary }}
+              icon={({ size }) => <MaterialCommunityIcons name="gender-female" size={size} color={sex === 'hembra' ? '#FFFFFF' : colors.primary} />}
+            >
+              Hembra
+            </Button>
+          </View>
+
+          <Menu
+            visible={statusMenuVisible}
+            onDismiss={() => setStatusMenuVisible(false)}
+            anchor={
+              <Button
+                mode="outlined"
+                onPress={() => setStatusMenuVisible(true)}
+                style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                labelStyle={{ color: colors.textSecondary }}
+                contentStyle={{ justifyContent: 'flex-start' }}
+              >
+                {REPRODUCTIVE_OPTIONS.find(o => o.value === reproductiveStatus)?.label || reproductiveStatus}
+              </Button>
+            }
+          >
+            {REPRODUCTIVE_OPTIONS
+              .filter(opt => {
+                if (sex === 'macho') return REPRODUCTIVE_MACHO.includes(opt.value);
+                if (sex === 'hembra') return REPRODUCTIVE_HEMBRA.includes(opt.value);
+                return true;
+              })
+              .map(opt => (
+                <Menu.Item key={opt.value} onPress={() => { setReproductiveStatus(opt.value); setStatusMenuVisible(false); }} title={opt.label} />
+              ))}
+          </Menu>
+
+          <View style={styles.row}>
+            <TextInput
+              label="Fecha de nacimiento"
+              value={birthDate}
+              onChangeText={setBirthDate}
+              mode="outlined"
+              placeholder="DD/MM/AAAA"
+              style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]}
+              outlineColor={colors.border}
+              activeOutlineColor={colors.primary}
+            />
+            <TextInput
+              label="Peso (kg)"
+              value={weight}
+              onChangeText={setWeight}
+              mode="outlined"
+              keyboardType="numeric"
+              style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]}
+              outlineColor={colors.border}
+              activeOutlineColor={colors.primary}
+            />
+          </View>
+
+          <TextInput
+            label="Color / Pelaje"
+            value={color}
+            onChangeText={setColor}
+            mode="outlined"
+            style={[styles.input, { backgroundColor: colors.surface }]}
+            outlineColor={colors.border}
+            activeOutlineColor={colors.primary}
+          />
+        </View>
+
+        {/* Right column — Photo */}
+        <View style={styles.step1Right}>
+          <Text style={[styles.stepSectionTitle, { color: colors.text }]}>Foto del paciente</Text>
+          <TouchableOpacity onPress={pickImage} style={[styles.photoUpload, { borderColor: colors.border }]}>
+            {photo ? (
+              <Image source={{ uri: photo }} style={styles.photoPreview} />
+            ) : (
+              <View style={styles.photoPlaceholder}>
+                <View style={[styles.photoIconWrap, { backgroundColor: colors.primaryContainer }]}>
+                  <MaterialCommunityIcons name="camera-plus" size={28} color={colors.primary} />
+                </View>
+                <Text style={[styles.photoTitle, { color: colors.text }]}>Subir foto del paciente</Text>
+                <Text style={[styles.photoSubtitle, { color: colors.textSecondary }]}>JPG, PNG o WEBP. Máx. 5MB</Text>
+                <Button
+                  mode="outlined"
+                  onPress={pickImage}
+                  style={[styles.photoBtn, { borderColor: colors.primary }]}
+                  labelStyle={{ color: colors.primary, fontSize: 13 }}
+                >
+                  Seleccionar archivo
+                </Button>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Temperamento */}
+      {/* Full width — Temperamento + Microchip */}
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <SectionHeader title="Temperamento" />
+        <Text style={[styles.cardTitle, { color: colors.text }]}>Características adicionales</Text>
+
+        <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Temperamento</Text>
         <View style={styles.chipRow}>
           {TEMPERAMENT_OPTIONS.map(t => (
             <TouchableOpacity
@@ -326,157 +458,377 @@ export default function AddPacienteScreen() {
             </TouchableOpacity>
           ))}
         </View>
-      </View>
 
-      {/* Identificación */}
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <SectionHeader title="Identificación" />
-        <TextInput label="Nº de identificación (microchip / registro)" value={idNumber} onChangeText={setIdNumber} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
+        <TextInput
+          label="Microchip / ID"
+          value={idNumber}
+          onChangeText={setIdNumber}
+          mode="outlined"
+          placeholder="Ej: 981020000456789"
+          style={[styles.input, { backgroundColor: colors.surface }]}
+          outlineColor={colors.border}
+          activeOutlineColor={colors.primary}
+        />
       </View>
+    </View>
+  );
 
-      {/* Datos del Propietario */}
+  // ─── Step 2: Propietario ────────────────────────────────────
+  const renderStep2 = () => (
+    <View style={styles.stepContent}>
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <SectionHeader title="Datos del Propietario" />
-        <TextInput label="Nombre Tutor *" value={tutorName} onChangeText={setTutorName} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
+        <Text style={[styles.cardTitle, { color: colors.text }]}>Datos del propietario</Text>
+
+        <TextInput
+          label="Nombre del propietario *"
+          value={tutorName}
+          onChangeText={setTutorName}
+          mode="outlined"
+          style={[styles.input, { backgroundColor: colors.surface }]}
+          outlineColor={colors.border}
+          activeOutlineColor={colors.primary}
+        />
+        <TextInput
+          label="RUT"
+          value={idNumber}
+          onChangeText={setIdNumber}
+          mode="outlined"
+          placeholder="Ej: 12.345.678-9"
+          style={[styles.input, { backgroundColor: colors.surface }]}
+          outlineColor={colors.border}
+          activeOutlineColor={colors.primary}
+        />
         <View style={styles.row}>
-          <TextInput label="Teléfono" value={phone} onChangeText={setPhone} mode="outlined" keyboardType="phone-pad" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
-          <TextInput label="Correo Electrónico" value={email} onChangeText={setEmail} mode="outlined" keyboardType="email-address" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
+          <TextInput
+            label="Teléfono"
+            value={phone}
+            onChangeText={setPhone}
+            mode="outlined"
+            keyboardType="phone-pad"
+            style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]}
+            outlineColor={colors.border}
+            activeOutlineColor={colors.primary}
+          />
+          <TextInput
+            label="Correo electrónico"
+            value={email}
+            onChangeText={setEmail}
+            mode="outlined"
+            keyboardType="email-address"
+            style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]}
+            outlineColor={colors.border}
+            activeOutlineColor={colors.primary}
+          />
         </View>
-        <View style={styles.row}>
-          <TextInput label="Dirección" value={address} onChangeText={setAddress} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
-          <TextInput label="Clínica" value={clinicLocation} onChangeText={setClinicLocation} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
-        </View>
+        <TextInput
+          label="Dirección"
+          value={address}
+          onChangeText={setAddress}
+          mode="outlined"
+          style={[styles.input, { backgroundColor: colors.surface }]}
+          outlineColor={colors.border}
+          activeOutlineColor={colors.primary}
+        />
       </View>
+    </View>
+  );
 
-      {/* Historia Clínica */}
+  // ─── Step 3: Información médica ─────────────────────────────
+  const renderStep3 = () => (
+    <View style={styles.stepContent}>
+      {/* Section A — Motivo de consulta */}
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <SectionHeader title="Historia Clínica" />
-
-        {/* 1. Notas de voz */}
+        <Text style={[styles.cardTitle, { color: colors.text }]}>Motivo de consulta</Text>
         <VoiceNotes
           onTranscription={(text) => setMotivoConsulta(prev => prev ? prev + ' ' + text : text)}
         />
+        <TextInput
+          label="Motivo de consulta"
+          value={motivoConsulta}
+          onChangeText={setMotivoConsulta}
+          mode="outlined"
+          multiline
+          numberOfLines={3}
+          style={[styles.input, { backgroundColor: colors.surface }]}
+          outlineColor={colors.border}
+          activeOutlineColor={colors.primary}
+        />
+      </View>
 
-        {/* 2. Motivo de consulta */}
-        <TextInput label="Motivo de consulta" value={motivoConsulta} onChangeText={setMotivoConsulta} mode="outlined" multiline numberOfLines={3} style={[styles.input, { backgroundColor: colors.surface }]} />
-
-        {/* 3. Hábitat */}
-        <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Hábitat</Text>
-        <View style={styles.chipRow}>
-          {HABITAT_OPTIONS.map(h => (
-            <TouchableOpacity
-              key={h}
-              onPress={() => setHabitat(habitat === h ? '' : h)}
-              style={[styles.tempChip, { borderColor: colors.border, backgroundColor: habitat === h ? colors.primaryContainer : colors.surface }]}
-            >
-              <MaterialCommunityIcons
-                name={habitat === h ? 'radiobox-marked' : 'radiobox-blank'}
-                size={18}
-                color={habitat === h ? colors.primary : colors.textSecondary}
-              />
-              <Text style={[styles.tempChipText, { color: habitat === h ? colors.primary : colors.text }]}>{h}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        {habitat === 'Otros' && (
-          <TextInput label="Especificar hábitat" value={habitatOther} onChangeText={setHabitatOther} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-        )}
-
-        {/* 4. Alimentación */}
-        <TextInput label="Alimento (tipo / marca)" value={food} onChangeText={setFood} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-        <TextInput label="Frecuencia de alimentación" value={foodFrequency} onChangeText={setFoodFrequency} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-
-        {/* 5. Agua */}
-        <TextInput label="Consumo de agua" value={waterConsumption} onChangeText={setWaterConsumption} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-
-        {/* 6. Micción */}
-        <TextInput label="Micción" value={urination} onChangeText={setUrination} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-
-        {/* 7. Otros animales */}
-        <TextInput label="Vive con otros animales" value={livesWithOtherAnimals} onChangeText={setLivesWithOtherAnimals} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-
-        {/* 8-9. Entorno + Areneros (solo gatos) */}
-        {species === 'cat' && (
-          <>
-            <TextInput label="Entorno (interior/exterior/mixto)" value={entorno} onChangeText={setEntorno} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-            <TextInput label="Areneros (cantidad y detalle)" value={areneros} onChangeText={setAreneros} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-          </>
-        )}
-
-        {/* 10. Historial sanitario (colapsable) */}
-        <TouchableOpacity onPress={() => setHistorialSanitarioExpanded(!historialSanitarioExpanded)} style={styles.subSectionHeader}>
-          <View style={styles.subSectionTitleRow}>
-            <MaterialCommunityIcons name="shield-check-outline" size={16} color={colors.success} />
-            <Text style={[styles.fieldLabel, { color: colors.success, marginBottom: 0 }]}>Historial sanitario</Text>
-          </View>
+      {/* Section B — Hábitat y entorno */}
+      <View style={[styles.card, { backgroundColor: colors.surface }]}>
+        <TouchableOpacity onPress={() => setHabitatExpanded(!habitatExpanded)} style={styles.collapsibleHeader}>
+          <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Hábitat y entorno</Text>
           <MaterialCommunityIcons
-            name={historialSanitarioExpanded ? 'chevron-up' : 'chevron-down'}
-            size={18}
+            name={habitatExpanded ? 'chevron-up' : 'chevron-down'}
+            size={20}
             color={colors.textSecondary}
           />
         </TouchableOpacity>
-        {historialSanitarioExpanded && (
-          <View style={styles.subSectionContent}>
-            <TextInput label="Vacunas" value={vaccines} onChangeText={setVaccines} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} />
-            <TextInput label="Desparasitación" value={deworming} onChangeText={setDeworming} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-            <TextInput label="Antipulgas" value={fleaTreatment} onChangeText={setFleaTreatment} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
-            {sex === 'hembra' && (
-              <TextInput label="Último celo" value={lastHeat} onChangeText={setLastHeat} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
+        {habitatExpanded && (
+          <View style={styles.collapsibleContent}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Hábitat</Text>
+            <View style={styles.chipRow}>
+              {HABITAT_OPTIONS.map(h => (
+                <TouchableOpacity
+                  key={h}
+                  onPress={() => setHabitat(habitat === h ? '' : h)}
+                  style={[styles.tempChip, { borderColor: colors.border, backgroundColor: habitat === h ? colors.primaryContainer : colors.surface }]}
+                >
+                  <MaterialCommunityIcons
+                    name={habitat === h ? 'radiobox-marked' : 'radiobox-blank'}
+                    size={18}
+                    color={habitat === h ? colors.primary : colors.textSecondary}
+                  />
+                  <Text style={[styles.tempChipText, { color: habitat === h ? colors.primary : colors.text }]}>{h}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TextInput label="Alimento (tipo / marca)" value={food} onChangeText={setFood} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            <TextInput label="Frecuencia de alimentación" value={foodFrequency} onChangeText={setFoodFrequency} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            <TextInput label="Consumo de agua" value={waterConsumption} onChangeText={setWaterConsumption} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            <TextInput label="Micción" value={urination} onChangeText={setUrination} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            <TextInput label="Vive con otros animales" value={livesWithOtherAnimals} onChangeText={setLivesWithOtherAnimals} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+
+            {species === 'cat' && (
+              <>
+                <TextInput label="Entorno (interior/exterior/mixto)" value={entorno} onChangeText={setEntorno} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+                <TextInput label="Areneros (cantidad y detalle)" value={areneros} onChangeText={setAreneros} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+              </>
             )}
-            <TextInput label="Cirugías previas" value={surgeries} onChangeText={setSurgeries} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} />
-            <TextInput label="Otras enfermedades" value={otherDiseases} onChangeText={setOtherDiseases} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} />
-            <TextInput label="Medicamentos actuales" value={medications} onChangeText={setMedications} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} />
-          </View>
-        )}
-
-        {/* 11. Anamnesis */}
-        <TextInput label="Anamnesis" value={anamnesis} onChangeText={setAnamnesis} mode="outlined" multiline numberOfLines={4} style={[styles.input, { backgroundColor: colors.surface }]} />
-
-        {/* 12. Examen físico (colapsable) */}
-        <TouchableOpacity onPress={() => setExamenFisicoExpanded(!examenFisicoExpanded)} style={styles.subSectionHeader}>
-          <View style={styles.subSectionTitleRow}>
-            <MaterialCommunityIcons name="stethoscope" size={16} color={colors.warning} />
-            <Text style={[styles.fieldLabel, { color: colors.warning, marginBottom: 0 }]}>Examen físico</Text>
-          </View>
-          <MaterialCommunityIcons
-            name={examenFisicoExpanded ? 'chevron-up' : 'chevron-down'}
-            size={18}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
-        {examenFisicoExpanded && (
-          <View style={styles.subSectionContent}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Constantes fisiológicas</Text>
-            <View style={styles.row}>
-              <TextInput label="Temp (°C)" value={vitalTemp} onChangeText={setVitalTemp} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
-              <TextInput label="FC (lpm)" value={vitalFC} onChangeText={setVitalFC} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
-            </View>
-            <View style={styles.row}>
-              <TextInput label="FR (rpm)" value={vitalFR} onChangeText={setVitalFR} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
-              <TextInput label="PA (mmHg)" value={vitalPA} onChangeText={setVitalPA} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
-            </View>
-            <View style={styles.row}>
-              <TextInput label="SpO₂ (%)" value={vitalSpO2} onChangeText={setVitalSpO2} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
-              <TextInput label="Mucosas" value={vitalMucosas} onChangeText={setVitalMucosas} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
-            </View>
-            <View style={styles.row}>
-              <TextInput label="Hidratación" value={vitalHidratacion} onChangeText={setVitalHidratacion} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
-              <TextInput label="Condición corporal" value={vitalCondicionCorporal} onChangeText={setVitalCondicionCorporal} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} />
-            </View>
-
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginTop: 4 }]}>Hallazgos examen físico</Text>
-            <TextInput label="Hallazgos examen físico" value={hallazgosExamenFisico} onChangeText={setHallazgosExamenFisico} mode="outlined" multiline numberOfLines={4} style={[styles.input, { backgroundColor: colors.surface }]} />
           </View>
         )}
       </View>
 
-      {/* Actions */}
-      <View style={styles.actions}>
-        <Button mode="outlined" onPress={() => router.back()} style={[styles.cancelButton, { borderColor: colors.border }]} labelStyle={{ color: colors.text }} disabled={saving}>
-          Cancelar
+      {/* Section C — Historial sanitario */}
+      <View style={[styles.card, { backgroundColor: colors.surface }]}>
+        <TouchableOpacity onPress={() => setHistorialExpanded(!historialExpanded)} style={styles.collapsibleHeader}>
+          <View style={styles.collapsibleTitleRow}>
+            <MaterialCommunityIcons name="shield-check-outline" size={18} color={colors.success} />
+            <Text style={[styles.cardTitle, { color: colors.success, marginBottom: 0 }]}>Historial sanitario</Text>
+          </View>
+          <MaterialCommunityIcons
+            name={historialExpanded ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
+        {historialExpanded && (
+          <View style={styles.collapsibleContent}>
+            <TextInput label="Vacunas" value={vaccines} onChangeText={setVaccines} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            <TextInput label="Desparasitación" value={deworming} onChangeText={setDeworming} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            <TextInput label="Antipulgas" value={fleaTreatment} onChangeText={setFleaTreatment} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            {sex === 'hembra' && (
+              <TextInput label="Último celo" value={lastHeat} onChangeText={setLastHeat} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            )}
+            <TextInput label="Cirugías previas" value={surgeries} onChangeText={setSurgeries} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            <TextInput label="Otras enfermedades" value={otherDiseases} onChangeText={setOtherDiseases} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            <TextInput label="Medicamentos actuales" value={medications} onChangeText={setMedications} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+          </View>
+        )}
+      </View>
+
+      {/* Section D — Anamnesis */}
+      <View style={[styles.card, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.cardTitle, { color: colors.text }]}>Anamnesis</Text>
+        <TextInput
+          label="Anamnesis"
+          value={anamnesis}
+          onChangeText={setAnamnesis}
+          mode="outlined"
+          multiline
+          numberOfLines={4}
+          style={[styles.input, { backgroundColor: colors.surface }]}
+          outlineColor={colors.border}
+          activeOutlineColor={colors.primary}
+        />
+      </View>
+
+      {/* Section E — Examen físico */}
+      <View style={[styles.card, { backgroundColor: colors.surface }]}>
+        <TouchableOpacity onPress={() => setExamenExpanded(!examenExpanded)} style={styles.collapsibleHeader}>
+          <View style={styles.collapsibleTitleRow}>
+            <MaterialCommunityIcons name="stethoscope" size={18} color={colors.warning} />
+            <Text style={[styles.cardTitle, { color: colors.warning, marginBottom: 0 }]}>Examen físico</Text>
+          </View>
+          <MaterialCommunityIcons
+            name={examenExpanded ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
+        {examenExpanded && (
+          <View style={styles.collapsibleContent}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Constantes fisiológicas</Text>
+            <View style={styles.row}>
+              <TextInput label="Temp (°C)" value={vitalTemp} onChangeText={setVitalTemp} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+              <TextInput label="FC (lpm)" value={vitalFC} onChangeText={setVitalFC} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            </View>
+            <View style={styles.row}>
+              <TextInput label="FR (rpm)" value={vitalFR} onChangeText={setVitalFR} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+              <TextInput label="PA (mmHg)" value={vitalPA} onChangeText={setVitalPA} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            </View>
+            <View style={styles.row}>
+              <TextInput label="SpO₂ (%)" value={vitalSpO2} onChangeText={setVitalSpO2} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+              <TextInput label="Mucosas" value={vitalMucosas} onChangeText={setVitalMucosas} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            </View>
+            <View style={styles.row}>
+              <TextInput label="Hidratación" value={vitalHidratacion} onChangeText={setVitalHidratacion} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+              <TextInput label="Condición corporal" value={vitalCondicionCorporal} onChangeText={setVitalCondicionCorporal} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            </View>
+
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginTop: 4 }]}>Hallazgos examen físico</Text>
+            <TextInput
+              label="Hallazgos examen físico"
+              value={hallazgosExamenFisico}
+              onChangeText={setHallazgosExamenFisico}
+              mode="outlined"
+              multiline
+              numberOfLines={4}
+              style={[styles.input, { backgroundColor: colors.surface }]}
+              outlineColor={colors.border}
+              activeOutlineColor={colors.primary}
+            />
+          </View>
+        )}
+      </View>
+    </View>
+  );
+
+  // ─── Step 4: Resumen ────────────────────────────────────────
+  const renderStep4 = () => {
+    const speciesLabel = species === 'dog' ? 'Canino' : 'Felino';
+    const sexLabel = sex === 'macho' ? 'Macho' : sex === 'hembra' ? 'Hembra' : 'No especificado';
+    const reproLabel = REPRODUCTIVE_OPTIONS.find(o => o.value === reproductiveStatus)?.label || reproductiveStatus;
+
+    return (
+      <View style={styles.stepContent}>
+        {/* Card — Paciente */}
+        <View style={[styles.card, { backgroundColor: colors.surface }]}>
+          <View style={styles.summaryHeader}>
+            <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Paciente</Text>
+            <TouchableOpacity onPress={() => setCurrentStep(1)}>
+              <Text style={{ color: colors.primary, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold }}>Editar</Text>
+            </TouchableOpacity>
+          </View>
+          {photo && <Image source={{ uri: photo }} style={styles.summaryPhoto} />}
+          <View style={styles.summaryGrid}>
+            <SummaryItem label="Nombre" value={name || '-'} colors={colors} />
+            <SummaryItem label="Especie" value={speciesLabel} colors={colors} />
+            <SummaryItem label="Raza" value={breed || '-'} colors={colors} />
+            <SummaryItem label="Sexo" value={sexLabel} colors={colors} />
+            <SummaryItem label="Estado reproductivo" value={reproLabel} colors={colors} />
+            <SummaryItem label="Fecha de nacimiento" value={birthDate || '-'} colors={colors} />
+            <SummaryItem label="Peso" value={weight ? `${weight} kg` : '-'} colors={colors} />
+            <SummaryItem label="Color" value={color || '-'} colors={colors} />
+            <SummaryItem label="Temperamento" value={temperament.length > 0 ? temperament.join(', ') : '-'} colors={colors} />
+            <SummaryItem label="Microchip" value={idNumber || '-'} colors={colors} />
+          </View>
+        </View>
+
+        {/* Card — Propietario */}
+        <View style={[styles.card, { backgroundColor: colors.surface }]}>
+          <View style={styles.summaryHeader}>
+            <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Propietario</Text>
+            <TouchableOpacity onPress={() => setCurrentStep(2)}>
+              <Text style={{ color: colors.primary, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold }}>Editar</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.summaryGrid}>
+            <SummaryItem label="Nombre" value={tutorName || '-'} colors={colors} />
+            <SummaryItem label="RUT" value={idNumber || '-'} colors={colors} />
+            <SummaryItem label="Teléfono" value={phone || '-'} colors={colors} />
+            <SummaryItem label="Correo" value={email || '-'} colors={colors} />
+            <SummaryItem label="Dirección" value={address || '-'} colors={colors} />
+          </View>
+        </View>
+
+        {/* Card — Información clínica */}
+        <View style={[styles.card, { backgroundColor: colors.surface }]}>
+          <View style={styles.summaryHeader}>
+            <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Información clínica</Text>
+            <TouchableOpacity onPress={() => setCurrentStep(3)}>
+              <Text style={{ color: colors.primary, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold }}>Editar</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.summaryGrid}>
+            <SummaryItem label="Motivo de consulta" value={motivoConsulta || '-'} colors={colors} />
+            <SummaryItem label="Hábitat" value={habitat || '-'} colors={colors} />
+            <SummaryItem label="Alimento" value={food || '-'} colors={colors} />
+            <SummaryItem label="Frecuencia" value={foodFrequency || '-'} colors={colors} />
+            <SummaryItem label="Agua" value={waterConsumption || '-'} colors={colors} />
+            <SummaryItem label="Micción" value={urination || '-'} colors={colors} />
+            {species === 'cat' && <SummaryItem label="Entorno" value={entorno || '-'} colors={colors} />}
+            {species === 'cat' && <SummaryItem label="Areneros" value={areneros || '-'} colors={colors} />}
+            {vaccines ? <SummaryItem label="Vacunas" value={vaccines} colors={colors} /> : null}
+            {deworming ? <SummaryItem label="Desparasitación" value={deworming} colors={colors} /> : null}
+            {surgeries ? <SummaryItem label="Cirugías" value={surgeries} colors={colors} /> : null}
+            {medications ? <SummaryItem label="Medicamentos" value={medications} colors={colors} /> : null}
+            <SummaryItem label="Anamnesis" value={anamnesis || '-'} colors={colors} />
+            {hallazgosExamenFisico ? <SummaryItem label="Examen físico" value={hallazgosExamenFisico} colors={colors} /> : null}
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  // ─── Summary Item ───────────────────────────────────────────
+  const SummaryItem = ({ label, value, colors }: { label: string; value: string; colors: any }) => (
+    <View style={styles.summaryItem}>
+      <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{label}</Text>
+      <Text style={[styles.summaryValue, { color: colors.text }]}>{value}</Text>
+    </View>
+  );
+
+  // ─── Main Render ────────────────────────────────────────────
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.breadcrumb}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={[styles.breadcrumbLink, { color: colors.primary }]}>← Pacientes</Text>
+          </TouchableOpacity>
+          <Text style={[styles.breadcrumbSeparator, { color: colors.textSecondary }]}>›</Text>
+          <Text style={[styles.breadcrumbCurrent, { color: colors.text }]}>Nuevo Paciente</Text>
+        </View>
+        <Text style={[styles.title, { color: colors.text }]}>Nuevo Paciente</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          Completa la información para registrar un nuevo paciente en el sistema.
+        </Text>
+      </View>
+
+      {/* Progress Bar */}
+      {renderProgressBar()}
+
+      {/* Step Content */}
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {currentStep === 1 && renderStep1()}
+        {currentStep === 2 && renderStep2()}
+        {currentStep === 3 && renderStep3()}
+        {currentStep === 4 && renderStep4()}
+      </ScrollView>
+
+      {/* Navigation Bar */}
+      <View style={[styles.navBar, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+        <Button
+          mode="outlined"
+          onPress={currentStep === 1 ? () => router.back() : handlePrev}
+          style={[styles.navBtn, { borderColor: colors.border }]}
+          labelStyle={{ color: colors.text }}
+        >
+          {currentStep === 1 ? 'Cancelar' : '← Volver'}
         </Button>
-        <Button mode="contained" onPress={handleSave} style={[styles.saveButton, { backgroundColor: colors.primary }]} labelStyle={{ color: '#FFFFFF' }} loading={saving} disabled={saving}>
-          Guardar Paciente
+        <Button
+          mode="contained"
+          onPress={currentStep === 4 ? handleSave : handleNext}
+          style={[styles.navBtnPrimary, { backgroundColor: colors.primary }]}
+          labelStyle={{ color: '#FFFFFF' }}
+          loading={saving}
+          disabled={saving}
+        >
+          {currentStep === 4 ? '✓ Guardar Paciente' : 'Siguiente →'}
         </Button>
       </View>
 
@@ -493,44 +845,117 @@ export default function AddPacienteScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
-    </ScrollView>
+    </View>
   );
 }
 
+// ─── Styles ────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 12, paddingBottom: 32, gap: 10 },
-  photoContainer: {
-    height: 140, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed',
-    overflow: 'hidden', marginBottom: 4,
+  header: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.xl, paddingBottom: SPACING.md },
+  breadcrumb: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginBottom: SPACING.md },
+  breadcrumbLink: { fontSize: TYPOGRAPHY.sizes.sm },
+  breadcrumbSeparator: { fontSize: TYPOGRAPHY.sizes.sm },
+  breadcrumbCurrent: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold },
+  title: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.bold },
+  subtitle: { fontSize: TYPOGRAPHY.sizes.md, marginTop: SPACING.xs },
+
+  // Progress bar
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.lg,
+    gap: 0,
   },
-  photoPreview: { width: '100%', height: '100%' },
-  photoPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6 },
-  photoText: { fontSize: 13 },
-  speciesRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
-  speciesPill: { flex: 1, borderRadius: 20, paddingVertical: 4, borderWidth: 1.5 },
-  speciesPillLabel: { fontSize: 13, fontWeight: '600' },
-  card: { borderRadius: 12, padding: 12, gap: 2 },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
-  accentLine: { width: 3, height: 18, borderRadius: 2 },
-  sectionTitle: { fontWeight: '700', fontSize: 14 },
-  fieldLabel: { fontSize: 13, fontWeight: '600', marginBottom: 6, marginTop: 4 },
-  input: { marginBottom: 8 },
-  row: { flexDirection: 'row', gap: 8 },
+  progressStep: { alignItems: 'center', width: 100 },
+  progressCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  progressNumber: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.bold },
+  progressLabel: { fontSize: 11, marginTop: SPACING.xs, textAlign: 'center' },
+  progressLabelActive: { fontWeight: TYPOGRAPHY.weights.semibold },
+  progressLine: { flex: 1, height: 2, marginTop: 15, marginHorizontal: -4 },
+
+  // Scroll
+  scrollView: { flex: 1 },
+  scrollContent: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING['3xl'] },
+
+  // Steps
+  stepContent: { gap: SPACING.md },
+  step1Row: { flexDirection: 'row', gap: SPACING.md },
+  step1Left: { flex: 2, gap: SPACING.xs },
+  step1Right: { flex: 1 },
+  stepSectionTitle: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.bold, marginBottom: SPACING.xs },
+
+  // Cards
+  card: { borderRadius: RADIUS.lg, padding: SPACING.lg, gap: SPACING.xs },
+  cardTitle: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.bold, marginBottom: SPACING.xs },
+
+  // Form
+  fieldLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, marginTop: SPACING.xs, marginBottom: SPACING.xs },
+  input: { marginBottom: SPACING.xs },
+  row: { flexDirection: 'row', gap: SPACING.sm },
   rowField: { flex: 1 },
-  sexRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  sexPill: { flex: 1, borderRadius: 20, paddingVertical: 4, borderWidth: 1.5 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+
+  // Species / Sex pills
+  speciesRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.xs },
+  speciesPill: { flex: 1, borderRadius: RADIUS.full, paddingVertical: SPACING.xs, borderWidth: 1.5 },
+  speciesPillLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold },
+  sexRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.xs },
+  sexPill: { flex: 1, borderRadius: RADIUS.full, paddingVertical: SPACING.xs, borderWidth: 1.5 },
+
+  // Chips
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.xs },
   tempChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 12, paddingVertical: 8,
-    borderRadius: 20, borderWidth: 1,
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full, borderWidth: 1,
   },
-  tempChipText: { fontSize: 13, fontWeight: '500' },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 4, gap: 12 },
-  cancelButton: { borderWidth: 1.5, borderRadius: 20 },
-  saveButton: { borderRadius: 20 },
-  subSectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#00000010', marginTop: 8 },
-  subSectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  subSectionContent: { paddingBottom: 4 },
+  tempChipText: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.medium },
+
+  // Photo
+  photoUpload: {
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    minHeight: 200,
+    overflow: 'hidden',
+  },
+  photoPreview: { width: '100%', height: 200, borderRadius: RADIUS.lg },
+  photoPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.lg, gap: SPACING.sm },
+  photoIconWrap: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  photoTitle: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.semibold, textAlign: 'center' },
+  photoSubtitle: { fontSize: TYPOGRAPHY.sizes.sm, textAlign: 'center' },
+  photoBtn: { marginTop: SPACING.xs },
+
+  // Collapsible
+  collapsibleHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  collapsibleTitleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
+  collapsibleContent: { marginTop: SPACING.md, gap: SPACING.xs },
+
+  // Summary
+  summaryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm },
+  summaryPhoto: { width: 80, height: 80, borderRadius: RADIUS.lg, marginBottom: SPACING.sm },
+  summaryGrid: { gap: SPACING.sm },
+  summaryItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: SPACING.xs, borderBottomWidth: 1, borderBottomColor: '#00000008' },
+  summaryLabel: { fontSize: TYPOGRAPHY.sizes.sm },
+  summaryValue: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, flex: 1, textAlign: 'right', marginLeft: SPACING.md },
+
+  // Nav bar
+  navBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    borderTopWidth: 1,
+  },
+  navBtn: { borderRadius: RADIUS.md },
+  navBtnPrimary: { borderRadius: RADIUS.md },
 });
