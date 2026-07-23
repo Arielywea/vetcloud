@@ -11,8 +11,6 @@ import {
   InventoryItem,
   Prescription,
   Reminder,
-  ChatConversation,
-  ChatMessage,
 } from '../services/directus';
 
 // ─────────────────────────────────────────────────────────
@@ -550,50 +548,27 @@ export function useReminders(params?: { status?: string; type?: string; upcoming
 }
 
 // ─────────────────────────────────────────────────────────
-// Hook: Chat
+// Hook: Vet Assistant
 // ─────────────────────────────────────────────────────────
 
-export function useChat() {
-  const [conversations, setConversations] = useState<ChatConversation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export function useAssistant() {
+  const [messages, setMessages] = useState<{ sender: 'user' | 'assistant'; text: string; actions?: any[]; data?: any }[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const fetchConversations = useCallback(async () => {
+  const sendMessage = async (message: string) => {
+    setMessages(prev => [...prev, { sender: 'user', text: message }]);
     setLoading(true);
     try {
-      const result = await api.chat.listConversations();
-      setConversations(result as ChatConversation[]);
+      const result = await api.assistant.query(message);
+      setMessages(prev => [...prev, { sender: 'assistant', text: result.text, actions: result.actions, data: result.data }]);
     } catch (err: any) {
-      setError(err.message);
+      setMessages(prev => [...prev, { sender: 'assistant', text: 'Error al procesar su consulta.' }]);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => { fetchConversations(); }, [fetchConversations]);
-
-  const getConversation = async (id: string) => {
-    return await api.chat.getConversation(id);
   };
 
-  const createConversation = async (data: any) => {
-    const result = await api.chat.createConversation(data);
-    await fetchConversations();
-    return result;
-  };
+  const clearMessages = () => setMessages([]);
 
-  const updateConversation = async (id: string, data: any) => {
-    await api.chat.updateConversation(id, data);
-    await fetchConversations();
-  };
-
-  const sendMessage = async (conversationId: string, message: string) => {
-    return await api.chat.sendMessage(conversationId, message);
-  };
-
-  const agentReply = async (conversationId: string, message: string) => {
-    return await api.chat.agentReply(conversationId, message);
-  };
-
-  return { conversations, loading, error, getConversation, createConversation, updateConversation, sendMessage, agentReply, refresh: fetchConversations };
+  return { messages, loading, sendMessage, clearMessages };
 }
