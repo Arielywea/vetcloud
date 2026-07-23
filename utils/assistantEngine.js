@@ -1,14 +1,7 @@
 // Vet Assistant Engine — processes vet queries, queries DB, returns structured responses
 
-interface AssistantResponse {
-  intent: string;
-  text: string;
-  actions?: { label: string; action: string; payload?: any }[];
-  data?: any;
-}
-
 // Intent detection
-export function detectIntent(message: string): string {
+function detectIntent(message) {
   const m = message.toLowerCase().trim();
 
   if (/buscar|paciente|mascota|buscar a|buscar el|buscar la|buscar los|buscar las/.test(m)) return 'buscar_paciente';
@@ -39,19 +32,12 @@ export function detectIntent(message: string): string {
 }
 
 // Process message and generate response (runs on server with DB access)
-export async function processAssistantMessage(
-  message: string,
-  userId: string,
-  pool: any,
-  diseases: any[],
-  vaccinations: any,
-): Promise<AssistantResponse> {
+async function processAssistantMessage(message, userId, pool, diseases, vaccinations) {
   const intent = detectIntent(message);
   const m = message.toLowerCase().trim();
 
   switch (intent) {
     case 'buscar_paciente': {
-      // Extract search term (remove common words)
       const search = m.replace(/buscar|paciente|mascota|el|la|los|las|un|una|al|del|a/g, '').trim();
       if (!search) {
         return { intent, text: '¿Qué paciente desea buscar? Escriba el nombre.' };
@@ -72,7 +58,6 @@ export async function processAssistantMessage(
         const allergies = p.allergies?.length ? p.allergies.join(', ') : 'Ninguna';
         const meds = p.medications || 'Ninguna';
 
-        // Get last clinical record
         const lastRecord = await pool.query(
           `SELECT record_type, date, details FROM clinical_records WHERE pet_id = $1 ORDER BY date DESC LIMIT 1`,
           [p.id]
@@ -92,8 +77,7 @@ export async function processAssistantMessage(
           data: { pet: p },
         };
       }
-      // Multiple results
-      const list = result.rows.map((p: any) => `• ${p.name} — ${p.species === 'dog' ? 'Canino' : 'Felino'}, ${p.breed || 'N/D'}`).join('\n');
+      const list = result.rows.map((p) => `• ${p.name} — ${p.species === 'dog' ? 'Canino' : 'Felino'}, ${p.breed || 'N/D'}`).join('\n');
       return {
         intent,
         text: `Encontré ${result.rows.length} pacientes:\n${list}\n\nEscriba el nombre exacto para ver detalles.`,
@@ -101,7 +85,6 @@ export async function processAssistantMessage(
     }
 
     case 'dosificacion': {
-      // Extract drug name from message
       const drugKeywords = [
         'amoxicilina', 'amoxicilina/clavulanico', 'clavamox', 'cefalexina', 'metronidazol',
         'doxiciclina', 'enrofloxacina', 'marbofloxacina', 'trimetroprim', 'sulfametoxazol',
@@ -127,12 +110,10 @@ export async function processAssistantMessage(
         };
       }
 
-      // Extract weight if mentioned
       const weightMatch = m.match(/(\d+(?:\.\d+)?)\s*(?:kg|kilo|kilos)/);
       const weight = weightMatch ? parseFloat(weightMatch[1]) : null;
 
-      // Search in diseases for drug dosages
-      const dosages: string[] = [];
+      const dosages = [];
       for (const d of diseases) {
         if (d.treatment?.firstLine) {
           for (const line of d.treatment.firstLine) {
@@ -216,18 +197,16 @@ export async function processAssistantMessage(
     }
 
     case 'vacunas_pendientes': {
-      // Get all pets with their last vaccine records
       const petsResult = await pool.query(
         `SELECT id, name, species, breed, birth_date FROM pets WHERE user_id = $1 AND status = 'alive' ORDER BY name`,
         [userId]
       );
-      const pending: any[] = [];
+      const pending = [];
       for (const pet of petsResult.rows) {
         const vaccines = await pool.query(
           `SELECT details, date FROM clinical_records WHERE pet_id = $1 AND record_type = 'vacuna' ORDER BY date DESC LIMIT 5`,
           [pet.id]
         );
-        // Simple check: if last vaccine was > 11 months ago
         if (vaccines.rows.length) {
           const lastVax = vaccines.rows[0];
           const lastDate = new Date(lastVax.date);
@@ -287,8 +266,7 @@ export async function processAssistantMessage(
     }
 
     case 'enfermedad': {
-      // Find which disease is mentioned
-      const diseaseKeywords: Record<string, string[]> = {
+      const diseaseKeywords = {
         'parvovirus': ['parvovirus', 'parvo'],
         'moquillo': ['moquillo'],
         'leishmaniasis': ['leishmaniasis', 'leishmania'],
@@ -330,7 +308,7 @@ export async function processAssistantMessage(
       for (const [key, keywords] of Object.entries(diseaseKeywords)) {
         for (const kw of keywords) {
           if (m.includes(kw)) {
-            foundDisease = diseases.find((d: any) => d.name.toLowerCase().includes(key) || d.id.toLowerCase().includes(key));
+            foundDisease = diseases.find((d) => d.name.toLowerCase().includes(key) || d.id.toLowerCase().includes(key));
             if (foundDisease) break;
           }
         }
@@ -343,15 +321,15 @@ export async function processAssistantMessage(
 
       const d = foundDisease;
       let response = `🏥 ${d.name}`;
-      if (d.scientificName) response += ` (${d.scientificName})`;
+      if (d.scientific_name) response += ` (${d.scientific_name})`;
       response += `\n\n${d.description}\n\n`;
 
-      if (d.keySigns?.length) {
-        response += `🔍 Signos clave:\n${d.keySigns.map((s: string) => `  • ${s}`).join('\n')}\n\n`;
+      if (d.key_signs?.length) {
+        response += `🔍 Signos clave:\n${d.key_signs.map((s) => `  • ${s}`).join('\n')}\n\n`;
       }
 
       if (d.treatment?.firstLine?.length) {
-        response += `💊 Tratamiento primera línea:\n${d.treatment.firstLine.map((t: string) => `  • ${t}`).join('\n')}\n\n`;
+        response += `💊 Tratamiento primera línea:\n${d.treatment.firstLine.map((t) => `  • ${t}`).join('\n')}\n\n`;
       }
 
       if (d.treatment?.emergency) {
@@ -360,7 +338,7 @@ export async function processAssistantMessage(
 
       response += `Duración: ${d.treatment?.duration || 'N/D'}\n`;
       response += `Pronóstico: ${d.prognosis || 'N/D'}`;
-      if (d.isZoonotic) response += `\n⚠️ ZOONÓSIS — Riesgo de transmisión a humanos`;
+      if (d.is_zoonotic) response += `\n⚠️ ZOONÓSIS — Riesgo de transmisión a humanos`;
 
       return {
         intent,
@@ -374,7 +352,6 @@ export async function processAssistantMessage(
     }
 
     case 'receta_rapida': {
-      // Parse: "receta para [pet]: [drug] [dose] cada [freq] por [duration]"
       const petMatch = m.match(/(?:para|a|de)\s+(\w+)/);
       const drugMatch = m.match(/receta.*?:\s*(.+)/);
       const petName = petMatch ? petMatch[1] : null;
@@ -431,7 +408,7 @@ export async function processAssistantMessage(
   }
 }
 
-function calcAge(birthDate: string): string {
+function calcAge(birthDate) {
   const bd = new Date(birthDate);
   const now = new Date();
   const months = (now.getFullYear() - bd.getFullYear()) * 12 + (now.getMonth() - bd.getMonth());
@@ -441,6 +418,8 @@ function calcAge(birthDate: string): string {
   return `${years} año${years > 1 ? 's' : ''}`;
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('es-CL');
 }
+
+module.exports = { detectIntent, processAssistantMessage };
