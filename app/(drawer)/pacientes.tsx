@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Text, Button, Dialog, Portal } from 'react-native-paper';
 import { Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -165,21 +165,19 @@ export default function PacientesScreen() {
           onExport={handleExport}
         />
 
-        <ScrollView contentContainerStyle={styles.filtersScroll}>
-          <PatientFilters
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            species={species}
-            onSpeciesChange={(s) => { setSpecies(s); setSelectedBreed('all'); }}
-            breeds={uniqueBreeds}
-            selectedBreed={selectedBreed}
-            onBreedChange={setSelectedBreed}
-            ownerFilter={ownerFilter}
-            onOwnerFilterChange={setOwnerFilter}
-            statusFilter={statusFilter}
-            onStatusFilterChange={setStatusFilter}
-          />
-        </ScrollView>
+        <PatientFilters
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          species={species}
+          onSpeciesChange={(s) => { setSpecies(s); setSelectedBreed('all'); }}
+          breeds={uniqueBreeds}
+          selectedBreed={selectedBreed}
+          onBreedChange={setSelectedBreed}
+          ownerFilter={ownerFilter}
+          onOwnerFilterChange={setOwnerFilter}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+        />
 
         <PatientTable
           patients={filteredPatients}
@@ -276,9 +274,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: SPACING.lg,
     gap: SPACING.md,
-  },
-  filtersScroll: {
-    paddingBottom: SPACING.xs,
   },
   dialog: {
     borderRadius: RADIUS.lg,
