@@ -11,6 +11,7 @@ import { calculateAge } from '../../utils/age';
 import PetHeader from '../../components/PetHeader';
 import ClinicalTabs, { ClinicalTabType } from '../../components/ClinicalTabs';
 import HistoryTimeline from '../../components/HistoryTimeline';
+import VoiceNotes from '../../components/VoiceNotes';
 
 export default function PetDetailScreen() {
   const { colors } = useTheme();
@@ -621,6 +622,17 @@ export default function PetDetailScreen() {
             <TextInput label="Veterinario (opcional)" value={recordVet} onChangeText={setRecordVet} mode="outlined" style={styles.input} />
             <TextInput label="Peso (kg, opcional)" value={recordWeight} onChangeText={setRecordWeight} mode="outlined" style={styles.input} keyboardType="numeric" />
             <TextInput label="Anamnesis / Motivo de consulta" value={recordAnamnesis} onChangeText={setRecordAnamnesis} mode="outlined" multiline numberOfLines={3} style={styles.input} />
+            <VoiceNotes
+              onTranscription={(text) => setRecordNotes(text)}
+              onSoapParsed={(soapData) => {
+                const parts: string[] = [];
+                if (soapData.subjective) parts.push(`S: ${soapData.subjective}`);
+                if (soapData.objective) parts.push(`O: ${soapData.objective}`);
+                if (soapData.assessment) parts.push(`A: ${soapData.assessment}`);
+                if (soapData.plan) parts.push(`P: ${soapData.plan}`);
+                if (parts.length > 0) setRecordNotes(parts.join('\n\n'));
+              }}
+            />
             <TextInput label="Notas *" value={recordNotes} onChangeText={setRecordNotes} mode="outlined" multiline numberOfLines={4} style={styles.input} />
             <Button mode="contained" onPress={handleAddRecord} style={styles.saveButton} loading={saving} disabled={saving}>Guardar Registro</Button>
           </ScrollView>
