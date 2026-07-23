@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { usePets } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { uploadPetPhoto } from '../../services/cloudinary';
+import VoiceNotes from '../../components/VoiceNotes';
 
 const TEMPERAMENT_OPTIONS = ['Dócil', 'Inquieto', 'Agresivo', 'Nervioso'];
 const HABITAT_OPTIONS = ['Casa', 'Depto', 'Finca', 'Exteriores'];
@@ -55,9 +56,12 @@ export default function AddPacienteScreen() {
   const [clinicLocation, setClinicLocation] = useState('');
 
   // Historia Clínica
+  const [motivoConsulta, setMotivoConsulta] = useState('');
   const [anamnesis, setAnamnesis] = useState('');
   const [habitat, setHabitat] = useState('');
   const [habitatOther, setHabitatOther] = useState('');
+  const [entorno, setEntorno] = useState('');
+  const [areneros, setAreneros] = useState('');
   const [food, setFood] = useState('');
   const [foodFrequency, setFoodFrequency] = useState('');
   const [waterConsumption, setWaterConsumption] = useState('');
@@ -132,6 +136,7 @@ export default function AddPacienteScreen() {
         notes: '',
         reproductive_status: reproductiveStatus,
         status: petStatus,
+        motivo_consulta: motivoConsulta.trim() || null,
         anamnesis: anamnesis.trim() || null,
         tutor_name: tutorName.trim() || null,
         phone: phone.trim() || null,
@@ -143,6 +148,8 @@ export default function AddPacienteScreen() {
         temperament,
         habitat: habitat || null,
         habitat_other: habitatOther.trim() || null,
+        entorno: entorno.trim() || null,
+        areneros: areneros.trim() || null,
         food: food.trim() || null,
         food_frequency: foodFrequency.trim() || null,
         water_consumption: waterConsumption.trim() || null,
@@ -317,7 +324,13 @@ export default function AddPacienteScreen() {
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <SectionHeader title="Historia Clínica" />
 
-        <TextInput label="Motivo de consulta / Anamnesis" value={anamnesis} onChangeText={setAnamnesis} mode="outlined" multiline numberOfLines={4} style={[styles.input, { backgroundColor: colors.surface }]} />
+        <TextInput label="Motivo de consulta" value={motivoConsulta} onChangeText={setMotivoConsulta} mode="outlined" multiline numberOfLines={3} style={[styles.input, { backgroundColor: colors.surface }]} />
+
+        <VoiceNotes
+          onTranscription={(text) => setMotivoConsulta(prev => prev ? prev + ' ' + text : text)}
+        />
+
+        <TextInput label="Anamnesis" value={anamnesis} onChangeText={setAnamnesis} mode="outlined" multiline numberOfLines={4} style={[styles.input, { backgroundColor: colors.surface }]} />
 
         <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Hábitat</Text>
         <View style={styles.chipRow}>
@@ -338,6 +351,13 @@ export default function AddPacienteScreen() {
         </View>
         {habitat === 'Otros' && (
           <TextInput label="Especificar hábitat" value={habitatOther} onChangeText={setHabitatOther} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
+        )}
+
+        {species === 'cat' && (
+          <>
+            <TextInput label="Entorno (interior/exterior/mixto)" value={entorno} onChangeText={setEntorno} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
+            <TextInput label="Areneros (cantidad y detalle)" value={areneros} onChangeText={setAreneros} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
+          </>
         )}
 
         <TextInput label="Alimento (tipo / marca)" value={food} onChangeText={setFood} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} />
