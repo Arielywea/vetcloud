@@ -37,7 +37,7 @@ function AppContent() {
         options={{
           headerShown: true,
           headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: isDark ? '#000000' : '#FFFFFF',
+          headerTintColor: isDark ? colors.text : colors.surface,
           headerTitle: 'Detalle de Enfermedad',
         }}
       />
@@ -46,7 +46,7 @@ function AppContent() {
         options={{
           headerShown: true,
           headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: isDark ? '#000000' : '#FFFFFF',
+          headerTintColor: isDark ? colors.text : colors.surface,
           headerTitle: 'Ficha Clínica',
         }}
       />
