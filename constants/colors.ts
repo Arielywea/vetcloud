@@ -3,11 +3,11 @@
 // Navy + Gold + Cool White
 // ─────────────────────────────────────────────────────────
 export const APP_COLORS = {
-  primary: '#0E3A73',
-  primaryLight: '#1E5AA8',
-  primaryDark: '#0A2C5A',
+  primary: '#0A2463',
+  primaryLight: '#1A4FA0',
+  primaryDark: '#071A4A',
   primaryContainer: '#E8F0FE',
-  accent: '#D4AF37',
+  accent: '#C9A227',
   success: '#10B981',
   background: '#F5F7FA',
   surface: '#FFFFFF',
@@ -16,7 +16,7 @@ export const APP_COLORS = {
   textSecondary: '#64748B',
   textLight: '#94A3B8',
   error: '#EF4444',
-  warning: '#F59E0B',
+  warning: '#E8930A',
   info: '#3B82F6',
   border: '#D9E1EA',
   disabled: '#CBD5E1',

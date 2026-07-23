@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
-import { Calendar, Clock, ArrowRight } from 'lucide-react-native';
+import { Calendar } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import { TEXT_ON_PRIMARY } from '../../constants/colors';
@@ -12,48 +13,72 @@ interface NextAppointmentCardProps {
   petAge?: string;
   time?: string;
   type?: string;
-  petAvatar?: string;
+  hasAppointment?: boolean;
   onViewDetails?: () => void;
   onStartConsult?: () => void;
 }
 
 export default function NextAppointmentCard({
-  petName = 'Max',
-  petBreed = 'Golden Retriever',
-  petAge = '3 años',
-  time = '11:30 AM',
-  type = 'Consulta general',
+  petName,
+  petBreed,
+  petAge,
+  time,
+  type,
+  hasAppointment = false,
   onViewDetails,
   onStartConsult,
 }: NextAppointmentCardProps) {
   const { colors } = useTheme();
+  const router = useRouter();
+
+  if (!hasAppointment) {
+    return (
+      <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.sm]}>
+        <View style={styles.header}>
+          <Calendar size={18} color={colors.primary} />
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Próxima Cita</Text>
+        </View>
+        <View style={styles.emptyState}>
+          <Text style={[styles.emptyEmoji, { color: colors.textLight }]}>📅</Text>
+          <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>Sin citas programadas para hoy</Text>
+          <TouchableOpacity
+            style={[styles.btnPrimary, { backgroundColor: colors.primary }]}
+            onPress={() => router.push('/(drawer)/agenda')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.btnPrimaryText, { color: TEXT_ON_PRIMARY.light.default }]}>
+              Programar cita
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.sm]}>
-      {/* Header */}
       <View style={styles.header}>
         <Calendar size={18} color={colors.primary} />
         <Text style={[styles.headerTitle, { color: colors.text }]}>Próxima Cita</Text>
       </View>
 
-      {/* Content */}
       <View style={styles.content}>
         <View style={styles.info}>
           <Text style={[styles.time, { color: colors.warning }]}>{time}</Text>
           <Text style={[styles.petName, { color: colors.text }]}>{petName}</Text>
           <Text style={[styles.type, { color: colors.textSecondary }]}>{type}</Text>
-          <Text style={[styles.breed, { color: colors.textSecondary }]}>
-            {petBreed} · {petAge}
-          </Text>
+          {(petBreed || petAge) && (
+            <Text style={[styles.breed, { color: colors.textSecondary }]}>
+              {[petBreed, petAge].filter(Boolean).join(' · ')}
+            </Text>
+          )}
         </View>
 
-        {/* Avatar placeholder */}
         <View style={[styles.avatar, { backgroundColor: colors.primaryContainer }]}>
           <Text style={[styles.avatarEmoji, { color: colors.primary }]}>🐕</Text>
         </View>
       </View>
 
-      {/* Actions */}
       <View style={styles.actions}>
         <TouchableOpacity
           style={[styles.btnOutlined, { borderColor: colors.border }]}
@@ -150,5 +175,17 @@ const styles = StyleSheet.create({
   btnPrimaryText: {
     fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: TYPOGRAPHY.weights.semibold,
+  },
+  emptyState: {
+    alignItems: 'center',
+    gap: SPACING.md,
+    paddingVertical: SPACING.lg,
+  },
+  emptyEmoji: {
+    fontSize: 32,
+  },
+  emptyTitle: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    textAlign: 'center',
   },
 });

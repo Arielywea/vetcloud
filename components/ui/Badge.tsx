@@ -3,6 +3,7 @@ import { View, StyleSheet, ViewStyle, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { TEXT_ON_PRIMARY } from '../../constants/colors';
 
 interface VBadgeProps {
   children?: string;
@@ -48,7 +49,7 @@ export default function VBadge({
   };
 
   const getTextColor = () => {
-    if (variant === 'filled') return '#FFFFFF';
+    if (variant === 'filled') return TEXT_ON_PRIMARY.light.default;
     return badgeColor;
   };
 
