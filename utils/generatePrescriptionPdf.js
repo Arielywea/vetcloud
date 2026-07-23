@@ -65,7 +65,7 @@ function generatePrescriptionPdf(prescription, pet, clinic) {
     doc.roundedRect(50, y, doc.page.width - 100, 24, 4).fill('#f5f5f5');
     doc.fill(secondaryText).fontSize(8).font('Helvetica');
     const issuedDate = new Date(prescription.issued_at).toLocaleDateString('es-CL');
-    doc.text(`Sucursal: ${prescription.clinic_branch || 'Casa Matriz'}`, 60, y + 7, { width: colW - 30 })
+    doc.text(`Sucursal: ${prescription.clinic_branch || clinic?.clinic_name || 'N/D'}`, 60, y + 7, { width: colW - 30 })
       .text(`Prescriptor: ${prescription.veterinarian_name || clinic?.veterinarian_name || 'N/D'}`, 60 + colW, y + 7, { width: colW - 30 })
       .text(`Fecha: ${issuedDate}`, 60 + colW * 2 - 40, y + 7, { width: colW - 10, align: 'right' });
     y += 36;
@@ -80,8 +80,13 @@ function generatePrescriptionPdf(prescription, pet, clinic) {
       });
 
     // ── FOOTER ──
+    const footerY = doc.page.height - 60;
+    if (clinic?.vet_email) {
+      doc.fill('#FF8F00').fontSize(9).font('Helvetica-Bold')
+        .text(`Para consultas, responda a este correo: ${clinic.vet_email}`, 50, footerY, { align: 'center', width: doc.page.width - 100 });
+    }
     doc.fill('#999999').fontSize(8).font('Helvetica')
-      .text('Documento electrónico generado por VetCloud', 50, doc.page.height - 50, { align: 'center', width: doc.page.width - 100 });
+      .text('Documento electrónico generado por VetCloud', 50, footerY + 14, { align: 'center', width: doc.page.width - 100 });
 
     doc.end();
   });

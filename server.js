@@ -775,20 +775,18 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
     const { generatePrescriptionPdf } = require('./utils/generatePrescriptionPdf');
 
     const userResult = await pool.query(
-      'SELECT smtp_email, smtp_password, clinic_name, veterinarian_name, clinic_phone, clinic_address FROM users WHERE id = $1',
+      'SELECT email, clinic_name, veterinarian_name, clinic_phone, clinic_address FROM users WHERE id = $1',
       [req.userId]
     );
     const userProfile = userResult.rows[0] || {};
-    const smtpUser = userProfile.smtp_email || process.env.SMTP_EMAIL;
-    const smtpPass = userProfile.smtp_password || process.env.SMTP_PASSWORD;
 
-    if (!smtpUser || !smtpPass) {
-      return res.status(400).json({ error: 'No hay configuración de correo. Ve a Mi Perfil para configurar tu SMTP.' });
+    if (!process.env.SMTP_EMAIL || !process.env.SMTP_PASSWORD) {
+      return res.status(400).json({ error: 'SMTP no configurado en el servidor' });
     }
 
     const transporter = nodemailer.createTransport({
       service: process.env.SMTP_SERVICE || 'gmail',
-      auth: { user: smtpUser, pass: smtpPass },
+      auth: { user: process.env.SMTP_EMAIL, pass: process.env.SMTP_PASSWORD },
     });
 
     const speciesLabel = rx.species === 'dog' ? 'Canino' : 'Felino';
@@ -802,10 +800,12 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
       }
     }
 
+    const vetEmail = userProfile.email || process.env.SMTP_EMAIL;
+
     const pdfBuffer = await generatePrescriptionPdf(
-      { ...rx, veterinarian_name: rx.veterinarian_name || userProfile.veterinarian_name },
+      { ...rx, veterinarian_name: rx.veterinarian_name || userProfile.veterinarian_name, vet_email: vetEmail },
       { name: rx.pet_name, species: rx.species, breed: rx.breed, weight: rx.weight, sex: rx.sex, birth_date: rx.birth_date, reproductive_status: rx.reproductive_status, tutor_name: rx.tutor_name, tutor_email: rx.tutor_email, tutor_phone: rx.tutor_phone, id: rx.pet_id },
-      { veterinarian_name: userProfile.veterinarian_name, clinic_name: userProfile.clinic_name, clinic_phone: userProfile.clinic_phone }
+      { veterinarian_name: userProfile.veterinarian_name, clinic_name: userProfile.clinic_name, clinic_phone: userProfile.clinic_phone, vet_email: vetEmail }
     );
 
     const htmlBody = `
@@ -834,7 +834,7 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
       </div>
     </div>
     <div style="display: flex; gap: 16px; font-size: 13px; color: #666; margin-bottom: 20px; padding: 12px; background: #fafafa; border-radius: 8px;">
-      <span><strong>Sucursal:</strong> ${rx.clinic_branch || 'Casa Matriz'}</span>
+      <span><strong>Sucursal:</strong> ${rx.clinic_branch || userProfile.clinic_name || 'N/D'}</span>
       <span><strong>Prescriptor:</strong> ${rx.veterinarian_name || userProfile.veterinarian_name || 'N/D'}</span>
       <span><strong>Fecha:</strong> ${new Date(rx.issued_at).toLocaleDateString('es-CL')}</span>
     </div>
@@ -844,7 +844,8 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
     </div>
   </div>
   <div style="text-align: center; padding: 16px; font-size: 11px; color: #999; background: #fff; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 12px 12px;">
-    Este es un documento electrónico generado por <strong style="color: #FF8F00;">VetCloud</strong>
+    <p style="margin: 0 0 6px;">Para consultas, responda a este correo o escriba a <strong style="color: #FF8F00;">${vetEmail}</strong></p>
+    <p style="margin: 0;">Documento electrónico generado por <strong style="color: #FF8F00;">VetCloud</strong></p>
   </div>
 </body>
 </html>`;
@@ -856,7 +857,7 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
     }] : [];
 
     await transporter.sendMail({
-      from: `"${userProfile.clinic_name || 'VetCloud'}" <${smtpUser}>`,
+      from: `"VetCloud" <${process.env.SMTP_EMAIL}>`,
       to: rx.tutor_email,
       subject: `Receta veterinaria — ${rx.pet_name} — ${issuedDate}`,
       html: htmlBody,
