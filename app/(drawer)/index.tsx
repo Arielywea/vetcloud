@@ -8,6 +8,7 @@ import { usePets, useAppointments, useNotes, useFavorites, useClinicalRecords, u
 import { useTheme } from '../../contexts/ThemeContext';
 import TaskWidget from '../../components/TaskWidget';
 import AgendaWidget from '../../components/AgendaWidget';
+import ReminderWidget from '../../components/ReminderWidget';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -86,6 +87,9 @@ export default function DashboardScreen() {
 
       {/* Agenda Widget */}
       <AgendaWidget appointments={appointments} />
+
+      {/* Reminder Widget */}
+      <ReminderWidget />
 
       {/* Fichas Clínicas Recientes */}
       {recentRecords.length > 0 && (
