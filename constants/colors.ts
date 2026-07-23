@@ -12,7 +12,7 @@ export const APP_COLORS = {
   background: '#F5F7FA',
   surface: '#FFFFFF',
   surfaceVariant: '#F0F3F8',
-  text: '#1B2430',
+  text: '#2D3748',
   textSecondary: '#64748B',
   textLight: '#94A3B8',
   error: '#EF4444',
@@ -45,7 +45,7 @@ export const APP_COLORS_DARK = {
   info: '#60A5FA',
   border: '#1E293B',
   disabled: '#334155',
-  cardShadow: '#000000',
+      cardShadow: '#0F172A',
 };
 
 export type AppColors = typeof APP_COLORS;
@@ -59,7 +59,7 @@ export const PALETTES: Record<string, { light: AppColors; dark: AppColors; label
     light: {
       primary: '#E53935', primaryLight: '#FF6F61', primaryDark: '#B71C1C', primaryContainer: '#FFCDD2',
       accent: '#FFB300', success: '#43A047', background: '#FFF8E1', surface: '#FFFFFF', surfaceVariant: '#FFECB3',
-      text: '#1A1A1A', textSecondary: '#5D4037', textLight: '#8D6E63',
+      text: '#2D3748', textSecondary: '#5D4037', textLight: '#8D6E63',
       error: '#D32F2F', warning: '#FF8F00', info: '#0277BD', border: '#FFCCBC', disabled: '#D7CCC8', cardShadow: '#000000',
     },
     dark: {
@@ -74,7 +74,7 @@ export const PALETTES: Record<string, { light: AppColors; dark: AppColors; label
     light: {
       primary: '#D32F2F', primaryLight: '#FF5252', primaryDark: '#B71C1C', primaryContainer: '#FFCDD2',
       accent: '#00BCD4', success: '#4CAF50', background: '#FAFAFA', surface: '#FFFFFF', surfaceVariant: '#FFEBEE',
-      text: '#1A1A1A', textSecondary: '#424242', textLight: '#757575',
+      text: '#2D3748', textSecondary: '#424242', textLight: '#757575',
       error: '#C62828', warning: '#FF6F00', info: '#0097A7', border: '#E0E0E0', disabled: '#BDBDBD', cardShadow: '#000000',
     },
     dark: {
@@ -89,7 +89,7 @@ export const PALETTES: Record<string, { light: AppColors; dark: AppColors; label
     light: {
       primary: '#FF6D00', primaryLight: '#FF9E40', primaryDark: '#E65100', primaryContainer: '#FFE0B2',
       accent: '#2196F3', success: '#4CAF50', background: '#FAFAFA', surface: '#FFFFFF', surfaceVariant: '#FFF3E0',
-      text: '#1A1A1A', textSecondary: '#4E342E', textLight: '#8D6E63',
+      text: '#2D3748', textSecondary: '#4E342E', textLight: '#8D6E63',
       error: '#E53935', warning: '#FF8F00', info: '#1565C0', border: '#FFCC80', disabled: '#D7CCC8', cardShadow: '#000000',
     },
     dark: {
@@ -104,7 +104,7 @@ export const PALETTES: Record<string, { light: AppColors; dark: AppColors; label
     light: {
       primary: '#FF8F00', primaryLight: '#FFB74D', primaryDark: '#E65100', primaryContainer: '#FFF3E0',
       accent: '#1565C0', success: '#43A047', background: '#FFFDE7', surface: '#FFFFFF', surfaceVariant: '#FFF8E1',
-      text: '#1A1A1A', textSecondary: '#5D4037', textLight: '#8D6E63',
+      text: '#2D3748', textSecondary: '#5D4037', textLight: '#8D6E63',
       error: '#E53935', warning: '#FF6F00', info: '#0D47A1', border: '#FFE0B2', disabled: '#D7CCC8', cardShadow: '#000000',
     },
     dark: {
@@ -119,7 +119,7 @@ export const PALETTES: Record<string, { light: AppColors; dark: AppColors; label
     light: {
       primary: '#5D4037', primaryLight: '#8D6E63', primaryDark: '#3E2723', primaryContainer: '#D7CCC8',
       accent: '#00796B', success: '#43A047', background: '#EFEBE9', surface: '#FFFFFF', surfaceVariant: '#D7CCC8',
-      text: '#1A1A1A', textSecondary: '#4E342E', textLight: '#795548',
+      text: '#2D3748', textSecondary: '#4E342E', textLight: '#795548',
       error: '#C62828', warning: '#E65100', info: '#00695C', border: '#BCAAA4', disabled: '#A1887F', cardShadow: '#000000',
     },
     dark: {
@@ -134,7 +134,7 @@ export const PALETTES: Record<string, { light: AppColors; dark: AppColors; label
     light: {
       primary: '#B71C1C', primaryLight: '#E53935', primaryDark: '#7F0000', primaryContainer: '#FFCDD2',
       accent: '#455A64', success: '#43A047', background: '#FAFAFA', surface: '#FFFFFF', surfaceVariant: '#ECEFF1',
-      text: '#1A1A1A', textSecondary: '#546E7A', textLight: '#90A4AE',
+      text: '#2D3748', textSecondary: '#546E7A', textLight: '#90A4AE',
       error: '#C62828', warning: '#FF6F00', info: '#37474F', border: '#CFD8DC', disabled: '#B0BEC5', cardShadow: '#000000',
     },
     dark: {
@@ -149,7 +149,7 @@ export const PALETTES: Record<string, { light: AppColors; dark: AppColors; label
     light: {
       primary: '#C6A040', primaryLight: '#E0C068', primaryDark: '#8B7020', primaryContainer: '#FFF8E1',
       accent: '#1A237E', success: '#2E7D32', background: '#FAFAFA', surface: '#FFFFFF', surfaceVariant: '#FFF8E1',
-      text: '#1A1A1A', textSecondary: '#37474F', textLight: '#78909C',
+      text: '#2D3748', textSecondary: '#37474F', textLight: '#78909C',
       error: '#C62828', warning: '#E65100', info: '#1565C0', border: '#E0D8B0', disabled: '#BDBDBD', cardShadow: '#000000',
     },
     dark: {
@@ -164,7 +164,7 @@ export const PALETTES: Record<string, { light: AppColors; dark: AppColors; label
     light: {
       primary: '#7E57C2', primaryLight: '#B39DDB', primaryDark: '#512DA8', primaryContainer: '#EDE7F6',
       accent: '#26A69A', success: '#43A047', background: '#F3E5F5', surface: '#FFFFFF', surfaceVariant: '#E8EDF8',
-      text: '#1A1A1A', textSecondary: '#5C6BC0', textLight: '#9FA8DA',
+      text: '#2D3748', textSecondary: '#5C6BC0', textLight: '#9FA8DA',
       error: '#E53935', warning: '#FF8F00', info: '#1976D2', border: '#D1C4E9', disabled: '#C5CAE9', cardShadow: '#000000',
     },
     dark: {
@@ -179,7 +179,7 @@ export const PALETTES: Record<string, { light: AppColors; dark: AppColors; label
     light: {
       primary: '#880E4F', primaryLight: '#AD1457', primaryDark: '#4A0028', primaryContainer: '#FCE4EC',
       accent: '#00BCD4', success: '#43A047', background: '#FAFAFA', surface: '#FFFFFF', surfaceVariant: '#F3E5F5',
-      text: '#1A1A1A', textSecondary: '#616161', textLight: '#9E9E9E',
+      text: '#2D3748', textSecondary: '#616161', textLight: '#9E9E9E',
       error: '#C62828', warning: '#E65100', info: '#0097A7', border: '#E0E0E0', disabled: '#BDBDBD', cardShadow: '#000000',
     },
     dark: {
@@ -257,7 +257,7 @@ export const PROGNOSIS_LABELS = {
 // ─────────────────────────────────────────────────────────
 export const TEXT_ON_PRIMARY = {
   light: { default: '#FFFFFF', muted: '#FFFFFFBB', subtle: '#FFFFFF99', faint: '#FFFFFF80' },
-  dark:  { default: '#000000', muted: '#000000BB', subtle: '#00000099', faint: '#00000080' },
+  dark:  { default: '#0F172A', muted: '#0F172ABB', subtle: '#0F172A99', faint: '#0F172A80' },
 };
 
 // ─────────────────────────────────────────────────────────

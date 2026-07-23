@@ -1,13 +1,14 @@
 import React from 'react';
-import { TouchableOpacity, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
+import { TouchableOpacity, StyleSheet, ActivityIndicator, ViewStyle, Animated } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, ANIMATION } from '../../constants/tokens';
+import { TEXT_ON_PRIMARY } from '../../constants/colors';
 
 interface VButtonProps {
   children: string;
   onPress?: () => void;
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'accent';
   size?: 'sm' | 'md' | 'lg';
   icon?: React.ReactNode;
   iconPosition?: 'left' | 'right';
@@ -30,6 +31,23 @@ export default function VButton({
   style,
 }: VButtonProps) {
   const { colors } = useTheme();
+  const brightness = React.useRef(new Animated.Value(1)).current;
+
+  const onHoverIn = React.useCallback(() => {
+    Animated.timing(brightness, {
+      toValue: 1.08,
+      duration: ANIMATION.normal,
+      useNativeDriver: false,
+    }).start();
+  }, [brightness]);
+
+  const onHoverOut = React.useCallback(() => {
+    Animated.timing(brightness, {
+      toValue: 1,
+      duration: ANIMATION.normal,
+      useNativeDriver: false,
+    }).start();
+  }, [brightness]);
 
   const getButtonStyle = (): ViewStyle => {
     const base: ViewStyle = {
@@ -41,16 +59,17 @@ export default function VButton({
     };
 
     const sizes = {
-      sm: { paddingVertical: SPACING.xs, paddingHorizontal: SPACING.md },
+      sm: { paddingVertical: SPACING.xs + 2, paddingHorizontal: SPACING.md },
       md: { paddingVertical: SPACING.sm + 2, paddingHorizontal: SPACING.lg },
       lg: { paddingVertical: SPACING.md, paddingHorizontal: SPACING.xl },
     };
 
     const variants: Record<string, ViewStyle> = {
       primary: { backgroundColor: colors.primary },
-      secondary: { backgroundColor: colors.primaryContainer, borderWidth: 1, borderColor: colors.border },
+      secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
       ghost: { backgroundColor: 'transparent' },
       danger: { backgroundColor: colors.error },
+      accent: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.accent },
     };
 
     return {
@@ -64,11 +83,12 @@ export default function VButton({
 
   const getTextColor = (): string => {
     switch (variant) {
-      case 'primary': return '#FFFFFF';
+      case 'primary': return TEXT_ON_PRIMARY.light.default;
       case 'secondary': return colors.primary;
       case 'ghost': return colors.primary;
-      case 'danger': return '#FFFFFF';
-      default: return '#FFFFFF';
+      case 'danger': return TEXT_ON_PRIMARY.light.default;
+      case 'accent': return colors.accent;
+      default: return TEXT_ON_PRIMARY.light.default;
     }
   };
 
@@ -77,6 +97,8 @@ export default function VButton({
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.7}
+      onPressIn={onHoverIn}
+      onPressOut={onHoverOut}
       style={[getButtonStyle(), style]}
     >
       {loading ? (

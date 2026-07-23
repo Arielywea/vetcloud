@@ -1,17 +1,18 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
-import { BarChart3, PawPrint, Calendar, Package, TrendingUp, ArrowUpRight, ArrowDownRight } from 'lucide-react-native';
+import { BarChart3, PawPrint, Calendar, Package } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
+import { RECORD_TYPE_COLORS } from '../../constants/colors';
 import VCard from '../../components/ui/Card';
 import VStatCard from '../../components/ui/StatCard';
 
 const MOCK_STATS = [
-  { label: 'Pacientes', value: '127', change: '+12', positive: true, icon: 'paw', color: '#3B82F6' },
-  { label: 'Citas (Mes)', value: '89', change: '+8', positive: true, icon: 'calendar', color: '#10B981' },
-  { label: 'Inventario', value: '45', change: '-3', positive: false, icon: 'package', color: '#F59E0B' },
-  { label: 'Internados', value: '5', change: '+2', positive: true, icon: 'heart', color: '#EF4444' },
+  { label: 'Pacientes', value: '127', icon: <PawPrint size={20} color="#FFF" />, color: '#3B82F6' },
+  { label: 'Citas (Mes)', value: '89', icon: <Calendar size={20} color="#FFF" />, color: '#10B981' },
+  { label: 'Inventario', value: '45', icon: <Package size={20} color="#FFF" />, color: '#F59E0B' },
+  { label: 'Internados', value: '5', icon: <BarChart3 size={20} color="#FFF" />, color: '#EF4444' },
 ];
 
 const MOCK_WEEKLY = [
@@ -30,19 +31,11 @@ const MOCK_TOP_RECORDS = [
   { type: 'Control', count: 35, pct: 30 },
 ];
 
-const RECORD_COLORS: Record<string, string> = {
-  Consulta: '#3B82F6',
-  Vacuna: '#10B981',
-  'Cirugía': '#EF4444',
-  Control: '#F59E0B',
-};
-
 export default function ReportesScreen() {
-  const { colors, spacing, radius, typography, shadows } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Reportes</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
@@ -50,7 +43,6 @@ export default function ReportesScreen() {
         </Text>
       </View>
 
-      {/* Stats grid */}
       <View style={styles.statsGrid}>
         {MOCK_STATS.map(stat => (
           <View key={stat.label} style={styles.statWrapper}>
@@ -58,17 +50,14 @@ export default function ReportesScreen() {
               label={stat.label}
               value={stat.value}
               icon={<View style={[styles.statIcon, { backgroundColor: stat.color }]}>
-                {stat.icon === 'paw' && <PawPrint size={18} color="#FFF" />}
-                {stat.icon === 'calendar' && <Calendar size={18} color="#FFF" />}
-                {stat.icon === 'package' && <Package size={18} color="#FFF" />}
-                {stat.icon === 'heart' && <BarChart3 size={18} color="#FFF" />}
+                {stat.icon}
               </View>}
+              color={stat.color}
             />
           </View>
         ))}
       </View>
 
-      {/* Weekly activity chart */}
       <VCard style={styles.card}>
         <Text style={[styles.cardTitle, { color: colors.text }]}>Actividad de la Semana</Text>
         <View style={styles.chart}>
@@ -86,24 +75,26 @@ export default function ReportesScreen() {
         </View>
       </VCard>
 
-      {/* Top record types */}
       <VCard style={styles.card}>
         <Text style={[styles.cardTitle, { color: colors.text }]}>Tipos de Fichas</Text>
-        {MOCK_TOP_RECORDS.map(record => (
-          <View key={record.type} style={styles.recordRow}>
-            <View style={styles.recordInfo}>
-              <View style={[styles.recordDot, { backgroundColor: RECORD_COLORS[record.type] }]} />
-              <Text style={[styles.recordType, { color: colors.text }]}>{record.type}</Text>
-            </View>
-            <View style={styles.recordStats}>
-              <Text style={[styles.recordCount, { color: colors.text }]}>{record.count}</Text>
-              <View style={[styles.barBg, { backgroundColor: colors.surfaceVariant }]}>
-                <View style={[styles.barFill, { width: `${record.pct}%`, backgroundColor: RECORD_COLORS[record.type] }]} />
+        {MOCK_TOP_RECORDS.map(record => {
+          const recordColor = RECORD_TYPE_COLORS[record.type.toLowerCase()] || colors.primary;
+          return (
+            <View key={record.type} style={styles.recordRow}>
+              <View style={styles.recordInfo}>
+                <View style={[styles.recordDot, { backgroundColor: recordColor }]} />
+                <Text style={[styles.recordType, { color: colors.text }]}>{record.type}</Text>
               </View>
-              <Text style={[styles.recordPct, { color: colors.textSecondary }]}>{record.pct}%</Text>
+              <View style={styles.recordStats}>
+                <Text style={[styles.recordCount, { color: colors.text }]}>{record.count}</Text>
+                <View style={[styles.barBg, { backgroundColor: colors.surfaceVariant }]}>
+                  <View style={[styles.barFill, { width: `${record.pct}%`, backgroundColor: recordColor }]} />
+                </View>
+                <Text style={[styles.recordPct, { color: colors.textSecondary }]}>{record.pct}%</Text>
+              </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
       </VCard>
     </ScrollView>
   );
@@ -111,38 +102,38 @@ export default function ReportesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: SPACING.lg, paddingBottom: SPACING['4xl'] },
-  header: { marginBottom: SPACING.lg },
+  content: { padding: SPACING.xl, paddingBottom: SPACING['4xl'] },
+  header: { marginBottom: SPACING.xl },
   title: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.bold },
-  subtitle: { fontSize: TYPOGRAPHY.sizes.md, marginTop: SPACING.xs },
+  subtitle: { fontSize: TYPOGRAPHY.sizes.md, marginTop: SPACING.sm },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: SPACING.md,
-    marginBottom: SPACING.lg,
+    gap: SPACING.lg,
+    marginBottom: SPACING.xl,
   },
   statWrapper: { width: '47%' },
   statIcon: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     borderRadius: RADIUS.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  card: { marginBottom: SPACING.lg },
-  cardTitle: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: TYPOGRAPHY.weights.semibold, marginBottom: SPACING.lg },
+  card: { marginBottom: SPACING.xl },
+  cardTitle: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: TYPOGRAPHY.weights.semibold, marginBottom: SPACING.xl },
   chart: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
     height: 160,
-    paddingBottom: SPACING.lg,
+    paddingBottom: SPACING.xl,
   },
   barCol: { alignItems: 'center', flex: 1, gap: SPACING.xs },
   barValue: { fontSize: TYPOGRAPHY.sizes.xs },
   bar: {
-    width: 24,
-    borderRadius: RADIUS.sm,
+    width: 32,
+    borderRadius: RADIUS.md,
     minHeight: 4,
   },
   barLabel: { fontSize: TYPOGRAPHY.sizes.xs },
@@ -150,14 +141,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.md,
   },
-  recordInfo: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, flex: 1 },
-  recordDot: { width: 10, height: 10, borderRadius: 5 },
+  recordInfo: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, flex: 1 },
+  recordDot: { width: 12, height: 12, borderRadius: 6 },
   recordType: { fontSize: TYPOGRAPHY.sizes.md },
-  recordStats: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, flex: 1 },
+  recordStats: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, flex: 1 },
   recordCount: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.semibold, width: 30 },
-  barBg: { flex: 1, height: 6, borderRadius: 3, overflow: 'hidden' },
-  barFill: { height: '100%', borderRadius: 3 },
+  barBg: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
+  barFill: { height: '100%', borderRadius: 4 },
   recordPct: { fontSize: TYPOGRAPHY.sizes.xs, width: 36, textAlign: 'right' },
 });

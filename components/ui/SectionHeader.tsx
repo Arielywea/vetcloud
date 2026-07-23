@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
   },
   left: {
     flexDirection: 'row',
@@ -52,6 +52,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    marginTop: 2,
+    marginTop: SPACING.xs,
   },
 });

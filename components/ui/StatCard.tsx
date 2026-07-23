@@ -18,7 +18,7 @@ export default function VStatCard({ label, value, icon, color, trend, onPress, s
   const { colors } = useTheme();
 
   const content = (
-    <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.sm, style]}>
+    <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.xs, style]}>
       <View style={[styles.iconContainer, { backgroundColor: color + '15' }]}>{icon}</View>
       <Text style={[styles.value, { color: colors.text }]}>{value}</Text>
       <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>
@@ -45,31 +45,31 @@ export default function VStatCard({ label, value, icon, color, trend, onPress, s
 const styles = StyleSheet.create({
   card: {
     borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
+    padding: SPACING.xl,
     alignItems: 'center',
     flex: 1,
     minWidth: 140,
   },
   iconContainer: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     borderRadius: RADIUS.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
   },
   value: {
     fontSize: TYPOGRAPHY.sizes['2xl'],
-    fontWeight: TYPOGRAPHY.weights.extrabold,
+    fontWeight: TYPOGRAPHY.weights.bold,
     marginBottom: SPACING.xs,
   },
   label: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.medium,
+    fontWeight: TYPOGRAPHY.weights.regular,
   },
   trend: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    marginTop: SPACING.xs,
+    marginTop: SPACING.sm,
   },
 });
