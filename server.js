@@ -75,7 +75,7 @@ app.post('/auth/login', async (req, res) => {
     res.json({
       data: {
         token,
-        user: { id: user.id, rut: user.rut, name: user.name, email: user.email, role: user.role, theme_preference: user.theme_preference || 'light' },
+        user: { id: user.id, rut: user.rut, name: user.name, email: user.email, role: user.role, theme_preference: user.theme_preference || 'light', color_palette: user.color_palette || null },
       },
     });
   } catch (err) {
@@ -85,7 +85,7 @@ app.post('/auth/login', async (req, res) => {
 
 app.get('/auth/me', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, rut, name, email, role, theme_preference, created_at, smtp_email, clinic_name, veterinarian_name, clinic_phone, clinic_address FROM users WHERE id = $1', [req.userId]);
+    const result = await pool.query('SELECT id, rut, name, email, role, theme_preference, color_palette, created_at, smtp_email, clinic_name, veterinarian_name, clinic_phone, clinic_address FROM users WHERE id = $1', [req.userId]);
     if (!result.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
     const user = result.rows[0];
     if (user.smtp_password) user.smtp_password = '••••••••';
@@ -97,7 +97,7 @@ app.get('/auth/me', authMiddleware, async (req, res) => {
 
 app.patch('/auth/profile', authMiddleware, async (req, res) => {
   try {
-    const { name, email, clinic_name, veterinarian_name, clinic_phone, clinic_address, smtp_email, smtp_password } = req.body;
+    const { name, email, clinic_name, veterinarian_name, clinic_phone, clinic_address, smtp_email, smtp_password, theme_preference, color_palette } = req.body;
     const fields = [];
     const values = [];
     let idx = 1;
@@ -109,16 +109,39 @@ app.patch('/auth/profile', authMiddleware, async (req, res) => {
     if (clinic_address !== undefined) { fields.push(`clinic_address = $${idx}`); values.push(clinic_address); idx++; }
     if (smtp_email !== undefined) { fields.push(`smtp_email = $${idx}`); values.push(smtp_email); idx++; }
     if (smtp_password !== undefined && smtp_password !== '••••••••') { fields.push(`smtp_password = $${idx}`); values.push(smtp_password); idx++; }
+    if (theme_preference !== undefined) { fields.push(`theme_preference = $${idx}`); values.push(theme_preference); idx++; }
+    if (color_palette !== undefined) { fields.push(`color_palette = $${idx}`); values.push(color_palette); idx++; }
     if (!fields.length) return res.status(400).json({ error: 'No hay campos para actualizar' });
     values.push(req.userId);
     const result = await pool.query(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, rut, name, email, role, theme_preference, created_at, smtp_email, clinic_name, veterinarian_name, clinic_phone, clinic_address`,
+      `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, rut, name, email, role, theme_preference, color_palette, created_at, smtp_email, clinic_name, veterinarian_name, clinic_phone, clinic_address`,
       values
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
     const user = result.rows[0];
     if (user.smtp_password) user.smtp_password = '••••••••';
     res.json({ data: user });
+  } catch (err) {
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.patch('/auth/password', authMiddleware, async (req, res) => {
+  try {
+    const { current_password, new_password } = req.body;
+    if (!current_password || !new_password) {
+      return res.status(400).json({ error: 'Contraseña actual y nueva contraseña requeridas' });
+    }
+    if (new_password.length < 4) {
+      return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 4 caracteres' });
+    }
+    const result = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.userId]);
+    if (!result.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
+    const valid = await bcrypt.compare(current_password, result.rows[0].password_hash);
+    if (!valid) return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
+    const hash = await bcrypt.hash(new_password, 10);
+    await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, req.userId]);
+    res.json({ data: { success: true } });
   } catch (err) {
     res.status(500).json({ error: 'Error interno del servidor' });
   }

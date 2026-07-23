@@ -8,6 +8,7 @@ interface User {
   email: string | null;
   role: string;
   theme_preference: 'light' | 'dark';
+  color_palette: string | null;
   clinic_name: string | null;
   veterinarian_name: string | null;
   clinic_phone: string | null;
