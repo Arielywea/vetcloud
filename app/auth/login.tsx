@@ -4,6 +4,7 @@ import { Text, TextInput, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
+import BeagleLogo from '../../components/BeagleLogo';
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -25,7 +26,7 @@ export default function LoginScreen() {
       <View style={[styles.bgPrimary, { backgroundColor: colors.primary }]}>
         <View style={styles.logoSection}>
           <View style={[styles.logoCircle, { backgroundColor: '#FFFFFF25' }]}>
-            <MaterialCommunityIcons name="stethoscope" size={48} color="#FFFFFF" />
+            <BeagleLogo size={64} variant="light" />
           </View>
           <Text style={styles.logoTitle}>VetCloud</Text>
           <Text style={styles.logoSubtitle}>Sistema de Gestión Veterinaria</Text>
