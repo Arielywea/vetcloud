@@ -571,6 +571,11 @@ app.post('/items/clinical_records', authMiddleware, async (req, res) => {
       [r.pet_id, req.userId, r.record_type || 'consulta', r.date || new Date().toISOString(),
        r.veterinarian || null, JSON.stringify(r.details || {})]
     );
+    // Auto-update pet's last_visit
+    await pool.query(
+      'UPDATE pets SET last_visit = GREATEST(COALESCE(last_visit, $1), $1) WHERE id = $2',
+      [r.date || new Date().toISOString(), r.pet_id]
+    );
     res.json({ data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ error: 'Error interno del servidor' });
@@ -597,6 +602,14 @@ app.patch('/items/clinical_records/:id', authMiddleware, async (req, res) => {
       `UPDATE clinical_records SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`, values
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    // Auto-update pet's last_visit if date changed
+    if (r.date) {
+      const record = result.rows[0];
+      await pool.query(
+        'UPDATE pets SET last_visit = GREATEST(COALESCE(last_visit, $1), $1) WHERE id = $2',
+        [r.date, record.pet_id]
+      );
+    }
     res.json({ data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ error: 'Error interno del servidor' });
