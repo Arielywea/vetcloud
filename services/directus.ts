@@ -77,6 +77,7 @@ export interface DirectusPet {
   hallazgos_examen_fisico: string | null;
   created_at: string;
   updated_at: string;
+  last_visit: string | null;
 }
 
 export interface Appointment {
