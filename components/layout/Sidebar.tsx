@@ -1,15 +1,13 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Text } from 'react-native-paper';
-import {
-  Home, PawPrint, Activity, Calendar, Heart, FlaskConical,
-  Package, BarChart3, Settings, LogOut, ChevronLeft,
-} from 'lucide-react-native';
+import { LogOut, ChevronLeft } from 'lucide-react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import BeagleLogo from '../BeagleLogo';
+import { VetDashboard, VetPacientes, VetEnfermedades, VetAgenda, VetHospitalizacion, VetLaboratorio, VetInventario, VetReportes, VetConfiguracion } from '../icons/vet';
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -21,30 +19,30 @@ const NAV_SECTIONS = [
   {
     title: 'CLÍNICA',
     items: [
-      { label: 'Inicio', icon: Home, route: '/(drawer)' },
-      { label: 'Pacientes', icon: PawPrint, route: '/(drawer)/pacientes' },
-      { label: 'Enfermedades', icon: Activity, route: '/(drawer)/diseases' },
+      { label: 'Inicio', icon: VetDashboard, route: '/(drawer)' },
+      { label: 'Pacientes', icon: VetPacientes, route: '/(drawer)/pacientes' },
+      { label: 'Enfermedades', icon: VetEnfermedades, route: '/(drawer)/diseases' },
     ],
   },
   {
     title: 'GESTIÓN',
     items: [
-      { label: 'Agenda', icon: Calendar, route: '/(drawer)/agenda' },
-      { label: 'Hospitalización', icon: Heart, route: '/(drawer)/hospitalizacion' },
-      { label: 'Laboratorio', icon: FlaskConical, route: '/(drawer)/laboratorio' },
-      { label: 'Inventario', icon: Package, route: '/(drawer)/inventario' },
+      { label: 'Agenda', icon: VetAgenda, route: '/(drawer)/agenda' },
+      { label: 'Hospitalización', icon: VetHospitalizacion, route: '/(drawer)/hospitalizacion' },
+      { label: 'Laboratorio', icon: VetLaboratorio, route: '/(drawer)/laboratorio' },
+      { label: 'Inventario', icon: VetInventario, route: '/(drawer)/inventario' },
     ],
   },
   {
     title: 'ANÁLISIS',
     items: [
-      { label: 'Reportes', icon: BarChart3, route: '/(drawer)/reportes' },
+      { label: 'Reportes', icon: VetReportes, route: '/(drawer)/reportes' },
     ],
   },
 ];
 
 const BOTTOM_ITEMS = [
-  { label: 'Configuración', icon: Settings, route: '/(drawer)/configuracion' },
+  { label: 'Configuración', icon: VetConfiguracion, route: '/(drawer)/configuracion' },
 ];
 
 export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProps) {
