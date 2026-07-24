@@ -72,7 +72,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
     <View style={[styles.container, { backgroundColor: sidebarBg, ...shadows.sm }]}>
       {/* Logo */}
       <View style={[styles.logoSection, { borderBottomColor: 'rgba(255,255,255,0.1)' }]}>
-        <View style={[styles.logoWrap, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
+        <View style={styles.logoWrap}>
           <BeagleLogo size={48} variant="light" />
         </View>
         {!collapsed && (

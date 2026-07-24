@@ -16,6 +16,7 @@ import RecentRecord from '../../components/pet/RecentRecord';
 import RecordTimeline from '../../components/pet/RecordTimeline';
 import PrescriptionList from '../../components/pet/PrescriptionList';
 import VoiceNotes from '../../components/VoiceNotes';
+import DynamicIcon from '../../components/ui/DynamicIcon';
 export default function PetDetailScreen() {
   const { colors } = useTheme();
   const { user } = useAuth();
