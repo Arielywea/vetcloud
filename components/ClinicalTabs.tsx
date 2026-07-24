@@ -1,6 +1,7 @@
 import React from 'react';
 import { ScrollView, TouchableOpacity, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 
 export type ClinicalTabType = 'historial' | 'consultas' | 'vacunas' | 'cirugias' | 'recetas';
@@ -15,8 +16,8 @@ const TABS: { key: ClinicalTabType; label: string; icon: string }[] = [
   { key: 'historial', label: 'Historial', icon: 'history' },
   { key: 'consultas', label: 'Consultas', icon: 'stethoscope' },
   { key: 'vacunas', label: 'Vacunas', icon: 'needle' },
-  { key: 'cirugias', label: 'Cirugías', icon: 'scissors-cutting' },
-  { key: 'recetas', label: 'Recetas', icon: 'document-text' },
+  { key: 'cirugias', label: 'Cirugias', icon: 'scissors-cutting' },
+  { key: 'recetas', label: 'Recetas', icon: 'file-document-outline' },
 ];
 
 export default function ClinicalTabs({ activeTab, onTabChange, counts }: ClinicalTabsProps) {
@@ -37,6 +38,11 @@ export default function ClinicalTabs({ activeTab, onTabChange, counts }: Clinica
               isActive && { backgroundColor: colors.primary, borderColor: colors.primary },
             ]}
           >
+            <MaterialCommunityIcons
+              name={tab.icon as any}
+              size={14}
+              color={isActive ? '#FFFFFF' : '#C9A227'}
+            />
             <Text style={[
               styles.tabText,
               { color: colors.textSecondary },
