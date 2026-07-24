@@ -164,11 +164,11 @@ export default function DashboardScreen() {
   }, [clinicalRecords, pets]);
 
   const groupedInventory = useMemo(() => {
-    const CATEGORY_MAP: Record<string, { label: string; icon: string }> = {
-      medicamento: { label: 'Medicamentos', icon: '💊' },
-      vacuna: { label: 'Vacunas', icon: '💉' },
-      insumo: { label: 'Insumos', icon: '📛' },
-      material: { label: 'Material', icon: '🔬' },
+    const CATEGORY_MAP: Record<string, { label: string; iconName: string }> = {
+      medicamento: { label: 'Medicamentos', iconName: 'pill' },
+      vacuna: { label: 'Vacunas', iconName: 'syringe' },
+      insumo: { label: 'Insumos', iconName: 'package' },
+      material: { label: 'Material', iconName: 'scissors' },
     };
 
     const grouped = inventoryItems.reduce((acc, item) => {
@@ -181,7 +181,7 @@ export default function DashboardScreen() {
 
     return Object.entries(grouped).map(([cat, data]) => ({
       label: CATEGORY_MAP[cat]?.label || cat,
-      icon: CATEGORY_MAP[cat]?.icon || '📦',
+      iconName: CATEGORY_MAP[cat]?.iconName || 'package',
       percentage: Math.min(100, Math.round((data.current / Math.max(data.min, 1)) * 100)),
     }));
   }, [inventoryItems]);
@@ -434,7 +434,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: SPACING.md,
   },
-  statEmoji: { fontSize: 22 },
   statValue: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.bold },
   statLabel: { fontSize: TYPOGRAPHY.sizes.xs, marginTop: SPACING.xs, fontWeight: TYPOGRAPHY.weights.semibold },
 

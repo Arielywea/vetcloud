@@ -4,11 +4,13 @@ import { Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
+import { VetInventario } from '../icons/vet';
+import DynamicIcon from '../ui/DynamicIcon';
 
 interface InventoryItem {
   label: string;
   percentage: number;
-  icon: string;
+  iconName: string;
 }
 
 interface InventoryBarProps {
@@ -29,7 +31,7 @@ export default function InventoryBar({ items = [] }: InventoryBarProps) {
     <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.xs]}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.headerEmoji}>📦</Text>
+          <VetInventario size={18} color={colors.accent} />
           <Text style={[styles.headerTitle, { color: colors.text }]}>Inventario</Text>
         </View>
         <TouchableOpacity
@@ -49,7 +51,7 @@ export default function InventoryBar({ items = [] }: InventoryBarProps) {
           {items.map((item) => (
             <View key={item.label} style={styles.item}>
               <View style={styles.itemHeader}>
-                <Text style={styles.itemIcon}>{item.icon}</Text>
+                <DynamicIcon name={item.iconName} size={16} color={colors.accent} />
                 <Text style={[styles.itemLabel, { color: colors.text }]}>{item.label}</Text>
                 <Text style={[styles.itemPct, { color: colors.textSecondary }]}>{item.percentage}%</Text>
               </View>

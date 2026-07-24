@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
-import { ArrowRight } from 'lucide-react-native';
+import { ArrowRight, Dog, Cat, PawPrint } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
+import { VetPacientes } from '../icons/vet';
 
 interface Patient {
   id: string;
@@ -24,11 +25,11 @@ export default function PatientList({ patients = [], onViewAll }: PatientListPro
   const router = useRouter();
   const { colors } = useTheme();
 
-  const getSpeciesEmoji = (species: string) => {
+  const getSpeciesIcon = (species: string) => {
     switch (species.toLowerCase()) {
-      case 'canino': return '🐕';
-      case 'felino': return '🐈';
-      default: return '🐾';
+      case 'canino': return <Dog size={20} color={colors.accent} />;
+      case 'felino': return <Cat size={20} color={colors.accent} />;
+      default: return <PawPrint size={20} color={colors.accent} />;
     }
   };
 
@@ -37,7 +38,7 @@ export default function PatientList({ patients = [], onViewAll }: PatientListPro
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.headerEmoji}>👥</Text>
+          <VetPacientes size={18} color={colors.accent} />
           <Text style={[styles.headerTitle, { color: colors.text }]}>Pacientes Recientes</Text>
         </View>
         <TouchableOpacity onPress={onViewAll} activeOpacity={0.7}>
@@ -59,7 +60,7 @@ export default function PatientList({ patients = [], onViewAll }: PatientListPro
             ]}
           >
             <View style={[styles.avatar, { backgroundColor: colors.primaryContainer }]}>
-              <Text style={styles.avatarEmoji}>{getSpeciesEmoji(patient.species)}</Text>
+              {getSpeciesIcon(patient.species)}
             </View>
             <View style={styles.patientInfo}>
               <Text style={[styles.patientName, { color: colors.text }]}>{patient.name}</Text>
@@ -91,9 +92,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.sm,
   },
-  headerEmoji: {
-    fontSize: 18,
-  },
   headerTitle: {
     fontSize: TYPOGRAPHY.sizes.md,
     fontWeight: TYPOGRAPHY.weights.semibold,
@@ -114,9 +112,6 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  avatarEmoji: {
-    fontSize: 20,
   },
   patientInfo: {
     flex: 1,
