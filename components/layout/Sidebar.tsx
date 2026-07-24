@@ -73,7 +73,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
       {/* Logo */}
       <View style={[styles.logoSection, { borderBottomColor: 'rgba(255,255,255,0.1)' }]}>
         <View style={[styles.logoWrap, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
-          <BeagleLogo size={32} variant="light" />
+          <BeagleLogo size={48} variant="light" />
         </View>
         {!collapsed && (
           <View style={styles.logoText}>
@@ -212,8 +212,8 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   logoWrap: {
-    width: 40,
-    height: 40,
+    width: 52,
+    height: 52,
     borderRadius: RADIUS.md,
     alignItems: 'center',
     justifyContent: 'center',
