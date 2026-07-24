@@ -4,15 +4,15 @@ import { Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
-import VetIconPng, { VetIconName } from '../icons/VetIconPng';
+import VetCloudIcon, { VetCloudIconName } from '../icons/VetCloudIcon';
 
 const ACTIONS = [
-  { label: 'Nueva Consulta', iconName: 'agenda' as VetIconName, route: '/(drawer)/agenda', colorKey: 'info' as const },
-  { label: 'Nueva Cita', iconName: 'agenda' as VetIconName, route: '/(drawer)/agenda', colorKey: 'success' as const },
-  { label: 'Nuevo Paciente', iconName: 'pacientes' as VetIconName, route: '/(drawer)/add-paciente', colorKey: 'primary' as const },
-  { label: 'Inventario', iconName: 'inventario' as VetIconName, route: '/(drawer)/inventario', colorKey: 'warning' as const },
-  { label: 'Exám. Laboratorio', iconName: 'laboratorio' as VetIconName, route: '/(drawer)/laboratorio', colorKey: 'error' as const },
-  { label: 'Reportes', iconName: 'reportes' as VetIconName, route: '/(drawer)/reportes', colorKey: 'primary' as const },
+  { label: 'Nueva Consulta', iconName: 'agenda' as VetCloudIconName, route: '/(drawer)/agenda', colorKey: 'info' as const },
+  { label: 'Nueva Cita', iconName: 'agenda' as VetCloudIconName, route: '/(drawer)/agenda', colorKey: 'success' as const },
+  { label: 'Nuevo Paciente', iconName: 'pacientes' as VetCloudIconName, route: '/(drawer)/add-paciente', colorKey: 'primary' as const },
+  { label: 'Inventario', iconName: 'inventario' as VetCloudIconName, route: '/(drawer)/inventario', colorKey: 'warning' as const },
+  { label: 'Exám. Laboratorio', iconName: 'laboratorio' as VetCloudIconName, route: '/(drawer)/laboratorio', colorKey: 'error' as const },
+  { label: 'Reportes', iconName: 'reportes' as VetCloudIconName, route: '/(drawer)/reportes', colorKey: 'primary' as const },
 ];
 
 export default function QuickActions() {
@@ -23,7 +23,7 @@ export default function QuickActions() {
     <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.xs]}>
       {/* Header */}
       <View style={styles.header}>
-        <VetIconPng name="dashboard" size={18} />
+        <VetCloudIcon name="dashboard" size={18} color={colors.accent} />
         <Text style={[styles.headerTitle, { color: colors.text }]}>Acciones Rápidas</Text>
       </View>
 
@@ -39,7 +39,7 @@ export default function QuickActions() {
               activeOpacity={0.7}
             >
               <View style={[styles.actionIcon, { backgroundColor: actionColor + '18' }]}>
-                <VetIconPng name={action.iconName} size={20} />
+                <VetCloudIcon name={action.iconName} size={20} color={actionColor} />
               </View>
               <Text style={[styles.actionLabel, { color: colors.text }]} numberOfLines={1}>
                 {action.label}

@@ -9,7 +9,7 @@ import { usePets, useAppointments, useClinicalRecords, useInventory } from '../.
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
 import { TEXT_ON_PRIMARY } from '../../constants/colors';
-import VetIconPng from '../../components/icons/VetIconPng';
+import VetCloudIcon from '../../components/icons/VetCloudIcon';
 import NextAppointmentCard from '../../components/dashboard/NextAppointmentCard';
 import PatientList from '../../components/dashboard/PatientList';
 import StatsChart from '../../components/dashboard/StatsChart';
@@ -282,28 +282,28 @@ export default function DashboardScreen() {
       <View style={styles.statsRow}>
         <View style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs]}>
           <View style={[styles.statIcon, { backgroundColor: colors.primaryContainer }]}>
-            <VetIconPng name="pacientes" size={24} />
+            <VetCloudIcon name="pacientes" size={24} color={colors.primary} />
           </View>
           <Text style={[styles.statValue, { color: colors.text }]}>{pets.length}</Text>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Pacientes</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs]}>
           <View style={[styles.statIcon, { backgroundColor: colors.info + '18' }]}>
-            <VetIconPng name="agenda" size={24} />
+            <VetCloudIcon name="agenda" size={24} color={colors.info} />
           </View>
           <Text style={[styles.statValue, { color: colors.text }]}>{todayAppointments.length}</Text>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Citas Hoy</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs]}>
           <View style={[styles.statIcon, { backgroundColor: colors.success + '18' }]}>
-            <VetIconPng name="laboratorio" size={24} />
+            <VetCloudIcon name="laboratorio" size={24} color={colors.success} />
           </View>
           <Text style={[styles.statValue, { color: colors.text }]}>{clinicalRecords.length}</Text>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Fichas Clínicas</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs]}>
           <View style={[styles.statIcon, { backgroundColor: colors.warning + '18' }]}>
-            <VetIconPng name="inventario" size={24} />
+            <VetCloudIcon name="inventario" size={24} color={colors.warning} />
           </View>
           <Text style={[styles.statValue, { color: colors.text }]}>{lowStockItems.length}</Text>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Alertas Stock</Text>
