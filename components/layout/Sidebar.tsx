@@ -7,7 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import BeagleLogo from '../BeagleLogo';
-import { VetDashboard, VetPacientes, VetEnfermedades, VetAgenda, VetHospitalizacion, VetLaboratorio, VetInventario, VetReportes, VetConfiguracion } from '../icons/vet';
+import VetIconPng, { VetIconName } from '../icons/VetIconPng';
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -19,30 +19,30 @@ const NAV_SECTIONS = [
   {
     title: 'CLÍNICA',
     items: [
-      { label: 'Inicio', icon: VetDashboard, route: '/(drawer)' },
-      { label: 'Pacientes', icon: VetPacientes, route: '/(drawer)/pacientes' },
-      { label: 'Enfermedades', icon: VetEnfermedades, route: '/(drawer)/diseases' },
+      { label: 'Inicio', iconName: 'dashboard' as VetIconName, route: '/(drawer)' },
+      { label: 'Pacientes', iconName: 'pacientes' as VetIconName, route: '/(drawer)/pacientes' },
+      { label: 'Enfermedades', iconName: 'enfermedades' as VetIconName, route: '/(drawer)/diseases' },
     ],
   },
   {
     title: 'GESTIÓN',
     items: [
-      { label: 'Agenda', icon: VetAgenda, route: '/(drawer)/agenda' },
-      { label: 'Hospitalización', icon: VetHospitalizacion, route: '/(drawer)/hospitalizacion' },
-      { label: 'Laboratorio', icon: VetLaboratorio, route: '/(drawer)/laboratorio' },
-      { label: 'Inventario', icon: VetInventario, route: '/(drawer)/inventario' },
+      { label: 'Agenda', iconName: 'agenda' as VetIconName, route: '/(drawer)/agenda' },
+      { label: 'Hospitalización', iconName: 'hospitalizacion' as VetIconName, route: '/(drawer)/hospitalizacion' },
+      { label: 'Laboratorio', iconName: 'laboratorio' as VetIconName, route: '/(drawer)/laboratorio' },
+      { label: 'Inventario', iconName: 'inventario' as VetIconName, route: '/(drawer)/inventario' },
     ],
   },
   {
     title: 'ANÁLISIS',
     items: [
-      { label: 'Reportes', icon: VetReportes, route: '/(drawer)/reportes' },
+      { label: 'Reportes', iconName: 'reportes' as VetIconName, route: '/(drawer)/reportes' },
     ],
   },
 ];
 
 const BOTTOM_ITEMS = [
-  { label: 'Configuración', icon: VetConfiguracion, route: '/(drawer)/configuracion' },
+  { label: 'Configuración', iconName: 'configuracion' as VetIconName, route: '/(drawer)/configuracion' },
 ];
 
 export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProps) {
@@ -95,7 +95,6 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
             )}
             {section.items.map((item) => {
               const active = isActive(item.route);
-              const Icon = item.icon;
               return (
                 <TouchableOpacity
                   key={item.label}
@@ -110,7 +109,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
                   onPress={() => handleNavigate(item.route)}
                   activeOpacity={0.7}
                 >
-                  <Icon size={20} color={active ? activeIndicator : mutedText} />
+                  <VetIconPng name={item.iconName} size={20} />
                   {!collapsed && (
                     <Text
                       style={[
@@ -135,7 +134,6 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
       <View style={[styles.bottomSection, { borderTopColor: '#C9A22730' }]}>
         {BOTTOM_ITEMS.map((item) => {
           const active = isActive(item.route);
-          const Icon = item.icon;
           return (
             <TouchableOpacity
               key={item.label}
@@ -150,7 +148,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
               onPress={() => handleNavigate(item.route)}
               activeOpacity={0.7}
             >
-              <Icon size={20} color={active ? activeIndicator : mutedText} />
+              <VetIconPng name={item.iconName} size={20} />
               {!collapsed && (
                 <Text
                   style={[

@@ -4,7 +4,7 @@ import { Text } from 'react-native-paper';
 import { TrendingUp, TrendingDown } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
-import { VetReportes } from '../icons/vet';
+import VetIconPng from '../icons/VetIconPng';
 
 interface StatsChartProps {
   totalConsultas?: number;
@@ -34,7 +34,7 @@ export default function StatsChart({
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <VetReportes size={18} color={colors.accent} />
+          <VetIconPng name="reportes" size={18} />
           <Text style={[styles.headerTitle, { color: colors.text }]}>Estadísticas</Text>
         </View>
         <View style={[styles.periodBadge, { backgroundColor: colors.primaryContainer }]}>

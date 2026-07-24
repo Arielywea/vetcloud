@@ -5,7 +5,7 @@ import { ArrowRight, Dog, Cat, PawPrint } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
-import { VetPacientes } from '../icons/vet';
+import VetIconPng from '../icons/VetIconPng';
 
 interface Patient {
   id: string;
@@ -38,7 +38,7 @@ export default function PatientList({ patients = [], onViewAll }: PatientListPro
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <VetPacientes size={18} color={colors.accent} />
+          <VetIconPng name="pacientes" size={18} />
           <Text style={[styles.headerTitle, { color: colors.text }]}>Pacientes Recientes</Text>
         </View>
         <TouchableOpacity onPress={onViewAll} activeOpacity={0.7}>

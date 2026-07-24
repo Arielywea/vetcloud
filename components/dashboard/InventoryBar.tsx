@@ -4,7 +4,7 @@ import { Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
-import { VetInventario } from '../icons/vet';
+import VetIconPng from '../icons/VetIconPng';
 import DynamicIcon from '../ui/DynamicIcon';
 
 interface InventoryItem {
@@ -31,7 +31,7 @@ export default function InventoryBar({ items = [] }: InventoryBarProps) {
     <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.xs]}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <VetInventario size={18} color={colors.accent} />
+          <VetIconPng name="inventario" size={18} />
           <Text style={[styles.headerTitle, { color: colors.text }]}>Inventario</Text>
         </View>
         <TouchableOpacity
