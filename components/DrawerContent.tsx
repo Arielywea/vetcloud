@@ -53,7 +53,7 @@ export default function DrawerContent(props: any) {
     <View style={[styles.container, { backgroundColor: sidebarBg }]}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={[styles.logoWrap, { backgroundColor: isDark ? '#FFFFFF10' : '#FFFFFF15' }]}>
+        <View style={styles.logoWrap}>
           <BeagleLogo size={48} variant={isDark ? 'dark' : 'light'} />
         </View>
         <View style={styles.headerText}>
