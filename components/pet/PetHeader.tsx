@@ -143,7 +143,8 @@ const styles = StyleSheet.create({
     gap: SPACING.xl,
   },
   photoSection: {
-    flex: 0,
+    width: 80,
+    flexShrink: 0,
   },
   photo: {
     width: 80,
@@ -161,7 +162,6 @@ const styles = StyleSheet.create({
   infoSection: {
     flex: 1,
     justifyContent: 'center',
-    marginLeft: SPACING.lg,
   },
   petName: {
     fontSize: TYPOGRAPHY.sizes['2xl'],
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     fontWeight: TYPOGRAPHY.weights.semibold,
   },
   ownerSection: {
-    flex: 0,
+    flexShrink: 0,
     alignItems: 'flex-end',
   },
   ownerLabel: {
