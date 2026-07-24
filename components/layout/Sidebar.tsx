@@ -7,7 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import BeagleLogo from '../BeagleLogo';
-import VetIconPng, { VetIconName } from '../icons/VetIconPng';
+import VetCloudIcon, { VetCloudIconName } from '../icons/VetCloudIcon';
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -19,30 +19,30 @@ const NAV_SECTIONS = [
   {
     title: 'CLÍNICA',
     items: [
-      { label: 'Inicio', iconName: 'dashboard' as VetIconName, route: '/(drawer)' },
-      { label: 'Pacientes', iconName: 'pacientes' as VetIconName, route: '/(drawer)/pacientes' },
-      { label: 'Enfermedades', iconName: 'enfermedades' as VetIconName, route: '/(drawer)/diseases' },
+      { label: 'Inicio', iconName: 'dashboard' as VetCloudIconName, route: '/(drawer)' },
+      { label: 'Pacientes', iconName: 'pacientes' as VetCloudIconName, route: '/(drawer)/pacientes' },
+      { label: 'Enfermedades', iconName: 'enfermedades' as VetCloudIconName, route: '/(drawer)/diseases' },
     ],
   },
   {
     title: 'GESTIÓN',
     items: [
-      { label: 'Agenda', iconName: 'agenda' as VetIconName, route: '/(drawer)/agenda' },
-      { label: 'Hospitalización', iconName: 'hospitalizacion' as VetIconName, route: '/(drawer)/hospitalizacion' },
-      { label: 'Laboratorio', iconName: 'laboratorio' as VetIconName, route: '/(drawer)/laboratorio' },
-      { label: 'Inventario', iconName: 'inventario' as VetIconName, route: '/(drawer)/inventario' },
+      { label: 'Agenda', iconName: 'agenda' as VetCloudIconName, route: '/(drawer)/agenda' },
+      { label: 'Hospitalización', iconName: 'hospitalizacion' as VetCloudIconName, route: '/(drawer)/hospitalizacion' },
+      { label: 'Laboratorio', iconName: 'laboratorio' as VetCloudIconName, route: '/(drawer)/laboratorio' },
+      { label: 'Inventario', iconName: 'inventario' as VetCloudIconName, route: '/(drawer)/inventario' },
     ],
   },
   {
     title: 'ANÁLISIS',
     items: [
-      { label: 'Reportes', iconName: 'reportes' as VetIconName, route: '/(drawer)/reportes' },
+      { label: 'Reportes', iconName: 'reportes' as VetCloudIconName, route: '/(drawer)/reportes' },
     ],
   },
 ];
 
 const BOTTOM_ITEMS = [
-  { label: 'Configuración', iconName: 'configuracion' as VetIconName, route: '/(drawer)/configuracion' },
+  { label: 'Configuración', iconName: 'configuracion' as VetCloudIconName, route: '/(drawer)/configuracion' },
 ];
 
 export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProps) {
@@ -109,7 +109,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
                   onPress={() => handleNavigate(item.route)}
                   activeOpacity={0.7}
                 >
-                  <VetIconPng name={item.iconName} size={20} />
+                  <VetCloudIcon name={item.iconName} size={20} color={active ? activeIndicator : mutedText} />
                   {!collapsed && (
                     <Text
                       style={[
@@ -148,7 +148,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
               onPress={() => handleNavigate(item.route)}
               activeOpacity={0.7}
             >
-              <VetIconPng name={item.iconName} size={20} />
+              <VetCloudIcon name={item.iconName} size={20} color={active ? activeIndicator : mutedText} />
               {!collapsed && (
                 <Text
                   style={[

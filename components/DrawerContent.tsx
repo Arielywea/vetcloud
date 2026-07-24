@@ -6,15 +6,15 @@ import { useRouter, usePathname } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../contexts/ThemeContext';
 import BeagleLogo from './BeagleLogo';
-import VetIconPng, { VetIconName } from './icons/VetIconPng';
+import VetCloudIcon, { VetCloudIconName } from './icons/VetCloudIcon';
 
 const MENU_SECTIONS = [
   {
     title: 'CLÍNICA',
     items: [
-      { label: 'Inicio', iconName: 'dashboard' as VetIconName, route: '/(drawer)' },
-      { label: 'Pacientes', iconName: 'pacientes' as VetIconName, route: '/(drawer)/pacientes' },
-      { label: 'Enfermedades', iconName: 'enfermedades' as VetIconName, route: '/(drawer)/diseases' },
+      { label: 'Inicio', iconName: 'dashboard' as VetCloudIconName, route: '/(drawer)' },
+      { label: 'Pacientes', iconName: 'pacientes' as VetCloudIconName, route: '/(drawer)/pacientes' },
+      { label: 'Enfermedades', iconName: 'enfermedades' as VetCloudIconName, route: '/(drawer)/diseases' },
       { label: 'Buscar', icon: Search, route: '/(drawer)/search' },
       { label: 'Notas', icon: StickyNote, route: '/(drawer)/notes' },
     ],
@@ -22,7 +22,7 @@ const MENU_SECTIONS = [
   {
     title: 'GESTIÓN',
     items: [
-      { label: 'Agenda', iconName: 'agenda' as VetIconName, route: '/(drawer)/agenda' },
+      { label: 'Agenda', iconName: 'agenda' as VetCloudIconName, route: '/(drawer)/agenda' },
       { label: 'Recordatorios', icon: Bell, route: '/(drawer)/reminders' },
     ],
   },
@@ -83,7 +83,7 @@ export default function DrawerContent(props: any) {
                   activeOpacity={0.7}
                 >
                   {'iconName' in item ? (
-                    <VetIconPng name={item.iconName} size={20} />
+                    <VetCloudIcon name={item.iconName} size={20} color={isActive ? activeIndicator : mutedText} />
                   ) : (
                     <item.icon size={20} color={isActive ? activeIndicator : mutedText} />
                   )}
