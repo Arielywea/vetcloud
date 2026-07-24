@@ -53,8 +53,8 @@ function BannerIllustration() {
   return (
     <Image
       source={require('../../assets/banner.png')}
-      style={{ width: 200, height: 200 } as ImageStyle}
-      resizeMode="contain"
+      style={{ width: 280, height: 280, position: 'absolute', right: 0, bottom: 0 } as ImageStyle}
+      resizeMode="cover"
     />
   );
 }
@@ -360,8 +360,9 @@ const styles = StyleSheet.create({
     padding: SPACING['2xl'],
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     overflow: 'hidden',
+    position: 'relative',
   },
   heroContent: {
     flex: 1,
