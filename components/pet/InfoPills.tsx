@@ -4,26 +4,12 @@ import { Text } from 'react-native-paper';
 import DynamicIcon from '../ui/DynamicIcon';
 import { DirectusPet } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import AnimatedIcon from '../ui/AnimatedIcon';
+import { calculateAge } from '../../utils/age';
 
 interface InfoPillsProps {
   pet: DirectusPet;
-}
-
-function calculateAge(birthDate: string | null): string {
-  if (!birthDate) return 'N/D';
-  try {
-    const birth = new Date(birthDate);
-    const now = new Date();
-    const diffMs = now.getTime() - birth.getTime();
-    const years = Math.floor(diffMs / (365.25 * 24 * 60 * 60 * 1000));
-    if (years > 0) return `${years} year`;
-    const months = Math.floor(diffMs / (30.44 * 24 * 60 * 60 * 1000));
-    return `${months} month`;
-  } catch {
-    return 'N/D';
-  }
 }
 
 export default function InfoPills({ pet }: InfoPillsProps) {
@@ -43,7 +29,7 @@ export default function InfoPills({ pet }: InfoPillsProps) {
     <View style={[styles.container, { borderTopColor: colors.border }]}>
       {pills.map((pill, i) => (
         <AnimatedIcon key={i} delay={i * 60} animate="fadeScale">
-          <View style={[styles.pill, { backgroundColor: colors.primaryContainer }]}>
+          <View style={[styles.pill, { backgroundColor: colors.primaryContainer, borderColor: colors.border }]}>
             <View style={[styles.iconCircle, { backgroundColor: '#C9A22720' }]}>
               <DynamicIcon name={pill.icon as any} size={13} color="#C9A227" />
             </View>
@@ -72,6 +58,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.full,
+    borderWidth: 1,
+    ...SHADOWS.sm,
   },
   iconCircle: {
     width: 24,

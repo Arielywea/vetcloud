@@ -26,13 +26,13 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
   const age = calculateAge(pet.birth_date);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface }]}>
+    <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       {/* Breadcrumb */}
       <View style={styles.breadcrumb}>
         <TouchableOpacity onPress={() => { /* navigated via router in parent */ }}>
-          <Text style={[styles.breadcrumbLink, { color: colors.primary }]}>? Pacientes</Text>
+          <Text style={[styles.breadcrumbLink, { color: colors.primary }]}>‚Üê Pacientes</Text>
         </TouchableOpacity>
-        <Text style={[styles.breadcrumbSeparator, { color: colors.textSecondary }]}>õ</Text>
+        <Text style={[styles.breadcrumbSeparator, { color: colors.textSecondary }]}>‚Ä∫</Text>
         <Text style={[styles.breadcrumbCurrent, { color: colors.text }]}>{pet.name}</Text>
       </View>
 
@@ -53,7 +53,7 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
         <View style={styles.infoSection}>
           <Text style={[styles.petName, { color: colors.text }]}>{pet.name}</Text>
           <Text style={[styles.petBreed, { color: colors.textSecondary }]}>
-            {pet.breed || 'Sin raza'} ∑ {age}
+            {pet.breed || 'Sin raza'} ÔøΩ {age}
           </Text>
           <View style={styles.statusRow}>
             {pet.sex && (
@@ -119,7 +119,8 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xl,
     borderRadius: RADIUS.lg,
     padding: SPACING.xl,
-    ...SHADOWS.sm,
+    borderWidth: 1,
+    ...SHADOWS.xl,
   },
   breadcrumb: {
     flexDirection: 'row',
@@ -160,6 +161,7 @@ const styles = StyleSheet.create({
   infoSection: {
     flex: 1,
     justifyContent: 'center',
+    marginLeft: SPACING.lg,
   },
   petName: {
     fontSize: TYPOGRAPHY.sizes['2xl'],

@@ -4,7 +4,7 @@ import { Text, Card, Button } from 'react-native-paper';
 import DynamicIcon from '../ui/DynamicIcon';
 import { ClinicalRecord } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import { RECORD_TYPE_CONFIG } from '../../constants/icons';
 import RoundTableIcon from '../icons/RoundTableIcon';
 
@@ -45,7 +45,7 @@ export default function RecordTimeline({ records, onViewRecord }: RecordTimeline
             <View style={[styles.dot, { backgroundColor: config.color }]}>
               <DynamicIcon name={config.icon as any} size={12} color="#FFF" />
             </View>
-            <Card style={[styles.card, { backgroundColor: colors.surface }]}>
+            <Card style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Card.Content>
                 <View style={styles.cardRow}>
                   <View style={styles.cardLeft}>
@@ -115,6 +115,8 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: RADIUS.md,
+    borderWidth: 1,
+    ...SHADOWS.xs,
   },
   cardRow: {
     flexDirection: 'row',
