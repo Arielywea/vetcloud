@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Prescription } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import RoundTableIcon from '../icons/RoundTableIcon';
 
 interface PrescriptionListProps {
   prescriptions: Prescription[];
@@ -18,8 +19,9 @@ export default function PrescriptionList({ prescriptions, onView, onSendEmail }:
   if (!prescriptions.length) {
     return (
       <View style={styles.empty}>
-        <MaterialCommunityIcons name="file-document-outline" size={32} color={colors.textLight} />
-        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Sin recetas</Text>
+        <RoundTableIcon size={48} color={colors.textLight} accentColor="#C9A22740" />
+        <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>Sin recetas</Text>
+        <Text style={[styles.emptySubtitle, { color: colors.textLight }]}>Las recetas emitidas se guardaran aqui</Text>
       </View>
     );
   }
@@ -43,7 +45,7 @@ export default function PrescriptionList({ prescriptions, onView, onSendEmail }:
               </View>
               <View style={styles.actions}>
                 <Button compact mode="text" onPress={() => onView(rx)}>
-                  <MaterialCommunityIcons name="eye" size={18} color={colors.primary} />
+                  <MaterialCommunityIcons name="eye" size={18} color="#C9A227" />
                 </Button>
                 <Button compact mode="text" onPress={() => onSendEmail(rx)}>
                   <MaterialCommunityIcons name="email-outline" size={18} color={colors.info} />
@@ -63,16 +65,21 @@ const styles = StyleSheet.create({
   },
   empty: {
     alignItems: 'center',
-    paddingVertical: SPACING.xl,
+    paddingVertical: SPACING.xl + SPACING.lg,
   },
-  emptyText: {
-    marginTop: SPACING.sm,
+  emptyTitle: {
+    marginTop: SPACING.md,
+    fontSize: TYPOGRAPHY.sizes.base,
+    fontWeight: TYPOGRAPHY.weights.semibold,
+  },
+  emptySubtitle: {
+    marginTop: SPACING.xs,
     fontSize: TYPOGRAPHY.sizes.sm,
   },
   card: {
     borderRadius: RADIUS.md,
     borderLeftWidth: 3,
-    borderLeftColor: '#0B1D3A',
+    borderLeftColor: '#C9A227',
   },
   row: {
     flexDirection: 'row',

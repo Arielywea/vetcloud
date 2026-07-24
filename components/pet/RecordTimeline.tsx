@@ -1,22 +1,17 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Card, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ClinicalRecord } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { RECORD_TYPE_CONFIG } from '../../constants/icons';
+import RoundTableIcon from '../icons/RoundTableIcon';
 
 interface RecordTimelineProps {
   records: ClinicalRecord[];
   onViewRecord?: (record: ClinicalRecord) => void;
 }
-
-const RECORD_CONFIG: Record<string, { icon: string; color: string; label: string }> = {
-  consulta: { icon: 'stethoscope', color: '#3B82F6', label: 'Consulta' },
-  vacuna: { icon: 'needle', color: '#10B981', label: 'Vacuna' },
-  cirugia: { icon: 'scissors-cutting', color: '#EF4444', label: 'Cirugia' },
-  control: { icon: 'clipboard-check', color: '#F59E0B', label: 'Control' },
-};
 
 function formatDate(dateStr: string): string {
   try {
@@ -33,8 +28,9 @@ export default function RecordTimeline({ records, onViewRecord }: RecordTimeline
   if (!records.length) {
     return (
       <View style={styles.empty}>
-        <MaterialCommunityIcons name="clipboard-text-clock-outline" size={48} color={colors.textLight} />
-        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Sin registros clinicos</Text>
+        <RoundTableIcon size={56} color={colors.textLight} accentColor="#C9A22760" />
+        <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>Sin registros clinicos</Text>
+        <Text style={[styles.emptySubtitle, { color: colors.textLight }]}>Los registros de consultas apareceran aqui</Text>
       </View>
     );
   }
@@ -42,7 +38,7 @@ export default function RecordTimeline({ records, onViewRecord }: RecordTimeline
   return (
     <View style={styles.container}>
       {records.map((record, i) => {
-        const config = RECORD_CONFIG[record.record_type] || RECORD_CONFIG.consulta;
+        const config = RECORD_TYPE_CONFIG[record.record_type] || RECORD_TYPE_CONFIG.consulta;
         return (
           <View key={record.id} style={styles.timelineItem}>
             {i < records.length - 1 && <View style={[styles.line, { backgroundColor: colors.border }]} />}
@@ -53,19 +49,19 @@ export default function RecordTimeline({ records, onViewRecord }: RecordTimeline
               <Card.Content>
                 <View style={styles.cardRow}>
                   <View style={styles.cardLeft}>
-                    <View style={[styles.typeIcon, { backgroundColor: config.color + '18' }]}>
+                    <View style={[styles.typeIcon, { backgroundColor: config.bgColor }]}>
                       <MaterialCommunityIcons name={config.icon as any} size={16} color={config.color} />
                     </View>
                     <View>
                       <Text style={[styles.recordTitle, { color: colors.text }]}>
-                        {config.label}{record.details?.notes ? ` — ${record.details.notes.substring(0, 40)}` : ''}
+                        {config.label}{record.details?.notes ? ` - ${record.details.notes.substring(0, 40)}` : ''}
                       </Text>
                       <Text style={[styles.recordDate, { color: colors.textSecondary }]}>{formatDate(record.date)}</Text>
                     </View>
                   </View>
                   {onViewRecord && (
-                    <Button compact mode="text" onPress={() => onViewRecord(record)} labelStyle={{ color: colors.primary }}>
-                      Ver modulo ->
+                    <Button compact mode="text" onPress={() => onViewRecord(record)} labelStyle={{ color: '#C9A227' }}>
+                      Ver modulo
                     </Button>
                   )}
                 </View>
@@ -84,11 +80,16 @@ const styles = StyleSheet.create({
   },
   empty: {
     alignItems: 'center',
-    paddingVertical: SPACING.xl,
+    paddingVertical: SPACING.xl + SPACING.lg,
   },
-  emptyText: {
-    marginTop: SPACING.sm,
-    fontStyle: 'italic',
+  emptyTitle: {
+    marginTop: SPACING.md,
+    fontSize: TYPOGRAPHY.sizes.base,
+    fontWeight: TYPOGRAPHY.weights.semibold,
+  },
+  emptySubtitle: {
+    marginTop: SPACING.xs,
+    fontSize: TYPOGRAPHY.sizes.sm,
   },
   timelineItem: {
     position: 'relative',

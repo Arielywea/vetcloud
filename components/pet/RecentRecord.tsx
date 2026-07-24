@@ -1,10 +1,11 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ClinicalRecord } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { RECORD_TYPE_CONFIG } from '../../constants/icons';
 
 interface RecentRecordProps {
   record: ClinicalRecord;
@@ -12,30 +13,21 @@ interface RecentRecordProps {
   onGenerateRx: () => void;
 }
 
-const RECORD_CONFIG: Record<string, { icon: string; color: string; label: string }> = {
-  consulta: { icon: 'stethoscope', color: '#3B82F6', label: 'Consulta' },
-  vacuna: { icon: 'needle', color: '#10B981', label: 'Vacuna' },
-  cirugia: { icon: 'scissors-cutting', color: '#EF4444', label: 'Cirugia' },
-  control: { icon: 'clipboard-check', color: '#F59E0B', label: 'Control' },
-};
-
 export default function RecentRecord({ record, onView, onGenerateRx }: RecentRecordProps) {
   const { colors } = useTheme();
-  const config = RECORD_CONFIG[record.record_type] || RECORD_CONFIG.consulta;
+  const config = RECORD_TYPE_CONFIG[record.record_type] || RECORD_TYPE_CONFIG.consulta;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Ultima Consulta</Text>
-        <Button compact mode="text" onPress={onView} labelStyle={{ color: colors.primary }}>
-          Ver todo ->
+        <Button compact mode="text" onPress={onView} labelStyle={{ color: '#C9A227' }}>
+          Ver todo
         </Button>
       </View>
 
-      {/* Type badge + date */}
       <View style={styles.metaRow}>
-        <View style={[styles.typeBadge, { backgroundColor: config.color + '18' }]}>
+        <View style={[styles.typeBadge, { backgroundColor: config.bgColor }]}>
           <MaterialCommunityIcons name={config.icon as any} size={12} color={config.color} />
           <Text style={[styles.typeText, { color: config.color }]}>{config.label}</Text>
         </View>
@@ -44,7 +36,6 @@ export default function RecentRecord({ record, onView, onGenerateRx }: RecentRec
         </Text>
       </View>
 
-      {/* Fields */}
       <View style={styles.fields}>
         {record.veterinarian && (
           <View style={styles.field}>
@@ -78,7 +69,6 @@ export default function RecentRecord({ record, onView, onGenerateRx }: RecentRec
         )}
       </View>
 
-      {/* Actions */}
       <View style={styles.actions}>
         <Button compact mode="outlined" onPress={onView} style={styles.actionBtn} labelStyle={styles.actionLabel}>
           Detalle
@@ -152,8 +142,10 @@ const styles = StyleSheet.create({
   actionBtn: {
     flex: 1,
     borderRadius: RADIUS.md,
+    borderColor: '#C9A22740',
   },
   actionLabel: {
     fontSize: TYPOGRAPHY.sizes.sm,
+    color: '#C9A227',
   },
 });

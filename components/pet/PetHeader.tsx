@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { calculateAge } from '../../utils/age';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import InfoPills from './InfoPills';
+import PawShieldIcon from '../icons/PawShieldIcon';
 
 interface PetHeaderProps {
   pet: DirectusPet;
@@ -28,10 +29,10 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
       {/* Breadcrumb */}
       <View style={styles.breadcrumb}>
-        <TouchableOpacity onPress={() => {}}>
-          <Text style={[styles.breadcrumbLink, { color: colors.primary }]}>← Pacientes</Text>
+        <TouchableOpacity onPress={() => { /* navigated via router in parent */ }}>
+          <Text style={[styles.breadcrumbLink, { color: colors.primary }]}>? Pacientes</Text>
         </TouchableOpacity>
-        <Text style={[styles.breadcrumbSeparator, { color: colors.textSecondary }]}>›</Text>
+        <Text style={[styles.breadcrumbSeparator, { color: colors.textSecondary }]}>�</Text>
         <Text style={[styles.breadcrumbCurrent, { color: colors.text }]}>{pet.name}</Text>
       </View>
 
@@ -39,15 +40,11 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
       <View style={styles.headerRow}>
         {/* Left: Photo */}
         <View style={styles.photoSection}>
-          <View style={[styles.photo, { backgroundColor: colors.primary }]}>
+          <View style={[styles.photo, { backgroundColor: colors.primary, borderWidth: 2, borderColor: '#C9A227' }]}>
             {pet.photo ? (
               <Image source={{ uri: pet.photo }} style={styles.photoImage} />
             ) : (
-              <MaterialCommunityIcons
-                name={pet.species === 'dog' ? 'dog' : 'cat'}
-                size={36}
-                color="#FFFFFF"
-              />
+              <PawShieldIcon size={48} color="#FFFFFF" accentColor="#C9A227" />
             )}
           </View>
         </View>
@@ -56,7 +53,7 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
         <View style={styles.infoSection}>
           <Text style={[styles.petName, { color: colors.text }]}>{pet.name}</Text>
           <Text style={[styles.petBreed, { color: colors.textSecondary }]}>
-            {pet.breed || 'Sin raza'} · {age}
+            {pet.breed || 'Sin raza'} � {age}
           </Text>
           <View style={styles.statusRow}>
             {pet.sex && (

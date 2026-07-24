@@ -1,10 +1,11 @@
-ï»¿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { DirectusPet } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import RoundTableIcon from '../icons/RoundTableIcon';
 
 interface ClinicalHistoryProps {
   pet: DirectusPet;
@@ -74,7 +75,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
       {expanded && (
         <View style={styles.content}>
           {pet.motivo_consulta && renderField('comment-alert-outline', 'Motivo de consulta', pet.motivo_consulta)}
-          {pet.habitat && renderField('home', 'Habitat', `${pet.habitat}${pet.habitat_other ? ` â€” ${pet.habitat_other}` : ''}`)}
+          {pet.habitat && renderField('home', 'Habitat', `${pet.habitat}${pet.habitat_other ? ` — ${pet.habitat_other}` : ''}`)}
           {(pet.food || pet.food_frequency) && (
             <View style={styles.fieldBlock}>
               <View style={styles.fieldHeader}>
@@ -130,7 +131,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
               {pet.vital_signs.temperature != null && (
                 <View style={styles.vitalItem}>
                   <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>Temp</Text>
-                  <Text style={[styles.vitalValue, { color: colors.text }]}>{pet.vital_signs.temperature}Â°C</Text>
+                  <Text style={[styles.vitalValue, { color: colors.text }]}>{pet.vital_signs.temperature}°C</Text>
                 </View>
               )}
               {pet.vital_signs.heart_rate != null && (
@@ -169,7 +170,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
           {/* Empty state */}
           {!pet.motivo_consulta && !pet.anamnesis && (!pet.allergies || pet.allergies.length === 0) && !pet.habitat && !pet.food && !pet.vaccines && !pet.surgeries && !pet.medications && !pet.notes && !pet.vital_signs && !pet.hallazgos_examen_fisico && (
             <View style={styles.emptyState}>
-              <MaterialCommunityIcons name="file-document-outline" size={32} color={colors.textLight} />
+              <RoundTableIcon size={48} color={colors.textLight} accentColor="#C9A22740" />
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Sin datos clinicos iniciales registrados</Text>
               <Text style={[styles.emptyHint, { color: colors.textLight }]}>Edita el paciente para completar la historia clinica</Text>
             </View>
