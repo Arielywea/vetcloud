@@ -17,9 +17,9 @@ function calculateAge(birthDate: string | null): string {
     const now = new Date();
     const diffMs = now.getTime() - birth.getTime();
     const years = Math.floor(diffMs / (365.25 * 24 * 60 * 60 * 1000));
-    if (years > 0) return ${years} año;
+    if (years > 0) return `${years} aÃ±o`;
     const months = Math.floor(diffMs / (30.44 * 24 * 60 * 60 * 1000));
-    return ${months} mes;
+    return `${months} mes`;
   } catch {
     return 'N/D';
   }
@@ -33,7 +33,7 @@ export default function InfoPills({ pet }: InfoPillsProps) {
     { icon: 'shape', label: 'Raza', value: pet.breed || 'N/D' },
     ...(pet.sex ? [{ icon: pet.sex === 'macho' ? 'gender-male' : 'gender-female', label: 'Sexo', value: pet.sex === 'macho' ? 'Macho' : 'Hembra' }] : []),
     { icon: 'palette', label: 'Color', value: pet.color || 'N/D' },
-    ...(pet.weight > 0 ? [{ icon: 'weight', label: 'Peso', value: ${pet.weight} kg }] : []),
+    ...(pet.weight > 0 ? [{ icon: 'weight', label: 'Peso', value: `${pet.weight} kg` }] : []),
     { icon: 'calendar', label: 'Edad', value: calculateAge(pet.birth_date) },
     ...(pet.id_number ? [{ icon: 'barcode', label: 'Microchip', value: pet.id_number }] : []),
   ];
