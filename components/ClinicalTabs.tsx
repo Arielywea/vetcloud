@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, TouchableOpacity, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import DynamicIcon from './ui/DynamicIcon';
 import { useTheme } from '../contexts/ThemeContext';
 
 export type ClinicalTabType = 'historial' | 'consultas' | 'vacunas' | 'cirugias' | 'recetas';
@@ -38,7 +38,7 @@ export default function ClinicalTabs({ activeTab, onTabChange, counts }: Clinica
               isActive && { backgroundColor: colors.primary, borderColor: colors.primary },
             ]}
           >
-            <MaterialCommunityIcons
+            <DynamicIcon
               name={tab.icon as any}
               size={14}
               color={isActive ? '#FFFFFF' : '#C9A227'}

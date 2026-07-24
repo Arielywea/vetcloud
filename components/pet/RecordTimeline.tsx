@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Card, Button } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import DynamicIcon from '../ui/DynamicIcon';
 import { ClinicalRecord } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
@@ -43,14 +43,14 @@ export default function RecordTimeline({ records, onViewRecord }: RecordTimeline
           <View key={record.id} style={styles.timelineItem}>
             {i < records.length - 1 && <View style={[styles.line, { backgroundColor: colors.border }]} />}
             <View style={[styles.dot, { backgroundColor: config.color }]}>
-              <MaterialCommunityIcons name={config.icon as any} size={12} color="#FFF" />
+              <DynamicIcon name={config.icon as any} size={12} color="#FFF" />
             </View>
             <Card style={[styles.card, { backgroundColor: colors.surface }]}>
               <Card.Content>
                 <View style={styles.cardRow}>
                   <View style={styles.cardLeft}>
                     <View style={[styles.typeIcon, { backgroundColor: config.bgColor }]}>
-                      <MaterialCommunityIcons name={config.icon as any} size={16} color={config.color} />
+                      <DynamicIcon name={config.icon as any} size={16} color={config.color} />
                     </View>
                     <View>
                       <Text style={[styles.recordTitle, { color: colors.text }]}>

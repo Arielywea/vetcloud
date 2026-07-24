@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, TextInput, Button, SegmentedButtons, Menu, Switch, Dialog, Portal } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import DynamicIcon from '../../components/ui/DynamicIcon';
 import { useTheme } from '../../contexts/ThemeContext';
 import { api } from '../../services/directus';
 import { DISEASE_CATEGORIES, SPECIES_INFO } from '../../constants/diseases';

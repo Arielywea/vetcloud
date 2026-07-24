@@ -1,18 +1,24 @@
 import React, { useState, useMemo } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Card, Button, FAB, Portal, Modal, TextInput, Menu, Dialog } from 'react-native-paper';
+import { View, ScrollView, StyleSheet, TextInput as RNTextInput, TouchableOpacity, Platform } from 'react-native';
+import { Text, Modal, Portal, Menu } from 'react-native-paper';
 import { Calendar, DateData } from 'react-native-calendars';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { CalendarBlank, Stethoscope, Syringe, Scissors, ClipboardCheck, Tractor, Phone, Trash2, Plus, AlertTriangle, X, CalendarX } from 'lucide-react-native';
 import { useAppointments } from '../../hooks/useDirectus';
 import { Appointment } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
+import { APPOINTMENT_TYPE_COLORS } from '../../constants/colors';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
+import VCard from '../../components/ui/Card';
+import VButton from '../../components/ui/Button';
+import VEmptyState from '../../components/ui/EmptyState';
+import AnimatedIcon from '../../components/icons/AnimatedIcon';
 
-const TYPE_CONFIG: Record<string, { icon: string; color: string }> = {
-  consulta: { icon: 'stethoscope', color: '#1976D2' },
-  vacuna: { icon: 'needle', color: '#43A047' },
-  cirugia: { icon: 'scissors-cutting', color: '#E53935' },
-  control: { icon: 'clipboard-check', color: '#F57C00' },
-  terreno: { icon: 'tractor', color: '#8D6E63' },
+const TYPE_CONFIG: Record<string, { icon: typeof Stethoscope; color: string }> = {
+  consulta: { icon: Stethoscope, color: APPOINTMENT_TYPE_COLORS.consulta },
+  vacuna: { icon: Syringe, color: APPOINTMENT_TYPE_COLORS.vacuna },
+  cirugia: { icon: Scissors, color: APPOINTMENT_TYPE_COLORS.cirugia },
+  control: { icon: ClipboardCheck, color: APPOINTMENT_TYPE_COLORS.control },
+  terreno: { icon: Tractor, color: APPOINTMENT_TYPE_COLORS.terreno },
 };
 
 function formatTime(dateStr: string): string {
@@ -67,10 +73,6 @@ export default function AgendaScreen() {
     } catch { setErrorDialog('No se pudo guardar la cita'); }
   };
 
-  const handleDelete = (appt: Appointment) => {
-    setConfirmDelete({ name: appt.patient_name, id: appt.id });
-  };
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Calendar
@@ -90,53 +92,57 @@ export default function AgendaScreen() {
         {loading ? (
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Cargando...</Text>
         ) : dayAppointments.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons name="calendar-blank" size={48} color={colors.textLight} />
-            <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>Sin citas este día</Text>
-          </View>
+          <VEmptyState
+            icon={<CalendarX size={32} color={colors.textLight} />}
+            title="Sin citas este día"
+            description="Selecciona otro día o crea una nueva cita"
+          />
         ) : (
           dayAppointments.map((appt) => {
             const config = TYPE_CONFIG[appt.appointment_type] || TYPE_CONFIG.consulta;
+            const IconComponent = config.icon;
             return (
-              <Card key={appt.id} style={[styles.apptCard, { backgroundColor: colors.surface, borderLeftColor: config.color, borderLeftWidth: 4 }]}>
-                <Card.Content>
-                  <View style={styles.apptHeader}>
-                    <View style={[styles.apptIcon, { backgroundColor: config.color + '18' }]}>
-                      <MaterialCommunityIcons name={config.icon as any} size={18} color={config.color} />
-                    </View>
-                    <View style={styles.apptInfo}>
-                      <Text variant="titleSmall" style={[styles.apptName, { color: colors.text }]}>{appt.patient_name}</Text>
-                      <Text style={[styles.apptTime, { color: colors.textSecondary }]}>{formatTime(appt.start_time)}</Text>
-                    </View>
-                    <Button compact mode="text" onPress={() => handleDelete(appt)}>
-                      <MaterialCommunityIcons name="delete" size={18} color={colors.error} />
-                    </Button>
+              <VCard key={appt.id} style={[styles.apptCard, { borderLeftColor: config.color, borderLeftWidth: 4 }]}>
+                <View style={styles.apptHeader}>
+                  <View style={[styles.apptIcon, { backgroundColor: config.color + '18' }]}>
+                    <IconComponent size={18} color={config.color} />
                   </View>
-                  {appt.tutor_phone && (
-                    <View style={styles.apptDetail}>
-                      <MaterialCommunityIcons name="phone" size={12} color={colors.textSecondary} />
-                      <Text style={[styles.apptDetailText, { color: colors.textSecondary }]}>{appt.tutor_phone}</Text>
-                    </View>
-                  )}
-                  {appt.description && <Text style={[styles.apptDesc, { color: colors.text }]} numberOfLines={2}>{appt.description}</Text>}
-                </Card.Content>
-              </Card>
+                  <View style={styles.apptInfo}>
+                    <Text variant="titleSmall" style={[styles.apptName, { color: colors.text }]}>{appt.patient_name}</Text>
+                    <Text style={[styles.apptTime, { color: colors.textSecondary }]}>{formatTime(appt.start_time)}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setConfirmDelete({ name: appt.patient_name, id: appt.id })}>
+                    <Trash2 size={18} color={colors.error} />
+                  </TouchableOpacity>
+                </View>
+                {appt.tutor_phone && (
+                  <View style={styles.apptDetail}>
+                    <Phone size={12} color={colors.textSecondary} />
+                    <Text style={[styles.apptDetailText, { color: colors.textSecondary }]}>{appt.tutor_phone}</Text>
+                  </View>
+                )}
+                {appt.description && <Text style={[styles.apptDesc, { color: colors.text }]} numberOfLines={2}>{appt.description}</Text>}
+              </VCard>
             );
           })
         )}
       </ScrollView>
-      <FAB icon="plus" style={[styles.fab, { backgroundColor: colors.primary }]} color="#FFF" onPress={() => setShowModal(true)} />
+      <TouchableOpacity style={[styles.fab, { backgroundColor: colors.primary, ...SHADOWS.lg }]} onPress={() => setShowModal(true)}>
+        <Plus size={24} color="#FFF" />
+      </TouchableOpacity>
       <Portal>
         <Modal visible={showModal} onDismiss={() => setShowModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
           <ScrollView>
             <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Nueva Cita</Text>
-            <TextInput label="Nombre del paciente *" value={apptName} onChangeText={setApptName} mode="outlined" style={styles.input} />
-            <TextInput label="Teléfono del tutor" value={apptPhone} onChangeText={setApptPhone} mode="outlined" style={styles.input} keyboardType="phone-pad" />
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Nombre del paciente *</Text>
+            <RNTextInput style={[styles.input, { borderColor: colors.border, color: colors.text }]} value={apptName} onChangeText={setApptName} placeholder="Nombre del paciente" placeholderTextColor={colors.textLight} />
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Teléfono del tutor</Text>
+            <RNTextInput style={[styles.input, { borderColor: colors.border, color: colors.text }]} value={apptPhone} onChangeText={setApptPhone} keyboardType="phone-pad" placeholder="Teléfono" placeholderTextColor={colors.textLight} />
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Tipo de cita</Text>
             <Menu visible={typeMenuVisible} onDismiss={() => setTypeMenuVisible(false)} anchor={
-              <Button mode="outlined" onPress={() => setTypeMenuVisible(true)} style={styles.input}>
-                {apptType.charAt(0).toUpperCase() + apptType.slice(1)}
-              </Button>
+              <TouchableOpacity style={[styles.input, styles.menuAnchor, { borderColor: colors.border }]} onPress={() => setTypeMenuVisible(true)}>
+                <Text style={{ color: colors.text }}>{apptType.charAt(0).toUpperCase() + apptType.slice(1)}</Text>
+              </TouchableOpacity>
             }>
               <Menu.Item onPress={() => { setApptType('consulta'); setTypeMenuVisible(false); }} title="Consulta" />
               <Menu.Item onPress={() => { setApptType('vacuna'); setTypeMenuVisible(false); }} title="Vacuna" />
@@ -144,41 +150,36 @@ export default function AgendaScreen() {
               <Menu.Item onPress={() => { setApptType('control'); setTypeMenuVisible(false); }} title="Control" />
               <Menu.Item onPress={() => { setApptType('terreno'); setTypeMenuVisible(false); }} title="Terreno" />
             </Menu>
-            <TextInput label="Fecha (AAAA-MM-DD)" value={apptDate} onChangeText={setApptDate} mode="outlined" style={styles.input} />
-            <TextInput label="Hora (HH:MM)" value={apptTime} onChangeText={setApptTime} mode="outlined" style={styles.input} />
-            <TextInput label="Descripción" value={apptDescription} onChangeText={setApptDescription} mode="outlined" multiline numberOfLines={3} style={styles.input} />
-            <Button mode="contained" onPress={handleSave} style={[styles.saveButton, { backgroundColor: colors.primary }]}>Guardar Cita</Button>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Fecha</Text>
+            <RNTextInput style={[styles.input, { borderColor: colors.border, color: colors.text }]} value={apptDate} onChangeText={setApptDate} placeholder="AAAA-MM-DD" placeholderTextColor={colors.textLight} />
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Hora</Text>
+            <RNTextInput style={[styles.input, { borderColor: colors.border, color: colors.text }]} value={apptTime} onChangeText={setApptTime} placeholder="HH:MM" placeholderTextColor={colors.textLight} />
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Descripción</Text>
+            <RNTextInput style={[styles.input, styles.textArea, { borderColor: colors.border, color: colors.text }]} value={apptDescription} onChangeText={setApptDescription} multiline numberOfLines={3} placeholder="Descripción (opcional)" placeholderTextColor={colors.textLight} />
+            <VButton variant="primary" fullWidth onPress={handleSave}>Guardar Cita</VButton>
           </ScrollView>
         </Modal>
       </Portal>
 
-      {/* Error Dialog */}
       <Portal>
-        <Dialog visible={!!errorDialog} onDismiss={() => setErrorDialog(null)}>
-          <Dialog.Icon icon="alert-circle-outline" />
-          <Dialog.Title style={{ textAlign: 'center' }}>Error</Dialog.Title>
-          <Dialog.Content>
-            <Text style={{ textAlign: 'center' }}>{errorDialog}</Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setErrorDialog(null)}>OK</Button>
-          </Dialog.Actions>
-        </Dialog>
+        <Modal visible={!!errorDialog} onDismiss={() => setErrorDialog(null)} contentContainerStyle={[styles.dialogModal, { backgroundColor: colors.surface }]}>
+          <AlertTriangle size={32} color={colors.warning} style={{ alignSelf: 'center', marginBottom: 8 }} />
+          <Text variant="titleMedium" style={{ textAlign: 'center', color: colors.text }}>Error</Text>
+          <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 4 }}>{errorDialog}</Text>
+          <VButton variant="primary" fullWidth onPress={() => setErrorDialog(null)} style={{ marginTop: 16 }}>OK</VButton>
+        </Modal>
       </Portal>
 
-      {/* Confirm Delete Dialog */}
       <Portal>
-        <Dialog visible={!!confirmDelete} onDismiss={() => setConfirmDelete(null)}>
-          <Dialog.Icon icon="alert" />
-          <Dialog.Title style={{ textAlign: 'center' }}>Eliminar cita</Dialog.Title>
-          <Dialog.Content>
-            <Text style={{ textAlign: 'center' }}>¿Eliminar cita de {confirmDelete?.name}?</Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setConfirmDelete(null)}>Cancelar</Button>
-            <Button textColor={colors.error} onPress={() => { if (confirmDelete) removeAppointment(confirmDelete.id); setConfirmDelete(null); }}>Eliminar</Button>
-          </Dialog.Actions>
-        </Dialog>
+        <Modal visible={!!confirmDelete} onDismiss={() => setConfirmDelete(null)} contentContainerStyle={[styles.dialogModal, { backgroundColor: colors.surface }]}>
+          <AlertTriangle size={32} color={colors.error} style={{ alignSelf: 'center', marginBottom: 8 }} />
+          <Text variant="titleMedium" style={{ textAlign: 'center', color: colors.text }}>Eliminar cita</Text>
+          <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 4 }}>¿Eliminar cita de {confirmDelete?.name}?</Text>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
+            <VButton variant="secondary" onPress={() => setConfirmDelete(null)} style={{ flex: 1 }}>Cancelar</VButton>
+            <VButton variant="danger" onPress={() => { if (confirmDelete) removeAppointment(confirmDelete.id); setConfirmDelete(null); }} style={{ flex: 1 }}>Eliminar</VButton>
+          </View>
+        </Modal>
       </Portal>
     </View>
   );
@@ -187,27 +188,27 @@ export default function AgendaScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   calendar: { borderBottomWidth: 1 },
-  dayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12 },
+  dayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: SPACING.lg },
   dayTitle: { fontWeight: '700', textTransform: 'capitalize' },
   dayCount: { fontSize: 13 },
   list: { flex: 1 },
-  listContent: { padding: 12, paddingBottom: 80 },
-  emptyContainer: { alignItems: 'center', paddingTop: 40 },
-  emptyTitle: { marginTop: 8 },
+  listContent: { padding: SPACING.lg, paddingBottom: 80 },
   emptyText: { textAlign: 'center', marginTop: 20 },
-  apptCard: { marginBottom: 10, borderRadius: 10 },
+  apptCard: { marginBottom: SPACING.md, borderRadius: RADIUS.lg },
   apptHeader: { flexDirection: 'row', alignItems: 'center' },
   apptIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  apptInfo: { flex: 1, marginLeft: 10 },
+  apptInfo: { flex: 1, marginLeft: SPACING.md },
   apptName: { fontWeight: '700' },
   apptTime: { fontSize: 13, marginTop: 2 },
-  apptDetail: { flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 4 },
+  apptDetail: { flexDirection: 'row', alignItems: 'center', marginTop: SPACING.sm, gap: 4 },
   apptDetailText: { fontSize: 12 },
-  apptDesc: { fontSize: 12, marginTop: 6, lineHeight: 18 },
-  fab: { position: 'absolute', right: 16, bottom: 16, borderRadius: 16 },
-  modal: { padding: 24, margin: 20, borderRadius: 12, maxHeight: '85%' },
-  modalTitle: { fontWeight: '700', marginBottom: 16 },
-  fieldLabel: { fontSize: 13, fontWeight: '600', marginBottom: 4 },
-  input: { marginBottom: 12 },
-  saveButton: { marginTop: 8 },
+  apptDesc: { fontSize: 12, marginTop: SPACING.sm, lineHeight: 18 },
+  fab: { position: 'absolute', right: 16, bottom: 16, width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  modal: { padding: 24, margin: 20, borderRadius: RADIUS.lg, maxHeight: '85%' },
+  dialogModal: { padding: 24, margin: 20, borderRadius: RADIUS.lg },
+  modalTitle: { fontWeight: '700', marginBottom: SPACING.lg },
+  fieldLabel: { fontSize: 13, fontWeight: '600', marginBottom: SPACING.xs },
+  input: { borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.md, fontSize: 15 },
+  textArea: { minHeight: 80, textAlignVertical: 'top' },
+  menuAnchor: { justifyContent: 'center', minHeight: 48 },
 });

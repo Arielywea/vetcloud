@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import DynamicIcon from '../ui/DynamicIcon';
 import { DirectusPet } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
@@ -22,7 +22,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
   const renderField = (icon: string, label: string, value: string, iconColor?: string) => (
     <View style={styles.fieldBlock}>
       <View style={styles.fieldHeader}>
-        <MaterialCommunityIcons name={icon as any} size={14} color={iconColor || colors.primary} />
+        <DynamicIcon name={icon as any} size={14} color={iconColor || colors.primary} />
         <Text style={[styles.fieldLabel, { color: iconColor || colors.textSecondary }]}>{label}</Text>
       </View>
       <Text style={[styles.fieldValue, { color: colors.text }]}>{value}</Text>
@@ -40,10 +40,10 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
     <>
       <TouchableOpacity onPress={onToggle} style={styles.subSectionHeader}>
         <View style={styles.subSectionTitleRow}>
-          <MaterialCommunityIcons name={icon as any} size={14} color={iconColor} />
+          <DynamicIcon name={icon as any} size={14} color={iconColor} />
           <Text style={[styles.subSectionLabel, { color: iconColor }]}>{title}</Text>
         </View>
-        <MaterialCommunityIcons
+        <DynamicIcon
           name={isExpanded ? 'chevron-up' : 'chevron-down'}
           size={18}
           color={colors.textSecondary}
@@ -65,7 +65,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
             </View>
           )}
         </View>
-        <MaterialCommunityIcons
+        <DynamicIcon
           name={expanded ? 'chevron-up' : 'chevron-down'}
           size={20}
           color={colors.textSecondary}
@@ -75,11 +75,11 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
       {expanded && (
         <View style={styles.content}>
           {pet.motivo_consulta && renderField('comment-alert-outline', 'Motivo de consulta', pet.motivo_consulta)}
-          {pet.habitat && renderField('home', 'Habitat', `${pet.habitat}${pet.habitat_other ? ` — ${pet.habitat_other}` : ''}`)}
+          {pet.habitat && renderField('home', 'Habitat', `${pet.habitat}${pet.habitat_other ? ` ï¿½ ${pet.habitat_other}` : ''}`)}
           {(pet.food || pet.food_frequency) && (
             <View style={styles.fieldBlock}>
               <View style={styles.fieldHeader}>
-                <MaterialCommunityIcons name="food" size={14} color={colors.primary} />
+                <DynamicIcon name="food" size={14} color={colors.primary} />
                 <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Alimentacion</Text>
               </View>
               {pet.food && <Text style={[styles.fieldValue, { color: colors.text }]}>Tipo: {pet.food}</Text>}
@@ -105,7 +105,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
               {pet.allergies && pet.allergies.length > 0 && (
                 <View style={styles.fieldBlock}>
                   <View style={styles.fieldHeader}>
-                    <MaterialCommunityIcons name="alert-circle-outline" size={14} color={colors.error} />
+                    <DynamicIcon name="alert-circle-outline" size={14} color={colors.error} />
                     <Text style={[styles.fieldLabel, { color: colors.error }]}>Alergias</Text>
                   </View>
                   <View style={styles.chipRow}>
@@ -131,7 +131,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
               {pet.vital_signs.temperature != null && (
                 <View style={styles.vitalItem}>
                   <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>Temp</Text>
-                  <Text style={[styles.vitalValue, { color: colors.text }]}>{pet.vital_signs.temperature}°C</Text>
+                  <Text style={[styles.vitalValue, { color: colors.text }]}>{pet.vital_signs.temperature}ï¿½C</Text>
                 </View>
               )}
               {pet.vital_signs.heart_rate != null && (

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import DynamicIcon from '../ui/DynamicIcon';
 import { DirectusPet } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
@@ -45,7 +45,7 @@ export default function InfoPills({ pet }: InfoPillsProps) {
         <AnimatedIcon key={i} delay={i * 60} animate="fadeScale">
           <View style={[styles.pill, { backgroundColor: colors.primaryContainer }]}>
             <View style={[styles.iconCircle, { backgroundColor: '#C9A22720' }]}>
-              <MaterialCommunityIcons name={pill.icon as any} size={13} color="#C9A227" />
+              <DynamicIcon name={pill.icon as any} size={13} color="#C9A227" />
             </View>
             <Text style={[styles.pillLabel, { color: colors.textSecondary }]}>{pill.label}:</Text>
             <Text style={[styles.pillValue, { color: colors.primary }]}>{pill.value}</Text>

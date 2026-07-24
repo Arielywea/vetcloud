@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Card, Button } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import DynamicIcon from '../ui/DynamicIcon';
 import { Prescription } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
@@ -45,10 +45,10 @@ export default function PrescriptionList({ prescriptions, onView, onSendEmail }:
               </View>
               <View style={styles.actions}>
                 <Button compact mode="text" onPress={() => onView(rx)}>
-                  <MaterialCommunityIcons name="eye" size={18} color="#C9A227" />
+                  <DynamicIcon name="eye" size={18} color="#C9A227" />
                 </Button>
                 <Button compact mode="text" onPress={() => onSendEmail(rx)}>
-                  <MaterialCommunityIcons name="email-outline" size={18} color={colors.info} />
+                  <DynamicIcon name="email-outline" size={18} color={colors.info} />
                 </Button>
               </View>
             </View>

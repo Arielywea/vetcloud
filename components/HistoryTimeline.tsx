@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Card, Button } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import DynamicIcon from './ui/DynamicIcon';
 import { ClinicalRecord } from '../services/directus';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -32,7 +32,7 @@ export default function HistoryTimeline({ records, onViewRecord }: HistoryTimeli
   if (!records.length) {
     return (
       <View style={styles.empty}>
-        <MaterialCommunityIcons name="clipboard-text-clock-outline" size={48} color={colors.textLight} />
+        <DynamicIcon name="clipboard-text-clock-outline" size={48} color={colors.textLight} />
         <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Sin registros clínicos</Text>
       </View>
     );
@@ -46,14 +46,14 @@ export default function HistoryTimeline({ records, onViewRecord }: HistoryTimeli
           <View key={record.id} style={styles.timelineItem}>
             {i < records.length - 1 && <View style={[styles.line, { backgroundColor: colors.border }]} />}
             <View style={[styles.dot, { backgroundColor: config.color }]}>
-              <MaterialCommunityIcons name={config.icon as any} size={12} color="#FFF" />
+              <DynamicIcon name={config.icon as any} size={12} color="#FFF" />
             </View>
             <Card style={[styles.card, { backgroundColor: colors.surface, borderLeftColor: colors.border }]}>
               <Card.Content>
                 <View style={styles.cardRow}>
                   <View style={styles.cardLeft}>
                     <View style={[styles.typeIcon, { backgroundColor: config.color + '18' }]}>
-                      <MaterialCommunityIcons name={config.icon as any} size={16} color={config.color} />
+                      <DynamicIcon name={config.icon as any} size={16} color={config.color} />
                     </View>
                     <View>
                       <Text style={[styles.recordTitle, { color: colors.text }]}>
