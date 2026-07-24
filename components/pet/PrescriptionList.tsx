@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Card, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: RADIUS.md,
     borderLeftWidth: 3,
-    borderLeftColor: '#0A2463',
+    borderLeftColor: '#0B1D3A',
   },
   row: {
     flexDirection: 'row',

@@ -34,7 +34,7 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
 
       {/* Center: search trigger */}
       <TouchableOpacity
-        style={[styles.searchTrigger, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+        style={[styles.searchTrigger, { backgroundColor: colors.surfaceVariant, borderColor: colors.border + '80' }]}
         onPress={onSearchPress}
         activeOpacity={0.7}
       >
@@ -61,12 +61,12 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
           <Calendar size={20} color={colors.textSecondary} />
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.newPatientBtn, { backgroundColor: colors.primary }]}
+          style={[styles.newPatientBtn, { backgroundColor: colors.accent }]}
           onPress={() => router.push('/(drawer)/add-paciente')}
           activeOpacity={0.7}
         >
           <Plus size={18} color={TEXT_ON_PRIMARY.light.default} />
-          <Text style={[styles.newPatientText, { color: TEXT_ON_PRIMARY.light.default }]}>
+          <Text style={[styles.newPatientText, { color: colors.primaryDark }]}>
             Nuevo Paciente
           </Text>
         </TouchableOpacity>
@@ -77,7 +77,7 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
 
 const styles = StyleSheet.create({
   container: {
-    height: 64,
+    height: 72,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.xl,
