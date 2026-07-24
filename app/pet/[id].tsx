@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, Button, TextInput, Portal, Modal, Dialog, Divider } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -192,7 +192,7 @@ export default function PetDetailScreen() {
             <TextInput label="Peso (kg, opcional)" value={recordWeight} onChangeText={setRecordWeight} mode="outlined" style={styles.input} keyboardType="numeric" />
             <TextInput label="Motivo de consulta" value={recordMotivoConsulta} onChangeText={setRecordMotivoConsulta} mode="outlined" multiline numberOfLines={3} style={styles.input} />
             <TextInput label="Anamnesis" value={recordAnamnesis} onChangeText={setRecordAnamnesis} mode="outlined" multiline numberOfLines={3} style={styles.input} />
-            <VoiceNotes onTranscription={(text) => setRecordNotes(text)} onSoapParsed={(soapData) => { const parts: string[] = []; if (soapData.subjective) parts.push(S: ); if (soapData.objective) parts.push(O: ); if (soapData.assessment) parts.push(A: ); if (soapData.plan) parts.push(P: ); if (parts.length > 0) setRecordNotes(parts.join('\n\n')); }} />
+            <VoiceNotes onTranscription={(text) => setRecordNotes(text)} onSoapParsed={(soapData) => { const parts: string[] = []; if (soapData.subjective) parts.push("S: " + soapData.subjective); if (soapData.objective) parts.push("O: " + soapData.objective); if (soapData.assessment) parts.push("A: " + soapData.assessment); if (soapData.plan) parts.push("P: " + soapData.plan); if (parts.length > 0) setRecordNotes(parts.join('\n\n')); }} />
             <Text variant="titleSmall" style={[styles.subTitle, { color: colors.primary }]}>Constantes fisiologicas</Text>
             <View style={styles.rxFieldRow}><View style={styles.rxFieldHalf}><TextInput label="Temp (C)" value={recordVitalTemp} onChangeText={setRecordVitalTemp} mode="outlined" style={styles.rxInput} keyboardType="numeric" /></View><View style={styles.rxFieldHalf}><TextInput label="FC (lpm)" value={recordVitalFC} onChangeText={setRecordVitalFC} mode="outlined" style={styles.rxInput} keyboardType="numeric" /></View></View>
             <View style={styles.rxFieldRow}><View style={styles.rxFieldHalf}><TextInput label="FR (rpm)" value={recordVitalFR} onChangeText={setRecordVitalFR} mode="outlined" style={styles.rxInput} keyboardType="numeric" /></View><View style={styles.rxFieldHalf}><TextInput label="PA (mmHg)" value={recordVitalPA} onChangeText={setRecordVitalPA} mode="outlined" style={styles.rxInput} /></View></View>
