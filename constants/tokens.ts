@@ -60,7 +60,7 @@ export const TYPOGRAPHY = {
   },
 } as const;
 
-// Shadows (elevation levels)
+// Shadows (neumorphism — maximum depth)
 export const SHADOWS = {
   none: {
     shadowColor: 'transparent',
@@ -71,38 +71,38 @@ export const SHADOWS = {
   },
   xs: {
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
   },
   sm: {
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  md: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.07,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
     shadowRadius: 6,
     elevation: 4,
   },
-  lg: {
+  md: {
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.09,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
     shadowRadius: 12,
     elevation: 6,
   },
-  xl: {
+  lg: {
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.11,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.30,
     shadowRadius: 20,
     elevation: 8,
+  },
+  xl: {
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.35,
+    shadowRadius: 28,
+    elevation: 12,
   },
 } as const;
 

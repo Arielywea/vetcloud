@@ -4,7 +4,7 @@ import { Text } from 'react-native-paper';
 import DynamicIcon from '../ui/DynamicIcon';
 import { DirectusPet } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import RoundTableIcon from '../icons/RoundTableIcon';
 
 interface ClinicalHistoryProps {
@@ -54,7 +54,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface }]}>
+    <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       {/* Section header */}
       <TouchableOpacity onPress={() => setExpanded(!expanded)} style={styles.sectionHeader}>
         <View style={styles.sectionTitleRow}>
@@ -186,6 +186,8 @@ const styles = StyleSheet.create({
     marginHorizontal: SPACING.xl,
     borderRadius: RADIUS.lg,
     padding: SPACING.xl,
+    borderWidth: 1,
+    ...SHADOWS.md,
   },
   sectionHeader: {
     flexDirection: 'row',

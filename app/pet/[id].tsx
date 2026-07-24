@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, Button, TextInput, Portal, Modal, Dialog, Divider } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+
 import { useLocalSearchParams } from 'expo-router';
 import { usePet, useClinicalRecords, usePrescriptions } from '../../hooks/useDirectus';
 import { ClinicalRecord, Prescription } from '../../services/directus';
