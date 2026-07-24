@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
 import { Text, TextInput, Button, Menu, Dialog, Portal } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { MaterialCommunityIcons, Check } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Check } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { usePets } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -264,7 +265,7 @@ export default function AddPacienteScreen() {
                 styles.progressLine,
                 {
                   backgroundColor: step < currentStep ? colors.primary : colors.border,
-                  opacity: step < currentStep ? 1 : 0.5,
+                  opacity: step < currentStep ? 1 : 0.4,
                 },
               ]} />
             )}
@@ -277,169 +278,218 @@ export default function AddPacienteScreen() {
   // ─── Step 1: Información básica ─────────────────────────────
   const renderStep1 = () => (
     <View style={styles.stepContent}>
-      <View style={styles.step1Row}>
-        {/* Left column — fields */}
-        <View style={styles.step1Left}>
-          <Text style={[styles.stepSectionTitle, { color: colors.text }]}>Información básica</Text>
-
-          <TextInput
-            label="Nombre del paciente *"
-            value={name}
-            onChangeText={setName}
-            mode="outlined"
-            style={[styles.input, { backgroundColor: colors.surface }]}
-            outlineColor={colors.border}
-            activeOutlineColor={colors.primary}
-          />
-
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Especie *</Text>
-          <View style={styles.speciesRow}>
-            <Button
-              mode={species === 'dog' ? 'contained' : 'outlined'}
-              onPress={() => setSpecies('dog')}
-              style={[styles.speciesPill, species === 'dog' && { backgroundColor: colors.primary }]}
-              labelStyle={[styles.speciesPillLabel, species === 'dog' ? { color: '#FFFFFF' } : { color: colors.primary }]}
-              icon={({ size }) => (
-                <MaterialCommunityIcons name="dog" size={size} color={species === 'dog' ? '#FFFFFF' : colors.primary} />
-              )}
-            >
-              Perro
-            </Button>
-            <Button
-              mode={species === 'cat' ? 'contained' : 'outlined'}
-              onPress={() => setSpecies('cat')}
-              style={[styles.speciesPill, species === 'cat' && { backgroundColor: colors.primary }]}
-              labelStyle={[styles.speciesPillLabel, species === 'cat' ? { color: '#FFFFFF' } : { color: colors.primary }]}
-              icon={({ size }) => (
-                <MaterialCommunityIcons name="cat" size={size} color={species === 'cat' ? '#FFFFFF' : colors.primary} />
-              )}
-            >
-              Gato
-            </Button>
+      {/* Información básica card — 3-column grid */}
+      <View style={[styles.card, { backgroundColor: colors.surface }]}>
+        <View style={styles.cardTitleRow}>
+          <View style={[styles.cardIcon, { backgroundColor: colors.primaryContainer }]}>
+            <MaterialCommunityIcons name="patient" size={18} color={colors.primary} />
           </View>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Información básica</Text>
+        </View>
 
-          <TextInput
-            label="Raza"
-            value={breed}
-            onChangeText={setBreed}
-            mode="outlined"
-            style={[styles.input, { backgroundColor: colors.surface }]}
-            outlineColor={colors.border}
-            activeOutlineColor={colors.primary}
-          />
-
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Sexo *</Text>
-          <View style={styles.sexRow}>
-            <Button
-              mode={sex === 'macho' ? 'contained' : 'outlined'}
-              onPress={() => { setSex('macho'); if (!REPRODUCTIVE_MACHO.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
-              style={[styles.sexPill, sex === 'macho' && { backgroundColor: colors.primary }]}
-              labelStyle={sex === 'macho' ? { color: '#FFFFFF' } : { color: colors.primary }}
-              icon={({ size }) => <MaterialCommunityIcons name="gender-male" size={size} color={sex === 'macho' ? '#FFFFFF' : colors.primary} />}
-            >
-              Macho
-            </Button>
-            <Button
-              mode={sex === 'hembra' ? 'contained' : 'outlined'}
-              onPress={() => { setSex('hembra'); if (!REPRODUCTIVE_HEMBRA.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
-              style={[styles.sexPill, sex === 'hembra' && { backgroundColor: colors.primary }]}
-              labelStyle={sex === 'hembra' ? { color: '#FFFFFF' } : { color: colors.primary }}
-              icon={({ size }) => <MaterialCommunityIcons name="gender-female" size={size} color={sex === 'hembra' ? '#FFFFFF' : colors.primary} />}
-            >
-              Hembra
-            </Button>
-          </View>
-
-          <Menu
-            visible={statusMenuVisible}
-            onDismiss={() => setStatusMenuVisible(false)}
-            anchor={
-              <Button
-                mode="outlined"
-                onPress={() => setStatusMenuVisible(true)}
-                style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                labelStyle={{ color: colors.textSecondary }}
-                contentStyle={{ justifyContent: 'flex-start' }}
-              >
-                {REPRODUCTIVE_OPTIONS.find(o => o.value === reproductiveStatus)?.label || reproductiveStatus}
-              </Button>
-            }
-          >
-            {REPRODUCTIVE_OPTIONS
-              .filter(opt => {
-                if (sex === 'macho') return REPRODUCTIVE_MACHO.includes(opt.value);
-                if (sex === 'hembra') return REPRODUCTIVE_HEMBRA.includes(opt.value);
-                return true;
-              })
-              .map(opt => (
-                <Menu.Item key={opt.value} onPress={() => { setReproductiveStatus(opt.value); setStatusMenuVisible(false); }} title={opt.label} />
-              ))}
-          </Menu>
-
-          <View style={styles.row}>
+        {/* Row 1: Nombre, Especie, Raza */}
+        <View style={styles.grid3}>
+          <View style={styles.gridField}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Nombre del paciente *</Text>
             <TextInput
-              label="Fecha de nacimiento"
+              value={name}
+              onChangeText={setName}
+              mode="outlined"
+              placeholder="Ej: Max"
+              style={[styles.input, { backgroundColor: colors.surface }]}
+              outlineColor={colors.border}
+              activeOutlineColor={colors.primary}
+            />
+          </View>
+          <View style={styles.gridField}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Especie *</Text>
+            <View style={styles.speciesRow}>
+              <Button
+                mode={species === 'dog' ? 'contained' : 'outlined'}
+                onPress={() => setSpecies('dog')}
+                style={[styles.speciesPill, species === 'dog' && { backgroundColor: colors.primary }]}
+                labelStyle={[styles.speciesPillLabel, species === 'dog' ? { color: '#FFFFFF' } : { color: colors.primary }]}
+                icon={({ size }) => (
+                  <MaterialCommunityIcons name="dog" size={size} color={species === 'dog' ? '#FFFFFF' : colors.primary} />
+                )}
+              >
+                Perro
+              </Button>
+              <Button
+                mode={species === 'cat' ? 'contained' : 'outlined'}
+                onPress={() => setSpecies('cat')}
+                style={[styles.speciesPill, species === 'cat' && { backgroundColor: colors.primary }]}
+                labelStyle={[styles.speciesPillLabel, species === 'cat' ? { color: '#FFFFFF' } : { color: colors.primary }]}
+                icon={({ size }) => (
+                  <MaterialCommunityIcons name="cat" size={size} color={species === 'cat' ? '#FFFFFF' : colors.primary} />
+                )}
+              >
+                Gato
+              </Button>
+            </View>
+          </View>
+          <View style={styles.gridField}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Raza</Text>
+            <TextInput
+              value={breed}
+              onChangeText={setBreed}
+              mode="outlined"
+              placeholder="Ej: Golden Retriever"
+              style={[styles.input, { backgroundColor: colors.surface }]}
+              outlineColor={colors.border}
+              activeOutlineColor={colors.primary}
+            />
+          </View>
+        </View>
+
+        {/* Row 2: Fecha nacimiento, Sexo, Estado reproductivo */}
+        <View style={styles.grid3}>
+          <View style={styles.gridField}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Fecha de nacimiento</Text>
+            <TextInput
               value={birthDate}
               onChangeText={setBirthDate}
               mode="outlined"
               placeholder="DD/MM/AAAA"
-              style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]}
-              outlineColor={colors.border}
-              activeOutlineColor={colors.primary}
-            />
-            <TextInput
-              label="Peso (kg)"
-              value={weight}
-              onChangeText={setWeight}
-              mode="outlined"
-              keyboardType="numeric"
-              style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]}
+              style={[styles.input, { backgroundColor: colors.surface }]}
               outlineColor={colors.border}
               activeOutlineColor={colors.primary}
             />
           </View>
-
-          <TextInput
-            label="Color / Pelaje"
-            value={color}
-            onChangeText={setColor}
-            mode="outlined"
-            style={[styles.input, { backgroundColor: colors.surface }]}
-            outlineColor={colors.border}
-            activeOutlineColor={colors.primary}
-          />
-        </View>
-
-        {/* Right column — Photo */}
-        <View style={styles.step1Right}>
-          <Text style={[styles.stepSectionTitle, { color: colors.text }]}>Foto del paciente</Text>
-          <TouchableOpacity onPress={pickImage} style={[styles.photoUpload, { borderColor: colors.border }]}>
-            {photo ? (
-              <Image source={{ uri: photo }} style={styles.photoPreview} />
-            ) : (
-              <View style={styles.photoPlaceholder}>
-                <View style={[styles.photoIconWrap, { backgroundColor: colors.primaryContainer }]}>
-                  <MaterialCommunityIcons name="camera-plus" size={28} color={colors.primary} />
-                </View>
-                <Text style={[styles.photoTitle, { color: colors.text }]}>Subir foto del paciente</Text>
-                <Text style={[styles.photoSubtitle, { color: colors.textSecondary }]}>JPG, PNG o WEBP. Máx. 5MB</Text>
+          <View style={styles.gridField}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Sexo *</Text>
+            <View style={styles.sexRow}>
+              <Button
+                mode={sex === 'macho' ? 'contained' : 'outlined'}
+                onPress={() => { setSex('macho'); if (!REPRODUCTIVE_MACHO.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
+                style={[styles.sexPill, sex === 'macho' && { backgroundColor: colors.primary }]}
+                labelStyle={sex === 'macho' ? { color: '#FFFFFF' } : { color: colors.primary }}
+                icon={({ size }) => <MaterialCommunityIcons name="gender-male" size={size} color={sex === 'macho' ? '#FFFFFF' : colors.primary} />}
+              >
+                Macho
+              </Button>
+              <Button
+                mode={sex === 'hembra' ? 'contained' : 'outlined'}
+                onPress={() => { setSex('hembra'); if (!REPRODUCTIVE_HEMBRA.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
+                style={[styles.sexPill, sex === 'hembra' && { backgroundColor: colors.primary }]}
+                labelStyle={sex === 'hembra' ? { color: '#FFFFFF' } : { color: colors.primary }}
+                icon={({ size }) => <MaterialCommunityIcons name="gender-female" size={size} color={sex === 'hembra' ? '#FFFFFF' : colors.primary} />}
+              >
+                Hembra
+              </Button>
+            </View>
+          </View>
+          <View style={styles.gridField}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Estado reproductivo</Text>
+            <Menu
+              visible={statusMenuVisible}
+              onDismiss={() => setStatusMenuVisible(false)}
+              anchor={
                 <Button
                   mode="outlined"
-                  onPress={pickImage}
-                  style={[styles.photoBtn, { borderColor: colors.primary }]}
-                  labelStyle={{ color: colors.primary, fontSize: 13 }}
+                  onPress={() => setStatusMenuVisible(true)}
+                  style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, justifyContent: 'flex-start' }]}
+                  labelStyle={{ color: colors.textSecondary, fontSize: TYPOGRAPHY.sizes.sm }}
+                  contentStyle={{ justifyContent: 'flex-start' }}
                 >
-                  Seleccionar archivo
+                  {REPRODUCTIVE_OPTIONS.find(o => o.value === reproductiveStatus)?.label || reproductiveStatus}
                 </Button>
-              </View>
-            )}
-          </TouchableOpacity>
+              }
+            >
+              {REPRODUCTIVE_OPTIONS
+                .filter(opt => {
+                  if (sex === 'macho') return REPRODUCTIVE_MACHO.includes(opt.value);
+                  if (sex === 'hembra') return REPRODUCTIVE_HEMBRA.includes(opt.value);
+                  return true;
+                })
+                .map(opt => (
+                  <Menu.Item key={opt.value} onPress={() => { setReproductiveStatus(opt.value); setStatusMenuVisible(false); }} title={opt.label} />
+                ))}
+            </Menu>
+          </View>
+        </View>
+
+        {/* Row 3: Color/Pelaje, Peso, Microchip */}
+        <View style={styles.grid3}>
+          <View style={styles.gridField}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Color / Pelaje</Text>
+            <TextInput
+              value={color}
+              onChangeText={setColor}
+              mode="outlined"
+              placeholder="Ej: Dorado"
+              style={[styles.input, { backgroundColor: colors.surface }]}
+              outlineColor={colors.border}
+              activeOutlineColor={colors.primary}
+            />
+          </View>
+          <View style={styles.gridField}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Peso (kg)</Text>
+            <TextInput
+              value={weight}
+              onChangeText={setWeight}
+              mode="outlined"
+              keyboardType="numeric"
+              placeholder="Ej: 25.4"
+              style={[styles.input, { backgroundColor: colors.surface }]}
+              outlineColor={colors.border}
+              activeOutlineColor={colors.primary}
+            />
+          </View>
+          <View style={styles.gridField}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Microchip / ID</Text>
+            <TextInput
+              value={idNumber}
+              onChangeText={setIdNumber}
+              mode="outlined"
+              placeholder="Ej: 981020000456789"
+              style={[styles.input, { backgroundColor: colors.surface }]}
+              outlineColor={colors.border}
+              activeOutlineColor={colors.primary}
+            />
+          </View>
         </View>
       </View>
 
-      {/* Full width — Temperamento + Microchip */}
+      {/* Foto del paciente card */}
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>Características adicionales</Text>
+        <View style={styles.cardTitleRow}>
+          <View style={[styles.cardIcon, { backgroundColor: colors.primaryContainer }]}>
+            <MaterialCommunityIcons name="camera" size={18} color={colors.primary} />
+          </View>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Foto del paciente</Text>
+        </View>
+        <TouchableOpacity onPress={pickImage} style={[styles.photoUpload, { borderColor: colors.border }]}>
+          {photo ? (
+            <Image source={{ uri: photo }} style={styles.photoPreview} />
+          ) : (
+            <View style={styles.photoPlaceholder}>
+              <View style={[styles.photoIconWrap, { backgroundColor: colors.primaryContainer }]}>
+                <MaterialCommunityIcons name="camera-plus" size={28} color={colors.primary} />
+              </View>
+              <Text style={[styles.photoTitle, { color: colors.text }]}>Subir foto del paciente</Text>
+              <Text style={[styles.photoSubtitle, { color: colors.textSecondary }]}>JPG, PNG o WEBP. Máx. 5MB</Text>
+              <Button
+                mode="outlined"
+                onPress={pickImage}
+                style={[styles.photoBtn, { borderColor: colors.primary }]}
+                labelStyle={{ color: colors.primary, fontSize: 13 }}
+              >
+                Seleccionar archivo
+              </Button>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Características adicionales card */}
+      <View style={[styles.card, { backgroundColor: colors.surface }]}>
+        <View style={styles.cardTitleRow}>
+          <View style={[styles.cardIcon, { backgroundColor: colors.primaryContainer }]}>
+            <MaterialCommunityIcons name="notebook-edit-outline" size={18} color={colors.primary} />
+          </View>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Características adicionales</Text>
+        </View>
 
         <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Temperamento</Text>
         <View style={styles.chipRow}>
@@ -458,17 +508,6 @@ export default function AddPacienteScreen() {
             </TouchableOpacity>
           ))}
         </View>
-
-        <TextInput
-          label="Microchip / ID"
-          value={idNumber}
-          onChangeText={setIdNumber}
-          mode="outlined"
-          placeholder="Ej: 981020000456789"
-          style={[styles.input, { backgroundColor: colors.surface }]}
-          outlineColor={colors.border}
-          activeOutlineColor={colors.primary}
-        />
       </View>
     </View>
   );
@@ -784,7 +823,7 @@ export default function AddPacienteScreen() {
   // ─── Main Render ────────────────────────────────────────────
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
+      {/* Header + Progress Bar */}
       <View style={styles.header}>
         <View style={styles.breadcrumb}>
           <TouchableOpacity onPress={() => router.back()}>
@@ -793,14 +832,18 @@ export default function AddPacienteScreen() {
           <Text style={[styles.breadcrumbSeparator, { color: colors.textSecondary }]}>›</Text>
           <Text style={[styles.breadcrumbCurrent, { color: colors.text }]}>Nuevo Paciente</Text>
         </View>
-        <Text style={[styles.title, { color: colors.text }]}>Nuevo Paciente</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Completa la información para registrar un nuevo paciente en el sistema.
-        </Text>
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
+            <Text style={[styles.title, { color: colors.text }]}>Nuevo Paciente</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+              Completa la información para registrar un nuevo paciente en el sistema.
+            </Text>
+          </View>
+          <View style={styles.headerRight}>
+            {renderProgressBar()}
+          </View>
+        </View>
       </View>
-
-      {/* Progress Bar */}
-      {renderProgressBar()}
 
       {/* Step Content */}
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -897,6 +940,12 @@ const styles = StyleSheet.create({
   // Cards
   card: { borderRadius: RADIUS.lg, padding: SPACING.lg, gap: SPACING.xs },
   cardTitle: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.bold, marginBottom: SPACING.xs },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.sm },
+  cardIcon: { width: 32, height: 32, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center' },
+
+  // 3-column grid
+  grid3: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.xs },
+  gridField: { flex: 1 },
 
   // Form
   fieldLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, marginTop: SPACING.xs, marginBottom: SPACING.xs },
