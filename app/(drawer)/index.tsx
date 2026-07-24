@@ -53,7 +53,7 @@ function BannerIllustration() {
   return (
     <Image
       source={require('../../assets/banner.png')}
-      style={{ width: 140, height: 140 } as ImageStyle}
+      style={{ width: 200, height: 200 } as ImageStyle}
       resizeMode="contain"
     />
   );

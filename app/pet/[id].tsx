@@ -296,7 +296,7 @@ export default function PetDetailScreen() {
         <Modal visible={showEmailModal} onDismiss={() => setShowEmailModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.emailHeader}>
-              <MaterialCommunityIcons name="email-outline" size={28} color={colors.primary} />
+              <DynamicIcon name="email-outline" size={28} color={colors.primary} />
               <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text, marginBottom: 0 }]}>Enviar por correo</Text>
             </View>
             {emailTarget && (
