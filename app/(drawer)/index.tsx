@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { View, ScrollView, StyleSheet, Pressable, Image, ImageStyle } from 'react-native';
 import { Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar, CheckCircle, User, Sparkles, CalendarDays, ChevronRight, Users } from 'lucide-react-native';
@@ -49,114 +49,15 @@ function getGreeting(): string {
   return 'Buenas noches';
 }
 
-import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, G } from 'react-native-svg';
-
 function BannerIllustration() {
   return (
-    <View style={bannerStyles.container}>
-      <Svg width={140} height={140} viewBox="0 0 140 140" fill="none">
-        <Defs>
-          <SvgLinearGradient id="bannerGold" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0%" stopColor="#E8C84A" />
-            <Stop offset="50%" stopColor="#C9A227" />
-            <Stop offset="100%" stopColor="#A6841E" />
-          </SvgLinearGradient>
-        </Defs>
-        <G>
-          {/* Shield outline */}
-          <Path
-            d="M 70 15 L 30 35 L 30 85 Q 30 110 70 125 Q 110 110 110 85 L 110 35 Z"
-            fill="none"
-            stroke="rgba(255,255,255,0.3)"
-            strokeWidth="1.5"
-          />
-          {/* 4-point star at top */}
-          <Path
-            d="M 70 8 L 72 13 L 77 15 L 72 17 L 70 22 L 68 17 L 63 15 L 68 13 Z"
-            fill="url(#bannerGold)"
-          />
-          {/* Dog silhouette — sitting, profile facing left */}
-          <Path
-            d="M 78 100 L 78 75 Q 78 60 68 52 L 65 48 Q 62 42 58 42 L 55 44 Q 52 46 52 50 L 54 55 Q 50 58 50 65 L 50 100 Z"
-            fill="url(#bannerGold)"
-            opacity="0.9"
-          />
-          {/* Dog head detail */}
-          <Path
-            d="M 65 52 Q 62 46 58 44 Q 55 42 53 44 L 52 48 Q 52 52 56 55 L 65 52 Z"
-            fill="url(#bannerGold)"
-          />
-          {/* Dog ear */}
-          <Path
-            d="M 58 44 Q 55 38 52 40 Q 50 42 52 46 L 55 44 Z"
-            fill="#A6841E"
-          />
-          {/* Cat silhouette — sitting in front, facing right */}
-          <Path
-            d="M 85 100 L 85 78 Q 85 68 80 62 L 78 58 Q 76 54 78 50 L 80 48 Q 82 46 84 48 L 86 52 Q 88 56 88 62 L 88 100 Z"
-            fill="rgba(11,29,58,0.85)"
-          />
-          {/* Cat head */}
-          <Path
-            d="M 78 58 Q 76 52 78 48 L 80 46 Q 82 44 84 46 L 86 50 Q 86 54 84 58 L 78 58 Z"
-            fill="rgba(11,29,58,0.85)"
-          />
-          {/* Cat ears */}
-          <Path
-            d="M 78 48 L 76 40 L 80 46 Z"
-            fill="rgba(11,29,58,0.85)"
-          />
-          <Path
-            d="M 84 46 L 86 38 L 86 44 Z"
-            fill="rgba(11,29,58,0.85)"
-          />
-          {/* Laurel left branch */}
-          <Path
-            d="M 28 95 Q 22 80 25 65 Q 28 55 35 48"
-            fill="none"
-            stroke="url(#bannerGold)"
-            strokeWidth="1.5"
-          />
-          <Path d="M 26 88 Q 22 85 20 88 Q 22 90 26 88 Z" fill="url(#bannerGold)" opacity="0.8" />
-          <Path d="M 24 78 Q 20 75 18 78 Q 20 80 24 78 Z" fill="url(#bannerGold)" opacity="0.8" />
-          <Path d="M 25 68 Q 21 65 19 68 Q 21 70 25 68 Z" fill="url(#bannerGold)" opacity="0.8" />
-          <Path d="M 28 58 Q 24 55 22 58 Q 24 60 28 58 Z" fill="url(#bannerGold)" opacity="0.8" />
-          {/* Laurel right branch */}
-          <Path
-            d="M 112 95 Q 118 80 115 65 Q 112 55 105 48"
-            fill="none"
-            stroke="url(#bannerGold)"
-            strokeWidth="1.5"
-          />
-          <Path d="M 114 88 Q 118 85 120 88 Q 118 90 114 88 Z" fill="url(#bannerGold)" opacity="0.8" />
-          <Path d="M 116 78 Q 120 75 122 78 Q 120 80 116 78 Z" fill="url(#bannerGold)" opacity="0.8" />
-          <Path d="M 115 68 Q 119 65 121 68 Q 119 70 115 68 Z" fill="url(#bannerGold)" opacity="0.8" />
-          <Path d="M 112 58 Q 116 55 118 58 Q 116 60 112 58 Z" fill="url(#bannerGold)" opacity="0.8" />
-          {/* Decorative flourish left */}
-          <Path
-            d="M 35 48 Q 30 42 32 36"
-            fill="none"
-            stroke="url(#bannerGold)"
-            strokeWidth="1"
-            opacity="0.6"
-          />
-          {/* Decorative flourish right */}
-          <Path
-            d="M 105 48 Q 110 42 108 36"
-            fill="none"
-            stroke="url(#bannerGold)"
-            strokeWidth="1"
-            opacity="0.6"
-          />
-        </G>
-      </Svg>
-    </View>
+    <Image
+      source={require('../../assets/banner.png')}
+      style={{ width: 140, height: 140 } as ImageStyle}
+      resizeMode="contain"
+    />
   );
 }
-
-const bannerStyles = StyleSheet.create({
-  container: { width: 140, height: 140, alignItems: 'center', justifyContent: 'center' },
-});
 
 export default function DashboardScreen() {
   const router = useRouter();
