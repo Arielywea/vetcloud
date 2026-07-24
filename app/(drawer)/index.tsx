@@ -9,6 +9,7 @@ import { usePets, useAppointments, useClinicalRecords, useInventory } from '../.
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
 import { TEXT_ON_PRIMARY } from '../../constants/colors';
+import { VetStatPacientes, VetStatCitas, VetStatFichas, VetStatAlertas } from '../../components/icons/vet';
 import NextAppointmentCard from '../../components/dashboard/NextAppointmentCard';
 import PatientList from '../../components/dashboard/PatientList';
 import StatsChart from '../../components/dashboard/StatsChart';
@@ -281,28 +282,28 @@ export default function DashboardScreen() {
       <View style={styles.statsRow}>
         <View style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs]}>
           <View style={[styles.statIcon, { backgroundColor: colors.primaryContainer }]}>
-            <Text style={styles.statEmoji}>👥</Text>
+            <VetStatPacientes size={24} color={colors.primary} />
           </View>
           <Text style={[styles.statValue, { color: colors.text }]}>{pets.length}</Text>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Pacientes</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs]}>
           <View style={[styles.statIcon, { backgroundColor: colors.info + '18' }]}>
-            <Text style={styles.statEmoji}>📛</Text>
+            <VetStatCitas size={24} color={colors.info} />
           </View>
           <Text style={[styles.statValue, { color: colors.text }]}>{todayAppointments.length}</Text>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Citas Hoy</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs]}>
           <View style={[styles.statIcon, { backgroundColor: colors.success + '18' }]}>
-            <Text style={styles.statEmoji}>📝</Text>
+            <VetStatFichas size={24} color={colors.success} />
           </View>
           <Text style={[styles.statValue, { color: colors.text }]}>{clinicalRecords.length}</Text>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Fichas Clínicas</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs]}>
           <View style={[styles.statIcon, { backgroundColor: colors.warning + '18' }]}>
-            <Text style={styles.statEmoji}>💊</Text>
+            <VetStatAlertas size={24} color={colors.warning} />
           </View>
           <Text style={[styles.statValue, { color: colors.text }]}>{lowStockItems.length}</Text>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Alertas Stock</Text>

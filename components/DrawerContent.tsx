@@ -1,19 +1,20 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Text } from 'react-native-paper';
-import { Home, Activity, PawPrint, Search, StickyNote, Calendar, Bell, UserCircle, LogOut } from 'lucide-react-native';
+import { Search, StickyNote, Bell, UserCircle, LogOut } from 'lucide-react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../contexts/ThemeContext';
 import BeagleLogo from './BeagleLogo';
+import { VetDashboard, VetPacientes, VetEnfermedades, VetAgenda } from './icons/vet';
 
 const MENU_SECTIONS = [
   {
     title: 'CLÍNICA',
     items: [
-      { label: 'Inicio', icon: Home, route: '/(drawer)' },
-      { label: 'Pacientes', icon: PawPrint, route: '/(drawer)/pacientes' },
-      { label: 'Enfermedades', icon: Activity, route: '/(drawer)/diseases' },
+      { label: 'Inicio', icon: VetDashboard, route: '/(drawer)' },
+      { label: 'Pacientes', icon: VetPacientes, route: '/(drawer)/pacientes' },
+      { label: 'Enfermedades', icon: VetEnfermedades, route: '/(drawer)/diseases' },
       { label: 'Buscar', icon: Search, route: '/(drawer)/search' },
       { label: 'Notas', icon: StickyNote, route: '/(drawer)/notes' },
     ],
@@ -21,7 +22,7 @@ const MENU_SECTIONS = [
   {
     title: 'GESTIÓN',
     items: [
-      { label: 'Agenda', icon: Calendar, route: '/(drawer)/agenda' },
+      { label: 'Agenda', icon: VetAgenda, route: '/(drawer)/agenda' },
       { label: 'Recordatorios', icon: Bell, route: '/(drawer)/reminders' },
     ],
   },
