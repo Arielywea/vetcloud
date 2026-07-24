@@ -6,15 +6,15 @@ import { useRouter, usePathname } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../contexts/ThemeContext';
 import BeagleLogo from './BeagleLogo';
-import { VetDashboard, VetPacientes, VetEnfermedades, VetAgenda } from './icons/vet';
+import VetIconPng, { VetIconName } from './icons/VetIconPng';
 
 const MENU_SECTIONS = [
   {
     title: 'CLÍNICA',
     items: [
-      { label: 'Inicio', icon: VetDashboard, route: '/(drawer)' },
-      { label: 'Pacientes', icon: VetPacientes, route: '/(drawer)/pacientes' },
-      { label: 'Enfermedades', icon: VetEnfermedades, route: '/(drawer)/diseases' },
+      { label: 'Inicio', iconName: 'dashboard' as VetIconName, route: '/(drawer)' },
+      { label: 'Pacientes', iconName: 'pacientes' as VetIconName, route: '/(drawer)/pacientes' },
+      { label: 'Enfermedades', iconName: 'enfermedades' as VetIconName, route: '/(drawer)/diseases' },
       { label: 'Buscar', icon: Search, route: '/(drawer)/search' },
       { label: 'Notas', icon: StickyNote, route: '/(drawer)/notes' },
     ],
@@ -22,7 +22,7 @@ const MENU_SECTIONS = [
   {
     title: 'GESTIÓN',
     items: [
-      { label: 'Agenda', icon: VetAgenda, route: '/(drawer)/agenda' },
+      { label: 'Agenda', iconName: 'agenda' as VetIconName, route: '/(drawer)/agenda' },
       { label: 'Recordatorios', icon: Bell, route: '/(drawer)/reminders' },
     ],
   },
@@ -72,7 +72,6 @@ export default function DrawerContent(props: any) {
             <Text style={[styles.sectionTitle, { color: mutedText }]}>{section.title}</Text>
             {section.items.map((item) => {
               const isActive = pathname === item.route || (item.route === '/(drawer)' && pathname === '/');
-              const IconComponent = item.icon;
               return (
                 <TouchableOpacity
                   key={item.label}
@@ -83,7 +82,11 @@ export default function DrawerContent(props: any) {
                   onPress={() => router.push(item.route)}
                   activeOpacity={0.7}
                 >
-                  <IconComponent size={20} color={isActive ? activeIndicator : mutedText} />
+                  {'iconName' in item ? (
+                    <VetIconPng name={item.iconName} size={20} />
+                  ) : (
+                    <item.icon size={20} color={isActive ? activeIndicator : mutedText} />
+                  )}
                   <Text
                     style={[
                       styles.menuLabel,
