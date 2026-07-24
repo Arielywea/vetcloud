@@ -54,7 +54,7 @@ export default function VButton({
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: RADIUS.md,
+      borderRadius: 12,
       gap: SPACING.sm,
     };
 
@@ -65,11 +65,11 @@ export default function VButton({
     };
 
     const variants: Record<string, ViewStyle> = {
-      primary: { backgroundColor: colors.primary },
+      primary: { backgroundColor: colors.accent },
       secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
       ghost: { backgroundColor: 'transparent' },
       danger: { backgroundColor: colors.error },
-      accent: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.accent },
+      accent: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.primary },
     };
 
     return {
@@ -83,11 +83,11 @@ export default function VButton({
 
   const getTextColor = (): string => {
     switch (variant) {
-      case 'primary': return TEXT_ON_PRIMARY.light.default;
+      case 'primary': return colors.primaryDark;
       case 'secondary': return colors.primary;
       case 'ghost': return colors.primary;
       case 'danger': return TEXT_ON_PRIMARY.light.default;
-      case 'accent': return colors.accent;
+      case 'accent': return colors.primary;
       default: return TEXT_ON_PRIMARY.light.default;
     }
   };

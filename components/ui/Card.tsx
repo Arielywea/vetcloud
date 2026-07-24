@@ -15,7 +15,7 @@ interface VCardProps {
 export default function VCard({
   children,
   onPress,
-  padding = SPACING.xl,
+  padding = SPACING.xl + SPACING.sm,
   style,
   variant = 'default',
   hoverable = true,
@@ -49,7 +49,7 @@ export default function VCard({
     };
 
     const variants = {
-      default: SHADOWS.xs,
+      default: { ...SHADOWS.xs, borderWidth: 1, borderColor: '#E8ECF2' },
       outlined: { borderWidth: 1, borderColor: colors.border },
       elevated: SHADOWS.sm,
     };
@@ -61,11 +61,11 @@ export default function VCard({
     shadowOffset: { width: 0, height: elevation },
     shadowOpacity: elevation.interpolate({
       inputRange: [0, 4],
-      outputRange: [0.05, 0.12],
+      outputRange: [0.03, 0.09],
     }),
     shadowRadius: elevation.interpolate({
       inputRange: [0, 4],
-      outputRange: [2, 8],
+      outputRange: [2, 10],
     }),
     elevation,
   };

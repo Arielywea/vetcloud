@@ -93,7 +93,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
         {NAV_SECTIONS.map((section) => (
           <View key={section.title} style={styles.section}>
             {!collapsed && (
-              <Text style={[styles.sectionTitle, { color: mutedText }]}>{section.title}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}><View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.accent + '80' }} /><Text style={[styles.sectionTitle, { color: mutedText }]}>{section.title}</Text></View>
             )}
             {section.items.map((item) => {
               const active = isActive(item.route);
@@ -104,7 +104,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
                   style={[
                     styles.navItem,
                     active && {
-                      backgroundColor: 'rgba(255,255,255,0.08)',
+                      backgroundColor: 'rgba(201,162,39,0.12)',
                       borderLeftColor: activeIndicator,
                     },
                     !active && { borderLeftColor: 'transparent' },
@@ -134,7 +134,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
       </ScrollView>
 
       {/* Bottom section */}
-      <View style={[styles.bottomSection, { borderTopColor: 'rgba(255,255,255,0.1)' }]}>
+      <View style={[styles.bottomSection, { borderTopColor: '#C9A22730' }]}>
         {BOTTOM_ITEMS.map((item) => {
           const active = isActive(item.route);
           const Icon = item.icon;
@@ -171,7 +171,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
         })}
 
         {/* User + Logout */}
-        <View style={[styles.userSection, { borderTopColor: 'rgba(255,255,255,0.1)' }]}>
+        <View style={[styles.userSection, { borderTopColor: '#C9A22730' }]}>
           <View style={[styles.avatar, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
             <Text style={[styles.avatarText, { color: textColor }]}>
               {user?.name?.charAt(0)?.toUpperCase() || 'U'}
@@ -200,6 +200,8 @@ const styles = StyleSheet.create({
   container: {
     width: 240,
     flex: 1,
+    borderTopWidth: 2,
+    borderTopColor: '#C9A227',
   },
   logoSection: {
     flexDirection: 'row',

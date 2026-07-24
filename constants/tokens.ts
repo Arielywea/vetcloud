@@ -49,8 +49,14 @@ export const TYPOGRAPHY = {
   },
   lineHeights: {
     tight: 1.2,
-    normal: 1.5,
-    relaxed: 1.75,
+    normal: 1.6,
+    relaxed: 1.8,
+  },
+  tracking: {
+    tight: -0.01,
+    normal: 0,
+    wide: 0.02,
+    wider: 0.06,
   },
 } as const;
 
@@ -66,35 +72,35 @@ export const SHADOWS = {
   xs: {
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.03,
     shadowRadius: 2,
     elevation: 1,
   },
   sm: {
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 2,
   },
   md: {
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.07,
     shadowRadius: 6,
     elevation: 4,
   },
   lg: {
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.09,
     shadowRadius: 12,
     elevation: 6,
   },
   xl: {
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.11,
     shadowRadius: 20,
     elevation: 8,
   },
