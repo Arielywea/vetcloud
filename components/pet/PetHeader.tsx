@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import DynamicIcon from '../ui/DynamicIcon';
 import { DirectusPet } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { calculateAge } from '../../utils/age';
@@ -58,7 +58,7 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
           <View style={styles.statusRow}>
             {pet.sex && (
               <View style={styles.statusBadge}>
-                <MaterialCommunityIcons
+                <DynamicIcon
                   name={pet.sex === 'macho' ? 'gender-male' : 'gender-female'}
                   size={14}
                   color={colors.primary}
@@ -92,16 +92,16 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
           <View style={styles.actionsRow}>
             {pet.phone && (
               <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primaryContainer }]} onPress={onCall}>
-                <MaterialCommunityIcons name="phone" size={18} color={colors.primary} />
+                <DynamicIcon name="phone" size={18} color={colors.primary} />
               </TouchableOpacity>
             )}
             {pet.email && (
               <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primaryContainer }]} onPress={onEmail}>
-                <MaterialCommunityIcons name="email-outline" size={18} color={colors.primary} />
+                <DynamicIcon name="email-outline" size={18} color={colors.primary} />
               </TouchableOpacity>
             )}
             <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primaryContainer }]} onPress={onEdit}>
-              <MaterialCommunityIcons name="pencil" size={18} color={colors.primary} />
+              <DynamicIcon name="pencil" size={18} color={colors.primary} />
             </TouchableOpacity>
           </View>
         </View>

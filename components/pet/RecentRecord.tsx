@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Button } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import DynamicIcon from '../ui/DynamicIcon';
 import { ClinicalRecord } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
@@ -28,7 +28,7 @@ export default function RecentRecord({ record, onView, onGenerateRx }: RecentRec
 
       <View style={styles.metaRow}>
         <View style={[styles.typeBadge, { backgroundColor: config.bgColor }]}>
-          <MaterialCommunityIcons name={config.icon as any} size={12} color={config.color} />
+          <DynamicIcon name={config.icon as any} size={12} color={config.color} />
           <Text style={[styles.typeText, { color: config.color }]}>{config.label}</Text>
         </View>
         <Text style={[styles.date, { color: colors.textSecondary }]}>

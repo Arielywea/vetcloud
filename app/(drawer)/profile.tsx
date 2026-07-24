@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text, TextInput, Button, Card, Divider } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import DynamicIcon from '../../components/ui/DynamicIcon';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { PALETTES, APP_COLORS, APP_COLORS_DARK } from '../../constants/colors';
@@ -103,7 +103,7 @@ export default function ProfileScreen() {
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Content>
           <View style={styles.cardHeader}>
-            <MaterialCommunityIcons name="account-circle" size={24} color={colors.primary} />
+            <DynamicIcon name="account-circle" size={24} color={colors.primary} />
             <Text variant="titleMedium" style={[styles.cardTitle, { color: colors.text }]}>Datos Personales</Text>
           </View>
           <TextInput label="Nombre" value={name} onChangeText={setName} mode="outlined" style={styles.input} />
@@ -116,7 +116,7 @@ export default function ProfileScreen() {
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Content>
           <View style={styles.cardHeader}>
-            <MaterialCommunityIcons name="hospital-box-outline" size={24} color={colors.primary} />
+            <DynamicIcon name="hospital-box-outline" size={24} color={colors.primary} />
             <Text variant="titleMedium" style={[styles.cardTitle, { color: colors.text }]}>Datos de la Clínica</Text>
           </View>
           <TextInput label="Nombre de la clínica" value={clinicName} onChangeText={setClinicName} mode="outlined" style={styles.input} />
@@ -130,7 +130,7 @@ export default function ProfileScreen() {
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Content>
           <View style={styles.cardHeader}>
-            <MaterialCommunityIcons name="palette-outline" size={24} color={colors.primary} />
+            <DynamicIcon name="palette-outline" size={24} color={colors.primary} />
             <Text variant="titleMedium" style={[styles.cardTitle, { color: colors.text }]}>Personalización</Text>
           </View>
 
@@ -140,14 +140,14 @@ export default function ProfileScreen() {
               style={[styles.modeBtn, !modeDark && { backgroundColor: colors.primary }, { borderColor: colors.border }]}
               onPress={() => setModeDark(false)}
             >
-              <MaterialCommunityIcons name="white-balance-sunny" size={18} color={!modeDark ? '#FFF' : colors.textSecondary} />
+              <DynamicIcon name="white-balance-sunny" size={18} color={!modeDark ? '#FFF' : colors.textSecondary} />
               <Text style={[styles.modeBtnText, { color: !modeDark ? '#FFF' : colors.textSecondary }]}>Claro</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.modeBtn, modeDark && { backgroundColor: colors.primary }, { borderColor: colors.border }]}
               onPress={() => setModeDark(true)}
             >
-              <MaterialCommunityIcons name="moon-waning-crescent" size={18} color={modeDark ? '#FFF' : colors.textSecondary} />
+              <DynamicIcon name="moon-waning-crescent" size={18} color={modeDark ? '#FFF' : colors.textSecondary} />
               <Text style={[styles.modeBtnText, { color: modeDark ? '#FFF' : colors.textSecondary }]}>Oscuro</Text>
             </TouchableOpacity>
           </View>
@@ -173,7 +173,7 @@ export default function ProfileScreen() {
                 >
                   {isActive && (
                     <View style={[styles.paletteCheck, { backgroundColor: colors.primary }]}>
-                      <MaterialCommunityIcons name="check" size={14} color="#FFF" />
+                      <DynamicIcon name="check" size={14} color="#FFF" />
                     </View>
                   )}
                   <PaletteSwatch colors={paletteColors} />
@@ -189,7 +189,7 @@ export default function ProfileScreen() {
       <Card style={[styles.card, { backgroundColor: colors.surface }]}>
         <Card.Content>
           <View style={styles.cardHeader}>
-            <MaterialCommunityIcons name="lock-outline" size={24} color={colors.primary} />
+            <DynamicIcon name="lock-outline" size={24} color={colors.primary} />
             <Text variant="titleMedium" style={[styles.cardTitle, { color: colors.text }]}>Cambiar Contraseña</Text>
           </View>
           <TextInput label="Contraseña actual" value={currentPassword} onChangeText={setCurrentPassword} mode="outlined" secureTextEntry style={styles.input} />
@@ -198,14 +198,14 @@ export default function ProfileScreen() {
 
           {passwordError ? (
             <View style={[styles.msgBox, { backgroundColor: '#FFEBEE' }]}>
-              <MaterialCommunityIcons name="alert-circle" size={18} color="#E53935" />
+              <DynamicIcon name="alert-circle" size={18} color="#E53935" />
               <Text style={{ color: '#E53935', fontSize: 13, fontWeight: '500' }}>{passwordError}</Text>
             </View>
           ) : null}
 
           {passwordSuccess ? (
             <View style={[styles.msgBox, { backgroundColor: '#E8F5E9' }]}>
-              <MaterialCommunityIcons name="check-circle" size={18} color="#43A047" />
+              <DynamicIcon name="check-circle" size={18} color="#43A047" />
               <Text style={{ color: '#43A047', fontSize: 13, fontWeight: '500' }}>Contraseña cambiada correctamente</Text>
             </View>
           ) : null}
@@ -219,7 +219,7 @@ export default function ProfileScreen() {
       {saved && (
         <Card style={[styles.savedCard, { backgroundColor: '#E8F5E9' }]}>
           <Card.Content style={styles.savedContent}>
-            <MaterialCommunityIcons name="check-circle" size={20} color="#43A047" />
+            <DynamicIcon name="check-circle" size={20} color="#43A047" />
             <Text style={{ color: '#43A047', fontWeight: '600' }}>Perfil actualizado correctamente</Text>
           </Card.Content>
         </Card>

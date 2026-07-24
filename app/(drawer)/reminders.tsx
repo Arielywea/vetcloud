@@ -1,11 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { Text, Card, Button, Chip, Portal, Modal, TextInput, Dialog } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { View, ScrollView, StyleSheet, TouchableOpacity, TextInput as RNTextInput } from 'react-native';
+import { Text, Modal, Portal } from 'react-native-paper';
+import { Bell, BellOff, Syringe, Bug, CalendarClock, BriefcaseMedical, ClipboardCheck, Plus, Wand2, Send, Check, X, Trash2, Dog, Cat, CheckCircle, AlertTriangle } from 'lucide-react-native';
 import { useReminders } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { usePets } from '../../hooks/useDirectus';
 import { Reminder } from '../../services/directus';
+import { SPACING, RADIUS, SHADOWS } from '../../constants/tokens';
+import VCard from '../../components/ui/Card';
+import VButton from '../../components/ui/Button';
+import VBadge from '../../components/ui/Badge';
+import VEmptyState from '../../components/ui/EmptyState';
+
+const TYPE_ICONS: Record<string, typeof Syringe> = { vacuna: Syringe, desparasitacion: Bug, cita: CalendarClock, post_operatorio: BriefcaseMedical, control: ClipboardCheck };
 
 export default function RemindersScreen() {
   const { colors } = useTheme();
@@ -31,58 +38,15 @@ export default function RemindersScreen() {
 
   const pendingCount = reminders.filter(r => r.status === 'pending').length;
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'vacuna': return 'needle';
-      case 'desparasitacion': return 'bug';
-      case 'cita': return 'calendar-clock';
-      case 'post_operatorio': return 'medical-bag';
-      case 'control': return 'clipboard-check';
-      default: return 'bell';
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'vacuna': return '#4CAF50';
-      case 'desparasitacion': return '#FF9800';
-      case 'cita': return '#2196F3';
-      case 'post_operatorio': return '#F44336';
-      case 'control': return '#9C27B0';
-      default: return '#FF8F00';
-    }
-  };
-
   const handleCreate = async () => {
-    if (!formPetId || !formTitle.trim() || !formMessage.trim()) {
-      setErrorDialog('Complete todos los campos obligatorios');
-      return;
-    }
+    if (!formPetId || !formTitle.trim() || !formMessage.trim()) { setErrorDialog('Complete todos los campos obligatorios'); return; }
     const pet = pets.find(p => p.id === formPetId);
-    if (!pet?.email) {
-      setErrorDialog('El tutor no tiene email registrado');
-      return;
-    }
+    if (!pet?.email) { setErrorDialog('El tutor no tiene email registrado'); return; }
     setSaving(true);
     try {
-      await addReminder({
-        pet_id: formPetId,
-        tutor_email: pet.email,
-        reminder_type: formType,
-        title: formTitle.trim(),
-        message: formMessage.trim(),
-        scheduled_for: new Date(formDate).toISOString(),
-      });
-      setShowCreateModal(false);
-      setFormPetId('');
-      setFormTitle('');
-      setFormMessage('');
-      setFormDate(new Date().toISOString().slice(0, 16));
-    } catch (err) {
-      setErrorDialog('No se pudo crear el recordatorio');
-    } finally {
-      setSaving(false);
-    }
+      await addReminder({ pet_id: formPetId, tutor_email: pet.email, reminder_type: formType, title: formTitle.trim(), message: formMessage.trim(), scheduled_for: new Date(formDate).toISOString() });
+      setShowCreateModal(false); setFormPetId(''); setFormTitle(''); setFormMessage(''); setFormDate(new Date().toISOString().slice(0, 16));
+    } catch { setErrorDialog('No se pudo crear el recordatorio'); } finally { setSaving(false); }
   };
 
   const handleAutoGenerate = async () => {
@@ -92,77 +56,45 @@ export default function RemindersScreen() {
       const result = await autoGenerate(selectedPetId);
       const count = Array.isArray(result) ? result.length : 0;
       setShowAutoModal(false);
-      if (count === 0) {
-        setErrorDialog('No se encontraron vacunas pendientes de refuerzo');
-      }
-    } catch (err: any) {
-      setErrorDialog(err.message || 'No se pudieron generar recordatorios');
-    } finally {
-      setSaving(false);
-    }
+      if (count === 0) setErrorDialog('No se encontraron vacunas pendientes de refuerzo');
+    } catch (err: any) { setErrorDialog(err.message || 'No se pudieron generar recordatorios'); } finally { setSaving(false); }
   };
 
   const handleSendPending = async () => {
     setSaving(true);
-    try {
-      const result = await sendPending();
-      const sent = (result as any)?.sent || 0;
-      if (sent === 0) {
-        setErrorDialog('No hay recordatorios pendientes para enviar');
-      }
-    } catch (err) {
-      setErrorDialog('No se pudieron enviar los recordatorios');
-    } finally {
-      setSaving(false);
-    }
+    try { const result = await sendPending(); const sent = (result as any)?.sent || 0; if (sent === 0) setErrorDialog('No hay recordatorios pendientes para enviar'); } catch { setErrorDialog('No se pudieron enviar los recordatorios'); } finally { setSaving(false); }
   };
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header actions */}
       <View style={styles.actions}>
-        <Button mode="contained" onPress={() => setShowCreateModal(true)} icon="plus" style={styles.actionBtn}>
-          Nuevo
-        </Button>
-        <Button mode="outlined" onPress={() => setShowAutoModal(true)} icon="auto-fix" style={styles.actionBtn}>
-          Auto
-        </Button>
-        <Button mode="outlined" onPress={handleSendPending} icon="send" style={styles.actionBtn} loading={saving}>
-          Enviar pendientes
-        </Button>
+        <VButton variant="primary" onPress={() => setShowCreateModal(true)} icon={<Plus size={16} color="#fff" />}>Nuevo</VButton>
+        <VButton variant="accent" onPress={() => setShowAutoModal(true)} icon={<Wand2 size={16} />}>Auto</VButton>
+        <VButton variant="secondary" onPress={handleSendPending} icon={<Send size={16} />} loading={saving}>Enviar</VButton>
       </View>
 
-      {/* Filter chips */}
       <View style={styles.filters}>
         {(['all', 'pending', 'sent', 'cancelled'] as const).map((f) => (
-          <Chip
-            key={f}
-            selected={filter === f}
-            onPress={() => setFilter(f)}
-            style={[styles.filterChip, filter === f && { backgroundColor: colors.primary + '20' }]}
-            textStyle={filter === f ? { color: colors.primary } : {}}
-            compact
-          >
-            {f === 'all' ? 'Todos' : f === 'pending' ? `Pendientes (${pendingCount})` : f === 'sent' ? 'Enviados' : 'Cancelados'}
-          </Chip>
+          <TouchableOpacity key={f} onPress={() => setFilter(f)} style={[styles.filterChip, { backgroundColor: colors.surface, borderColor: colors.border }, filter === f && { backgroundColor: colors.primaryContainer, borderColor: colors.primary }]}>
+            <Text style={{ color: filter === f ? colors.primary : colors.textSecondary, fontSize: 13 }}>
+              {f === 'all' ? 'Todos' : f === 'pending' ? `Pendientes (${pendingCount})` : f === 'sent' ? 'Enviados' : 'Cancelados'}
+            </Text>
+          </TouchableOpacity>
         ))}
       </View>
 
-      {/* Reminders list */}
       {loading ? (
-        <Text style={styles.loadingText}>Cargando...</Text>
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando...</Text>
       ) : filtered.length === 0 ? (
-        <View style={styles.empty}>
-          <MaterialCommunityIcons name="bell-off" size={48} color="#ccc" />
-          <Text style={styles.emptyText}>No hay recordatorios</Text>
-        </View>
+        <VEmptyState icon={<BellOff size={32} color={colors.textLight} />} title="No hay recordatorios" description="Crea recordatorios para tus pacientes" />
       ) : (
-        filtered.map((reminder) => (
-          <Card key={reminder.id} style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Card.Content>
+        filtered.map((reminder) => {
+          const TypeIcon = TYPE_ICONS[reminder.reminder_type] || Bell;
+          return (
+            <VCard key={reminder.id} style={styles.card}>
               <View style={styles.cardHeader}>
-                <View style={[styles.typeIcon, { backgroundColor: getTypeColor(reminder.reminder_type) + '20' }]}>
-                  <MaterialCommunityIcons name={getTypeIcon(reminder.reminder_type) as any} size={20} color={getTypeColor(reminder.reminder_type)} />
+                <View style={[styles.typeIcon, { backgroundColor: colors.primaryContainer }]}>
+                  <TypeIcon size={20} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.cardTitle, { color: colors.text }]}>{reminder.title}</Text>
@@ -170,48 +102,30 @@ export default function RemindersScreen() {
                     {reminder.pet_name} — {reminder.species === 'dog' ? 'Canino' : 'Felino'}
                   </Text>
                 </View>
-                <Chip
-                  compact
-                  style={[styles.statusChip, {
-                    backgroundColor: reminder.status === 'pending' ? '#FFF3E0' : reminder.status === 'sent' ? '#E8F5E9' : '#FFEBEE',
-                  }]}
-                  textStyle={{
-                    color: reminder.status === 'pending' ? '#E65100' : reminder.status === 'sent' ? '#2E7D32' : '#C62828',
-                    fontSize: 11,
-                  }}
-                >
+                <VBadge variant={reminder.status === 'pending' ? 'warning' : reminder.status === 'sent' ? 'success' : 'danger'}>
                   {reminder.status === 'pending' ? 'Pendiente' : reminder.status === 'sent' ? 'Enviado' : 'Cancelado'}
-                </Chip>
+                </VBadge>
               </View>
-              <Text style={[styles.cardMessage, { color: colors.textSecondary }]} numberOfLines={2}>
-                {reminder.message}
-              </Text>
+              <Text style={[styles.cardMessage, { color: colors.textSecondary }]} numberOfLines={2}>{reminder.message}</Text>
               <View style={styles.cardFooter}>
                 <Text style={[styles.cardDate, { color: colors.textSecondary }]}>
-                  📅 {new Date(reminder.scheduled_for).toLocaleDateString('es-CL')}
+                  {new Date(reminder.scheduled_for).toLocaleDateString('es-CL')}
                 </Text>
                 <View style={styles.cardActions}>
                   {reminder.status === 'pending' && (
                     <>
-                      <Button compact mode="text" onPress={() => updateReminder(reminder.id, { status: 'sent' })} icon="check" style={styles.miniBtn}>
-                        Enviar
-                      </Button>
-                      <Button compact mode="text" onPress={() => updateReminder(reminder.id, { status: 'cancelled' })} icon="close" style={styles.miniBtn}>
-                        Cancelar
-                      </Button>
+                      <TouchableOpacity onPress={() => updateReminder(reminder.id, { status: 'sent' })}><Check size={16} color={colors.success} /></TouchableOpacity>
+                      <TouchableOpacity onPress={() => updateReminder(reminder.id, { status: 'cancelled' })}><X size={16} color={colors.warning} /></TouchableOpacity>
                     </>
                   )}
-                  <Button compact mode="text" onPress={() => removeReminder(reminder.id)} icon="delete" style={styles.miniBtn}>
-                    <Text style={{ color: '#F44336' }}>Eliminar</Text>
-                  </Button>
+                  <TouchableOpacity onPress={() => removeReminder(reminder.id)}><Trash2 size={16} color={colors.error} /></TouchableOpacity>
                 </View>
               </View>
-            </Card.Content>
-          </Card>
-        ))
+            </VCard>
+          );
+        })
       )}
 
-      {/* Create modal */}
       <Portal>
         <Modal visible={showCreateModal} onDismiss={() => setShowCreateModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
           <ScrollView>
@@ -219,106 +133,87 @@ export default function RemindersScreen() {
             <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Mascota *</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.petSelector}>
               {pets.map((pet) => (
-                <Chip
-                  key={pet.id}
-                  selected={formPetId === pet.id}
-                  onPress={() => setFormPetId(pet.id)}
-                  style={[styles.petChip, formPetId === pet.id && { backgroundColor: colors.primary + '20' }]}
-                  icon={pet.species === 'dog' ? 'dog' : 'cat'}
-                >
-                  {pet.name}
-                </Chip>
+                <TouchableOpacity key={pet.id} onPress={() => setFormPetId(pet.id)} style={[styles.petChip, { backgroundColor: colors.surface, borderColor: colors.border }, formPetId === pet.id && { backgroundColor: colors.primaryContainer, borderColor: colors.primary }]}>
+                  {pet.species === 'dog' ? <Dog size={14} color={colors.primary} /> : <Cat size={14} color={colors.primary} />}
+                  <Text style={{ color: formPetId === pet.id ? colors.primary : colors.text, fontSize: 13 }}>{pet.name}</Text>
+                </TouchableOpacity>
               ))}
             </ScrollView>
             <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Tipo</Text>
             <View style={styles.typeRow}>
               {(['vacuna', 'desparasitacion', 'cita', 'post_operatorio', 'control'] as const).map((t) => (
-                <Button key={t} mode={formType === t ? 'contained' : 'outlined'} compact onPress={() => setFormType(t)} style={styles.typeBtn}>
-                  {t.replace('_', ' ')}
-                </Button>
+                <TouchableOpacity key={t} onPress={() => setFormType(t)} style={[styles.typeBtn, { backgroundColor: colors.surface, borderColor: colors.border }, formType === t && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
+                  <Text style={{ color: formType === t ? '#fff' : colors.text, fontSize: 12 }}>{t.replace('_', ' ')}</Text>
+                </TouchableOpacity>
               ))}
             </View>
-            <TextInput label="Título *" value={formTitle} onChangeText={setFormTitle} mode="outlined" style={styles.input} />
-            <TextInput label="Mensaje *" value={formMessage} onChangeText={setFormMessage} mode="outlined" multiline numberOfLines={3} style={styles.input} />
-            <TextInput label="Fecha" value={formDate} onChangeText={setFormDate} mode="outlined" style={styles.input} />
-            <Button mode="contained" onPress={handleCreate} style={styles.saveButton} loading={saving} disabled={saving}>
-              Guardar
-            </Button>
+            <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Título *</Text>
+            <RNTextInput style={[styles.input, { borderColor: colors.border, color: colors.text }]} value={formTitle} onChangeText={setFormTitle} placeholder="Título" placeholderTextColor={colors.textLight} />
+            <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Mensaje *</Text>
+            <RNTextInput style={[styles.input, { borderColor: colors.border, color: colors.text, minHeight: 80, textAlignVertical: 'top' }]} value={formMessage} onChangeText={setFormMessage} multiline numberOfLines={3} placeholder="Mensaje" placeholderTextColor={colors.textLight} />
+            <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Fecha</Text>
+            <RNTextInput style={[styles.input, { borderColor: colors.border, color: colors.text }]} value={formDate} onChangeText={setFormDate} placeholder="AAAA-MM-DD HH:MM" placeholderTextColor={colors.textLight} />
+            <VButton variant="primary" fullWidth onPress={handleCreate} loading={saving} disabled={saving}>Guardar</VButton>
           </ScrollView>
         </Modal>
       </Portal>
 
-      {/* Auto-generate modal */}
       <Portal>
         <Modal visible={showAutoModal} onDismiss={() => setShowAutoModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
           <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Auto-generar Recordatorios</Text>
-          <Text style={[styles.modalDesc, { color: colors.textSecondary }]}>
-            Selecciona una mascota para generar recordatorios de refuerzo de vacunas basados en su historial clínico.
-          </Text>
+          <Text style={[styles.modalDesc, { color: colors.textSecondary }]}>Selecciona una mascota para generar recordatorios de refuerzo de vacunas.</Text>
           <View style={styles.petList}>
             {pets.filter(p => (p as any).receive_reminders !== false && p.email).map((pet) => (
-              <Card key={pet.id} style={[styles.petCard, { backgroundColor: colors.background, borderColor: selectedPetId === pet.id ? colors.primary : colors.border }]}
-                onPress={() => setSelectedPetId(pet.id)}>
-                <Card.Content style={styles.petCardContent}>
-                  <MaterialCommunityIcons name={pet.species === 'dog' ? 'dog' : 'cat'} size={24} color={colors.primary} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.text, fontWeight: '600' }}>{pet.name}</Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{pet.breed || 'N/D'} — {pet.email}</Text>
-                  </View>
-                  {selectedPetId === pet.id && <MaterialCommunityIcons name="check-circle" size={20} color={colors.primary} />}
-                </Card.Content>
-              </Card>
+              <TouchableOpacity key={pet.id} onPress={() => setSelectedPetId(pet.id)} style={[styles.petCard, { backgroundColor: colors.background, borderColor: selectedPetId === pet.id ? colors.primary : colors.border }]}>
+                {pet.species === 'dog' ? <Dog size={24} color={colors.primary} /> : <Cat size={24} color={colors.primary} />}
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.text, fontWeight: '600' }}>{pet.name}</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{pet.breed || 'N/D'} — {pet.email}</Text>
+                </View>
+                {selectedPetId === pet.id && <CheckCircle size={20} color={colors.primary} />}
+              </TouchableOpacity>
             ))}
           </View>
-          <Button mode="contained" onPress={handleAutoGenerate} style={styles.saveButton} loading={saving} disabled={!selectedPetId || saving}>
-            Generar
-          </Button>
+          <VButton variant="primary" fullWidth onPress={handleAutoGenerate} loading={saving} disabled={!selectedPetId || saving}>Generar</VButton>
         </Modal>
       </Portal>
 
-      {/* Error dialog */}
       <Portal>
-        <Dialog visible={!!errorDialog} onDismiss={() => setErrorDialog(null)}>
-          <Dialog.Title>Alerta</Dialog.Title>
-          <Dialog.Content><Text>{errorDialog}</Text></Dialog.Content>
-          <Dialog.Actions><Button onPress={() => setErrorDialog(null)}>OK</Button></Dialog.Actions>
-        </Dialog>
+        <Modal visible={!!errorDialog} onDismiss={() => setErrorDialog(null)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
+          <AlertTriangle size={32} color={colors.warning} style={{ alignSelf: 'center', marginBottom: 8 }} />
+          <Text variant="titleMedium" style={{ textAlign: 'center', color: colors.text }}>Alerta</Text>
+          <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 4 }}>{errorDialog}</Text>
+          <VButton variant="primary" fullWidth onPress={() => setErrorDialog(null)} style={{ marginTop: 16 }}>OK</VButton>
+        </Modal>
       </Portal>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  actions: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  actionBtn: { flex: 1 },
-  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 16 },
-  filterChip: { marginBottom: 4 },
-  loadingText: { textAlign: 'center', color: '#999', marginTop: 40 },
-  empty: { alignItems: 'center', marginTop: 60 },
-  emptyText: { color: '#999', marginTop: 12, fontSize: 15 },
-  card: { marginBottom: 12, borderWidth: 1 },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  container: { flex: 1, padding: SPACING.lg },
+  actions: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.md },
+  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: SPACING.lg },
+  filterChip: { paddingVertical: SPACING.xs, paddingHorizontal: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1 },
+  loadingText: { textAlign: 'center', marginTop: 40 },
+  card: { marginBottom: SPACING.md },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginBottom: SPACING.sm },
   typeIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   cardTitle: { fontSize: 15, fontWeight: '600' },
   cardSubtitle: { fontSize: 12, marginTop: 2 },
-  statusChip: { height: 26 },
-  cardMessage: { fontSize: 13, lineHeight: 18, marginBottom: 8 },
+  cardMessage: { fontSize: 13, lineHeight: 18, marginBottom: SPACING.sm },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardDate: { fontSize: 12 },
-  cardActions: { flexDirection: 'row' },
-  miniBtn: { marginHorizontal: -4 },
-  modal: { margin: 20, padding: 20, borderRadius: 16, maxHeight: '85%' },
-  modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16 },
-  modalDesc: { fontSize: 13, marginBottom: 16, lineHeight: 18 },
-  modalLabel: { fontSize: 13, fontWeight: '600', marginBottom: 6, marginTop: 8 },
-  petSelector: { marginBottom: 8 },
-  petChip: { marginRight: 6 },
-  typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
-  typeBtn: { marginBottom: 4 },
-  input: { marginBottom: 12 },
-  saveButton: { marginTop: 8 },
-  petList: { gap: 8, marginBottom: 16 },
-  petCard: { borderWidth: 1 },
-  petCardContent: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  cardActions: { flexDirection: 'row', gap: SPACING.md },
+  modal: { margin: 20, padding: 20, borderRadius: RADIUS.lg, maxHeight: '85%' },
+  modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: SPACING.lg },
+  modalDesc: { fontSize: 13, marginBottom: SPACING.lg, lineHeight: 18 },
+  modalLabel: { fontSize: 13, fontWeight: '600', marginBottom: SPACING.xs, marginTop: SPACING.sm },
+  petSelector: { marginBottom: SPACING.sm },
+  petChip: { flexDirection: 'row', alignItems: 'center', gap: 6, marginRight: 6, paddingVertical: SPACING.xs, paddingHorizontal: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1 },
+  typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: SPACING.sm },
+  typeBtn: { paddingVertical: SPACING.xs, paddingHorizontal: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1 },
+  input: { borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.md, fontSize: 14 },
+  petList: { gap: 8, marginBottom: SPACING.lg },
+  petCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.md, borderRadius: RADIUS.lg, borderWidth: 1 },
 });

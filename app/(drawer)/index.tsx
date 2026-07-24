@@ -193,7 +193,7 @@ export default function DashboardScreen() {
     const CATEGORY_MAP: Record<string, { label: string; icon: string }> = {
       medicamento: { label: 'Medicamentos', icon: '💊' },
       vacuna: { label: 'Vacunas', icon: '💉' },
-      insumo: { label: 'Insumos', icon: '📋' },
+      insumo: { label: 'Insumos', icon: '📛' },
       material: { label: 'Material', icon: '🔬' },
     };
 
@@ -278,7 +278,7 @@ export default function DashboardScreen() {
               <Text style={[styles.heroGreeting, { color: TEXT_ON_PRIMARY.light.muted }]}>{getGreeting()}</Text>
             </View>
             <Text style={[styles.heroName, { color: TEXT_ON_PRIMARY.light.default }]}>
-              Hola, {user?.name?.split(' ')[0] || 'Usuario'} 👋
+              Hola, {user?.name?.split(' ')[0] || 'Usuario'} 👛
             </Text>
             <Text style={[styles.heroSubtitle, { color: TEXT_ON_PRIMARY.light.subtle }]}>
               Hoy tienes {' '}
@@ -310,7 +310,7 @@ export default function DashboardScreen() {
         </View>
         <View style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs]}>
           <View style={[styles.statIcon, { backgroundColor: colors.info + '18' }]}>
-            <Text style={styles.statEmoji}>📋</Text>
+            <Text style={styles.statEmoji}>📛</Text>
           </View>
           <Text style={[styles.statValue, { color: colors.text }]}>{todayAppointments.length}</Text>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Citas Hoy</Text>

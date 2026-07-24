@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
 import { Text, TextInput, Button, Menu, Dialog, Portal } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Check } from 'lucide-react-native';
+import { Check, UserRound, Camera, Dog, Cat, Male, Female, Stethoscope, ShieldCheck, ChevronUp, ChevronDown, CheckSquare, Square, CircleDot, Circle, FileEdit, CameraPlus } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { usePets } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -282,7 +281,7 @@ export default function AddPacienteScreen() {
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <View style={styles.cardTitleRow}>
           <View style={[styles.cardIcon, { backgroundColor: colors.primaryContainer }]}>
-            <MaterialCommunityIcons name="patient" size={18} color={colors.primary} />
+            <UserRound size={18} color={colors.primary} />
           </View>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Información básica</Text>
         </View>
@@ -310,7 +309,7 @@ export default function AddPacienteScreen() {
                 style={[styles.speciesPill, species === 'dog' && { backgroundColor: colors.primary }]}
                 labelStyle={[styles.speciesPillLabel, species === 'dog' ? { color: '#FFFFFF' } : { color: colors.primary }]}
                 icon={({ size }) => (
-                  <MaterialCommunityIcons name="dog" size={size} color={species === 'dog' ? '#FFFFFF' : colors.primary} />
+                  <Dog size={size} color={species === 'dog' ? '#FFFFFF' : colors.primary} />
                 )}
               >
                 Perro
@@ -321,7 +320,7 @@ export default function AddPacienteScreen() {
                 style={[styles.speciesPill, species === 'cat' && { backgroundColor: colors.primary }]}
                 labelStyle={[styles.speciesPillLabel, species === 'cat' ? { color: '#FFFFFF' } : { color: colors.primary }]}
                 icon={({ size }) => (
-                  <MaterialCommunityIcons name="cat" size={size} color={species === 'cat' ? '#FFFFFF' : colors.primary} />
+                  <Cat size={size} color={species === 'cat' ? '#FFFFFF' : colors.primary} />
                 )}
               >
                 Gato
@@ -364,7 +363,7 @@ export default function AddPacienteScreen() {
                 onPress={() => { setSex('macho'); if (!REPRODUCTIVE_MACHO.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
                 style={[styles.sexPill, sex === 'macho' && { backgroundColor: colors.primary }]}
                 labelStyle={sex === 'macho' ? { color: '#FFFFFF' } : { color: colors.primary }}
-                icon={({ size }) => <MaterialCommunityIcons name="gender-male" size={size} color={sex === 'macho' ? '#FFFFFF' : colors.primary} />}
+                icon={({ size }) => <Male size={size} color={sex === 'macho' ? '#FFFFFF' : colors.primary} />}
               >
                 Macho
               </Button>
@@ -373,7 +372,7 @@ export default function AddPacienteScreen() {
                 onPress={() => { setSex('hembra'); if (!REPRODUCTIVE_HEMBRA.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
                 style={[styles.sexPill, sex === 'hembra' && { backgroundColor: colors.primary }]}
                 labelStyle={sex === 'hembra' ? { color: '#FFFFFF' } : { color: colors.primary }}
-                icon={({ size }) => <MaterialCommunityIcons name="gender-female" size={size} color={sex === 'hembra' ? '#FFFFFF' : colors.primary} />}
+                icon={({ size }) => <Female size={size} color={sex === 'hembra' ? '#FFFFFF' : colors.primary} />}
               >
                 Hembra
               </Button>
@@ -455,7 +454,7 @@ export default function AddPacienteScreen() {
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <View style={styles.cardTitleRow}>
           <View style={[styles.cardIcon, { backgroundColor: colors.primaryContainer }]}>
-            <MaterialCommunityIcons name="camera" size={18} color={colors.primary} />
+            <Camera size={18} color={colors.primary} />
           </View>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Foto del paciente</Text>
         </View>
@@ -465,7 +464,7 @@ export default function AddPacienteScreen() {
           ) : (
             <View style={styles.photoPlaceholder}>
               <View style={[styles.photoIconWrap, { backgroundColor: colors.primaryContainer }]}>
-                <MaterialCommunityIcons name="camera-plus" size={28} color={colors.primary} />
+                <CameraPlus size={28} color={colors.primary} />
               </View>
               <Text style={[styles.photoTitle, { color: colors.text }]}>Subir foto del paciente</Text>
               <Text style={[styles.photoSubtitle, { color: colors.textSecondary }]}>JPG, PNG o WEBP. Máx. 5MB</Text>
@@ -486,7 +485,7 @@ export default function AddPacienteScreen() {
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <View style={styles.cardTitleRow}>
           <View style={[styles.cardIcon, { backgroundColor: colors.primaryContainer }]}>
-            <MaterialCommunityIcons name="notebook-edit-outline" size={18} color={colors.primary} />
+            <FileEdit size={18} color={colors.primary} />
           </View>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Características adicionales</Text>
         </View>
@@ -499,11 +498,7 @@ export default function AddPacienteScreen() {
               onPress={() => toggleTemperament(t)}
               style={[styles.tempChip, { borderColor: colors.border, backgroundColor: temperament.includes(t) ? colors.primaryContainer : colors.surface }]}
             >
-              <MaterialCommunityIcons
-                name={temperament.includes(t) ? 'checkbox-marked' : 'checkbox-blank-outline'}
-                size={18}
-                color={temperament.includes(t) ? colors.primary : colors.textSecondary}
-              />
+              {temperament.includes(t) ? <CheckSquare size={18} color={colors.primary} /> : <Square size={18} color={colors.textSecondary} />}
               <Text style={[styles.tempChipText, { color: temperament.includes(t) ? colors.primary : colors.text }]}>{t}</Text>
             </TouchableOpacity>
           ))}
@@ -598,11 +593,7 @@ export default function AddPacienteScreen() {
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={() => setHabitatExpanded(!habitatExpanded)} style={styles.collapsibleHeader}>
           <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Hábitat y entorno</Text>
-          <MaterialCommunityIcons
-            name={habitatExpanded ? 'chevron-up' : 'chevron-down'}
-            size={20}
-            color={colors.textSecondary}
-          />
+          {habitatExpanded ? <ChevronUp size={20} color={colors.textSecondary} /> : <ChevronDown size={20} color={colors.textSecondary} />}
         </TouchableOpacity>
         {habitatExpanded && (
           <View style={styles.collapsibleContent}>
@@ -614,11 +605,7 @@ export default function AddPacienteScreen() {
                   onPress={() => setHabitat(habitat === h ? '' : h)}
                   style={[styles.tempChip, { borderColor: colors.border, backgroundColor: habitat === h ? colors.primaryContainer : colors.surface }]}
                 >
-                  <MaterialCommunityIcons
-                    name={habitat === h ? 'radiobox-marked' : 'radiobox-blank'}
-                    size={18}
-                    color={habitat === h ? colors.primary : colors.textSecondary}
-                  />
+                  {habitat === h ? <CircleDot size={18} color={colors.primary} /> : <Circle size={18} color={colors.textSecondary} />}
                   <Text style={[styles.tempChipText, { color: habitat === h ? colors.primary : colors.text }]}>{h}</Text>
                 </TouchableOpacity>
               ))}
@@ -644,14 +631,10 @@ export default function AddPacienteScreen() {
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={() => setHistorialExpanded(!historialExpanded)} style={styles.collapsibleHeader}>
           <View style={styles.collapsibleTitleRow}>
-            <MaterialCommunityIcons name="shield-check-outline" size={18} color={colors.success} />
+            <ShieldCheck size={18} color={colors.success} />
             <Text style={[styles.cardTitle, { color: colors.success, marginBottom: 0 }]}>Historial sanitario</Text>
           </View>
-          <MaterialCommunityIcons
-            name={historialExpanded ? 'chevron-up' : 'chevron-down'}
-            size={20}
-            color={colors.textSecondary}
-          />
+          {historialExpanded ? <ChevronUp size={20} color={colors.textSecondary} /> : <ChevronDown size={20} color={colors.textSecondary} />}
         </TouchableOpacity>
         {historialExpanded && (
           <View style={styles.collapsibleContent}>
@@ -688,14 +671,10 @@ export default function AddPacienteScreen() {
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={() => setExamenExpanded(!examenExpanded)} style={styles.collapsibleHeader}>
           <View style={styles.collapsibleTitleRow}>
-            <MaterialCommunityIcons name="stethoscope" size={18} color={colors.warning} />
+            <Stethoscope size={18} color={colors.warning} />
             <Text style={[styles.cardTitle, { color: colors.warning, marginBottom: 0 }]}>Examen físico</Text>
           </View>
-          <MaterialCommunityIcons
-            name={examenExpanded ? 'chevron-up' : 'chevron-down'}
-            size={20}
-            color={colors.textSecondary}
-          />
+          {examenExpanded ? <ChevronUp size={20} color={colors.textSecondary} /> : <ChevronDown size={20} color={colors.textSecondary} />}
         </TouchableOpacity>
         {examenExpanded && (
           <View style={styles.collapsibleContent}>
