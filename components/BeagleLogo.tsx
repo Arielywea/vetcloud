@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Circle, Ellipse, Path, G } from 'react-native-svg';
+import Svg, { Path, Ellipse, G } from 'react-native-svg';
 
 interface BeagleLogoProps {
   size?: number;
@@ -7,87 +7,45 @@ interface BeagleLogoProps {
 }
 
 export default function BeagleLogo({ size = 88, variant = 'light' }: BeagleLogoProps) {
-  const scale = size / 88;
   const isDark = variant === 'dark';
-
-  const faceColor = isDark ? '#E8E0D8' : '#FFFFFF';
-  const earColor = isDark ? '#6D4C41' : '#8D6E63';
-  const capColor = isDark ? '#4E342E' : '#5D4037';
-  const eyeColor = '#1A1A1A';
-  const noseColor = '#1A1A1A';
-  const chestColor = isDark ? '#D7CCC8' : '#FFFFFF';
+  const primary = isDark ? '#C9D6E8' : '#0B1D3A';
+  const secondary = '#C9A227';
+  const interior = '#FFFFFF';
 
   return (
-    <Svg width={size} height={size} viewBox="0 0 88 88" fill="none">
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <G>
-        {/* Left ear */}
-        <Ellipse cx={18} cy={42} rx={14} ry={22} fill={earColor} />
-
-        {/* Right ear */}
-        <Ellipse cx={70} cy={42} rx={14} ry={22} fill={earColor} />
-
-        {/* Chest patch */}
-        <Ellipse cx={44} cy={76} rx={18} ry={12} fill={chestColor} />
-
-        {/* Face circle */}
-        <Circle cx={44} cy={44} r={28} fill={faceColor} />
-
-        {/* Cap marking (forehead) */}
+        {/* Crown — 5 geometric points */}
         <Path
-          d="M 26 38 Q 30 18 44 16 Q 58 18 62 38 Q 56 30 44 28 Q 32 30 26 38 Z"
-          fill={capColor}
+          d="M 3.5 7 L 5.5 2.5 L 8 5.5 L 12 0.5 L 16 5.5 L 18.5 2.5 L 20.5 7 Z"
+          fill={secondary}
+          strokeLinejoin="round"
         />
 
-        {/* Left eyebrow area */}
-        <Ellipse cx={34} cy={34} rx={7} ry={3} fill={earColor} opacity={0.3} />
-
-        {/* Right eyebrow area */}
-        <Ellipse cx={54} cy={34} rx={7} ry={3} fill={earColor} opacity={0.3} />
-
-        {/* Left eye white */}
-        <Circle cx={34} cy={44} r={6} fill={faceColor} />
-
-        {/* Left eye pupil */}
-        <Circle cx={35} cy={44} r={3.5} fill={eyeColor} />
-
-        {/* Left eye highlight */}
-        <Circle cx={36} cy={42.5} r={1.2} fill="#FFFFFF" />
-
-        {/* Right eye white */}
-        <Circle cx={54} cy={44} r={6} fill={faceColor} />
-
-        {/* Right eye pupil */}
-        <Circle cx={53} cy={44} r={3.5} fill={eyeColor} />
-
-        {/* Right eye highlight */}
-        <Circle cx={54} cy={42.5} r={1.2} fill="#FFFFFF" />
-
-        {/* Nose */}
+        {/* Shield exterior — single symmetric path */}
         <Path
-          d="M 44 52 L 40 48 Q 44 45 48 48 Z"
-          fill={noseColor}
+          d="M 3 7 L 3 15.5 Q 3 19.5 7.5 21.5 L 12 23.5 L 16.5 21.5 Q 21 19.5 21 15.5 L 21 7 Z"
+          fill={primary}
+          stroke={secondary}
+          strokeWidth={0.6}
+          strokeLinejoin="round"
         />
 
-        {/* Nose tip highlight */}
-        <Ellipse cx={44} cy={47} rx={1.5} ry={1} fill="#FFFFFF" opacity={0.3} />
-
-        {/* Mouth - left */}
+        {/* Shield interior — white field */}
         <Path
-          d="M 40 50 Q 36 54 32 52"
-          stroke={noseColor}
-          strokeWidth={1.5}
-          strokeLinecap="round"
-          fill="none"
+          d="M 5 8 L 5 15 Q 5 18.5 8.5 20 L 12 21.5 L 15.5 20 Q 19 18.5 19 15 L 19 8 Z"
+          fill={interior}
         />
 
-        {/* Mouth - right */}
-        <Path
-          d="M 48 50 Q 52 54 56 52"
-          stroke={noseColor}
-          strokeWidth={1.5}
-          strokeLinecap="round"
-          fill="none"
-        />
+        {/* Paw silhouette — negative-space cross */}
+        {/* Central pad — large, lower */}
+        <Ellipse cx={12} cy={16.5} rx={3} ry={2.5} fill={primary} />
+
+        {/* 4 toe pads — gaps form a + cross */}
+        <Ellipse cx={9.3} cy={11.2} rx={1.7} ry={1.4} fill={primary} />
+        <Ellipse cx={14.7} cy={11.2} rx={1.7} ry={1.4} fill={primary} />
+        <Ellipse cx={9.3} cy={13.8} rx={1.6} ry={1.3} fill={primary} />
+        <Ellipse cx={14.7} cy={13.8} rx={1.6} ry={1.3} fill={primary} />
       </G>
     </Svg>
   );
