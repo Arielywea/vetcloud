@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
-import { Calendar } from 'lucide-react-native';
+import { Calendar, CalendarDays, PawPrint } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
@@ -39,7 +39,7 @@ export default function NextAppointmentCard({
           <Text style={[styles.headerTitle, { color: colors.text }]}>Próxima Cita</Text>
         </View>
         <View style={styles.emptyState}>
-          <Text style={[styles.emptyEmoji, { color: colors.textLight }]}>📅</Text>
+          <CalendarDays size={32} color={colors.textLight} />
           <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>Sin citas programadas para hoy</Text>
           <TouchableOpacity
             style={[styles.btnPrimary, { backgroundColor: colors.primary }]}
@@ -75,7 +75,7 @@ export default function NextAppointmentCard({
         </View>
 
         <View style={[styles.avatar, { backgroundColor: colors.primaryContainer }]}>
-          <Text style={[styles.avatarEmoji, { color: colors.primary }]}>🐕</Text>
+          <PawPrint size={24} color={colors.primary} />
         </View>
       </View>
 
