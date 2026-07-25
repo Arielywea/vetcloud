@@ -6,7 +6,6 @@ import AppointmentCard, { AppointmentCardData } from './AppointmentCard';
 import DayHeader from './DayHeader';
 import CurrentTimeLine from './CurrentTimeLine';
 import SkeletonLoader from './SkeletonLoader';
-import EmptyState from './EmptyState';
 import { SPACING } from '../../constants/tokens';
 
 export interface EnrichedAppointment {
@@ -69,7 +68,7 @@ export default function WeekView({
   const { colors } = useTheme();
 
   const colWidth = useMemo(() => {
-    return Math.floor((900 - SPACING.lg * 2 - 44) / 7);
+    return Math.floor((900 - SPACING.lg * 2 - 52) / 7);
   }, []);
 
   if (loading) {
@@ -87,7 +86,7 @@ export default function WeekView({
     <View style={styles.container}>
       {/* Day headers */}
       <View style={styles.headersRow}>
-        <View style={{ width: 44 }} />
+        <View style={{ width: 52 }} />
         {weekDays.map((day) => {
           const dayStr = day.toDateString();
           const count = getApptsForDay(appointments, day).length;
@@ -109,7 +108,7 @@ export default function WeekView({
       <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
         <View style={styles.gridRow}>
           {/* Time labels */}
-          <View style={{ width: 44 }}>
+          <View style={{ width: 52 }}>
             {HOURS.map((hour) => (
               <View key={hour} style={{ height: HOUR_HEIGHT, justifyContent: 'flex-start' }}>
                 <Text style={[styles.timeLabel, { color: colors.textSecondary }]}>
@@ -165,16 +164,6 @@ export default function WeekView({
                 {dayStr === todayStr && (
                   <CurrentTimeLine hourHeight={HOUR_HEIGHT} startHour={6} />
                 )}
-
-                {/* Empty state for day */}
-                {dayAppts.length === 0 && (
-                  <View style={styles.emptyDay}>
-                    <EmptyState
-                      title="Sin citas"
-                      subtitle="Día libre"
-                    />
-                  </View>
-                )}
               </View>
             );
           })}
@@ -216,12 +205,5 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     paddingRight: 8,
     transform: [{ translateY: -6 }],
-  },
-  emptyDay: {
-    position: 'absolute',
-    top: '40%',
-    left: 0,
-    right: 0,
-    alignItems: 'center',
   },
 });
