@@ -282,12 +282,14 @@ export const REMINDER_TYPE_COLORS: Record<string, string> = {
   control: '#8B5CF6',
 };
 
-// Appointment type colors — centralized (used in agenda.tsx, HistoryTimeline)
+// Appointment type colors ï¿½ centralized (used in agenda.tsx, HistoryTimeline)
 export const APPOINTMENT_TYPE_COLORS: Record<string, string> = {
   consulta: '#3B82F6',
   vacuna: '#10B981',
-  cirugia: '#EF4444',
-  control: '#F59E0B',
+  examenes: '#8B5CF6',
+  cirugia: '#F59E0B',
+  hospitalizacion: '#EC407A',
+  control: '#06B6D4',
   terreno: '#8D6E63',
 };
 
