@@ -80,6 +80,7 @@ export default function useAgendaData({ selectedDate, searchQuery, filters }: Us
       }
       return {
         ...appt,
+        pet_id: pet?.id || appt.pet_id,
         petPhoto: pet?.photo || null,
         petSpecies: pet?.species || '',
         petBreed: pet?.breed || '',

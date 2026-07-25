@@ -3,7 +3,7 @@ import { View, StyleSheet, Text } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, TYPOGRAPHY } from '../../constants/tokens';
 
-const HOUR_HEIGHT = 60;
+const HOUR_HEIGHT = 80;
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 6); // 6:00 - 19:00
 
 interface TimeGridProps {
@@ -17,7 +17,7 @@ export default function TimeGrid({ width, children }: TimeGridProps) {
   return (
     <View style={styles.container}>
       {/* Time labels column */}
-      <View style={[styles.timeColumn, { width: 44 }]}>
+      <View style={[styles.timeColumn, { width: 52 }]}>
         {HOURS.map((hour) => (
           <View key={hour} style={{ height: HOUR_HEIGHT, justifyContent: 'flex-start' }}>
             <Text style={[styles.timeLabel, { color: colors.textSecondary }]}>
