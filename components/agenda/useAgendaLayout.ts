@@ -16,7 +16,7 @@ function toLocalDateKey(dateStr: string): string {
 }
 
 export interface PositionedAppointment {
-  appointment: Appointment;
+  appointment: Appointment & { petPhoto?: string | null; petSpecies?: string; petBreed?: string };
   top: number;
   height: number;
   column: number;
@@ -37,8 +37,7 @@ function getHourFromTime(dateStr: string): number {
 }
 
 function getMinuteFromTime(dateStr: string): number {
-  const d = new Date(dateStr);
-  return d.getMinutes();
+  return new Date(dateStr).getMinutes();
 }
 
 function getDayIndex(dateStr: string, weekStart: Date): number {
@@ -108,8 +107,7 @@ export function useAgendaLayout(
         let placed = false;
         for (let col = 0; col < columns.length; col++) {
           const lastInCol = columns[col][columns[col].length - 1];
-          const lastEnd =
-            getMinuteFromTime(lastInCol.start_time) + getDurationMinutes(lastInCol);
+          const lastEnd = getMinuteFromTime(lastInCol.start_time) + getDurationMinutes(lastInCol);
           if (startMin >= lastEnd) {
             columns[col].push(appt);
             placed = true;
@@ -138,7 +136,7 @@ export function useAgendaLayout(
         }
 
         positioned.push({
-          appointment: appt,
+          appointment: appt as any,
           top,
           height,
           column,
@@ -165,12 +163,33 @@ export function useAgendaLayout(
   const daySummary = useMemo(() => {
     const summary = {
       programadas: dayAppointments.filter((a) => a.status === 'programada').length,
+      confirmadas: dayAppointments.filter((a) => a.status === 'confirmada').length,
+      en_espera: dayAppointments.filter((a) => a.status === 'en_espera').length,
+      en_consulta: dayAppointments.filter((a) => a.status === 'en_consulta').length,
       completadas: dayAppointments.filter((a) => a.status === 'completada').length,
-      pendientes: dayAppointments.filter((a) => a.status === 'pendiente').length,
       canceladas: dayAppointments.filter((a) => a.status === 'cancelada').length,
+      ausentes: dayAppointments.filter((a) => a.status === 'ausente').length,
       total: dayAppointments.length,
     };
     return summary;
+  }, [dayAppointments]);
+
+  const nextAppointment = useMemo(() => {
+    const now = new Date();
+    return dayAppointments.find(
+      (a) => new Date(a.start_time) > now && a.status !== 'completada' && a.status !== 'cancelada'
+    );
+  }, [dayAppointments]);
+
+  const delayedAppointments = useMemo(() => {
+    const now = new Date();
+    return dayAppointments.filter(
+      (a) =>
+        new Date(a.start_time) < now &&
+        a.status !== 'completada' &&
+        a.status !== 'cancelada' &&
+        a.status !== 'ausente'
+    );
   }, [dayAppointments]);
 
   return {
@@ -182,6 +201,8 @@ export function useAgendaLayout(
     weekAppointments,
     monthDots,
     daySummary,
+    nextAppointment,
+    delayedAppointments,
     START_HOUR,
     END_HOUR,
     TOTAL_HOURS,
@@ -193,8 +214,10 @@ function getTypeColor(type: string): string {
   const map: Record<string, string> = {
     consulta: '#3B82F6',
     vacuna: '#10B981',
-    cirugia: '#EF4444',
-    control: '#F59E0B',
+    examenes: '#8B5CF6',
+    cirugia: '#F59E0B',
+    hospitalizacion: '#EC407A',
+    control: '#06B6D4',
     terreno: '#8D6E63',
   };
   return map[type] || '#3B82F6';
