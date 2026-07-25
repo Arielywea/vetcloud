@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
+import { Typography } from '../../constants/tokens';
 
 interface CurrentTimeLineProps {
   hourHeight: number;
   startHour: number;
+  nextAppointmentTime?: string;
 }
 
-export default function CurrentTimeLine({ hourHeight, startHour }: CurrentTimeLineProps) {
+export default function CurrentTimeLine({ hourHeight, startHour, nextAppointmentTime }: CurrentTimeLineProps) {
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -24,12 +26,27 @@ export default function CurrentTimeLine({ hourHeight, startHour }: CurrentTimeLi
   const offset = ((totalMinutes - startMinutes) / 60) * hourHeight;
   const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 
+  let nextInMinutes: number | null = null;
+  if (nextAppointmentTime) {
+    const next = new Date(nextAppointmentTime);
+    const nextMin = next.getHours() * 60 + next.getMinutes();
+    nextInMinutes = nextMin - totalMinutes;
+    if (nextInMinutes < 0) nextInMinutes = null;
+  }
+
   return (
     <View style={[styles.container, { top: offset }]}>
       <View style={styles.label}>
         <Text style={styles.labelText}>{timeStr}</Text>
       </View>
       <View style={styles.line} />
+      {nextInMinutes !== null && nextInMinutes <= 60 && (
+        <View style={styles.nextBadge}>
+          <Text style={styles.nextText}>
+            Próxima en {nextInMinutes}min
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -59,6 +76,19 @@ const styles = StyleSheet.create({
   line: {
     height: 2,
     backgroundColor: '#EF4444',
-    marginLeft: 0,
+  },
+  nextBadge: {
+    position: 'absolute',
+    left: 48,
+    top: -10,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  nextText: {
+    color: '#92400E',
+    fontSize: 9,
+    fontWeight: '600',
   },
 });
