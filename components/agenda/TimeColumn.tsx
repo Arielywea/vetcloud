@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
-import { SPACING, TYPOGRAPHY } from '../../constants/tokens';
+import { TYPOGRAPHY } from '../../constants/tokens';
 
 interface TimeColumnProps {
   hours: number[];
@@ -24,15 +24,15 @@ export default function TimeColumn({ hours, hourHeight, color = '#8896A8' }: Tim
 
 const styles = StyleSheet.create({
   container: {
-    width: 52,
+    width: 44,
   },
   hourSlot: {
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
-    paddingRight: SPACING.sm,
+    paddingRight: 8,
   },
   hourLabel: {
-    fontSize: TYPOGRAPHY.sizes.xs,
+    fontSize: 11,
     fontWeight: TYPOGRAPHY.weights.semibold,
     transform: [{ translateY: -7 }],
   },
