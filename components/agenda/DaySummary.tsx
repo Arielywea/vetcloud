@@ -9,16 +9,14 @@ import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 
 interface DaySummaryData {
   total: number;
-  porEstado: {
-    programadas: number;
-    confirmadas: number;
-    enEspera: number;
-    enConsulta: number;
-    completadas: number;
-    pendientes: number;
-    canceladas: number;
-    ausentes: number;
-  };
+  programadas: number;
+  confirmadas: number;
+  en_espera: number;
+  en_consulta: number;
+  completadas: number;
+  pendientes: number;
+  canceladas: number;
+  ausentes: number;
   porTipo: Record<string, number>;
   tiempoOcupado: number;
   tiempoLibre: number;
@@ -42,9 +40,9 @@ export default function DaySummary({ summary }: DaySummaryProps) {
 
   const stats = [
     { icon: <Clock size={14} />, label: 'Total', value: summary.total.toString(), color: colors.primary },
-    { icon: <CheckCircle size={14} />, label: 'Confirmadas', value: summary.porEstado.confirmadas.toString(), color: '#10B981' },
-    { icon: <Stethoscope size={14} />, label: 'En consulta', value: summary.porEstado.enConsulta.toString(), color: '#3B82F6' },
-    { icon: <UserX size={14} />, label: 'Ausentes', value: summary.porEstado.ausentes.toString(), color: '#9CA3AF' },
+    { icon: <CheckCircle size={14} />, label: 'Confirmadas', value: summary.confirmadas.toString(), color: '#10B981' },
+    { icon: <Stethoscope size={14} />, label: 'En consulta', value: summary.en_consulta.toString(), color: '#3B82F6' },
+    { icon: <UserX size={14} />, label: 'Ausentes', value: summary.ausentes.toString(), color: '#9CA3AF' },
     { icon: <AlertTriangle size={14} />, label: 'Retrasos', value: summary.retrasos.toString(), color: '#F59E0B' },
   ];
 
