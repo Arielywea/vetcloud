@@ -4,6 +4,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, TYPOGRAPHY } from '../../constants/tokens';
 import TimeColumn from './TimeColumn';
 import AppointmentBlock, { AppointmentBlockData } from './AppointmentBlock';
+import CurrentTimeLine from './CurrentTimeLine';
 import { PositionedAppointment } from './useAgendaLayout';
 
 interface WeekGridProps {
@@ -57,7 +58,7 @@ export default function WeekGrid({
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
       {/* Day headers */}
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, { borderBottomColor: colors.border }]}>
         <View style={styles.timeGutter} />
         {dayDates.map((date, i) => {
           const d = new Date(date + 'T12:00:00');
@@ -151,6 +152,9 @@ export default function WeekGrid({
                 />
               </View>
             ))}
+
+            {/* Current time line */}
+            <CurrentTimeLine hourHeight={hourHeight} startHour={hours[0]} />
           </View>
         </View>
       </ScrollView>
@@ -167,7 +171,6 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#DDE3EC',
     paddingBottom: SPACING.xs,
   },
   timeGutter: {
@@ -216,7 +219,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#DDE3EC',
   },
   dayColumn: {
     position: 'absolute',
