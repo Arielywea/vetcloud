@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Dimensions } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
@@ -15,8 +15,6 @@ const DAY_NAMES = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'];
 
 export default function MonthGrid({ selectedDate, monthDots, onDayPress, onMonthChange }: MonthGridProps) {
   const { colors } = useTheme();
-  const screenWidth = Dimensions.get('window').width;
-
   const today = new Date().toISOString().slice(0, 10);
 
   const calendarDays = useMemo(() => {
@@ -69,7 +67,6 @@ export default function MonthGrid({ selectedDate, monthDots, onDayPress, onMonth
 
   return (
     <View style={styles.container}>
-      {/* Month header with navigation */}
       <View style={styles.monthHeader}>
         {onMonthChange && (
           <TouchableOpacity onPress={() => onMonthChange(-1)} style={styles.navBtn}>
