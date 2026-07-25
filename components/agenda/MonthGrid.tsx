@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Dimensions } from 'react-native';
+import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 
@@ -7,14 +8,14 @@ interface MonthGridProps {
   selectedDate: string;
   monthDots: Record<string, { color: string }[]>;
   onDayPress?: (date: string) => void;
+  onMonthChange?: (direction: -1 | 1) => void;
 }
 
 const DAY_NAMES = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'];
 
-export default function MonthGrid({ selectedDate, monthDots, onDayPress }: MonthGridProps) {
+export default function MonthGrid({ selectedDate, monthDots, onDayPress, onMonthChange }: MonthGridProps) {
   const { colors } = useTheme();
   const screenWidth = Dimensions.get('window').width;
-  const isMobile = screenWidth < 768;
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -67,8 +68,22 @@ export default function MonthGrid({ selectedDate, monthDots, onDayPress }: Month
   }, [selectedDate]);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface }]}>
-      <Text style={[styles.monthTitle, { color: colors.text }]}>{monthLabel}</Text>
+    <View style={styles.container}>
+      {/* Month header with navigation */}
+      <View style={styles.monthHeader}>
+        {onMonthChange && (
+          <TouchableOpacity onPress={() => onMonthChange(-1)} style={styles.navBtn}>
+            <ChevronLeft size={16} color={colors.text} />
+          </TouchableOpacity>
+        )}
+        <Text style={[styles.monthTitle, { color: colors.text }]}>{monthLabel}</Text>
+        {onMonthChange && (
+          <TouchableOpacity onPress={() => onMonthChange(1)} style={styles.navBtn}>
+            <ChevronRight size={16} color={colors.text} />
+          </TouchableOpacity>
+        )}
+      </View>
+
       <View style={styles.dayNamesRow}>
         {DAY_NAMES.map((name) => (
           <Text key={name} style={[styles.dayName, { color: colors.textSecondary }]}>
@@ -122,14 +137,23 @@ export default function MonthGrid({ selectedDate, monthDots, onDayPress }: Month
 const styles = StyleSheet.create({
   container: {
     padding: SPACING.md,
-    borderRadius: RADIUS.lg,
+  },
+  monthHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.sm,
+  },
+  navBtn: {
+    padding: SPACING.xs,
   },
   monthTitle: {
-    fontSize: TYPOGRAPHY.sizes.base,
+    fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: TYPOGRAPHY.weights.bold,
-    textAlign: 'center',
-    marginBottom: SPACING.sm,
     textTransform: 'capitalize',
+    minWidth: 120,
+    textAlign: 'center',
   },
   dayNamesRow: {
     flexDirection: 'row',
@@ -138,7 +162,7 @@ const styles = StyleSheet.create({
   dayName: {
     flex: 1,
     textAlign: 'center',
-    fontSize: TYPOGRAPHY.sizes.xs,
+    fontSize: 10,
     fontWeight: TYPOGRAPHY.weights.semibold,
     textTransform: 'uppercase',
   },
@@ -158,13 +182,13 @@ const styles = StyleSheet.create({
     borderColor: '#C9A227',
   },
   dayText: {
-    fontSize: TYPOGRAPHY.sizes.sm,
+    fontSize: 12,
     fontWeight: TYPOGRAPHY.weights.semibold,
   },
   dotsRow: {
     flexDirection: 'row',
     gap: 2,
-    marginTop: 2,
+    marginTop: 1,
   },
   dot: {
     width: 4,

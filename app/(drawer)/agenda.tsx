@@ -69,6 +69,15 @@ export default function AgendaScreen() {
     setSelectedDate(today);
   }, [today]);
 
+  const handleMonthChange = useCallback(
+    (dir: -1 | 1) => {
+      const d = new Date(selectedDate + 'T12:00:00');
+      d.setMonth(d.getMonth() + dir);
+      setSelectedDate(d.toISOString().slice(0, 10));
+    },
+    [selectedDate]
+  );
+
   const handleSlotPress = useCallback(
     (date: string, hour: number) => {
       setApptDate(date);
@@ -135,6 +144,7 @@ export default function AgendaScreen() {
               hours={hours}
               hourHeight={hourHeight}
               weekAppointments={weekAppointments}
+              selectedDate={selectedDate}
               onSlotPress={handleSlotPress}
               onAppointmentPress={(appt) => {
                 setConfirmDelete({ name: appt.patient_name, id: appt.id });
@@ -165,6 +175,7 @@ export default function AgendaScreen() {
                   setView('day');
                 }}
                 onTypeFilterChange={setTypeFilter}
+                onMonthChange={handleMonthChange}
               />
             </View>
           )}
@@ -182,6 +193,7 @@ export default function AgendaScreen() {
               setView('day');
             }}
             onTypeFilterChange={setTypeFilter}
+            onMonthChange={handleMonthChange}
           />
         )}
       </View>
@@ -314,7 +326,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { flex: 1, flexDirection: 'row' },
   mainArea: { flex: 1 },
-  monthContainer: { flex: 1, margin: SPACING.lg, borderRadius: RADIUS.lg },
+  monthContainer: { flex: 1, margin: SPACING.lg, borderRadius: RADIUS.lg, maxWidth: 320, alignSelf: 'center' },
   legend: {
     flexDirection: 'row',
     justifyContent: 'center',

@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { View, ScrollView, StyleSheet, Dimensions, Text } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, TYPOGRAPHY } from '../../constants/tokens';
@@ -10,9 +10,9 @@ interface WeekGridProps {
   hours: number[];
   hourHeight: number;
   weekAppointments: PositionedAppointment[];
+  selectedDate: string;
   onSlotPress?: (date: string, hour: number) => void;
   onAppointmentPress?: (appointment: AppointmentBlockData) => void;
-  dayLabels?: string[];
 }
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -21,9 +21,9 @@ export default function WeekGrid({
   hours,
   hourHeight,
   weekAppointments,
+  selectedDate,
   onSlotPress,
   onAppointmentPress,
-  dayLabels,
 }: WeekGridProps) {
   const { colors } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
@@ -31,25 +31,28 @@ export default function WeekGrid({
   const isMobile = screenWidth < 768;
   const gridWidth = screenWidth - (isMobile ? 8 : 288);
   const colWidth = gridWidth / 7;
+  const totalGridHeight = hours.length * hourHeight;
 
   const today = new Date().toISOString().slice(0, 10);
 
-  const getDayDates = useCallback(() => {
-    const dates: string[] = [];
-    const now = new Date();
-    const day = now.getDay();
+  const dayDates = useMemo(() => {
+    const d = new Date(selectedDate + 'T12:00:00');
+    const day = d.getDay();
     const diff = day === 0 ? -6 : 1 - day;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + diff);
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + diff);
+    monday.setHours(0, 0, 0, 0);
+    const dates: string[] = [];
     for (let i = 0; i < 7; i++) {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      dates.push(d.toISOString().slice(0, 10));
+      const dd = new Date(monday);
+      dd.setDate(monday.getDate() + i);
+      const y = dd.getFullYear();
+      const m = String(dd.getMonth() + 1).padStart(2, '0');
+      const dayNum = String(dd.getDate()).padStart(2, '0');
+      dates.push(`${y}-${m}-${dayNum}`);
     }
     return dates;
-  }, []);
-
-  const dayDates = getDayDates();
+  }, [selectedDate]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
@@ -59,13 +62,28 @@ export default function WeekGrid({
         {dayDates.map((date, i) => {
           const d = new Date(date + 'T12:00:00');
           const isToday = date === today;
+          const isSelected = date === selectedDate;
           return (
             <View key={date} style={[styles.dayHeader, { width: colWidth }]}>
               <Text style={[styles.dayName, { color: colors.textSecondary }]}>
                 {DAY_NAMES[i]}
               </Text>
-              <View style={[styles.dayNumberWrap, isToday && { backgroundColor: colors.primary }]}>
-                <Text style={[styles.dayNumber, { color: isToday ? '#FFF' : colors.text }]}>
+              <View
+                style={[
+                  styles.dayNumberWrap,
+                  isSelected && { backgroundColor: colors.primary },
+                  isToday && !isSelected && styles.todayRing,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.dayNumber,
+                    {
+                      color: isSelected ? '#FFF' : isToday ? colors.primary : colors.text,
+                      fontWeight: isToday || isSelected ? TYPOGRAPHY.weights.bold : TYPOGRAPHY.weights.semibold,
+                    },
+                  ]}
+                >
                   {d.getDate()}
                 </Text>
               </View>
@@ -81,14 +99,14 @@ export default function WeekGrid({
         contentContainerStyle={styles.gridContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.gridRow}>
+        <View style={[styles.gridRow, { minHeight: totalGridHeight }]}>
           <TimeColumn hours={hours} hourHeight={hourHeight} color={colors.textLight} />
           <View style={styles.gridArea}>
             {/* Hour lines */}
             {hours.map((hour) => (
               <View
                 key={hour}
-                style={[styles.hourLine, { top: (hour - 8) * hourHeight, borderColor: colors.border }]}
+                style={[styles.hourLine, { top: (hour - hours[0]) * hourHeight, borderColor: colors.border }]}
               />
             ))}
 
@@ -104,7 +122,7 @@ export default function WeekGrid({
                     style={[
                       styles.slotTarget,
                       {
-                        top: (hour - 8) * hourHeight,
+                        top: (hour - hours[0]) * hourHeight,
                         height: hourHeight,
                       },
                     ]}
@@ -150,38 +168,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#DDE3EC',
-    paddingBottom: SPACING.sm,
+    paddingBottom: SPACING.xs,
   },
   timeGutter: {
-    width: 52,
+    width: 44,
   },
   dayHeader: {
     alignItems: 'center',
-    paddingTop: SPACING.sm,
+    paddingTop: SPACING.xs,
   },
   dayName: {
-    fontSize: TYPOGRAPHY.sizes.xs,
+    fontSize: 11,
     fontWeight: TYPOGRAPHY.weights.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   dayNumberWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 4,
+    marginTop: 2,
+  },
+  todayRing: {
+    borderWidth: 1.5,
+    borderColor: '#C9A227',
   },
   dayNumber: {
-    fontSize: TYPOGRAPHY.sizes.md,
-    fontWeight: TYPOGRAPHY.weights.bold,
+    fontSize: 13,
   },
   gridScroll: {
     flex: 1,
   },
   gridContent: {
-    paddingBottom: SPACING.xl,
+    paddingBottom: SPACING.lg,
   },
   gridRow: {
     flexDirection: 'row',
