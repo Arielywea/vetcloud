@@ -4,6 +4,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, TYPOGRAPHY } from '../../constants/tokens';
 import TimeColumn from './TimeColumn';
 import AppointmentBlock, { AppointmentBlockData } from './AppointmentBlock';
+import CurrentTimeLine from './CurrentTimeLine';
 import { Appointment } from '../../services/directus';
 
 interface DayGridProps {
@@ -41,7 +42,6 @@ export default function DayGrid({
 }: DayGridProps) {
   const { colors } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
-
   const totalGridHeight = hours.length * hourHeight;
 
   const positioned = dayAppointments.map((appt) => {
@@ -55,8 +55,7 @@ export default function DayGrid({
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
-      {/* Date header */}
-      <View style={styles.dateHeader}>
+      <View style={[styles.dateHeader, { borderBottomColor: colors.border }]}>
         <Text style={[styles.dateText, { color: colors.text }]}>
           {new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CL', {
             weekday: 'long',
@@ -69,7 +68,6 @@ export default function DayGrid({
         </Text>
       </View>
 
-      {/* Time grid */}
       <ScrollView
         ref={scrollRef}
         style={styles.gridScroll}
@@ -79,7 +77,6 @@ export default function DayGrid({
         <View style={[styles.gridRow, { minHeight: totalGridHeight }]}>
           <TimeColumn hours={hours} hourHeight={hourHeight} color={colors.textLight} />
           <View style={styles.gridArea}>
-            {/* Hour lines */}
             {hours.map((hour) => (
               <View
                 key={hour}
@@ -87,22 +84,17 @@ export default function DayGrid({
               />
             ))}
 
-            {/* Slot tap targets */}
             {hours.map((hour) => (
               <View
                 key={hour}
                 style={[
                   styles.slotTarget,
-                  {
-                    top: (hour - hours[0]) * hourHeight,
-                    height: hourHeight,
-                  },
+                  { top: (hour - hours[0]) * hourHeight, height: hourHeight },
                 ]}
                 onTouchEnd={() => onSlotPress?.(selectedDate, hour)}
               />
             ))}
 
-            {/* Appointment blocks */}
             {positioned.map((pos) => (
               <AppointmentBlock
                 key={pos.appointment.id}
@@ -112,6 +104,8 @@ export default function DayGrid({
                 onPress={onAppointmentPress}
               />
             ))}
+
+            <CurrentTimeLine hourHeight={hourHeight} startHour={hours[0]} />
           </View>
         </View>
       </ScrollView>
@@ -131,7 +125,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#DDE3EC',
   },
   dateText: {
     fontSize: TYPOGRAPHY.sizes.base,
