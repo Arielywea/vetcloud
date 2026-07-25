@@ -32,6 +32,7 @@ export default function AgendaScreen() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [vetFilter, setVetFilter] = useState('all');
+  const [speciesFilter, setSpeciesFilter] = useState('all');
 
   const [showModal, setShowModal] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ name: string; id: string } | null>(null);
@@ -49,14 +50,15 @@ export default function AgendaScreen() {
   const screenWidth = Dimensions.get('window').width;
   const isMobile = screenWidth < 1024;
 
-  const { filtered, uniqueVets, daySummary } = useAgendaData(
+  const { filtered, uniqueVets, uniqueSpecies, daySummary } = useAgendaData(
     appointments,
     pets,
     selectedDate,
     searchQuery,
     typeFilter,
     statusFilter,
-    vetFilter
+    vetFilter,
+    speciesFilter
   );
 
   const {
