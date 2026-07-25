@@ -90,7 +90,9 @@ export interface Appointment {
   appointment_type: 'consulta' | 'vacuna' | 'cirugia' | 'control' | 'terreno' | 'examenes' | 'hospitalizacion';
   description: string | null;
   veterinarian: string | null;
-  status: 'programada' | 'completada' | 'pendiente' | 'cancelada';
+  status: 'programada' | 'confirmada' | 'en_espera' | 'en_consulta' | 'completada' | 'pendiente' | 'cancelada' | 'ausente';
+  pet_id: string | null;
+  room: string | null;
   created_at: string;
 }
 
