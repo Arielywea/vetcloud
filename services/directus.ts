@@ -87,8 +87,10 @@ export interface Appointment {
   tutor_phone: string | null;
   start_time: string;
   end_time: string | null;
-  appointment_type: 'consulta' | 'vacuna' | 'cirugia' | 'control' | 'terreno';
+  appointment_type: 'consulta' | 'vacuna' | 'cirugia' | 'control' | 'terreno' | 'examenes' | 'hospitalizacion';
   description: string | null;
+  veterinarian: string | null;
+  status: 'programada' | 'completada' | 'pendiente' | 'cancelada';
   created_at: string;
 }
 
