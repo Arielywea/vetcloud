@@ -79,7 +79,7 @@ export default function AppointmentCard({
         styles.card,
         {
           top,
-          height: Math.max(height, compact ? 28 : 52),
+          height: Math.max(height, compact ? 28 : 36),
           backgroundColor: color + '12',
           borderLeftColor: color,
         },

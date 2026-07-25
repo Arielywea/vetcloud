@@ -28,7 +28,7 @@ export default function useQuickActions({ onRefresh }: UseQuickActionsOptions = 
 
   const openChart = (appointment: QuickAppointment) => {
     if (appointment.pet_id) {
-      router.push(`/(drawer)/ficha-clinica/${appointment.pet_id}`);
+      router.push(`/(drawer)/pet/${appointment.pet_id}`);
     } else {
       Alert.alert('Sin expediente', 'Esta cita no tiene paciente asociado');
     }
@@ -36,7 +36,7 @@ export default function useQuickActions({ onRefresh }: UseQuickActionsOptions = 
 
   const registerConsultation = (appointment: QuickAppointment) => {
     if (appointment.pet_id) {
-      router.push(`/(drawer)/ficha-clinica/${appointment.pet_id}`);
+      router.push(`/(drawer)/pet/${appointment.pet_id}`);
     } else {
       Alert.alert('Sin paciente', 'Primero asocia un paciente a esta cita');
     }
