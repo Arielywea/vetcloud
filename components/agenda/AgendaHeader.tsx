@@ -1,104 +1,59 @@
 import React from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Dimensions } from 'react-native';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { Search, Bell } from 'lucide-react-native';
+import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 
 interface AgendaHeaderProps {
-  view: 'day' | 'week' | 'month';
-  selectedDate: string;
-  onViewChange: (view: 'day' | 'week' | 'month') => void;
-  onNavigate: (direction: -1 | 1) => void;
-  onToday: () => void;
-  onNewAppointment: () => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
 }
 
-export default function AgendaHeader({
-  view,
-  selectedDate,
-  onViewChange,
-  onNavigate,
-  onToday,
-  onNewAppointment,
-}: AgendaHeaderProps) {
+export default function AgendaHeader({ searchQuery, onSearchChange }: AgendaHeaderProps) {
   const { colors } = useTheme();
-  const screenWidth = Dimensions.get('window').width;
-  const isMobile = screenWidth < 768;
-
-  const getDateLabel = () => {
-    const d = new Date(selectedDate + 'T12:00:00');
-    if (view === 'day') {
-      return d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
-    }
-    if (view === 'week') {
-      const end = new Date(d);
-      end.setDate(end.getDate() + 6);
-      const startStr = d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
-      const endStr = end.toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' });
-      return `${startStr} - ${endStr}`;
-    }
-    return d.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
-  };
-
-  const views = [
-    { key: 'day' as const, label: 'Día' },
-    { key: 'week' as const, label: 'Semana' },
-    { key: 'month' as const, label: 'Mes' },
-  ];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
-      {/* Left side */}
+      {/* Left: Title section */}
       <View style={styles.left}>
-        {!isMobile && (
-          <TouchableOpacity
-            style={[styles.newButton, { backgroundColor: colors.primary }]}
-            onPress={onNewAppointment}
-            activeOpacity={0.7}
-          >
-            <Plus size={16} color="#FFF" />
-            <Text style={styles.newButtonText}>Nueva Cita</Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity style={[styles.todayButton, { borderColor: colors.border }]} onPress={onToday}>
-          <Text style={[styles.todayText, { color: colors.text }]}>Hoy</Text>
-        </TouchableOpacity>
+        <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z"
+            fill="#C9A227"
+          />
+        </Svg>
+        <View style={styles.titleBlock}>
+          <Text style={styles.title}>Agenda</Text>
+          <Text style={styles.subtitle}>Gestiona y visualiza todas las citas programadas</Text>
+        </View>
       </View>
 
-      {/* Center: navigation */}
+      {/* Center: Search */}
       <View style={styles.center}>
-        <TouchableOpacity onPress={() => onNavigate(-1)} style={styles.navBtn}>
-          <ChevronLeft size={20} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.dateLabel, { color: colors.text }]}>{getDateLabel()}</Text>
-        <TouchableOpacity onPress={() => onNavigate(1)} style={styles.navBtn}>
-          <ChevronRight size={20} color={colors.text} />
-        </TouchableOpacity>
+        <View style={[styles.searchContainer, { borderColor: '#DDE3EC', backgroundColor: '#F7F8FB' }]}>
+          <Search size={16} color="#5A6B80" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar paciente, tutor o cita..."
+            placeholderTextColor="#5A6B80"
+            value={searchQuery}
+            onChangeText={onSearchChange}
+          />
+        </View>
       </View>
 
-      {/* Right: view switcher */}
+      {/* Right: Profile */}
       <View style={styles.right}>
-        <View style={[styles.viewSwitcher, { backgroundColor: colors.surfaceVariant }]}>
-          {views.map((v) => (
-            <TouchableOpacity
-              key={v.key}
-              style={[
-                styles.viewBtn,
-                view === v.key && { backgroundColor: colors.primary },
-              ]}
-              onPress={() => onViewChange(v.key)}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  styles.viewBtnText,
-                  { color: view === v.key ? '#FFF' : colors.textSecondary },
-                ]}
-              >
-                {v.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <Bell size={20} color={colors.text} />
+        <View style={styles.profile}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>VC</Text>
+          </View>
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName}>VetCloud</Text>
+            <Text style={styles.profileRole}>Admin</Text>
+          </View>
         </View>
       </View>
     </View>
@@ -112,68 +67,80 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#DDE3EC',
-    gap: SPACING.md,
   },
   left: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
   },
-  newButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.md,
-    gap: SPACING.xs,
+  titleBlock: {
+    gap: 2,
   },
-  newButtonText: {
-    color: '#FFF',
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+  title: {
+    fontSize: 24,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: '#1A2332',
   },
-  todayButton: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-  },
-  todayText: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+  subtitle: {
+    fontSize: 13,
+    color: '#5A6B80',
   },
   center: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
+    borderWidth: 1,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    maxWidth: 320,
+    gap: SPACING.xs,
   },
-  navBtn: {
-    padding: SPACING.xs,
-  },
-  dateLabel: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: TYPOGRAPHY.weights.bold,
-    minWidth: 160,
-    textAlign: 'center',
+  searchInput: {
+    flex: 1,
+    fontSize: TYPOGRAPHY.sizes.sm,
+    color: '#1A2332',
+    paddingVertical: 4,
   },
   right: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: SPACING.md,
   },
-  viewSwitcher: {
+  profile: {
     flexDirection: 'row',
-    borderRadius: RADIUS.md,
-    padding: 2,
+    alignItems: 'center',
+    gap: SPACING.sm,
   },
-  viewBtn: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs + 2,
-    borderRadius: RADIUS.sm - 2,
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#0B1D3A',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  viewBtnText: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: TYPOGRAPHY.weights.bold,
+  },
+  profileInfo: {
+    gap: 2,
+  },
+  profileName: {
+    fontSize: 13,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: '#1A2332',
+  },
+  profileRole: {
+    fontSize: 11,
+    color: '#5A6B80',
   },
 });
