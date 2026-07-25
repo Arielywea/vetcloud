@@ -137,7 +137,7 @@ function AgendaContent() {
               appointments={appointments}
               selectedDate={selectedDate}
               onDateSelect={setSelectedDate}
-              onAppointmentPress={(apt) => { if (apt.pet_id) router.push(`/(drawer)/pet/${apt.pet_id}`); }}
+              onAppointmentPress={(apt) => { if (apt.pet_id) router.push(`/pet/${apt.pet_id}`); }}
               onAppointmentContextMenu={handleContextMenu}
               loading={loading}
             />
@@ -146,7 +146,7 @@ function AgendaContent() {
             <DayView
               date={selectedDate}
               appointments={appointments}
-              onAppointmentPress={(apt) => { if (apt.pet_id) router.push(`/(drawer)/pet/${apt.pet_id}`); }}
+              onAppointmentPress={(apt) => { if (apt.pet_id) router.push(`/pet/${apt.pet_id}`); }}
               onAppointmentContextMenu={handleContextMenu}
               loading={loading}
               columnWidth={mainContentWidth - 44}
@@ -157,7 +157,7 @@ function AgendaContent() {
               selectedDate={selectedDate}
               appointments={appointments}
               onDateSelect={setSelectedDate}
-              onAppointmentPress={(apt) => { if (apt.pet_id) router.push(`/(drawer)/pet/${apt.pet_id}`); }}
+              onAppointmentPress={(apt) => { if (apt.pet_id) router.push(`/pet/${apt.pet_id}`); }}
               loading={loading}
             />
           )}
