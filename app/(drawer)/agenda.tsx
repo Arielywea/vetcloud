@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useMemo, Component, ReactNode } from 'react';
 import { View, StyleSheet, Dimensions, Platform, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 
 // Components
-import AgendaHeader from '../../components/agenda/AgendaHeader';
 import AgendaToolbar from '../../components/agenda/AgendaToolbar';
 import WeekView, { EnrichedAppointment } from '../../components/agenda/WeekView';
 import DayView from '../../components/agenda/DayView';
@@ -56,6 +56,7 @@ class AgendaErrorBoundary extends Component<{ children: ReactNode }, { error: Er
 function AgendaContent() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const screenWidth = Dimensions.get('window').width;
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -118,12 +119,6 @@ function AgendaContent() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <AgendaHeader
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        vetName="Dr. Veterinario"
-        clinicOpen={true}
-      />
       <AgendaToolbar
         selectedDate={selectedDate}
         viewMode={viewMode}
@@ -142,7 +137,7 @@ function AgendaContent() {
               appointments={appointments}
               selectedDate={selectedDate}
               onDateSelect={setSelectedDate}
-              onAppointmentPress={(apt) => console.log('Press', apt)}
+              onAppointmentPress={(apt) => { if (apt.pet_id) router.push(`/(drawer)/pet/${apt.pet_id}`); }}
               onAppointmentContextMenu={handleContextMenu}
               loading={loading}
             />
@@ -151,7 +146,7 @@ function AgendaContent() {
             <DayView
               date={selectedDate}
               appointments={appointments}
-              onAppointmentPress={(apt) => console.log('Press', apt)}
+              onAppointmentPress={(apt) => { if (apt.pet_id) router.push(`/(drawer)/pet/${apt.pet_id}`); }}
               onAppointmentContextMenu={handleContextMenu}
               loading={loading}
               columnWidth={mainContentWidth - 44}
@@ -162,7 +157,7 @@ function AgendaContent() {
               selectedDate={selectedDate}
               appointments={appointments}
               onDateSelect={setSelectedDate}
-              onAppointmentPress={(apt) => console.log('Press', apt)}
+              onAppointmentPress={(apt) => { if (apt.pet_id) router.push(`/(drawer)/pet/${apt.pet_id}`); }}
               loading={loading}
             />
           )}
