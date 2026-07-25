@@ -3,202 +3,186 @@ import { View, StyleSheet, Text, TouchableOpacity, ScrollView } from 'react-nati
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 import { APPOINTMENT_TYPE_COLORS } from '../../constants/colors';
-import MonthGrid from './MonthGrid';
 
-interface AgendaSidebarProps {
-  selectedDate: string;
-  monthDots: Record<string, { color: string }[]>;
-  daySummary: {
-    programadas: number;
-    completadas: number;
-    pendientes: number;
-    canceladas: number;
-    total: number;
-  };
-  typeFilter: string;
-  statusFilter: string;
-  vetFilter: string;
-  uniqueVets: string[];
-  onDayPress: (date: string) => void;
-  onTypeFilterChange: (type: string) => void;
-  onStatusFilterChange: (status: string) => void;
-  onVetFilterChange: (vet: string) => void;
-  onClearFilters: () => void;
-  onMonthChange?: (direction: -1 | 1) => void;
+interface Filters {
+  veterinarian: string;
+  species: string;
+  appointmentType: string;
+  status: string;
 }
 
-const TYPE_OPTIONS = [
-  { key: 'all', label: 'Todos los tipos' },
-  { key: 'consulta', label: 'Consulta General' },
-  { key: 'vacuna', label: 'Vacunación' },
-  { key: 'examenes', label: 'Exámenes' },
-  { key: 'cirugia', label: 'Cirugía' },
-  { key: 'hospitalizacion', label: 'Hospitalización' },
-  { key: 'control', label: 'Control' },
-  { key: 'terreno', label: 'Terreno' },
-];
+interface AgendaSidebarProps {
+  selectedDate: Date;
+  onDateSelect: (date: Date) => void;
+  filters: Filters;
+  onFilterChange: (filters: Filters) => void;
+  veterinarians: string[];
+  appointmentTypes: string[];
+  statuses: string[];
+}
+
+function getDaysInMonth(year: number, month: number): number {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+function getFirstDayOfMonth(year: number, month: number): number {
+  return new Date(year, month, 1).getDay();
+}
+
+const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const DAY_NAMES = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'];
 
 const STATUS_OPTIONS = [
-  { key: 'all', label: 'Todas' },
-  { key: 'programada', label: 'Programada' },
-  { key: 'completada', label: 'Completada' },
-  { key: 'pendiente', label: 'Pendiente' },
-  { key: 'cancelada', label: 'Cancelada' },
+  { key: 'all', label: 'Todas', color: '#6B7280' },
+  { key: 'programada', label: 'Programada', color: '#3B82F6' },
+  { key: 'confirmada', label: 'Confirmada', color: '#10B981' },
+  { key: 'en_espera', label: 'En espera', color: '#F59E0B' },
+  { key: 'en_consulta', label: 'En consulta', color: '#10B981' },
+  { key: 'completada', label: 'Finalizada', color: '#6B7280' },
+  { key: 'cancelada', label: 'Cancelada', color: '#EF4444' },
+  { key: 'ausente', label: 'Ausente', color: '#9CA3AF' },
 ];
 
 export default function AgendaSidebar({
   selectedDate,
-  monthDots,
-  daySummary,
-  typeFilter,
-  statusFilter,
-  vetFilter,
-  uniqueVets,
-  onDayPress,
-  onTypeFilterChange,
-  onStatusFilterChange,
-  onVetFilterChange,
-  onClearFilters,
-  onMonthChange,
+  onDateSelect,
+  filters,
+  onFilterChange,
+  veterinarians,
+  appointmentTypes,
+  statuses,
 }: AgendaSidebarProps) {
   const { colors } = useTheme();
+  const year = selectedDate.getFullYear();
+  const month = selectedDate.getMonth();
+  const today = new Date();
+  const daysInMonth = getDaysInMonth(year, month);
+  const firstDay = getFirstDayOfMonth(year, month);
 
-  const hasActiveFilters = typeFilter !== 'all' || statusFilter !== 'all' || vetFilter !== 'all';
+  const calendarDays: (number | null)[] = [];
+  for (let i = 0; i < firstDay; i++) calendarDays.push(null);
+  for (let d = 1; d <= daysInMonth; d++) calendarDays.push(d);
+
+  const prevMonth = () => {
+    const d = new Date(year, month - 1, 1);
+    onDateSelect(d);
+  };
+
+  const nextMonth = () => {
+    const d = new Date(year, month + 1, 1);
+    onDateSelect(d);
+  };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.surface, borderLeftColor: colors.border }]} showsVerticalScrollIndicator={false}>
-      {/* Mini Calendar */}
-      <MonthGrid
-        selectedDate={selectedDate}
-        monthDots={monthDots}
-        onDayPress={onDayPress}
-        onMonthChange={onMonthChange}
-      />
-
-      {/* Quick Filters */}
-      <View style={[styles.section, { borderTopColor: colors.border }]}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Filtros Rápidos</Text>
-
-        {/* Veterinario */}
-        <Text style={[styles.filterLabel, { color: colors.text }]}>Veterinario</Text>
-        <View style={styles.filterChips}>
-          <TouchableOpacity
-            style={[
-              styles.chip,
-              {
-                backgroundColor: vetFilter === 'all' ? colors.primary + '18' : colors.surfaceVariant,
-                borderColor: vetFilter === 'all' ? colors.primary : 'transparent',
-              },
-            ]}
-            onPress={() => onVetFilterChange('all')}
-          >
-            <Text style={[styles.chipText, { color: vetFilter === 'all' ? colors.primary : colors.textSecondary }]}>
-              Todos
-            </Text>
+    <ScrollView style={[styles.container, { backgroundColor: colors.surface }]} showsVerticalScrollIndicator={false}>
+      {/* Mini calendar */}
+      <View style={styles.calendarSection}>
+        <View style={styles.calendarHeader}>
+          <TouchableOpacity onPress={prevMonth}>
+            <Text style={[styles.calNav, { color: colors.primary }]}>‹</Text>
           </TouchableOpacity>
-          {uniqueVets.map((vet) => (
-            <TouchableOpacity
-              key={vet}
-              style={[
-                styles.chip,
-                {
-                  backgroundColor: vetFilter === vet ? colors.primary + '18' : colors.surfaceVariant,
-                  borderColor: vetFilter === vet ? colors.primary : 'transparent',
-                },
-              ]}
-              onPress={() => onVetFilterChange(vet)}
-            >
-              <Text style={[styles.chipText, { color: vetFilter === vet ? colors.primary : colors.textSecondary }]}>
-                {vet}
-              </Text>
-            </TouchableOpacity>
+          <Text style={[styles.calTitle, { color: colors.text }]}>
+            {MONTH_NAMES[month]} {year}
+          </Text>
+          <TouchableOpacity onPress={nextMonth}>
+            <Text style={[styles.calNav, { color: colors.primary }]}>›</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.dayNamesRow}>
+          {DAY_NAMES.map((d) => (
+            <Text key={d} style={[styles.dayName, { color: colors.textSecondary }]}>{d}</Text>
           ))}
         </View>
-
-        {/* Tipo de Cita */}
-        <Text style={[styles.filterLabel, { color: colors.text, marginTop: SPACING.sm }]}>Tipo de Cita</Text>
-        <View style={styles.filterChips}>
-          {TYPE_OPTIONS.map((opt) => {
-            const active = typeFilter === opt.key;
-            const chipColor = opt.key === 'all' ? colors.primary : APPOINTMENT_TYPE_COLORS[opt.key] || colors.primary;
+        <View style={styles.daysGrid}>
+          {calendarDays.map((day, i) => {
+            if (day === null) return <View key={`empty-${i}`} style={styles.dayCell} />;
+            const isSelected = day === selectedDate.getDate() && month === selectedDate.getMonth();
+            const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
             return (
               <TouchableOpacity
-                key={opt.key}
+                key={day}
                 style={[
-                  styles.chip,
-                  {
-                    backgroundColor: active ? chipColor + '18' : colors.surfaceVariant,
-                    borderColor: active ? chipColor : 'transparent',
-                  },
+                  styles.dayCell,
+                  isSelected && { backgroundColor: colors.primary, borderRadius: 14 },
+                  isToday && !isSelected && { borderColor: colors.primary, borderWidth: 1, borderRadius: 14 },
                 ]}
-                onPress={() => onTypeFilterChange(opt.key)}
+                onPress={() => onDateSelect(new Date(year, month, day))}
               >
-                <Text style={[styles.chipText, { color: active ? chipColor : colors.textSecondary }]}>
-                  {opt.label}
+                <Text
+                  style={[
+                    styles.dayText,
+                    {
+                      color: isSelected ? '#FFF' : isToday ? colors.primary : colors.text,
+                      fontWeight: isToday || isSelected ? '700' : '400',
+                    },
+                  ]}
+                >
+                  {day}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </View>
-
-        {/* Estado */}
-        <Text style={[styles.filterLabel, { color: colors.text, marginTop: SPACING.sm }]}>Estado</Text>
-        <View style={styles.filterChips}>
-          {STATUS_OPTIONS.map((opt) => (
-            <TouchableOpacity
-              key={opt.key}
-              style={[
-                styles.chip,
-                {
-                  backgroundColor: statusFilter === opt.key ? colors.primary + '18' : colors.surfaceVariant,
-                  borderColor: statusFilter === opt.key ? colors.primary : 'transparent',
-                },
-              ]}
-              onPress={() => onStatusFilterChange(opt.key)}
-            >
-              <Text style={[styles.chipText, { color: statusFilter === opt.key ? colors.primary : colors.textSecondary }]}>
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {hasActiveFilters && (
-          <TouchableOpacity style={[styles.clearButton, { borderColor: colors.border }]} onPress={onClearFilters}>
-            <Text style={[styles.clearText, { color: colors.textSecondary }]}>Limpiar Filtros</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
-      {/* Day Summary */}
-      <View style={[styles.section, { borderTopColor: colors.border }]}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Resumen del Día</Text>
-        <Text style={[styles.summaryDate, { color: colors.text }]}>
-          {new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-CL', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-          })}
-        </Text>
-        <View style={styles.summaryRow}>
-          <View style={[styles.summaryDot, { backgroundColor: '#3B82F6' }]} />
-          <Text style={[styles.summaryLabel, { color: colors.text }]}>Citas programadas</Text>
-          <Text style={[styles.summaryCount, { color: colors.text }]}>{daySummary.programadas}</Text>
+      {/* Filters */}
+      <View style={[styles.filterSection, { borderTopColor: colors.border }]}>
+        <Text style={[styles.filterTitle, { color: colors.text }]}>Filtros</Text>
+
+        {/* Vet filter */}
+        <View style={styles.filterGroup}>
+          <Text style={[styles.filterLabel, { color: colors.textSecondary }]}>Veterinario</Text>
+          <View style={styles.filterChips}>
+            <TouchableOpacity
+              style={[
+                styles.chip,
+                { backgroundColor: !filters.veterinarian ? colors.primary + '20' : colors.background, borderColor: !filters.veterinarian ? colors.primary : colors.border },
+              ]}
+              onPress={() => onFilterChange({ ...filters, veterinarian: '' })}
+            >
+              <Text style={[styles.chipText, { color: !filters.veterinarian ? colors.primary : colors.textSecondary }]}>Todos</Text>
+            </TouchableOpacity>
+            {veterinarians.map((vet) => (
+              <TouchableOpacity
+                key={vet}
+                style={[
+                  styles.chip,
+                  { backgroundColor: filters.veterinarian === vet ? colors.primary + '20' : colors.background, borderColor: filters.veterinarian === vet ? colors.primary : colors.border },
+                ]}
+                onPress={() => onFilterChange({ ...filters, veterinarian: vet })}
+              >
+                <Text style={[styles.chipText, { color: filters.veterinarian === vet ? colors.primary : colors.textSecondary }]} numberOfLines={1}>{vet}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-        <View style={styles.summaryRow}>
-          <View style={[styles.summaryDot, { backgroundColor: '#10B981' }]} />
-          <Text style={[styles.summaryLabel, { color: colors.text }]}>Citas completadas</Text>
-          <Text style={[styles.summaryCount, { color: colors.text }]}>{daySummary.completadas}</Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <View style={[styles.summaryDot, { backgroundColor: '#F59E0B' }]} />
-          <Text style={[styles.summaryLabel, { color: colors.text }]}>Citas pendientes</Text>
-          <Text style={[styles.summaryCount, { color: colors.text }]}>{daySummary.pendientes}</Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <View style={[styles.summaryDot, { backgroundColor: '#EF4444' }]} />
-          <Text style={[styles.summaryLabel, { color: colors.text }]}>Citas canceladas</Text>
-          <Text style={[styles.summaryCount, { color: colors.text }]}>{daySummary.canceladas}</Text>
+
+        {/* Status filter */}
+        <View style={styles.filterGroup}>
+          <Text style={[styles.filterLabel, { color: colors.textSecondary }]}>Estado</Text>
+          <View style={styles.filterChips}>
+            {STATUS_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.key}
+                style={[
+                  styles.chip,
+                  { backgroundColor: filters.status === opt.key || (!filters.status && opt.key === 'all') ? colors.primary + '20' : colors.background, borderColor: filters.status === opt.key || (!filters.status && opt.key === 'all') ? colors.primary : colors.border },
+                ]}
+                onPress={() => onFilterChange({ ...filters, status: opt.key === 'all' ? '' : opt.key })}
+              >
+                <View style={[styles.chipDot, { backgroundColor: opt.color }]} />
+                <Text
+                  style={[
+                    styles.chipText,
+                    { color: filters.status === opt.key || (!filters.status && opt.key === 'all') ? colors.primary : colors.textSecondary },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       </View>
     </ScrollView>
@@ -207,76 +191,91 @@ export default function AgendaSidebar({
 
 const styles = StyleSheet.create({
   container: {
-    width: 280,
+    flex: 1,
     borderLeftWidth: 1,
-    paddingTop: SPACING.md,
+    borderLeftColor: '#E5E9F0',
   },
-  section: {
+  calendarSection: {
     padding: SPACING.md,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  calNav: {
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  calTitle: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: '700',
+  },
+  dayNamesRow: {
+    flexDirection: 'row',
+  },
+  dayName: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 10,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  daysGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  dayCell: {
+    width: '14.28%',
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayText: {
+    fontSize: 12,
+  },
+  filterSection: {
+    padding: SPACING.md,
+    paddingTop: SPACING.sm,
     borderTopWidth: 1,
   },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
+  filterTitle: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: '700',
+    marginBottom: SPACING.sm,
+  },
+  filterGroup: {
     marginBottom: SPACING.sm,
   },
   filterLabel: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    marginBottom: SPACING.xs,
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   filterChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: SPACING.xs,
+    gap: 4,
   },
   chip: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: RADIUS.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     borderWidth: 1,
+    gap: 4,
+  },
+  chipDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   chipText: {
     fontSize: 11,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  clearButton: {
-    marginTop: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  clearText: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  summaryDate: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.bold,
-    textTransform: 'capitalize',
-    marginBottom: SPACING.sm,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: SPACING.xs,
-    gap: SPACING.sm,
-  },
-  summaryDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  summaryLabel: {
-    flex: 1,
-    fontSize: TYPOGRAPHY.sizes.sm,
-  },
-  summaryCount: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+    fontWeight: '500',
   },
 });
