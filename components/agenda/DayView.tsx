@@ -118,16 +118,14 @@ export default function DayView({
             })}
 
             {/* Current time line */}
-            {date.toDateString() === today.toDateString() && <CurrentTimeLine />}
+            {date.toDateString() === today.toDateString() && <CurrentTimeLine hourHeight={HOUR_HEIGHT} startHour={6} />}
 
             {/* Empty state */}
             {dayAppts.length === 0 && (
               <View style={styles.emptyState}>
                 <EmptyState
-                  icon="calendar"
                   title="Sin citas este día"
                   subtitle="No hay citas programadas"
-                  compact
                 />
               </View>
             )}
