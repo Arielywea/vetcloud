@@ -11,6 +11,7 @@ export interface AppointmentBlockData {
   appointment_type: string;
   description?: string | null;
   tutor_phone?: string | null;
+  breed?: string;
 }
 
 interface AppointmentBlockProps {
@@ -53,11 +54,11 @@ export default function AppointmentBlock({ appointment, top, height, onPress, co
         <Text style={styles.name} numberOfLines={1}>
           {appointment.patient_name}
         </Text>
-        {!compact && height > 40 && (
-          <Text style={styles.detail} numberOfLines={1}>
-            {appointment.appointment_type.charAt(0).toUpperCase() + appointment.appointment_type.slice(1)}
+        {!compact && height > 40 && appointment.breed ? (
+          <Text style={styles.breed} numberOfLines={1}>
+            {appointment.breed}
           </Text>
-        )}
+        ) : null}
       </View>
     </TouchableOpacity>
   );
@@ -68,10 +69,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 2,
     right: 2,
-    borderRadius: RADIUS.sm,
+    borderRadius: 6,
     borderLeftWidth: 3,
-    paddingHorizontal: SPACING.xs + 2,
-    paddingVertical: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
     overflow: 'hidden',
   },
   content: {
@@ -93,9 +94,9 @@ const styles = StyleSheet.create({
     color: '#1A2332',
     lineHeight: 14,
   },
-  detail: {
+  breed: {
     fontSize: 10,
-    color: '#5A6B80',
+    color: '#8896A8',
     lineHeight: 13,
   },
 });
