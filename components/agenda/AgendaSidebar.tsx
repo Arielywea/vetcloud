@@ -13,6 +13,7 @@ interface AgendaSidebarProps {
   typeFilter: string;
   onDayPress: (date: string) => void;
   onTypeFilterChange: (type: string) => void;
+  onMonthChange?: (direction: -1 | 1) => void;
 }
 
 const TYPE_OPTIONS = [
@@ -31,6 +32,7 @@ export default function AgendaSidebar({
   typeFilter,
   onDayPress,
   onTypeFilterChange,
+  onMonthChange,
 }: AgendaSidebarProps) {
   const { colors } = useTheme();
 
@@ -52,6 +54,7 @@ export default function AgendaSidebar({
         selectedDate={selectedDate}
         monthDots={monthDots}
         onDayPress={onDayPress}
+        onMonthChange={onMonthChange}
       />
 
       {/* Quick Filters */}

@@ -1,11 +1,19 @@
 import { useMemo } from 'react';
 import { Appointment } from '../../services/directus';
 
-const HOUR_HEIGHT_WEB = 60;
-const HOUR_HEIGHT_MOBILE = 48;
+const HOUR_HEIGHT_WEB = 36;
+const HOUR_HEIGHT_MOBILE = 28;
 const START_HOUR = 8;
 const END_HOUR = 19;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
+
+function toLocalDateKey(dateStr: string): string {
+  const d = new Date(dateStr);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 export interface PositionedAppointment {
   appointment: Appointment;
@@ -66,7 +74,7 @@ export function useAgendaLayout(
 
   const dayAppointments = useMemo(() => {
     return appointments
-      .filter((a) => a.start_time.slice(0, 10) === selectedDate)
+      .filter((a) => toLocalDateKey(a.start_time) === selectedDate)
       .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
   }, [appointments, selectedDate]);
 
@@ -146,7 +154,7 @@ export function useAgendaLayout(
   const monthDots = useMemo(() => {
     const dots: Record<string, { color: string }[]> = {};
     appointments.forEach((appt) => {
-      const dateKey = appt.start_time.slice(0, 10);
+      const dateKey = toLocalDateKey(appt.start_time);
       const color = getTypeColor(appt.appointment_type);
       if (!dots[dateKey]) dots[dateKey] = [];
       dots[dateKey].push({ color });
@@ -175,6 +183,7 @@ export function useAgendaLayout(
     START_HOUR,
     END_HOUR,
     TOTAL_HOURS,
+    totalGridHeight: TOTAL_HOURS * hourHeight,
   };
 }
 

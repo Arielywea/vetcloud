@@ -42,14 +42,12 @@ export default function DayGrid({
   const { colors } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
 
-  const screenWidth = Dimensions.get('window').width;
-  const isMobile = screenWidth < 768;
-  const gutterWidth = isMobile ? 44 : 56;
+  const totalGridHeight = hours.length * hourHeight;
 
   const positioned = dayAppointments.map((appt) => {
     const startHour = getHourFromTime(appt.start_time);
     const duration = getDurationMinutes(appt);
-    const relativeHour = startHour - 8;
+    const relativeHour = startHour - hours[0];
     const top = relativeHour * hourHeight + (getMinuteFromTime(appt.start_time) / 60) * hourHeight;
     const height = (duration / 60) * hourHeight;
     return { appointment: appt, top, height };
@@ -78,14 +76,14 @@ export default function DayGrid({
         contentContainerStyle={styles.gridContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.gridRow}>
+        <View style={[styles.gridRow, { minHeight: totalGridHeight }]}>
           <TimeColumn hours={hours} hourHeight={hourHeight} color={colors.textLight} />
           <View style={styles.gridArea}>
             {/* Hour lines */}
             {hours.map((hour) => (
               <View
                 key={hour}
-                style={[styles.hourLine, { top: (hour - 8) * hourHeight, borderColor: colors.border }]}
+                style={[styles.hourLine, { top: (hour - hours[0]) * hourHeight, borderColor: colors.border }]}
               />
             ))}
 
@@ -96,7 +94,7 @@ export default function DayGrid({
                 style={[
                   styles.slotTarget,
                   {
-                    top: (hour - 8) * hourHeight,
+                    top: (hour - hours[0]) * hourHeight,
                     height: hourHeight,
                   },
                 ]}
@@ -131,12 +129,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: SPACING.lg,
+    padding: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: '#DDE3EC',
   },
   dateText: {
-    fontSize: TYPOGRAPHY.sizes.lg,
+    fontSize: TYPOGRAPHY.sizes.base,
     fontWeight: TYPOGRAPHY.weights.bold,
     textTransform: 'capitalize',
   },
@@ -147,7 +145,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   gridContent: {
-    paddingBottom: SPACING.xl,
+    paddingBottom: SPACING.lg,
   },
   gridRow: {
     flexDirection: 'row',
