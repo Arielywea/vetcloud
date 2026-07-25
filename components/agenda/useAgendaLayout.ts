@@ -164,8 +164,10 @@ export function useAgendaLayout(
 
   const daySummary = useMemo(() => {
     const summary = {
-      programadas: dayAppointments.filter((a) => !a.end_time).length,
-      completadas: dayAppointments.filter((a) => a.end_time).length,
+      programadas: dayAppointments.filter((a) => a.status === 'programada').length,
+      completadas: dayAppointments.filter((a) => a.status === 'completada').length,
+      pendientes: dayAppointments.filter((a) => a.status === 'pendiente').length,
+      canceladas: dayAppointments.filter((a) => a.status === 'cancelada').length,
       total: dayAppointments.length,
     };
     return summary;
