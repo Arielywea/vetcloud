@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, StyleSheet, Dimensions, Platform } from 'react-native';
+import React, { useState, useCallback, useMemo, Component, ReactNode } from 'react';
+import { View, StyleSheet, Dimensions, Platform, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Components
@@ -27,7 +27,7 @@ type ViewMode = 'week' | 'day' | 'month';
 function getWeekDays(date: Date): Date[] {
   const start = new Date(date);
   const day = start.getDay();
-  start.setDate(start.getDate() - day + 1); // Monday
+  start.setDate(start.getDate() - day + 1);
   const days: Date[] = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(start);
@@ -37,12 +37,27 @@ function getWeekDays(date: Date): Date[] {
   return days;
 }
 
-export default function AgendaScreen() {
+class AgendaErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <View style={{ flex: 1, padding: 20, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#EF4444', marginBottom: 8 }}>Error en Agenda</Text>
+          <Text style={{ fontSize: 14, color: '#1A2332', textAlign: 'center' }}>{this.state.error.message}</Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function AgendaContent() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const screenWidth = Dimensions.get('window').width;
 
-  // State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('week');
@@ -50,44 +65,35 @@ export default function AgendaScreen() {
   const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, appointment: null as EnrichedAppointment | null });
   const [filters, setFilters] = useState({ veterinarian: '', species: '', appointmentType: '', status: '' });
 
-  // Data
   const { appointments, loading, summary, refetch } = useAgendaData({
     selectedDate,
     searchQuery,
     filters,
   });
 
-  // Layout
   const { nextAppointment, delayedAppointments, totalGridHeight } = useAgendaLayout({
     appointments,
     selectedDate,
   });
 
-  // Quick actions
   const quickActions = useQuickActions({ onRefresh: refetch });
 
-  // Drag and drop
   const { dragState, onDragStart, onDragMove, onDragEnd, ghostStyle } = useDragDrop({
     onMove: (id, newStart, newEnd) => {
-      // TODO: call API to update appointment time
       console.log('Move appointment', id, newStart, newEnd);
       refetch();
     },
   });
 
-  // Week days
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate]);
 
-  // Context menu handler
   const handleContextMenu = useCallback((appointment: EnrichedAppointment, x: number, y: number) => {
     setContextMenu({ visible: true, x, y, appointment });
   }, []);
 
-  // Context menu action handler
   const handleContextAction = useCallback((key: string) => {
     if (!contextMenu.appointment) return;
     const apt = contextMenu.appointment;
-
     switch (key) {
       case 'open_chart': quickActions.openChart(apt); break;
       case 'register': quickActions.registerConsultation(apt); break;
@@ -99,36 +105,25 @@ export default function AgendaScreen() {
       case 'cancel': quickActions.cancel(apt); break;
       case 'delete': quickActions.remove(apt); break;
     }
-
     setContextMenu({ visible: false, x: 0, y: 0, appointment: null });
   }, [contextMenu.appointment, quickActions]);
 
-  // Close context menu
   const closeContextMenu = useCallback(() => {
     setContextMenu({ visible: false, x: 0, y: 0, appointment: null });
   }, []);
 
-  // Close tooltip
-  const closeTooltip = useCallback(() => {
-    setTooltip({ visible: false, x: 0, y: 0, appointment: null });
-  }, []);
-
-  // Sidebar width
   const sidebarWidth = screenWidth > 1200 ? 280 : 0;
   const showSidebar = screenWidth > 1200;
   const mainContentWidth = showSidebar ? screenWidth - sidebarWidth : screenWidth;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      {/* Header */}
       <AgendaHeader
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         vetName="Dr. Veterinario"
         clinicOpen={true}
       />
-
-      {/* Toolbar */}
       <AgendaToolbar
         selectedDate={selectedDate}
         viewMode={viewMode}
@@ -139,10 +134,7 @@ export default function AgendaScreen() {
         onPrint={() => console.log('Print')}
         onExport={() => console.log('Export')}
       />
-
-      {/* Main content area */}
       <View style={styles.contentArea}>
-        {/* Calendar view */}
         <View style={[styles.mainContent, { width: mainContentWidth }]}>
           {viewMode === 'week' && (
             <WeekView
@@ -175,8 +167,6 @@ export default function AgendaScreen() {
             />
           )}
         </View>
-
-        {/* Sidebar (desktop only) */}
         {showSidebar && (
           <View style={[styles.sidebar, { width: sidebarWidth }]}>
             <AgendaSidebar
@@ -196,8 +186,6 @@ export default function AgendaScreen() {
           </View>
         )}
       </View>
-
-      {/* Context Menu */}
       <ContextMenu
         visible={contextMenu.visible}
         x={contextMenu.x}
@@ -205,8 +193,6 @@ export default function AgendaScreen() {
         onAction={handleContextAction}
         onClose={closeContextMenu}
       />
-
-      {/* Tooltip */}
       <AppointmentTooltip
         appointment={tooltip.appointment!}
         visible={tooltip.visible}
@@ -214,6 +200,14 @@ export default function AgendaScreen() {
         y={tooltip.y}
       />
     </View>
+  );
+}
+
+export default function AgendaScreen() {
+  return (
+    <AgendaErrorBoundary>
+      <AgendaContent />
+    </AgendaErrorBoundary>
   );
 }
 

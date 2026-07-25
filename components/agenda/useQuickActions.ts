@@ -1,27 +1,32 @@
-import { useRouter } from 'expo-router';
 import { Alert } from 'react-native';
-import { EnrichedAppointment } from './WeekView';
+import { useRouter } from 'expo-router';
+
+interface QuickAppointment {
+  id: string;
+  patient_name: string;
+  pet_id?: string | null;
+}
 
 interface UseQuickActionsOptions {
   onRefresh?: () => void;
 }
 
 interface UseQuickActionsReturn {
-  openChart: (appointment: EnrichedAppointment) => void;
-  registerConsultation: (appointment: EnrichedAppointment) => void;
-  hospitalize: (appointment: EnrichedAppointment) => void;
-  scheduleFollowup: (appointment: EnrichedAppointment) => void;
-  charge: (appointment: EnrichedAppointment) => void;
-  edit: (appointment: EnrichedAppointment) => void;
-  reschedule: (appointment: EnrichedAppointment) => void;
-  cancel: (appointment: EnrichedAppointment) => void;
-  remove: (appointment: EnrichedAppointment) => void;
+  openChart: (appointment: QuickAppointment) => void;
+  registerConsultation: (appointment: QuickAppointment) => void;
+  hospitalize: (appointment: QuickAppointment) => void;
+  scheduleFollowup: (appointment: QuickAppointment) => void;
+  charge: (appointment: QuickAppointment) => void;
+  edit: (appointment: QuickAppointment) => void;
+  reschedule: (appointment: QuickAppointment) => void;
+  cancel: (appointment: QuickAppointment) => void;
+  remove: (appointment: QuickAppointment) => void;
 }
 
 export default function useQuickActions({ onRefresh }: UseQuickActionsOptions = {}): UseQuickActionsReturn {
   const router = useRouter();
 
-  const openChart = (appointment: EnrichedAppointment) => {
+  const openChart = (appointment: QuickAppointment) => {
     if (appointment.pet_id) {
       router.push(`/(drawer)/ficha-clinica/${appointment.pet_id}`);
     } else {
@@ -29,7 +34,7 @@ export default function useQuickActions({ onRefresh }: UseQuickActionsOptions = 
     }
   };
 
-  const registerConsultation = (appointment: EnrichedAppointment) => {
+  const registerConsultation = (appointment: QuickAppointment) => {
     if (appointment.pet_id) {
       router.push(`/(drawer)/ficha-clinica/${appointment.pet_id}`);
     } else {
@@ -37,30 +42,30 @@ export default function useQuickActions({ onRefresh }: UseQuickActionsOptions = 
     }
   };
 
-  const hospitalize = (appointment: EnrichedAppointment) => {
+  const hospitalize = (appointment: QuickAppointment) => {
     Alert.alert('Hospitalizar', `¿Hospitalizar a ${appointment.patient_name}?`, [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Hospitalizar', onPress: () => onRefresh?.() },
     ]);
   };
 
-  const scheduleFollowup = (appointment: EnrichedAppointment) => {
+  const scheduleFollowup = (appointment: QuickAppointment) => {
     Alert.alert('Agendar control', `Programar control para ${appointment.patient_name}`);
   };
 
-  const charge = (appointment: EnrichedAppointment) => {
+  const charge = (appointment: QuickAppointment) => {
     Alert.alert('Cobrar', `Cobrar cita de ${appointment.patient_name}`);
   };
 
-  const edit = (appointment: EnrichedAppointment) => {
+  const edit = (appointment: QuickAppointment) => {
     Alert.alert('Editar', `Editar cita de ${appointment.patient_name}`);
   };
 
-  const reschedule = (appointment: EnrichedAppointment) => {
+  const reschedule = (appointment: QuickAppointment) => {
     Alert.alert('Reprogramar', `Reprogramar cita de ${appointment.patient_name}`);
   };
 
-  const cancel = (appointment: EnrichedAppointment) => {
+  const cancel = (appointment: QuickAppointment) => {
     Alert.alert(
       'Cancelar cita',
       `¿Cancelar la cita de ${appointment.patient_name}?`,
@@ -71,7 +76,7 @@ export default function useQuickActions({ onRefresh }: UseQuickActionsOptions = 
     );
   };
 
-  const remove = (appointment: EnrichedAppointment) => {
+  const remove = (appointment: QuickAppointment) => {
     Alert.alert(
       'Eliminar cita',
       `¿Eliminar permanentemente la cita de ${appointment.patient_name}?`,

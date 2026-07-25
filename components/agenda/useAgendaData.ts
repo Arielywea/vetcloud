@@ -31,12 +31,22 @@ export default function useAgendaData({ selectedDate, searchQuery, filters }: Us
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [apptsRes, petsRes] = await Promise.all([
-        api.appointments.list({ sort: 'start_time' }),
-        api.pets.list().catch(() => ({ data: [] })),
-      ]);
-      setRawAppointments(Array.isArray(apptsRes) ? apptsRes : apptsRes?.data || []);
-      setPets(Array.isArray(petsRes) ? petsRes : petsRes?.data || []);
+      let appts: Appointment[] = [];
+      let petsList: any[] = [];
+      try {
+        const apptsRes = await api.appointments.list({ sort: 'start_time' });
+        appts = Array.isArray(apptsRes) ? apptsRes : apptsRes?.data || [];
+      } catch (e) {
+        console.warn('Failed to fetch appointments:', e);
+      }
+      try {
+        const petsRes = await api.pets.list();
+        petsList = Array.isArray(petsRes) ? petsRes : petsRes?.data || [];
+      } catch (e) {
+        console.warn('Failed to fetch pets:', e);
+      }
+      setRawAppointments(appts);
+      setPets(petsList);
     } catch (err) {
       console.error('Failed to fetch agenda data:', err);
       setRawAppointments([]);
