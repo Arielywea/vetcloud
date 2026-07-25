@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Appointment } from '../../services/directus';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Appointment, api } from '../../services/directus';
 
 interface EnrichedAppointment extends Appointment {
   petPhoto: string | null;
@@ -10,43 +10,57 @@ interface EnrichedAppointment extends Appointment {
   tutorName: string;
 }
 
-interface DaySummary {
-  total: number;
-  programadas: number;
-  confirmadas: number;
-  en_espera: number;
-  en_consulta: number;
-  completadas: number;
-  pendientes: number;
-  canceladas: number;
-  ausentes: number;
-  porTipo: Record<string, number>;
-  tiempoOcupado: number;
-  tiempoLibre: number;
-  retrasos: number;
+interface AgendaFilters {
+  veterinarian: string;
+  species: string;
+  appointmentType: string;
+  status: string;
 }
 
-export function useAgendaData(
-  appointments: Appointment[],
-  pets: any[],
-  selectedDate: string,
-  searchQuery: string,
-  typeFilter: string,
-  statusFilter: string,
-  vetFilter: string,
-  speciesFilter: string
-) {
+interface UseAgendaDataOptions {
+  selectedDate: Date;
+  searchQuery: string;
+  filters: AgendaFilters;
+}
+
+export default function useAgendaData({ selectedDate, searchQuery, filters }: UseAgendaDataOptions) {
+  const [rawAppointments, setRawAppointments] = useState<Appointment[]>([]);
+  const [pets, setPets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [apptsRes, petsRes] = await Promise.all([
+        api.appointments.list({ sort: 'start_time' }),
+        api.pets.list().catch(() => ({ data: [] })),
+      ]);
+      setRawAppointments(apptsRes.data || []);
+      setPets(petsRes.data || []);
+    } catch (err) {
+      console.error('Failed to fetch agenda data:', err);
+      setRawAppointments([]);
+      setPets([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
   const petMap = useMemo(() => {
     const map = new Map<string, any>();
     pets.forEach((pet: any) => {
-      map.set(pet.name.toLowerCase(), pet);
       map.set(pet.id, pet);
+      if (pet.name) map.set(pet.name.toLowerCase(), pet);
     });
     return map;
   }, [pets]);
 
   const enriched = useMemo((): EnrichedAppointment[] => {
-    return appointments.map((appt) => {
+    return rawAppointments.map((appt) => {
       let pet = null;
       if (appt.pet_id) {
         pet = petMap.get(appt.pet_id);
@@ -64,27 +78,19 @@ export function useAgendaData(
         tutorName: pet?.tutor_name || '',
       };
     });
-  }, [appointments, petMap]);
+  }, [rawAppointments, petMap]);
 
-  const uniqueVets = useMemo(() => {
-    const vets = new Set<string>();
-    appointments.forEach((a) => {
-      if (a.veterinarian) vets.add(a.veterinarian);
-    });
-    return Array.from(vets).sort();
-  }, [appointments]);
+  const dateKey = useMemo(() => {
+    const y = selectedDate.getFullYear();
+    const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const d = String(selectedDate.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }, [selectedDate]);
 
-  const uniqueSpecies = useMemo(() => {
-    const species = new Set<string>();
-    enriched.forEach((a) => {
-      if (a.petSpecies) species.add(a.petSpecies);
-    });
-    return Array.from(species).sort();
-  }, [enriched]);
-
-  const filtered = useMemo(() => {
+  const appointments = useMemo(() => {
     let result = enriched;
 
+    // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -97,32 +103,36 @@ export function useAgendaData(
       );
     }
 
-    if (typeFilter !== 'all') {
-      result = result.filter((a) => a.appointment_type === typeFilter);
+    // Type filter
+    if (filters.appointmentType && filters.appointmentType !== 'all') {
+      result = result.filter((a) => a.appointment_type === filters.appointmentType);
     }
 
-    if (statusFilter !== 'all') {
-      result = result.filter((a) => a.status === statusFilter);
+    // Status filter
+    if (filters.status && filters.status !== 'all') {
+      result = result.filter((a) => a.status === filters.status);
     }
 
-    if (vetFilter !== 'all') {
-      result = result.filter((a) => a.veterinarian === vetFilter);
+    // Vet filter
+    if (filters.veterinarian && filters.veterinarian !== 'all') {
+      result = result.filter((a) => a.veterinarian === filters.veterinarian);
     }
 
-    if (speciesFilter !== 'all') {
-      result = result.filter((a) => a.petSpecies === speciesFilter);
+    // Species filter
+    if (filters.species && filters.species !== 'all') {
+      result = result.filter((a) => a.petSpecies === filters.species);
     }
 
     return result;
-  }, [enriched, searchQuery, typeFilter, statusFilter, vetFilter, speciesFilter]);
+  }, [enriched, searchQuery, filters]);
 
-  const daySummary = useMemo((): DaySummary => {
-    const dayAppts = filtered.filter((a) => {
+  const summary = useMemo(() => {
+    const dayAppts = enriched.filter((a) => {
       const d = new Date(a.start_time);
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}` === selectedDate;
+      return `${y}-${m}-${day}` === dateKey;
     });
 
     const now = new Date();
@@ -164,7 +174,7 @@ export function useAgendaData(
       tiempoLibre,
       retrasos,
     };
-  }, [filtered, selectedDate]);
+  }, [enriched, dateKey]);
 
-  return { filtered, enriched: filtered, uniqueVets, uniqueSpecies, daySummary };
+  return { appointments, loading, summary, refetch: fetchData };
 }
