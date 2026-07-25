@@ -1,60 +1,76 @@
 import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
-import { Search, Bell } from 'lucide-react-native';
-import Svg, { Path } from 'react-native-svg';
+import { View, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
+import { Search, Bell, Menu } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 
 interface AgendaHeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  onMenuPress?: () => void;
+  vetName?: string;
+  clinicOpen?: boolean;
 }
 
-export default function AgendaHeader({ searchQuery, onSearchChange }: AgendaHeaderProps) {
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Buenos días';
+  if (h < 18) return 'Buenas tardes';
+  return 'Buenas noches';
+}
+
+export default function AgendaHeader({
+  searchQuery,
+  onSearchChange,
+  onMenuPress,
+  vetName = 'Dr. Veterinario',
+  clinicOpen = true,
+}: AgendaHeaderProps) {
   const { colors } = useTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface }]}>
-      {/* Left: Title section */}
-      <View style={styles.left}>
-        <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z"
-            fill="#C9A227"
-          />
-        </Svg>
-        <View style={styles.titleBlock}>
-          <Text style={styles.title}>Agenda</Text>
-          <Text style={styles.subtitle}>Gestiona y visualiza todas las citas programadas</Text>
+    <View style={[styles.container, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      {/* Top row: greeting + actions */}
+      <View style={styles.topRow}>
+        <View style={styles.greetingSection}>
+          <TouchableOpacity onPress={onMenuPress} style={styles.menuBtn}>
+            <Menu size={20} color={colors.text} />
+          </TouchableOpacity>
+          <View>
+            <Text style={[styles.greeting, { color: colors.textSecondary }]}>{getGreeting()}</Text>
+            <Text style={[styles.vetName, { color: colors.text }]}>{vetName}</Text>
+          </View>
+        </View>
+
+        <View style={styles.actions}>
+          <View style={[styles.statusBadge, { backgroundColor: clinicOpen ? '#10B981' + '18' : '#EF4444' + '18' }]}>
+            <View style={[styles.statusDot, { backgroundColor: clinicOpen ? '#10B981' : '#EF4444' }]} />
+            <Text style={[styles.statusText, { color: clinicOpen ? '#10B981' : '#EF4444' }]}>
+              {clinicOpen ? 'Abierta' : 'Cerrada'}
+            </Text>
+          </View>
+          <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.background }]}>
+            <Bell size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+          <View style={[styles.avatar, { backgroundColor: colors.primary + '20' }]}>
+            <Text style={[styles.avatarText, { color: colors.primary }]}>
+              {vetName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+            </Text>
+          </View>
         </View>
       </View>
 
-      {/* Center: Search */}
-      <View style={styles.center}>
-        <View style={[styles.searchContainer, { borderColor: '#DDE3EC', backgroundColor: '#F7F8FB' }]}>
-          <Search size={16} color="#5A6B80" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar paciente, tutor o cita..."
-            placeholderTextColor="#5A6B80"
-            value={searchQuery}
-            onChangeText={onSearchChange}
-          />
-        </View>
-      </View>
-
-      {/* Right: Profile */}
-      <View style={styles.right}>
-        <Bell size={20} color={colors.text} />
-        <View style={styles.profile}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>VC</Text>
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>VetCloud</Text>
-            <Text style={styles.profileRole}>Admin</Text>
-          </View>
-        </View>
+      {/* Search bar */}
+      <View style={[styles.searchBar, { backgroundColor: colors.background, borderRadius: RADIUS.md }]}>
+        <Search size={16} color={colors.textSecondary} />
+        <TextInput
+          style={[styles.searchInput, { color: colors.text }]}
+          placeholder="Buscar mascota, tutor, expediente..."
+          placeholderTextColor={colors.textSecondary}
+          value={searchQuery}
+          onChangeText={onSearchChange}
+          returnKeyType="search"
+        />
       </View>
     </View>
   );
@@ -62,85 +78,84 @@ export default function AgendaHeader({ searchQuery, onSearchChange }: AgendaHead
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#DDE3EC',
   },
-  left: {
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  greetingSection: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
   },
-  titleBlock: {
-    gap: 2,
+  menuBtn: {
+    padding: SPACING.xs,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: TYPOGRAPHY.weights.bold,
-    color: '#1A2332',
+  greeting: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    fontWeight: '500',
   },
-  subtitle: {
-    fontSize: 13,
-    color: '#5A6B80',
+  vetName: {
+    fontSize: TYPOGRAPHY.sizes.lg,
+    fontWeight: '700',
+    marginTop: 1,
   },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  searchContainer: {
+  actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    maxWidth: 320,
-    gap: SPACING.xs,
+    gap: SPACING.sm,
   },
-  searchInput: {
-    flex: 1,
-    fontSize: TYPOGRAPHY.sizes.sm,
-    color: '#1A2332',
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
     paddingVertical: 4,
+    borderRadius: RADIUS.sm,
+    gap: 4,
   },
-  right: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
-  profile: {
-    flexDirection: 'row',
+  statusText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  iconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
-    gap: SPACING.sm,
+    justifyContent: 'center',
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#0B1D3A',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: TYPOGRAPHY.weights.bold,
+    fontSize: 12,
+    fontWeight: '700',
   },
-  profileInfo: {
-    gap: 2,
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 8,
+    gap: SPACING.sm,
   },
-  profileName: {
-    fontSize: 13,
-    fontWeight: TYPOGRAPHY.weights.bold,
-    color: '#1A2332',
-  },
-  profileRole: {
-    fontSize: 11,
-    color: '#5A6B80',
+  searchInput: {
+    flex: 1,
+    fontSize: TYPOGRAPHY.sizes.sm,
+    padding: 0,
   },
 });
