@@ -35,8 +35,8 @@ export default function useAgendaData({ selectedDate, searchQuery, filters }: Us
         api.appointments.list({ sort: 'start_time' }),
         api.pets.list().catch(() => ({ data: [] })),
       ]);
-      setRawAppointments(apptsRes.data || []);
-      setPets(petsRes.data || []);
+      setRawAppointments(Array.isArray(apptsRes) ? apptsRes : apptsRes?.data || []);
+      setPets(Array.isArray(petsRes) ? petsRes : petsRes?.data || []);
     } catch (err) {
       console.error('Failed to fetch agenda data:', err);
       setRawAppointments([]);

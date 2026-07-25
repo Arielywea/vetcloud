@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StyleSheet, ActivityIndicator, View } from 'react-native';
 import { AuthProvider, useAuth } from '../hooks/useAuth';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
@@ -56,16 +57,18 @@ function AppContent() {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={styles.container}>
-      <AuthProvider>
-        <ThemeProvider>
-          <ThemedPaperProvider>
-            <AppContent />
-            <StatusBar style="auto" />
-          </ThemedPaperProvider>
-        </ThemeProvider>
-      </AuthProvider>
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={styles.container}>
+        <AuthProvider>
+          <ThemeProvider>
+            <ThemedPaperProvider>
+              <AppContent />
+              <StatusBar style="auto" />
+            </ThemedPaperProvider>
+          </ThemeProvider>
+        </AuthProvider>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
 
