@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Image } from 'react-native';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
-import { APPOINTMENT_TYPE_COLORS } from '../../constants/colors';
+import { APPOINTMENT_TYPE_COLORS, APPOINTMENT_STATUS_COLORS } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 
 export interface AppointmentCardData {
@@ -31,17 +31,6 @@ interface AppointmentCardProps {
   compact?: boolean;
 }
 
-const STATUS_CONFIG: Record<string, { color: string; label: string; dot: string }> = {
-  programada: { color: '#3B82F6', label: 'Programada', dot: '#3B82F6' },
-  confirmada: { color: '#10B981', label: 'Confirmada', dot: '#10B981' },
-  en_espera: { color: '#F59E0B', label: 'En espera', dot: '#F59E0B' },
-  en_consulta: { color: '#10B981', label: 'En consulta', dot: '#10B981' },
-  completada: { color: '#6B7280', label: 'Finalizada', dot: '#6B7280' },
-  pendiente: { color: '#F59E0B', label: 'Pendiente', dot: '#F59E0B' },
-  cancelada: { color: '#EF4444', label: 'Cancelada', dot: '#EF4444' },
-  ausente: { color: '#9CA3AF', label: 'Ausente', dot: '#9CA3AF' },
-};
-
 const SPECIES_EMOJI: Record<string, string> = {
   dog: '🐕',
   cat: '🐈',
@@ -64,7 +53,7 @@ export default function AppointmentCard({
 }: AppointmentCardProps) {
   const { colors } = useTheme();
   const color = APPOINTMENT_TYPE_COLORS[appointment.appointment_type] || APPOINTMENT_TYPE_COLORS.consulta;
-  const status = STATUS_CONFIG[appointment.status] || STATUS_CONFIG.programada;
+  const status = APPOINTMENT_STATUS_COLORS[appointment.status] || APPOINTMENT_STATUS_COLORS.programada;
   const speciesEmoji = SPECIES_EMOJI[appointment.petSpecies || ''] || '';
 
   const handleContextMenu = (e: any) => {
@@ -184,17 +173,14 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#1A2332',
     lineHeight: 14,
   },
   detail: {
     fontSize: 10,
-    color: '#8896A8',
     lineHeight: 13,
   },
   tutor: {
     fontSize: 9,
-    color: '#8896A8',
     lineHeight: 12,
   },
 });
