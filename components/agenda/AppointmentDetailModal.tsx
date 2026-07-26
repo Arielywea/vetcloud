@@ -1,20 +1,9 @@
 import React from 'react';
 import { View, StyleSheet, Text, Modal, TouchableOpacity, Image } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
-import { APPOINTMENT_TYPE_COLORS } from '../../constants/colors';
-import { Ionicons } from '@expo/vector-icons';
-
-const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
-  programada: { color: '#3B82F6', label: 'Programada' },
-  confirmada: { color: '#10B981', label: 'Confirmada' },
-  en_espera: { color: '#F59E0B', label: 'En espera' },
-  en_consulta: { color: '#10B981', label: 'En consulta' },
-  completada: { color: '#6B7280', label: 'Finalizada' },
-  pendiente: { color: '#F59E0B', label: 'Pendiente' },
-  cancelada: { color: '#EF4444', label: 'Cancelada' },
-  ausente: { color: '#9CA3AF', label: 'Ausente' },
-};
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
+import { APPOINTMENT_TYPE_COLORS, APPOINTMENT_STATUS_COLORS } from '../../constants/colors';
+import { X, Calendar, Stethoscope, Flag, User, Phone, FileText, AlertTriangle, FolderOpen, UserPlus } from 'lucide-react-native';
 
 const TYPE_LABELS: Record<string, string> = {
   consulta: 'Consulta',
@@ -79,7 +68,7 @@ export default function AppointmentDetailModal({
   if (!appointment) return null;
 
   const color = APPOINTMENT_TYPE_COLORS[appointment.appointment_type] || APPOINTMENT_TYPE_COLORS.consulta;
-  const status = STATUS_CONFIG[appointment.status] || STATUS_CONFIG.programada;
+  const status = APPOINTMENT_STATUS_COLORS[appointment.status] || APPOINTMENT_STATUS_COLORS.programada;
   const speciesEmoji = SPECIES_EMOJI[appointment.petSpecies || ''] || '';
   const isRegistered = !!appointment.pet_id;
 
@@ -111,7 +100,7 @@ export default function AppointmentDetailModal({
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={22} color={colors.textSecondary} />
+              <X size={22} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
@@ -119,7 +108,7 @@ export default function AppointmentDetailModal({
           <View style={[styles.body, { borderTopColor: colors.border }]}>
             {/* Date & Time */}
             <View style={styles.row}>
-              <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
+              <Calendar size={18} color={colors.textSecondary} />
               <View style={styles.rowText}>
                 <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>Fecha y hora</Text>
                 <Text style={[styles.rowValue, { color: colors.text }]}>
@@ -133,7 +122,7 @@ export default function AppointmentDetailModal({
 
             {/* Type */}
             <View style={styles.row}>
-              <Ionicons name="medical-outline" size={18} color={colors.textSecondary} />
+              <Stethoscope size={18} color={colors.textSecondary} />
               <View style={styles.rowText}>
                 <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>Tipo de cita</Text>
                 <View style={styles.typeBadge}>
@@ -147,7 +136,7 @@ export default function AppointmentDetailModal({
 
             {/* Status */}
             <View style={styles.row}>
-              <Ionicons name="flag-outline" size={18} color={colors.textSecondary} />
+              <Flag size={18} color={colors.textSecondary} />
               <View style={styles.rowText}>
                 <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>Estado</Text>
                 <View style={styles.statusBadge}>
@@ -160,7 +149,7 @@ export default function AppointmentDetailModal({
             {/* Veterinarian */}
             {appointment.veterinarian ? (
               <View style={styles.row}>
-                <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
+                <User size={18} color={colors.textSecondary} />
                 <View style={styles.rowText}>
                   <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>Veterinario</Text>
                   <Text style={[styles.rowValue, { color: colors.text }]}>{appointment.veterinarian}</Text>
@@ -171,7 +160,7 @@ export default function AppointmentDetailModal({
             {/* Phone */}
             {appointment.tutor_phone ? (
               <View style={styles.row}>
-                <Ionicons name="call-outline" size={18} color={colors.textSecondary} />
+                <Phone size={18} color={colors.textSecondary} />
                 <View style={styles.rowText}>
                   <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>Teléfono del tutor</Text>
                   <Text style={[styles.rowValue, { color: colors.text }]}>{appointment.tutor_phone}</Text>
@@ -182,7 +171,7 @@ export default function AppointmentDetailModal({
             {/* Description */}
             {appointment.description ? (
               <View style={styles.row}>
-                <Ionicons name="document-text-outline" size={18} color={colors.textSecondary} />
+                <FileText size={18} color={colors.textSecondary} />
                 <View style={styles.rowText}>
                   <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>Descripción</Text>
                   <Text style={[styles.rowValue, { color: colors.text }]}>{appointment.description}</Text>
@@ -192,8 +181,8 @@ export default function AppointmentDetailModal({
 
             {/* Registration status */}
             {!isRegistered && (
-              <View style={[styles.unregisteredBanner, { backgroundColor: '#FEF3C7', borderColor: '#F59E0B' }]}>
-                <Ionicons name="warning-outline" size={18} color="#B45309" />
+              <View style={[styles.unregisteredBanner, { backgroundColor: colors.warning + '20', borderColor: colors.warning }]}>
+                <AlertTriangle size={18} color={colors.warning} />
                 <Text style={styles.unregisteredText}>
                   Este paciente no tiene ficha clínica registrada
                 </Text>
@@ -208,15 +197,15 @@ export default function AppointmentDetailModal({
                 style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
                 onPress={onGoToPatient}
               >
-                <Ionicons name="folder-open-outline" size={18} color="#FFF" />
+                <FolderOpen size={18} color="#FFF" />
                 <Text style={styles.primaryBtnText}>Ver ficha clínica</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                style={[styles.primaryBtn, { backgroundColor: '#F59E0B' }]}
+                style={[styles.primaryBtn, { backgroundColor: colors.warning }]}
                 onPress={onRegisterPatient}
               >
-                <Ionicons name="person-add-outline" size={18} color="#FFF" />
+                <UserPlus size={18} color="#FFF" />
                 <Text style={styles.primaryBtnText}>Registrar paciente</Text>
               </TouchableOpacity>
             )}
@@ -243,11 +232,7 @@ const styles = StyleSheet.create({
     maxWidth: 420,
     borderRadius: RADIUS.lg,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    ...SHADOWS.md,
   },
   header: {
     flexDirection: 'row',
