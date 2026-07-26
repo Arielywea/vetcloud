@@ -46,7 +46,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
 
     return { isDark, colors, themeName, spacing: SPACING, radius: RADIUS, typography: TYPOGRAPHY, shadows: SHADOWS, animation: ANIMATION, zIndex: Z_INDEX };
-  }, [user?.color_palette]);
+  }, [user?.color_palette, user?.theme_preference]);
 
   return (
     <ThemeContext.Provider value={value}>
