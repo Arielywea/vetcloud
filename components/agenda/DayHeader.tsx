@@ -22,7 +22,7 @@ export default function DayHeader({ dayName, dayNumber, isToday, isSelected, app
         style={[
           styles.dayNumberWrap,
           isSelected && { backgroundColor: colors.primary },
-          isToday && !isSelected && styles.todayRing,
+          isToday && !isSelected && [styles.todayRing, { borderColor: colors.accent }],
         ]}
       >
         <Text
@@ -67,7 +67,6 @@ const styles = StyleSheet.create({
   },
   todayRing: {
     borderWidth: 1.5,
-    borderColor: colors.accent,
   },
   dayNumber: {
     fontSize: 14,
