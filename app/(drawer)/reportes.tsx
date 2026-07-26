@@ -8,13 +8,6 @@ import { RECORD_TYPE_COLORS } from '../../constants/colors';
 import VCard from '../../components/ui/Card';
 import VStatCard from '../../components/ui/StatCard';
 
-const MOCK_STATS = [
-  { label: 'Pacientes', value: '127', icon: <PawPrint size={20} color="#FFF" />, color: '#3B82F6' },
-  { label: 'Citas (Mes)', value: '89', icon: <Calendar size={20} color="#FFF" />, color: '#10B981' },
-  { label: 'Inventario', value: '45', icon: <Package size={20} color="#FFF" />, color: '#F59E0B' },
-  { label: 'Internados', value: '5', icon: <BarChart3 size={20} color="#FFF" />, color: '#EF4444' },
-];
-
 const MOCK_WEEKLY = [
   { day: 'Lun', consultations: 8 },
   { day: 'Mar', consultations: 12 },
@@ -34,6 +27,13 @@ const MOCK_TOP_RECORDS = [
 export default function ReportesScreen() {
   const { colors } = useTheme();
 
+  const stats = [
+    { label: 'Pacientes', value: '127', icon: <PawPrint size={20} color="#FFF" />, color: colors.info },
+    { label: 'Citas (Mes)', value: '89', icon: <Calendar size={20} color="#FFF" />, color: colors.success },
+    { label: 'Inventario', value: '45', icon: <Package size={20} color="#FFF" />, color: colors.warning },
+    { label: 'Internados', value: '5', icon: <BarChart3 size={20} color="#FFF" />, color: colors.error },
+  ];
+
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       <View style={styles.header}>
@@ -44,7 +44,7 @@ export default function ReportesScreen() {
       </View>
 
       <View style={styles.statsGrid}>
-        {MOCK_STATS.map(stat => (
+        {stats.map(stat => (
           <View key={stat.label} style={styles.statWrapper}>
             <VStatCard
               label={stat.label}

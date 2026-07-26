@@ -93,12 +93,10 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 11,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    color: '#1A2332',
     lineHeight: 14,
   },
   breed: {
     fontSize: 10,
-    color: '#8896A8',
     lineHeight: 13,
   },
 });

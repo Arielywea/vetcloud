@@ -6,6 +6,7 @@ import {
 } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { APPOINTMENT_STATUS_COLORS } from '../../constants/colors';
 
 interface DaySummaryData {
   total: number;
@@ -40,10 +41,10 @@ export default function DaySummary({ summary }: DaySummaryProps) {
 
   const stats = [
     { icon: <Clock size={14} />, label: 'Total', value: summary.total.toString(), color: colors.primary },
-    { icon: <CheckCircle size={14} />, label: 'Confirmadas', value: summary.confirmadas.toString(), color: '#10B981' },
-    { icon: <Stethoscope size={14} />, label: 'En consulta', value: summary.en_consulta.toString(), color: '#3B82F6' },
-    { icon: <UserX size={14} />, label: 'Ausentes', value: summary.ausentes.toString(), color: '#9CA3AF' },
-    { icon: <AlertTriangle size={14} />, label: 'Retrasos', value: summary.retrasos.toString(), color: '#F59E0B' },
+    { icon: <CheckCircle size={14} />, label: 'Confirmadas', value: summary.confirmadas.toString(), color: APPOINTMENT_STATUS_COLORS.confirmada.color },
+    { icon: <Stethoscope size={14} />, label: 'En consulta', value: summary.en_consulta.toString(), color: APPOINTMENT_STATUS_COLORS.en_consulta.color },
+    { icon: <UserX size={14} />, label: 'Ausentes', value: summary.ausentes.toString(), color: APPOINTMENT_STATUS_COLORS.ausente.color },
+    { icon: <AlertTriangle size={14} />, label: 'Retrasos', value: summary.retrasos.toString(), color: colors.warning },
   ];
 
   const occupation = summary.tiempoOcupado + summary.tiempoLibre > 0

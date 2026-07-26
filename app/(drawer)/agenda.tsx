@@ -22,6 +22,7 @@ import useDragDrop from '../../components/agenda/useDragDrop';
 
 // Theme
 import { useTheme } from '../../contexts/ThemeContext';
+import { APP_COLORS } from '../../constants/colors';
 
 type ViewMode = 'week' | 'day' | 'month';
 
@@ -45,8 +46,8 @@ class AgendaErrorBoundary extends Component<{ children: ReactNode }, { error: Er
     if (this.state.error) {
       return (
         <View style={{ flex: 1, padding: 20, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#EF4444', marginBottom: 8 }}>Error en Agenda</Text>
-          <Text style={{ fontSize: 14, color: '#1A2332', textAlign: 'center' }}>{this.state.error.message}</Text>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: APP_COLORS.error, marginBottom: 8 }}>Error en Agenda</Text>
+          <Text style={{ fontSize: 14, color: APP_COLORS.text, textAlign: 'center' }}>{this.state.error.message}</Text>
         </View>
       );
     }

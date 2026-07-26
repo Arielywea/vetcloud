@@ -13,9 +13,9 @@ export default function GoldDivider({ style, variant = 'gold' }: GoldDividerProp
   const getColors = (): { start: string; mid: string; end: string } => {
     switch (variant) {
       case 'gold':
-        return { start: 'transparent', mid: '#C9A22740', end: 'transparent' };
+        return { start: 'transparent', mid: colors.accent + '40', end: 'transparent' };
       case 'strong':
-        return { start: 'transparent', mid: '#C9A22780', end: 'transparent' };
+        return { start: 'transparent', mid: colors.accent + '80', end: 'transparent' };
       case 'subtle':
         return { start: 'transparent', mid: colors.border, end: 'transparent' };
     }
