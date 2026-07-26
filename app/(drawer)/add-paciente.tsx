@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
 import { Text, TextInput, Button, Menu, Dialog, Portal } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Check, UserRound, Camera, Dog, Cat, Male, Female, Stethoscope, ShieldCheck, ChevronUp, ChevronDown, CheckSquare, Square, CircleDot, Circle, FileEdit, CameraPlus } from 'lucide-react-native';
+import { Check, UserRound, Camera, Dog, Cat, Mars, Venus, Stethoscope, ShieldCheck, ChevronUp, ChevronDown, CheckSquare, Square, CircleDot, Circle, FileEdit, ImagePlus } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { usePets } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -364,7 +364,7 @@ export default function AddPacienteScreen() {
                 onPress={() => { setSex('macho'); if (!REPRODUCTIVE_MACHO.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
                 style={[styles.sexPill, sex === 'macho' && { backgroundColor: colors.primary }]}
                 labelStyle={sex === 'macho' ? { color: '#FFFFFF' } : { color: colors.primary }}
-                icon={({ size }) => <Male size={size} color={sex === 'macho' ? '#FFFFFF' : colors.primary} />}
+                icon={({ size }) => <Mars size={size} color={sex === 'macho' ? '#FFFFFF' : colors.primary} />}
               >
                 Macho
               </Button>
@@ -373,7 +373,7 @@ export default function AddPacienteScreen() {
                 onPress={() => { setSex('hembra'); if (!REPRODUCTIVE_HEMBRA.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
                 style={[styles.sexPill, sex === 'hembra' && { backgroundColor: colors.primary }]}
                 labelStyle={sex === 'hembra' ? { color: '#FFFFFF' } : { color: colors.primary }}
-                icon={({ size }) => <Female size={size} color={sex === 'hembra' ? '#FFFFFF' : colors.primary} />}
+                icon={({ size }) => <Venus size={size} color={sex === 'hembra' ? '#FFFFFF' : colors.primary} />}
               >
                 Hembra
               </Button>
@@ -465,7 +465,7 @@ export default function AddPacienteScreen() {
           ) : (
             <View style={styles.photoPlaceholder}>
               <View style={[styles.photoIconWrap, { backgroundColor: colors.primaryContainer }]}>
-                <CameraPlus size={28} color={colors.primary} />
+                <ImagePlus size={28} color={colors.primary} />
               </View>
               <Text style={[styles.photoTitle, { color: colors.text }]}>Subir foto del paciente</Text>
               <Text style={[styles.photoSubtitle, { color: colors.textSecondary }]}>JPG, PNG o WEBP. Máx. 5MB</Text>
