@@ -77,6 +77,15 @@ function AgendaContent() {
     selectedDate,
   });
 
+  const handleAppointmentPress = useCallback((apt: any) => {
+    console.log('[Agenda] Card pressed:', JSON.stringify({ id: apt.id, pet_id: apt.pet_id, patient_name: apt.patient_name }));
+    if (apt.pet_id) {
+      router.push(`/pet/${apt.pet_id}`);
+    } else {
+      console.warn('[Agenda] No pet_id for appointment:', apt.patient_name, '- navigation blocked');
+    }
+  }, [router]);
+
   const quickActions = useQuickActions({ onRefresh: refetch });
 
   const { dragState, onDragStart, onDragMove, onDragEnd, ghostStyle } = useDragDrop({
@@ -137,7 +146,7 @@ function AgendaContent() {
               appointments={appointments}
               selectedDate={selectedDate}
               onDateSelect={setSelectedDate}
-              onAppointmentPress={(apt) => { if (apt.pet_id) router.push(`/pet/${apt.pet_id}`); }}
+              onAppointmentPress={handleAppointmentPress}
               onAppointmentContextMenu={handleContextMenu}
               loading={loading}
             />
@@ -146,7 +155,7 @@ function AgendaContent() {
             <DayView
               date={selectedDate}
               appointments={appointments}
-              onAppointmentPress={(apt) => { if (apt.pet_id) router.push(`/pet/${apt.pet_id}`); }}
+              onAppointmentPress={handleAppointmentPress}
               onAppointmentContextMenu={handleContextMenu}
               loading={loading}
               columnWidth={mainContentWidth - 44}
@@ -157,7 +166,7 @@ function AgendaContent() {
               selectedDate={selectedDate}
               appointments={appointments}
               onDateSelect={setSelectedDate}
-              onAppointmentPress={(apt) => { if (apt.pet_id) router.push(`/pet/${apt.pet_id}`); }}
+              onAppointmentPress={handleAppointmentPress}
               loading={loading}
             />
           )}
