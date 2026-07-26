@@ -21,7 +21,7 @@ const REPRODUCTIVE_OPTIONS = [
 const REPRODUCTIVE_MACHO = ['intacto', 'castrado'];
 const REPRODUCTIVE_HEMBRA = ['intacto', 'castrado', 'esterilizado', 'gestante'];
 
-const STEP_LABELS = ['Información básica', 'Propietario', 'Información médica', 'Revisión'];
+const STEP_LABELS = ['Propietario', 'Información básica', 'Información médica', 'Revisión'];
 
 export default function AddPacienteScreen() {
   const router = useRouter();
@@ -204,18 +204,18 @@ export default function AddPacienteScreen() {
   };
 
   const canAdvance = () => {
-    if (currentStep === 1) return name.trim().length > 0;
-    if (currentStep === 2) return tutorName.trim().length > 0;
+    if (currentStep === 1) return tutorName.trim().length > 0;
+    if (currentStep === 2) return name.trim().length > 0;
     return true;
   };
 
   const handleNext = () => {
-    if (currentStep === 1 && !name.trim()) {
-      Alert.alert('Campo requerido', 'El nombre del paciente es obligatorio');
+    if (currentStep === 1 && !tutorName.trim()) {
+      Alert.alert('Campo requerido', 'El nombre del propietario es obligatorio');
       return;
     }
-    if (currentStep === 2 && !tutorName.trim()) {
-      Alert.alert('Campo requerido', 'El nombre del propietario es obligatorio');
+    if (currentStep === 2 && !name.trim()) {
+      Alert.alert('Campo requerido', 'El nombre del paciente es obligatorio');
       return;
     }
     if (currentStep < 4) setCurrentStep(currentStep + 1);
@@ -727,7 +727,7 @@ export default function AddPacienteScreen() {
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <View style={styles.summaryHeader}>
             <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Paciente</Text>
-            <TouchableOpacity onPress={() => setCurrentStep(1)}>
+            <TouchableOpacity onPress={() => setCurrentStep(2)}>
               <Text style={{ color: colors.primary, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold }}>Editar</Text>
             </TouchableOpacity>
           </View>
@@ -750,7 +750,7 @@ export default function AddPacienteScreen() {
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <View style={styles.summaryHeader}>
             <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Propietario</Text>
-            <TouchableOpacity onPress={() => setCurrentStep(2)}>
+            <TouchableOpacity onPress={() => setCurrentStep(1)}>
               <Text style={{ color: colors.primary, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold }}>Editar</Text>
             </TouchableOpacity>
           </View>
@@ -827,8 +827,8 @@ export default function AddPacienteScreen() {
 
       {/* Step Content */}
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {currentStep === 1 && renderStep1()}
-        {currentStep === 2 && renderStep2()}
+        {currentStep === 1 && renderStep2()}
+        {currentStep === 2 && renderStep1()}
         {currentStep === 3 && renderStep3()}
         {currentStep === 4 && renderStep4()}
       </ScrollView>
