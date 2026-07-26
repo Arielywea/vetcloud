@@ -10,7 +10,7 @@ export const FileService = {
       const response = await fetch(`${API_URL}/files`, {
         method: 'POST',
         headers: {
-          ...authHeaders(),
+          ...(await authHeaders()),
         },
         body: formData,
       });
