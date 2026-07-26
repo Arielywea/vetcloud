@@ -176,3 +176,5 @@ const styles = StyleSheet.create({
   signsText: { lineHeight: 18 },
   fab: { position: 'absolute', right: 16, bottom: 16, width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
 });
+
+
