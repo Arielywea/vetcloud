@@ -12,6 +12,7 @@ import AgendaSidebar from '../../components/agenda/AgendaSidebar';
 import DaySummary from '../../components/agenda/DaySummary';
 import ContextMenu from '../../components/agenda/ContextMenu';
 import AppointmentTooltip from '../../components/agenda/AppointmentTooltip';
+import AppointmentDetailModal, { AppointmentDetail } from '../../components/agenda/AppointmentDetailModal';
 
 // Hooks
 import useAgendaData from '../../components/agenda/useAgendaData';
@@ -65,6 +66,7 @@ function AgendaContent() {
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, appointment: null as EnrichedAppointment | null });
   const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, appointment: null as EnrichedAppointment | null });
   const [filters, setFilters] = useState({ veterinarian: '', species: '', appointmentType: '', status: '' });
+  const [detailModal, setDetailModal] = useState({ visible: false, appointment: null as AppointmentDetail | null });
 
   const { appointments, loading, summary, refetch } = useAgendaData({
     selectedDate,
@@ -78,13 +80,8 @@ function AgendaContent() {
   });
 
   const handleAppointmentPress = useCallback((apt: any) => {
-    console.log('[Agenda] Card pressed:', JSON.stringify({ id: apt.id, pet_id: apt.pet_id, patient_name: apt.patient_name }));
-    if (apt.pet_id) {
-      router.push(`/pet/${apt.pet_id}`);
-    } else {
-      console.warn('[Agenda] No pet_id for appointment:', apt.patient_name, '- navigation blocked');
-    }
-  }, [router]);
+    setDetailModal({ visible: true, appointment: apt });
+  }, []);
 
   const quickActions = useQuickActions({ onRefresh: refetch });
 
@@ -105,6 +102,7 @@ function AgendaContent() {
     if (!contextMenu.appointment) return;
     const apt = contextMenu.appointment;
     switch (key) {
+      case 'detail': setDetailModal({ visible: true, appointment: apt }); break;
       case 'open_chart': quickActions.openChart(apt); break;
       case 'register': quickActions.registerConsultation(apt); break;
       case 'hospitalize': quickActions.hospitalize(apt); break;
@@ -202,6 +200,21 @@ function AgendaContent() {
         visible={tooltip.visible}
         x={tooltip.x}
         y={tooltip.y}
+      />
+      <AppointmentDetailModal
+        visible={detailModal.visible}
+        appointment={detailModal.appointment}
+        onClose={() => setDetailModal({ visible: false, appointment: null })}
+        onGoToPatient={() => {
+          if (detailModal.appointment?.pet_id) {
+            router.push(`/pet/${detailModal.appointment.pet_id}`);
+          }
+          setDetailModal({ visible: false, appointment: null });
+        }}
+        onRegisterPatient={() => {
+          router.push({ pathname: '/(drawer)/add-paciente', params: { prefillName: detailModal.appointment?.patient_name || '' } });
+          setDetailModal({ visible: false, appointment: null });
+        }}
       />
     </View>
   );

@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Dimensions } from 'react-native';
 import {
   FileText, Stethoscope, Building2, Calendar, CreditCard,
-  Pencil, CalendarClock, XCircle, Trash2
+  Pencil, CalendarClock, XCircle, Trash2, Eye
 } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
@@ -25,6 +25,8 @@ interface ContextMenuProps {
 }
 
 const DEFAULT_ACTIONS: ContextMenuAction[] = [
+  { key: 'detail', label: 'Ver detalle', icon: <Eye size={14} /> },
+  { key: 'divider0', label: '', icon: null },
   { key: 'open_chart', label: 'Abrir Ficha Clínica', icon: <FileText size={14} /> },
   { key: 'register', label: 'Registrar Consulta', icon: <Stethoscope size={14} /> },
   { key: 'hospitalize', label: 'Hospitalizar', icon: <Building2 size={14} /> },

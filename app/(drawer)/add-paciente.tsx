@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
 import { Text, TextInput, Button, Menu, Dialog, Portal } from 'react-native-paper';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Check, UserRound, Camera, Dog, Cat, Male, Female, Stethoscope, ShieldCheck, ChevronUp, ChevronDown, CheckSquare, Square, CircleDot, Circle, FileEdit, CameraPlus } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { usePets } from '../../hooks/useDirectus';
@@ -25,6 +25,7 @@ const STEP_LABELS = ['Información básica', 'Propietario', 'Información médic
 
 export default function AddPacienteScreen() {
   const router = useRouter();
+  const { prefillName } = useLocalSearchParams<{ prefillName?: string }>();
   const { addPet } = usePets();
   const { colors } = useTheme();
 
@@ -40,7 +41,7 @@ export default function AddPacienteScreen() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Reseña del Paciente
-  const [name, setName] = useState('');
+  const [name, setName] = useState(prefillName || '');
   const [species, setSpecies] = useState<'dog' | 'cat'>('dog');
   const [sex, setSex] = useState<'macho' | 'hembra' | null>(null);
   const [breed, setBreed] = useState('');
