@@ -42,11 +42,13 @@ export default function useAgendaData({ selectedDate, searchQuery, filters }: Us
       try {
         const petsRes = await api.pets.list();
         petsList = Array.isArray(petsRes) ? petsRes : petsRes?.data || [];
+        console.log('[Agenda] Pets fetched:', petsList.length, '| names:', petsList.map((p: any) => `${p.name}(${p.id})`).join(', '));
       } catch (e) {
-        console.warn('Failed to fetch pets:', e);
+        console.warn('[Agenda] Failed to fetch pets:', e);
       }
       setRawAppointments(appts);
       setPets(petsList);
+      console.log('[Agenda] Appointments fetched:', appts.length, '| patient_names:', appts.map((a: any) => a.patient_name).join(', '), '| pet_ids:', appts.map((a: any) => a.pet_id).join(', '));
     } catch (err) {
       console.error('Failed to fetch agenda data:', err);
       setRawAppointments([]);
