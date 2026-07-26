@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
+import { TEXT_ON_PRIMARY } from '../../constants/colors';
 import BeagleLogo from '../BeagleLogo';
 import VetCloudIcon, { VetCloudIconName } from '../icons/VetCloudIcon';
 
@@ -49,11 +50,12 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { colors, spacing, radius, typography, shadows } = useTheme();
+  const { colors, isDark } = useTheme();
 
+  const palette = isDark ? TEXT_ON_PRIMARY.dark : TEXT_ON_PRIMARY.light;
   const sidebarBg = colors.primary;
-  const textColor = '#FFFFFF';
-  const mutedText = '#FFFFFF99';
+  const textColor = palette.default;
+  const mutedText = palette.subtle;
   const activeIndicator = colors.accent;
 
   const handleNavigate = (route: string) => {
@@ -67,9 +69,9 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: sidebarBg, ...shadows.sm }]}>
+    <View style={[styles.container, { backgroundColor: sidebarBg, borderTopColor: colors.accent, ...shadows.sm }]}>
       {/* Logo */}
-      <View style={[styles.logoSection, { borderBottomColor: 'rgba(255,255,255,0.1)' }]}>
+      <View style={[styles.logoSection, { borderBottomColor: palette.default + '1A' }]}>
         <View style={styles.logoWrap}>
           <BeagleLogo size={48} variant="light" />
         </View>
@@ -101,7 +103,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
                   style={[
                     styles.navItem,
                     active && {
-                      backgroundColor: 'rgba(201,162,39,0.12)',
+                      backgroundColor: colors.accent + '1E',
                       borderLeftColor: activeIndicator,
                     },
                     !active && { borderLeftColor: 'transparent' },
@@ -115,23 +117,23 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
                       style={[
                         styles.navLabel,
                         {
-                          color: active ? textColor : '#FFFFFFCC',
-                          fontWeight: active ? TYPOGRAPHY.weights.semibold : TYPOGRAPHY.weights.regular,
-                        },
-                      ]}
-                    >
-                      {item.label}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
+                      color: active ? textColor : palette.muted,
+                      fontWeight: active ? TYPOGRAPHY.weights.semibold : TYPOGRAPHY.weights.regular,
+                    },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              )}
+            </TouchableOpacity>
+          );
+        })}
           </View>
         ))}
       </ScrollView>
 
       {/* Bottom section */}
-      <View style={[styles.bottomSection, { borderTopColor: '#C9A22730' }]}>
+      <View style={[styles.bottomSection, { borderTopColor: colors.accent + '30' }]}>
         {BOTTOM_ITEMS.map((item) => {
           const active = isActive(item.route);
           return (
@@ -140,7 +142,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
               style={[
                 styles.navItem,
                 active && {
-                  backgroundColor: 'rgba(255,255,255,0.08)',
+                  backgroundColor: palette.default + '14',
                   borderLeftColor: activeIndicator,
                 },
                 !active && { borderLeftColor: 'transparent' },
@@ -154,7 +156,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
                   style={[
                     styles.navLabel,
                     {
-                      color: active ? textColor : '#FFFFFFCC',
+                      color: active ? textColor : palette.muted,
                       fontWeight: active ? TYPOGRAPHY.weights.semibold : TYPOGRAPHY.weights.regular,
                     },
                   ]}
@@ -167,8 +169,8 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
         })}
 
         {/* User + Logout */}
-        <View style={[styles.userSection, { borderTopColor: '#C9A22730' }]}>
-          <View style={[styles.avatar, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
+        <View style={[styles.userSection, { borderTopColor: colors.accent + '30' }]}>
+          <View style={[styles.avatar, { backgroundColor: palette.default + '26' }]}>
             <Text style={[styles.avatarText, { color: textColor }]}>
               {user?.name?.charAt(0)?.toUpperCase() || 'U'}
             </Text>
@@ -184,7 +186,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
             </View>
           )}
           <TouchableOpacity onPress={logout} style={styles.logoutBtn}>
-            <LogOut size={18} color="#FF8A8A" />
+            <LogOut size={18} color={colors.error} />
           </TouchableOpacity>
         </View>
       </View>
@@ -197,7 +199,6 @@ const styles = StyleSheet.create({
     width: 240,
     flex: 1,
     borderTopWidth: 2,
-    borderTopColor: '#C9A227',
   },
   logoSection: {
     flexDirection: 'row',
