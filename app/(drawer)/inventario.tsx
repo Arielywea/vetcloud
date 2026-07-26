@@ -50,6 +50,10 @@ export default function InventarioScreen() {
     setItemStock(String(item.current_stock)); setItemMinStock(String(item.min_stock)); setItemUnit(item.unit); setShowModal(true);
   };
 
+  const handleDelete = (item: any) => {
+    setConfirmDelete({ name: item.name, id: item.id });
+  };
+
   const handleSave = async () => {
     if (!itemName.trim()) { setErrorDialog('El nombre es obligatorio'); return; }
     try {
