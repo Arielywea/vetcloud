@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
-import { APPOINTMENT_TYPE_COLORS } from '../../constants/colors';
+import { APPOINTMENT_TYPE_COLORS, APPOINTMENT_STATUS_LIST } from '../../constants/colors';
 
 interface Filters {
   veterinarian: string;
@@ -33,14 +33,8 @@ const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Jul
 const DAY_NAMES = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'];
 
 const STATUS_OPTIONS = [
-  { key: 'all', label: 'Todas', color: '#6B7280' },
-  { key: 'programada', label: 'Programada', color: '#3B82F6' },
-  { key: 'confirmada', label: 'Confirmada', color: '#10B981' },
-  { key: 'en_espera', label: 'En espera', color: '#F59E0B' },
-  { key: 'en_consulta', label: 'En consulta', color: '#10B981' },
-  { key: 'completada', label: 'Finalizada', color: '#6B7280' },
-  { key: 'cancelada', label: 'Cancelada', color: '#EF4444' },
-  { key: 'ausente', label: 'Ausente', color: '#9CA3AF' },
+  { key: 'all', label: 'Todas', color: '#6B7280', dot: '#6B7280' },
+  ...APPOINTMENT_STATUS_LIST,
 ];
 
 export default function AgendaSidebar({
