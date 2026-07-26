@@ -41,8 +41,9 @@ export async function apiAuthMe() {
   return json.data;
 }
 
-export function authHeaders(): Record<string, string> {
-  return storedToken ? { Authorization: `Bearer ${storedToken}` } : {};
+export async function authHeaders(): Promise<Record<string, string>> {
+  const token = await getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 export async function apiAuthUpdateProfile(data: Record<string, any>) {
