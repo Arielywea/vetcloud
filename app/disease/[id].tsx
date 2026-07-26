@@ -105,7 +105,7 @@ export default function DiseaseDetailScreen() {
     modalContent: { backgroundColor: colors.surface, margin: 16, borderRadius: 16, padding: 20, maxHeight: '90%' },
     modalTitle: { fontWeight: '700', color: colors.text, marginBottom: 16 },
     editField: { marginBottom: 12 },
-    editLabel: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 6 },
+    editLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
     editInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, fontSize: 14 },
     editTextarea: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, fontSize: 14, minHeight: 60, textAlignVertical: 'top' },
     editSection: { fontSize: 15, fontWeight: '700', color: colors.primary, marginTop: 16, marginBottom: 8, paddingBottom: 6, borderBottomWidth: 2, borderBottomColor: colors.primaryContainer || '#E0F2F1' },

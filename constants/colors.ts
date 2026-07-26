@@ -204,6 +204,21 @@ export const PALETTES: Record<string, { light: AppColors; dark: AppColors; label
       error: '#FF5252', warning: '#FFB74D', info: '#448AFF', border: '#2A2A3E', disabled: '#3A3A4E', cardShadow: '#000000',
     },
   },
+  artoria_alter: {
+    label: 'Artoria Alter',
+    light: {
+      primary: '#6D1220', primaryLight: '#9B1B30', primaryDark: '#4A0D15', primaryContainer: '#F5E0E4',
+      accent: '#B8941F', success: '#43A047', background: '#F0EDE8', surface: '#FFFFFF', surfaceVariant: '#E8E4DE',
+      text: '#1A1B2E', textSecondary: '#5A5E70', textLight: '#8B90A0',
+      error: '#C62828', warning: '#E65100', info: '#5C6BC0', border: '#D0CCC5', disabled: '#B0AAA0', cardShadow: '#000000',
+    },
+    dark: {
+      primary: '#9B1B30', primaryLight: '#C42847', primaryDark: '#6D1220', primaryContainer: '#2A0F1A',
+      accent: '#C9A227', success: '#66BB6A', background: '#0B0C14', surface: '#12131F', surfaceVariant: '#1A1B2E',
+      text: '#E8E0F0', textSecondary: '#8B90A0', textLight: '#5A5E70',
+      error: '#EF5350', warning: '#FFB74D', info: '#7986CB', border: '#252638', disabled: '#3A3B4E', cardShadow: '#000000',
+    },
+  },
 };
 
 export type PaletteKey = keyof typeof PALETTES;

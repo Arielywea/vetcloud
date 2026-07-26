@@ -34,7 +34,7 @@ export default function ReminderWidget() {
 
   return (
     <View
-      style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.sm]}
+      style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }, SHADOWS.sm]}
     >
       <View style={styles.header}>
         <BellRing size={18} color="#FF8F00" />
@@ -59,7 +59,7 @@ export default function ReminderWidget() {
 }
 
 const styles = StyleSheet.create({
-  card: { marginHorizontal: SPACING.lg, marginBottom: SPACING.lg, borderRadius: RADIUS.lg, padding: SPACING.lg, borderWidth: 1, borderColor: '#F0F0F0' },
+  card: { marginHorizontal: SPACING.lg, marginBottom: SPACING.lg, borderRadius: RADIUS.lg, padding: SPACING.lg, borderWidth: 1 },
   header: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.md },
   title: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.bold, flex: 1 },
   countChip: { height: 22, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACING.sm },

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface GoldDividerProps {
   style?: ViewStyle;
@@ -7,6 +8,8 @@ interface GoldDividerProps {
 }
 
 export default function GoldDivider({ style, variant = 'gold' }: GoldDividerProps) {
+  const { colors } = useTheme();
+
   const getColors = (): { start: string; mid: string; end: string } => {
     switch (variant) {
       case 'gold':
@@ -14,7 +17,7 @@ export default function GoldDivider({ style, variant = 'gold' }: GoldDividerProp
       case 'strong':
         return { start: 'transparent', mid: '#C9A22780', end: 'transparent' };
       case 'subtle':
-        return { start: 'transparent', mid: '#DDE3EC', end: 'transparent' };
+        return { start: 'transparent', mid: colors.border, end: 'transparent' };
     }
   };
 

@@ -170,7 +170,7 @@ function AgendaContent() {
           )}
         </View>
         {showSidebar && (
-          <View style={[styles.sidebar, { width: sidebarWidth }]}>
+          <View style={[styles.sidebar, { width: sidebarWidth, borderLeftColor: colors.border }]}>
             <AgendaSidebar
               selectedDate={selectedDate}
               onDateSelect={setSelectedDate}
@@ -241,7 +241,6 @@ const styles = StyleSheet.create({
   },
   sidebar: {
     borderLeftWidth: 1,
-    borderLeftColor: '#E5E9F0',
   },
   summaryContainer: {
     padding: 12,

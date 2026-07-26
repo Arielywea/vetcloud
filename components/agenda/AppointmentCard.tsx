@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Image } from 'react-native';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 import { APPOINTMENT_TYPE_COLORS } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export interface AppointmentCardData {
   id: string;
@@ -61,6 +62,7 @@ export default function AppointmentCard({
   onContextMenu,
   compact,
 }: AppointmentCardProps) {
+  const { colors } = useTheme();
   const color = APPOINTMENT_TYPE_COLORS[appointment.appointment_type] || APPOINTMENT_TYPE_COLORS.consulta;
   const status = STATUS_CONFIG[appointment.status] || STATUS_CONFIG.programada;
   const speciesEmoji = SPECIES_EMOJI[appointment.petSpecies || ''] || '';
@@ -106,20 +108,20 @@ export default function AppointmentCard({
             </Text>
             <View style={[styles.statusDot, { backgroundColor: status.dot }]} />
           </View>
-          <Text style={styles.name} numberOfLines={1}>{appointment.patient_name}</Text>
+          <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>{appointment.patient_name}</Text>
           {!compact && height > 50 && (
             <>
               {appointment.petBreed ? (
-                <Text style={styles.detail} numberOfLines={1}>
+                <Text style={[styles.detail, { color: colors.textLight }]} numberOfLines={1}>
                   {speciesEmoji} {appointment.petBreed}
                 </Text>
               ) : appointment.petSpecies ? (
-                <Text style={styles.detail} numberOfLines={1}>
+                <Text style={[styles.detail, { color: colors.textLight }]} numberOfLines={1}>
                   {speciesEmoji} {appointment.petSpecies === 'dog' ? 'Perro' : 'Gato'}
                 </Text>
               ) : null}
               {appointment.tutorName && height > 65 ? (
-                <Text style={styles.tutor} numberOfLines={1}>👤 {appointment.tutorName}</Text>
+                <Text style={[styles.tutor, { color: colors.textLight }]} numberOfLines={1}>👤 {appointment.tutorName}</Text>
               ) : null}
             </>
           )}
