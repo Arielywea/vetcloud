@@ -32,16 +32,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(() => {
     const palette = user?.color_palette;
-    const isDark = true; // Dark mode enabled — Artoria Alter theme
+    const isDark = user?.theme_preference === 'dark';
 
     let colors: AppColors;
     let themeName: string;
 
     if (palette && PALETTES[palette]) {
-      colors = PALETTES[palette].light;
+      colors = isDark ? PALETTES[palette].dark : PALETTES[palette].light;
       themeName = palette;
     } else {
-      colors = APP_COLORS;
+      colors = isDark ? APP_COLORS_DARK : APP_COLORS;
       themeName = 'default';
     }
 
