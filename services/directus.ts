@@ -190,7 +190,7 @@ async function apiGet(endpoint: string, params?: Record<string, string>) {
       if (v && v !== 'all') url.searchParams.set(k, v);
     });
   }
-  const res = await fetch(url.toString(), { headers: authHeaders() });
+  const res = await fetch(url.toString(), { headers: await authHeaders() });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
   const json = await res.json();
   return json.data;
@@ -199,7 +199,7 @@ async function apiGet(endpoint: string, params?: Record<string, string>) {
 async function apiPost(endpoint: string, body: any) {
   const res = await fetch(`${API_URL}${endpoint}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -213,7 +213,7 @@ async function apiPost(endpoint: string, body: any) {
 async function apiPatch(endpoint: string, body: any) {
   const res = await fetch(`${API_URL}${endpoint}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
@@ -222,7 +222,7 @@ async function apiPatch(endpoint: string, body: any) {
 }
 
 async function apiDelete(endpoint: string) {
-  const res = await fetch(`${API_URL}${endpoint}`, { method: 'DELETE', headers: authHeaders() });
+  const res = await fetch(`${API_URL}${endpoint}`, { method: 'DELETE', headers: await authHeaders() });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
 }
 
@@ -234,7 +234,7 @@ export const api = {
   diseases: {
     list: (params?: { species?: string; search?: string; category?: string; severity?: string }) =>
       apiGet('/items/diseases', params),
-    get: (id: string) => apiGet('/items/diseases', { id }).then((d: any[]) => d[0] || null),
+    get: (id: string) => apiGet(`/items/diseases/${id}`),
     create: (data: any) => apiPost('/items/diseases', data),
     update: (id: string, data: any) => apiPatch(`/items/diseases/${id}`, data),
     delete: (id: string) => apiDelete(`/items/diseases/${id}`),
@@ -264,7 +264,7 @@ export const api = {
   appointments: {
     list: (params?: { start?: string; end?: string }) =>
       apiGet('/items/appointments', params),
-    get: (id: string) => apiGet('/items/appointments', { id }).then((a: any[]) => a[0] || null),
+    get: (id: string) => apiGet(`/items/appointments/${id}`),
     create: (data: any) => apiPost('/items/appointments', data),
     update: (id: string, data: any) => apiPatch(`/items/appointments/${id}`, data),
     delete: (id: string) => apiDelete(`/items/appointments/${id}`),
@@ -289,7 +289,7 @@ export const api = {
   },
   prescriptions: {
     list: (petId?: string) => apiGet('/items/prescriptions', petId ? { pet_id: petId } : undefined),
-    get: (id: string) => apiGet('/items/prescriptions', { id }).then((r: any[]) => r[0] || null),
+    get: (id: string) => apiGet(`/items/prescriptions/${id}`),
     create: (data: any) => apiPost('/items/prescriptions', data),
     update: (id: string, data: any) => apiPatch(`/items/prescriptions/${id}`, data),
     delete: (id: string) => apiDelete(`/items/prescriptions/${id}`),
