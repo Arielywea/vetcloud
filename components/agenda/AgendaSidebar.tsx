@@ -74,7 +74,7 @@ export default function AgendaSidebar({
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.surface }]} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.surface, borderLeftColor: colors.border }]} showsVerticalScrollIndicator={false}>
       {/* Mini calendar */}
       <View style={styles.calendarSection}>
         <View style={styles.calendarHeader}>
@@ -193,7 +193,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     borderLeftWidth: 1,
-    borderLeftColor: '#E5E9F0',
   },
   calendarSection: {
     padding: SPACING.md,

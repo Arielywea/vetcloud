@@ -32,7 +32,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(() => {
     const palette = user?.color_palette;
-    const isDark = false; // Light mode only per design direction
+    const isDark = true; // Dark mode enabled — Artoria Alter theme
 
     let colors: AppColors;
     let themeName: string;

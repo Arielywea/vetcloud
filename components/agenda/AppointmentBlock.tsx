@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 import { APPOINTMENT_TYPE_COLORS } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export interface AppointmentBlockData {
   id: string;
@@ -31,6 +32,7 @@ function formatTimeRange(start: string, end: string | null): string {
 }
 
 export default function AppointmentBlock({ appointment, top, height, onPress, compact }: AppointmentBlockProps) {
+  const { colors } = useTheme();
   const color = APPOINTMENT_TYPE_COLORS[appointment.appointment_type] || APPOINTMENT_TYPE_COLORS.consulta;
 
   return (
@@ -51,11 +53,11 @@ export default function AppointmentBlock({ appointment, top, height, onPress, co
         <Text style={[styles.time, { color }]} numberOfLines={1}>
           {formatTimeRange(appointment.start_time, appointment.end_time)}
         </Text>
-        <Text style={styles.name} numberOfLines={1}>
+        <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
           {appointment.patient_name}
         </Text>
         {!compact && height > 40 && appointment.breed ? (
-          <Text style={styles.breed} numberOfLines={1}>
+          <Text style={[styles.breed, { color: colors.textLight }]} numberOfLines={1}>
             {appointment.breed}
           </Text>
         ) : null}

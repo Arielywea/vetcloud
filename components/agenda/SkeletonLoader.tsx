@@ -62,7 +62,7 @@ export default function SkeletonLoader({ variant = 'full' }: SkeletonLoaderProps
   if (variant === 'grid') {
     return (
       <View style={[styles.grid, { backgroundColor: colors.surface }]}>
-        <View style={styles.gridHeader}>
+        <View style={[styles.gridHeader, { borderBottomColor: colors.border }]}>
           {[...Array(7)].map((_, i) => (
             <View key={i} style={styles.gridHeaderCell}>
               <SkeletonBlock width={30} height={12} />
@@ -131,7 +131,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingBottom: SPACING.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#DDE3EC',
   },
   gridHeaderCell: {
     flex: 1,

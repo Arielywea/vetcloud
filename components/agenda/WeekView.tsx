@@ -85,7 +85,7 @@ export default function WeekView({
   return (
     <View style={styles.container}>
       {/* Day headers */}
-      <View style={styles.headersRow}>
+      <View style={[styles.headersRow, { borderBottomColor: colors.border }]}>
         <View style={{ width: 52 }} />
         {weekDays.map((day) => {
           const dayStr = day.toDateString();
@@ -180,7 +180,6 @@ const styles = StyleSheet.create({
   headersRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E9F0',
     paddingBottom: SPACING.xs,
   },
   scrollArea: {

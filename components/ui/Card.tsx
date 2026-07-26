@@ -49,7 +49,7 @@ export default function VCard({
     };
 
     const variants = {
-      default: { ...SHADOWS.xs, borderWidth: 1, borderColor: '#E8ECF2' },
+      default: { ...SHADOWS.xs, borderWidth: 1, borderColor: colors.border },
       outlined: { borderWidth: 1, borderColor: colors.border },
       elevated: SHADOWS.sm,
     };
