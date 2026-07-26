@@ -1,4 +1,5 @@
 import { API_URL } from '../config';
+import { authHeaders } from './auth';
 
 export const FileService = {
   async uploadFile(file: Blob, fileName: string): Promise<string | null> {
@@ -8,6 +9,9 @@ export const FileService = {
 
       const response = await fetch(`${API_URL}/files`, {
         method: 'POST',
+        headers: {
+          ...authHeaders(),
+        },
         body: formData,
       });
 
