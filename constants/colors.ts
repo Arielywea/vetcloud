@@ -311,6 +311,24 @@ export const APPOINTMENT_TYPE_COLORS: Record<string, string> = {
 // ─────────────────────────────────────────────────────────
 // Status colors
 // ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+// Appointment status colors — centralized (used in agenda components)
+// ─────────────────────────────────────────────────────────
+export const APPOINTMENT_STATUS_COLORS: Record<string, { color: string; label: string; dot: string }> = {
+  programada:   { color: '#3B82F6', label: 'Programada',   dot: '#3B82F6' },
+  confirmada:   { color: '#10B981', label: 'Confirmada',   dot: '#10B981' },
+  en_espera:    { color: '#F59E0B', label: 'En espera',    dot: '#F59E0B' },
+  en_consulta:  { color: '#10B981', label: 'En consulta',  dot: '#10B981' },
+  completada:   { color: '#6B7280', label: 'Finalizada',   dot: '#6B7280' },
+  pendiente:    { color: '#F59E0B', label: 'Pendiente',    dot: '#F59E0B' },
+  cancelada:    { color: '#EF4444', label: 'Cancelada',    dot: '#EF4444' },
+  ausente:      { color: '#9CA3AF', label: 'Ausente',      dot: '#9CA3AF' },
+};
+
+export const APPOINTMENT_STATUS_LIST = Object.entries(APPOINTMENT_STATUS_COLORS).map(([key, val]) => ({
+  key, ...val,
+}));
+
 export const STATUS_COLORS = {
   pending:  { bg: '#FFF3E0', text: '#E65100' },
   sent:     { bg: '#E8F5E9', text: '#2E7D32' },
