@@ -76,7 +76,15 @@ export default function useAgendaData({ selectedDate, searchQuery, filters }: Us
         pet = petMap.get(appt.pet_id);
       }
       if (!pet && appt.patient_name) {
-        pet = petMap.get(appt.patient_name.toLowerCase());
+        const nameKey = appt.patient_name.toLowerCase().trim();
+        pet = petMap.get(nameKey);
+        if (!pet) {
+          const allPets = Array.from(petMap.values());
+          pet = allPets.find((p: any) => {
+            const petName = (p.name || '').toLowerCase().trim();
+            return petName && (petName.includes(nameKey) || nameKey.includes(petName));
+          }) || null;
+        }
       }
       return {
         ...appt,
