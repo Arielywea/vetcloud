@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   },
   todayRing: {
     borderWidth: 1.5,
-    borderColor: '#C9A227',
+    borderColor: colors.accent,
   },
   dayNumber: {
     fontSize: 14,

@@ -151,8 +151,8 @@ const styles = StyleSheet.create({
   primaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderRadius: RADIUS.sm,
     gap: 4,
   },
@@ -164,8 +164,8 @@ const styles = StyleSheet.create({
   secondaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderRadius: RADIUS.sm,
     borderWidth: 1,
     gap: 4,
