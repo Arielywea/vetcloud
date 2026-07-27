@@ -1,18 +1,11 @@
 import { useMemo } from 'react';
 import { Appointment } from '../../services/directus';
+import { toLocalDateKeyFromString } from '../../utils/date';
 
 const HOUR_HEIGHT = 36;
 const START_HOUR = 8;
 const END_HOUR = 19;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
-
-function toLocalDateKey(dateStr: string): string {
-  const d = new Date(dateStr);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
 
 function getDurationMinutes(appt: Appointment): number {
   if (appt.end_time) {
@@ -67,7 +60,7 @@ export default function useAgendaLayout({ appointments, selectedDate }: UseAgend
 
   const dayAppointments = useMemo(() => {
     return appointments
-      .filter((a) => toLocalDateKey(a.start_time) === dateKey)
+      .filter((a) => toLocalDateKeyFromString(a.start_time) === dateKey)
       .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
   }, [appointments, dateKey]);
 
