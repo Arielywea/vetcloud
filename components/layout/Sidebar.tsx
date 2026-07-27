@@ -69,7 +69,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: sidebarBg, borderTopColor: colors.accent, ...shadows.sm }]}>
+    <View style={[styles.container, { backgroundColor: sidebarBg, borderTopColor: colors.accent, ...SHADOWS.sm }]}>
       {/* Logo */}
       <View style={[styles.logoSection, { borderBottomColor: palette.default + '1A' }]}>
         <View style={styles.logoWrap}>
