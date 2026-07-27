@@ -3,11 +3,41 @@ import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StyleSheet, ActivityIndicator, View } from 'react-native';
+import { StyleSheet, ActivityIndicator, View, Text } from 'react-native';
+import React from 'react';
 import { AuthProvider, useAuth } from '../hooks/useAuth';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { APP_COLORS } from '../constants/colors';
 import LoginScreen from './auth/login';
+
+class RootErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: string }
+> {
+  state = { hasError: false, error: '' };
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: error.message };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0B1120', padding: 24 }}>
+          <Text style={{ color: '#F87171', fontSize: 20, fontWeight: 'bold', marginBottom: 12 }}>Algo salió mal</Text>
+          <Text style={{ color: '#94A3B8', fontSize: 14, textAlign: 'center' }}>{this.state.error}</Text>
+          <Text
+            style={{ color: '#60A5FA', fontSize: 14, marginTop: 20 }}
+            onPress={() => this.setState({ hasError: false, error: '' })}
+          >
+            Reintentar
+          </Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function AppContent() {
   const { isAuthenticated, loading } = useAuth();
@@ -62,7 +92,9 @@ export default function RootLayout() {
         <AuthProvider>
           <ThemeProvider>
             <ThemedPaperProvider>
-              <AppContent />
+              <RootErrorBoundary>
+                <AppContent />
+              </RootErrorBoundary>
               <StatusBar style="auto" />
             </ThemedPaperProvider>
           </ThemeProvider>
