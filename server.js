@@ -85,7 +85,7 @@ app.post('/auth/login', async (req, res) => {
 
 app.get('/auth/me', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, rut, name, email, role, theme_preference, color_palette, created_at, smtp_email, clinic_name, veterinarian_name, clinic_phone, clinic_address FROM users WHERE id = $1', [req.userId]);
+    const result = await pool.query('SELECT id, rut, name, email, role, theme_preference, color_palette, created_at, smtp_email, clinic_name, veterinarian_name, clinic_phone, clinic_address, notification_email_reminders, notification_upcoming_appointments, notification_push FROM users WHERE id = $1', [req.userId]);
     if (!result.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
     const user = result.rows[0];
     if (user.smtp_password) user.smtp_password = '••••••••';
@@ -97,7 +97,7 @@ app.get('/auth/me', authMiddleware, async (req, res) => {
 
 app.patch('/auth/profile', authMiddleware, async (req, res) => {
   try {
-    const { name, email, clinic_name, veterinarian_name, clinic_phone, clinic_address, smtp_email, smtp_password, theme_preference, color_palette } = req.body;
+    const { name, email, clinic_name, veterinarian_name, clinic_phone, clinic_address, smtp_email, smtp_password, theme_preference, color_palette, notification_email_reminders, notification_upcoming_appointments, notification_push } = req.body;
     const fields = [];
     const values = [];
     let idx = 1;
@@ -111,10 +111,13 @@ app.patch('/auth/profile', authMiddleware, async (req, res) => {
     if (smtp_password !== undefined && smtp_password !== '••••••••') { fields.push(`smtp_password = $${idx}`); values.push(smtp_password); idx++; }
     if (theme_preference !== undefined) { fields.push(`theme_preference = $${idx}`); values.push(theme_preference); idx++; }
     if (color_palette !== undefined) { fields.push(`color_palette = $${idx}`); values.push(color_palette); idx++; }
+    if (notification_email_reminders !== undefined) { fields.push(`notification_email_reminders = $${idx}`); values.push(notification_email_reminders); idx++; }
+    if (notification_upcoming_appointments !== undefined) { fields.push(`notification_upcoming_appointments = $${idx}`); values.push(notification_upcoming_appointments); idx++; }
+    if (notification_push !== undefined) { fields.push(`notification_push = $${idx}`); values.push(notification_push); idx++; }
     if (!fields.length) return res.status(400).json({ error: 'No hay campos para actualizar' });
     values.push(req.userId);
     const result = await pool.query(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, rut, name, email, role, theme_preference, color_palette, created_at, smtp_email, clinic_name, veterinarian_name, clinic_phone, clinic_address`,
+      `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, rut, name, email, role, theme_preference, color_palette, created_at, smtp_email, clinic_name, veterinarian_name, clinic_phone, clinic_address, notification_email_reminders, notification_upcoming_appointments, notification_push`,
       values
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
