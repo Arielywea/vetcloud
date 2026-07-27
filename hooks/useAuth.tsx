@@ -14,6 +14,9 @@ interface User {
   clinic_phone: string | null;
   clinic_address: string | null;
   smtp_email: string | null;
+  notification_email_reminders: boolean;
+  notification_upcoming_appointments: boolean;
+  notification_push: boolean;
 }
 
 interface AuthContextType {
