@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, ScrollView, Text } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, Dimensions } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import TimeGrid, { HOUR_HEIGHT, HOURS } from './TimeGrid';
 import AppointmentCard, { AppointmentCardData } from './AppointmentCard';
@@ -68,7 +68,9 @@ export default function WeekView({
   const { colors } = useTheme();
 
   const colWidth = useMemo(() => {
-    return Math.floor((900 - SPACING.lg * 2 - 52) / 7);
+    const screenW = Dimensions.get('window').width;
+    const availW = screenW - 52;
+    return Math.floor(availW / 7);
   }, []);
 
   if (loading) {
@@ -105,13 +107,13 @@ export default function WeekView({
       </View>
 
       {/* Scrollable grid */}
-      <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollArea} contentContainerStyle={{ paddingTop: 4 }} showsVerticalScrollIndicator={false}>
         <View style={styles.gridRow}>
           {/* Time labels */}
           <View style={{ width: 52 }}>
             {HOURS.map((hour) => (
               <View key={hour} style={{ height: HOUR_HEIGHT, justifyContent: 'flex-start' }}>
-                <Text style={[styles.timeLabel, { color: colors.textSecondary }]}>
+                <Text style={[styles.timeLabel, { color: colors.text }]}>
                   {`${hour.toString().padStart(2, '0')}:00`}
                 </Text>
               </View>

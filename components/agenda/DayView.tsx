@@ -65,13 +65,13 @@ export default function DayView({
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollArea} contentContainerStyle={{ paddingTop: 4 }} showsVerticalScrollIndicator={false}>
         <View style={styles.gridRow}>
           {/* Time labels */}
           <View style={[styles.timeColumn, { width: 44 }]}>
             {HOURS.map((hour) => (
               <View key={hour} style={{ height: HOUR_HEIGHT, justifyContent: 'flex-start' }}>
-                <Text style={[styles.timeLabel, { color: colors.textSecondary }]}>
+                <Text style={[styles.timeLabel, { color: colors.text }]}>
                   {`${hour.toString().padStart(2, '0')}:00`}
                 </Text>
               </View>
