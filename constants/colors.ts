@@ -275,6 +275,19 @@ export const TEXT_ON_PRIMARY = {
   dark:  { default: '#0F172A', muted: '#0F172ABB', subtle: '#0F172A99', faint: '#0F172A80' },
 };
 
+/**
+ * Returns the correct text-on-primary colors based on the primary color's luminance.
+ * If the primary is dark → returns light text. If primary is light → returns dark text.
+ */
+export function getTextOnPrimary(primaryColor: string): { default: string; muted: string; subtle: string; faint: string } {
+  const hex = primaryColor.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? TEXT_ON_PRIMARY.dark : TEXT_ON_PRIMARY.light;
+}
+
 // ─────────────────────────────────────────────────────────
 // Record type colors — centralized
 // ─────────────────────────────────────────────────────────
