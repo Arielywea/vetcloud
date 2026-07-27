@@ -215,7 +215,7 @@ export const PALETTES: Record<string, { light: AppColors; dark: AppColors; label
     dark: {
       primary: '#9B1B30', primaryLight: '#C42847', primaryDark: '#6D1220', primaryContainer: '#2A0F1A',
       accent: '#C9A227', success: '#66BB6A', background: '#0B0C14', surface: '#12131F', surfaceVariant: '#1A1B2E',
-      text: '#E8E0F0', textSecondary: '#8B90A0', textLight: '#5A5E70',
+      text: '#C5CAD6', textSecondary: '#9BA1B0', textLight: '#6B7186',
       error: '#EF5350', warning: '#FFB74D', info: '#7986CB', border: '#252638', disabled: '#3A3B4E', cardShadow: '#000000',
     },
   },
