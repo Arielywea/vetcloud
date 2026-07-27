@@ -29,7 +29,7 @@ const MENU_SECTIONS = [
   {
     title: 'CUENTA',
     items: [
-      { label: 'Mi Perfil', icon: UserCircle, route: '/(drawer)/profile' },
+      { label: 'Configuración', iconName: 'configuracion' as VetCloudIconName, route: '/(drawer)/configuracion' },
     ],
   },
 ];
