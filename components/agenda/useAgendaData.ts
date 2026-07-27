@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Appointment, api } from '../../services/directus';
+import { toLocalDateKey } from '../../utils/date';
 
 interface EnrichedAppointment extends Appointment {
   petPhoto: string | null;
@@ -101,12 +102,7 @@ export default function useAgendaData({ selectedDate, searchQuery, filters }: Us
     });
   }, [rawAppointments, petMap]);
 
-  const dateKey = useMemo(() => {
-    const y = selectedDate.getFullYear();
-    const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
-    const d = String(selectedDate.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }, [selectedDate]);
+  const dateKey = useMemo(() => toLocalDateKey(selectedDate), [selectedDate]);
 
   const appointments = useMemo(() => {
     let result = enriched;
