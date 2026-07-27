@@ -40,7 +40,7 @@ export const FileService = {
   },
 
   getThumbnailUrl(fileId: string, width: number = 200, height: number = 200): string {
-    return `${API_URL}/uploads/${fileId}`;
+    return `${API_URL}/assets/${fileId}?width=${width}&height=${height}&fit=cover`;
   },
 
   async deleteFile(fileId: string): Promise<boolean> {
