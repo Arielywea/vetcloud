@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
-import { TEXT_ON_PRIMARY } from '../../constants/colors';
+import { TEXT_ON_PRIMARY, getTextOnPrimary } from '../../constants/colors';
 import BeagleLogo from '../BeagleLogo';
 import VetCloudIcon, { VetCloudIconName } from '../icons/VetCloudIcon';
 
@@ -52,7 +52,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
   const { user, logout } = useAuth();
   const { colors, isDark } = useTheme();
 
-  const palette = isDark ? TEXT_ON_PRIMARY.dark : TEXT_ON_PRIMARY.light;
+  const palette = getTextOnPrimary(colors.primary);
   const sidebarBg = colors.primary;
   const textColor = palette.default;
   const mutedText = palette.subtle;
