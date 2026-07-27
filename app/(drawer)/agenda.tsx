@@ -11,7 +11,7 @@ import MonthView from '../../components/agenda/MonthView';
 import AgendaSidebar from '../../components/agenda/AgendaSidebar';
 import DaySummary from '../../components/agenda/DaySummary';
 import ContextMenu from '../../components/agenda/ContextMenu';
-import AppointmentTooltip from '../../components/agenda/AppointmentTooltip';
+
 import AppointmentDetailModal, { AppointmentDetail } from '../../components/agenda/AppointmentDetailModal';
 
 // Hooks
@@ -65,7 +65,7 @@ function AgendaContent() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, appointment: null as EnrichedAppointment | null });
-  const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, appointment: null as EnrichedAppointment | null });
+  
   const [filters, setFilters] = useState({ veterinarian: '', species: '', appointmentType: '', status: '' });
   const [detailModal, setDetailModal] = useState({ visible: false, appointment: null as AppointmentDetail | null });
 
@@ -196,12 +196,7 @@ function AgendaContent() {
         onAction={handleContextAction}
         onClose={closeContextMenu}
       />
-      <AppointmentTooltip
-        appointment={tooltip.appointment!}
-        visible={tooltip.visible}
-        x={tooltip.x}
-        y={tooltip.y}
-      />
+
       <AppointmentDetailModal
         visible={detailModal.visible}
         appointment={detailModal.appointment}
