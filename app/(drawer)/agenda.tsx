@@ -121,7 +121,7 @@ function AgendaContent() {
     setContextMenu({ visible: false, x: 0, y: 0, appointment: null });
   }, []);
 
-  const sidebarWidth = screenWidth > 1200 ? 280 : 0;
+  const sidebarWidth = screenWidth > 1200 ? 320 : 0;
   const showSidebar = screenWidth > 1200;
   const mainContentWidth = showSidebar ? screenWidth - sidebarWidth : screenWidth;
 
