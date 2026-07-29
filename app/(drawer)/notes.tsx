@@ -54,8 +54,8 @@ export default function NotesScreen() {
         <View style={styles.noteHeader}>
           <Text variant="titleMedium" style={[styles.noteTitle, { color: colors.text }]}>{item.title}</Text>
           <View style={styles.noteActions}>
-            <TouchableOpacity onPress={() => handleEdit(item)}><Pencil size={16} color={colors.primary} /></TouchableOpacity>
-            <TouchableOpacity onPress={() => setDeleteTarget(item)}><Trash2 size={16} color={colors.error} /></TouchableOpacity>
+            <TouchableOpacity onPress={() => handleEdit(item)} style={{ padding: 8 }}><Pencil size={16} color={colors.primary} /></TouchableOpacity>
+            <TouchableOpacity onPress={() => setDeleteTarget(item)} style={{ padding: 8 }}><Trash2 size={16} color={colors.error} /></TouchableOpacity>
           </View>
         </View>
         <Text variant="bodyMedium" style={[styles.noteContent, { color: colors.textSecondary }]} numberOfLines={3}>{item.content}</Text>

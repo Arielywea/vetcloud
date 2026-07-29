@@ -114,11 +114,11 @@ export default function RemindersScreen() {
                 <View style={styles.cardActions}>
                   {reminder.status === 'pending' && (
                     <>
-                      <TouchableOpacity onPress={() => updateReminder(reminder.id, { status: 'sent' })}><Check size={16} color={colors.success} /></TouchableOpacity>
-                      <TouchableOpacity onPress={() => updateReminder(reminder.id, { status: 'cancelled' })}><X size={16} color={colors.warning} /></TouchableOpacity>
+                      <TouchableOpacity onPress={() => updateReminder(reminder.id, { status: 'sent' })} style={{ padding: 8 }}><Check size={16} color={colors.success} /></TouchableOpacity>
+                      <TouchableOpacity onPress={() => updateReminder(reminder.id, { status: 'cancelled' })} style={{ padding: 8 }}><X size={16} color={colors.warning} /></TouchableOpacity>
                     </>
                   )}
-                  <TouchableOpacity onPress={() => removeReminder(reminder.id)}><Trash2 size={16} color={colors.error} /></TouchableOpacity>
+                  <TouchableOpacity onPress={() => removeReminder(reminder.id)} style={{ padding: 8 }}><Trash2 size={16} color={colors.error} /></TouchableOpacity>
                 </View>
               </View>
             </VCard>

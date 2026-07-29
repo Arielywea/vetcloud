@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, ScrollView, StyleSheet, Pressable, Image, ImageStyle } from 'react-native';
+import { View, ScrollView, StyleSheet, Pressable, Image, ImageStyle, useWindowDimensions } from 'react-native';
 import { Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar, CheckCircle, User, Sparkles, CalendarDays, ChevronRight, Users } from 'lucide-react-native';
@@ -50,11 +50,11 @@ function getGreeting(): string {
   return 'Buenas noches';
 }
 
-function BannerIllustration() {
+function BannerIllustration({ isMobile }: { isMobile: boolean }) {
   return (
     <Image
       source={require('../../assets/banner.png')}
-      style={{ width: 280, height: 280, position: 'absolute', right: 0, bottom: 0 } as ImageStyle}
+      style={{ width: isMobile ? 140 : 280, height: isMobile ? 140 : 280, position: 'absolute', right: 0, bottom: 0 } as ImageStyle}
       resizeMode="cover"
     />
   );
@@ -64,6 +64,8 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 640;
   const { pets, loading: loadingPets } = usePets();
   const { appointments, loading: loadingAppointments } = useAppointments();
   const { records: clinicalRecords, loading: loadingRecords } = useClinicalRecords();
@@ -239,19 +241,19 @@ export default function DashboardScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* Row 1: Hero + Próxima Cita */}
-      <View style={styles.topRow}>
+      <View style={[styles.topRow, isMobile && styles.topRowMobile]}>
         <LinearGradient
           colors={[colors.primaryDark, colors.primary, colors.primaryLight]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.hero}
+          style={[styles.hero, isMobile && styles.heroMobile]}
         >
           <View style={styles.heroContent}>
             <View style={styles.heroGreetingRow}>
               <Sparkles size={14} color={TEXT_ON_PRIMARY.light.muted} />
               <Text style={[styles.heroGreeting, { color: TEXT_ON_PRIMARY.light.muted }]}>{getGreeting()}</Text>
             </View>
-            <Text style={[styles.heroName, { color: TEXT_ON_PRIMARY.light.default }]}>
+            <Text style={[styles.heroName, { color: TEXT_ON_PRIMARY.light.default }, isMobile && styles.heroNameMobile]}>
               Hola, {user?.name?.split(' ')[0] || 'Usuario'}
             </Text>
             <View style={styles.heroStatsRow}>
@@ -266,56 +268,41 @@ export default function DashboardScreen() {
             </View>
             <Pressable
               onPress={() => router.push('/(drawer)/agenda')}
-              style={[styles.heroButton, { backgroundColor: 'rgba(255,255,255,0.15)', borderColor: 'rgba(255,255,255,0.25)' }]}
+              style={[styles.heroButton, { backgroundColor: 'rgba(255,255,255,0.15)', borderColor: 'rgba(255,255,255,0.25)' }, isMobile && styles.heroButtonMobile]}
             >
               <CalendarDays size={14} color={TEXT_ON_PRIMARY.light.default} />
               <Text style={[styles.heroButtonText, { color: TEXT_ON_PRIMARY.light.default }]}>Ver agenda del día</Text>
               <ChevronRight size={14} color={TEXT_ON_PRIMARY.light.muted} />
             </Pressable>
           </View>
-          <BannerIllustration />
+          <BannerIllustration isMobile={isMobile} />
         </LinearGradient>
         <NextAppointmentCard {...nextAppointment} />
       </View>
 
       {/* Row 2: Stats Cards */}
-      <View style={styles.statsRow}>
-        <View style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs]}>
-          <View style={[styles.statIcon, { backgroundColor: colors.primaryContainer }]}>
-            <VetCloudIcon name="pacientes" size={24} color={colors.primary} />
+      <View style={[styles.statsRow, isMobile && styles.statsRowMobile]}>
+        {[{ icon: 'pacientes' as const, color: colors.primary, bg: colors.primaryContainer, value: pets.length, label: 'Pacientes' },
+          { icon: 'agenda' as const, color: colors.info, bg: colors.info + '18', value: todayAppointments.length, label: 'Citas Hoy' },
+          { icon: 'laboratorio' as const, color: colors.success, bg: colors.success + '18', value: clinicalRecords.length, label: 'Fichas Clínicas' },
+          { icon: 'inventario' as const, color: colors.warning, bg: colors.warning + '18', value: lowStockItems.length, label: 'Alertas Stock' }
+        ].map((stat, i) => (
+          <View key={i} style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs, isMobile && styles.statCardMobile]}>
+            <View style={[styles.statIcon, { backgroundColor: stat.bg }]}>
+              <VetCloudIcon name={stat.icon} size={24} color={stat.color} />
+            </View>
+            <Text style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{stat.label}</Text>
           </View>
-          <Text style={[styles.statValue, { color: colors.text }]}>{pets.length}</Text>
-          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Pacientes</Text>
-        </View>
-        <View style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs]}>
-          <View style={[styles.statIcon, { backgroundColor: colors.info + '18' }]}>
-            <VetCloudIcon name="agenda" size={24} color={colors.info} />
-          </View>
-          <Text style={[styles.statValue, { color: colors.text }]}>{todayAppointments.length}</Text>
-          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Citas Hoy</Text>
-        </View>
-        <View style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs]}>
-          <View style={[styles.statIcon, { backgroundColor: colors.success + '18' }]}>
-            <VetCloudIcon name="laboratorio" size={24} color={colors.success} />
-          </View>
-          <Text style={[styles.statValue, { color: colors.text }]}>{clinicalRecords.length}</Text>
-          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Fichas Clínicas</Text>
-        </View>
-        <View style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs]}>
-          <View style={[styles.statIcon, { backgroundColor: colors.warning + '18' }]}>
-            <VetCloudIcon name="inventario" size={24} color={colors.warning} />
-          </View>
-          <Text style={[styles.statValue, { color: colors.text }]}>{lowStockItems.length}</Text>
-          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Alertas Stock</Text>
-        </View>
+        ))}
       </View>
 
       {/* Row 3: Pacientes + Estadísticas + Acciones */}
-      <View style={styles.threeColRow}>
-        <View style={styles.colLeft}>
+      <View style={[styles.threeColRow, isMobile && styles.threeColRowMobile]}>
+        <View style={[styles.colLeft, isMobile && styles.colMobile]}>
           <PatientList patients={recentPatients} />
         </View>
-        <View style={styles.colCenter}>
+        <View style={[styles.colCenter, isMobile && styles.colMobile]}>
           <StatsChart
             totalConsultas={statsData.totalConsultas}
             consultasChange={statsData.consultasChange}
@@ -327,17 +314,17 @@ export default function DashboardScreen() {
             hospitalizacionesChange={statsData.hospitalizacionesChange}
           />
         </View>
-        <View style={styles.colRight}>
+        <View style={[styles.colRight, isMobile && styles.colMobile]}>
           <QuickActions />
         </View>
       </View>
 
       {/* Row 4: Inventario + Actividad */}
-      <View style={styles.twoColRow}>
-        <View style={styles.colHalf}>
+      <View style={[styles.twoColRow, isMobile && styles.twoColRowMobile]}>
+        <View style={[styles.colHalf, isMobile && styles.colMobile]}>
           <InventoryBar items={groupedInventory} />
         </View>
-        <View style={styles.colHalf}>
+        <View style={[styles.colHalf, isMobile && styles.colMobile]}>
           <ActivityFeed items={activityItems} />
         </View>
       </View>
@@ -355,6 +342,10 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xl,
     gap: SPACING.lg,
   },
+  topRowMobile: {
+    flexDirection: 'column',
+    paddingHorizontal: SPACING.md,
+  },
   hero: {
     flex: 1.5,
     borderRadius: RADIUS.xl,
@@ -364,6 +355,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     overflow: 'hidden',
     position: 'relative',
+  },
+  heroMobile: {
+    padding: SPACING.lg,
+    minHeight: 200,
   },
   heroContent: {
     flex: 1,
@@ -380,6 +375,7 @@ const styles = StyleSheet.create({
     fontWeight: TYPOGRAPHY.weights.regular,
   },
   heroName: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.bold },
+  heroNameMobile: { fontSize: TYPOGRAPHY.sizes.xl },
   heroStatsRow: {
     flexDirection: 'row',
     gap: SPACING.sm,
@@ -409,6 +405,10 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
     marginTop: SPACING.md,
   },
+  heroButtonMobile: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+  },
   heroButtonText: {
     fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: TYPOGRAPHY.weights.semibold,
@@ -420,11 +420,21 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xl,
     gap: SPACING.lg,
   },
+  statsRowMobile: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: SPACING.md,
+    gap: SPACING.sm,
+  },
   statCard: {
     flex: 1,
     borderRadius: RADIUS.lg,
     padding: SPACING.xl,
     alignItems: 'center',
+  },
+  statCardMobile: {
+    flexBasis: '48%',
+    padding: SPACING.md,
   },
   statIcon: {
     width: 48,
@@ -443,15 +453,24 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xl,
     gap: SPACING.lg,
   },
+  threeColRowMobile: {
+    flexDirection: 'column',
+    paddingHorizontal: SPACING.md,
+  },
   colLeft: { flex: 1 },
   colCenter: { flex: 1 },
   colRight: { flex: 1 },
+  colMobile: { flex: undefined },
 
   twoColRow: {
     flexDirection: 'row',
     paddingHorizontal: SPACING.xl,
     marginTop: SPACING.xl,
     gap: SPACING.lg,
+  },
+  twoColRowMobile: {
+    flexDirection: 'column',
+    paddingHorizontal: SPACING.md,
   },
   colHalf: { flex: 1 },
 });

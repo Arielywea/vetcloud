@@ -116,8 +116,8 @@ export default function InventarioScreen() {
                     <Text style={[styles.minStock, { color: colors.textLight }]}>Mín: {item.min_stock}</Text>
                   </View>
                   <View style={styles.itemActions}>
-                    <TouchableOpacity onPress={() => openEdit(item)}><Pencil size={18} color={colors.primary} /></TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDelete(item)}><Trash2 size={18} color={colors.error} /></TouchableOpacity>
+                    <TouchableOpacity onPress={() => openEdit(item)} style={{ padding: 8 }}><Pencil size={18} color={colors.primary} /></TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleDelete(item)} style={{ padding: 8 }}><Trash2 size={18} color={colors.error} /></TouchableOpacity>
                   </View>
                 </View>
               </VCard>
