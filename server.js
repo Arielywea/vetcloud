@@ -179,7 +179,7 @@ app.get('/items/diseases', async (req, res) => {
     }
 
     if (conditions.length) query += ' WHERE ' + conditions.join(' AND ');
-    query += ' ORDER BY prevalence_rank ASC NULLS LAST, name ASC';
+    query += ' ORDER BY CASE WHEN species = \'both\' THEN 0 WHEN species = \'dog\' THEN 1 ELSE 2 END, prevalence_rank ASC NULLS LAST, name ASC';
 
     const result = await pool.query(query, params);
     res.json({ data: result.rows });
