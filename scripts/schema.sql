@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS diseases (
   prognosis VARCHAR(20) DEFAULT 'good',
   is_zoonotic BOOLEAN DEFAULT false,
   references_list JSONB DEFAULT '[]'::jsonb,
+  prevalence_rank INTEGER,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -87,6 +88,7 @@ CREATE TABLE IF NOT EXISTS favorites (
 CREATE INDEX IF NOT EXISTS idx_diseases_species ON diseases(species);
 CREATE INDEX IF NOT EXISTS idx_diseases_category ON diseases(category);
 CREATE INDEX IF NOT EXISTS idx_diseases_severity ON diseases(severity);
+CREATE INDEX IF NOT EXISTS idx_diseases_prevalence_rank ON diseases(prevalence_rank ASC NULLS LAST);
 CREATE INDEX IF NOT EXISTS idx_pets_species ON pets(species);
 CREATE INDEX IF NOT EXISTS idx_medical_records_pet ON medical_records(pet_id);
 CREATE INDEX IF NOT EXISTS idx_medical_records_disease ON medical_records(disease_id);

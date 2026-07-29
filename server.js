@@ -179,7 +179,7 @@ app.get('/items/diseases', async (req, res) => {
     }
 
     if (conditions.length) query += ' WHERE ' + conditions.join(' AND ');
-    query += ' ORDER BY name';
+    query += ' ORDER BY prevalence_rank ASC NULLS LAST, name ASC';
 
     const result = await pool.query(query, params);
     res.json({ data: result.rows });
