@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
 import { Text } from 'react-native-paper';
 import { Search, Bell, Menu, Command, Plus, Calendar } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -17,59 +17,67 @@ interface TopBarProps {
 export default function TopBar({ onMenuPress, onSearchPress, title, rightContent }: TopBarProps) {
   const router = useRouter();
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 640;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface, borderBottomColor: colors.border }, SHADOWS.xs]}>
-      {/* Left: hamburger (mobile) or title */}
+    <View style={[styles.container, { backgroundColor: colors.surface, borderBottomColor: colors.border }, SHADOWS.xs, isMobile && styles.containerMobile]}>
+      {/* Left: hamburger (mobile) or nothing */}
       <View style={styles.left}>
         {onMenuPress && (
-          <TouchableOpacity onPress={onMenuPress} style={styles.menuBtn}>
+          <TouchableOpacity onPress={onMenuPress} style={[styles.menuBtn, isMobile && styles.menuBtnMobile]}>
             <Menu size={22} color={colors.text} />
           </TouchableOpacity>
         )}
         {title && (
-          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{title}</Text>
         )}
       </View>
 
-      {/* Center: search trigger */}
-      <TouchableOpacity
-        style={[styles.searchTrigger, { backgroundColor: colors.surfaceVariant, borderColor: colors.border + '80' }]}
-        onPress={onSearchPress}
-        activeOpacity={0.7}
-      >
-        <Search size={16} color={colors.textLight} />
-        <Text style={[styles.searchPlaceholder, { color: colors.textLight }]}>
-          Buscar pacientes, propietarios, citas...
-        </Text>
-        <View style={[styles.shortcut, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Command size={12} color={colors.textSecondary} />
-          <Text style={[styles.shortcutText, { color: colors.textSecondary }]}>K</Text>
-        </View>
-      </TouchableOpacity>
+      {/* Center: search trigger — hidden on mobile */}
+      {!isMobile && (
+        <TouchableOpacity
+          style={[styles.searchTrigger, { backgroundColor: colors.surfaceVariant, borderColor: colors.border + '80' }]}
+          onPress={onSearchPress}
+          activeOpacity={0.7}
+        >
+          <Search size={16} color={colors.textLight} />
+          <Text style={[styles.searchPlaceholder, { color: colors.textLight }]}>
+            Buscar pacientes, propietarios, citas...
+          </Text>
+          <View style={[styles.shortcut, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Command size={12} color={colors.textSecondary} />
+            <Text style={[styles.shortcutText, { color: colors.textSecondary }]}>K</Text>
+          </View>
+        </TouchableOpacity>
+      )}
 
       {/* Right: notifications + calendar + new patient */}
       <View style={styles.right}>
         {rightContent}
-        <TouchableOpacity style={styles.iconBtn}>
+        <TouchableOpacity style={[styles.iconBtn, isMobile && styles.iconBtnMobile]}>
           <Bell size={20} color={colors.textSecondary} />
           <View style={[styles.badge, { backgroundColor: colors.error }]}>
             <Text style={styles.badgeText}>3</Text>
           </View>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.iconBtn}>
-          <Calendar size={20} color={colors.textSecondary} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.newPatientBtn, { backgroundColor: colors.accent }]}
-          onPress={() => router.push('/(drawer)/add-paciente')}
-          activeOpacity={0.7}
-        >
-          <Plus size={18} color={TEXT_ON_PRIMARY.light.default} />
-          <Text style={[styles.newPatientText, { color: colors.primaryDark }]}>
-            Nuevo Paciente
-          </Text>
-        </TouchableOpacity>
+        {!isMobile && (
+          <TouchableOpacity style={[styles.iconBtn, isMobile && styles.iconBtnMobile]}>
+            <Calendar size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
+        {!isMobile && (
+          <TouchableOpacity
+            style={[styles.newPatientBtn, { backgroundColor: colors.accent }]}
+            onPress={() => router.push('/(drawer)/add-paciente')}
+            activeOpacity={0.7}
+          >
+            <Plus size={18} color={TEXT_ON_PRIMARY.light.default} />
+            <Text style={[styles.newPatientText, { color: colors.primaryDark }]}>
+              Nuevo Paciente
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -84,6 +92,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     gap: SPACING.lg,
   },
+  containerMobile: {
+    height: 56,
+    paddingHorizontal: SPACING.md,
+    gap: SPACING.sm,
+  },
   left: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -91,6 +104,9 @@ const styles = StyleSheet.create({
   },
   menuBtn: {
     padding: SPACING.sm,
+  },
+  menuBtnMobile: {
+    padding: SPACING.md,
   },
   title: {
     fontSize: TYPOGRAPHY.sizes.lg,
@@ -132,6 +148,9 @@ const styles = StyleSheet.create({
   iconBtn: {
     padding: SPACING.sm,
     position: 'relative',
+  },
+  iconBtnMobile: {
+    padding: SPACING.md,
   },
   badge: {
     position: 'absolute',

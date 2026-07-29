@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, Dimensions, TouchableWithoutFeedback } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, useWindowDimensions, TouchableWithoutFeedback } from 'react-native';
 import { Text, Divider } from 'react-native-paper';
 import { X, Phone, Mail, ChevronRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -16,13 +16,12 @@ interface PatientSidePanelProps {
   onClose: () => void;
 }
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const PANEL_WIDTH = Math.min(360, SCREEN_WIDTH * 0.85);
-
 export default function PatientSidePanel({ patient, visible, onClose }: PatientSidePanelProps) {
   const { colors } = useTheme();
   const router = useRouter();
-  const slideAnim = useRef(new Animated.Value(PANEL_WIDTH)).current;
+  const { width: screenWidth } = useWindowDimensions();
+  const panelWidth = Math.min(360, screenWidth * 0.85);
+  const slideAnim = useRef(new Animated.Value(panelWidth)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -42,7 +41,7 @@ export default function PatientSidePanel({ patient, visible, onClose }: PatientS
     } else {
       Animated.parallel([
         Animated.timing(slideAnim, {
-          toValue: PANEL_WIDTH,
+          toValue: panelWidth,
           duration: 200,
           useNativeDriver: true,
         }),
@@ -76,7 +75,7 @@ export default function PatientSidePanel({ patient, visible, onClose }: PatientS
           styles.panel,
           {
             backgroundColor: colors.surface,
-            width: PANEL_WIDTH,
+            width: panelWidth,
             transform: [{ translateX: slideAnim }],
             ...SHADOWS.xl,
           },

@@ -79,7 +79,7 @@ export default function DiseaseDetailScreen() {
     headerTop: { marginBottom: 8 },
     headerTitle: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
     headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    editBtn: { padding: 4 },
+    editBtn: { padding: 8 },
     diseaseName: { fontWeight: '800', color: colors.text, flex: 1, marginRight: 8 },
     scientificName: { fontStyle: 'italic', color: colors.textSecondary, marginTop: 4 },
     badgeRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 6 },
@@ -91,7 +91,7 @@ export default function DiseaseDetailScreen() {
     sectionTitle: { fontWeight: '700', color: colors.text, marginBottom: 12, fontSize: 16 },
     description: { color: colors.text, lineHeight: 22 },
     tabBar: { flexDirection: 'row', marginHorizontal: 12, marginBottom: 12, backgroundColor: colors.surface, borderRadius: 12, padding: 4 },
-    tab: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 8 },
+    tab: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 8 },
     activeTab: { backgroundColor: colors.primaryContainer || '#E0F2F1' },
     tabLabel: { fontSize: 11, color: colors.textSecondary, marginTop: 4 },
     activeTabLabel: { color: colors.primary, fontWeight: '600' },
@@ -167,7 +167,7 @@ export default function DiseaseDetailScreen() {
                 <TouchableOpacity onPress={openEdit} style={styles.editBtn}>
                   <MaterialCommunityIcons name="pencil" size={22} color={colors.primary} />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => toggleFavorite(disease.id)}>
+                <TouchableOpacity onPress={() => toggleFavorite(disease.id)} style={{ padding: 8 }}>
                   <MaterialCommunityIcons
                     name={favorite ? 'heart' : 'heart-outline'}
                     size={28}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Component, ReactNode } from 'react';
 import { Stack, usePathname } from 'expo-router';
-import { View, StyleSheet, Platform, TouchableOpacity, ScrollView } from 'react-native';
+import { View, StyleSheet, Platform, TouchableOpacity, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import { Text } from 'react-native-paper';
 import Sidebar from '../../components/layout/Sidebar';
 import TopBar from '../../components/layout/TopBar';
@@ -58,32 +58,46 @@ const SCREEN_TITLES: Record<string, string> = {
 export default function DrawerLayout() {
   const { colors, isDark } = useTheme();
   const pathname = usePathname();
+  const { width } = useWindowDimensions();
   const [cmdOpen, setCmdOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const isMobile = width < 640;
+  const isWeb = Platform.OS === 'web';
 
   const openCmd = React.useCallback(() => setCmdOpen(true), []);
   useCmdK(openCmd);
 
   const pageTitle = SCREEN_TITLES[pathname] || 'VetCloud';
-  const isWeb = Platform.OS === 'web';
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Sidebar — always visible on web, hidden on mobile */}
-      {isWeb && (
+      {/* Sidebar — always visible on web desktop, hidden on mobile */}
+      {isWeb && !isMobile && (
         <View style={styles.sidebarWrapper}>
           <Sidebar onNavigate={() => setSidebarOpen(false)} />
         </View>
+      )}
+
+      {/* Mobile drawer overlay */}
+      {isMobile && sidebarOpen && (
+        <>
+          <Pressable
+            style={[styles.drawerBackdrop, { backgroundColor: 'rgba(0,0,0,0.4)' }]}
+            onPress={() => setSidebarOpen(false)}
+          />
+          <View style={[styles.drawerOverlay, { backgroundColor: colors.surface }]}>
+            <Sidebar onNavigate={() => setSidebarOpen(false)} />
+          </View>
+        </>
       )}
 
       {/* Main content */}
       <View style={styles.content}>
         <TopBar
           onSearchPress={openCmd}
-          title={isWeb ? undefined : pageTitle}
-          rightContent={
-            isWeb ? undefined : undefined
-          }
+          onMenuPress={isMobile ? () => setSidebarOpen(true) : undefined}
+          title={isMobile ? pageTitle : undefined}
         />
         <View style={styles.screenArea}>
           <ErrorBoundary colors={{ text: colors.text, textSecondary: colors.textSecondary }}>
@@ -126,6 +140,23 @@ const styles = StyleSheet.create({
   },
   sidebarWrapper: {
     width: 240,
+  },
+  drawerBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 90,
+  },
+  drawerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: 260,
+    zIndex: 100,
+    elevation: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
   },
   content: {
     flex: 1,

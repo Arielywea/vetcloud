@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Alert, useWindowDimensions } from 'react-native';
 import { Text, TextInput, Button, Menu, Dialog, Portal } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Check, UserRound, Camera, Dog, Cat, Mars, Venus, Stethoscope, ShieldCheck, ChevronUp, ChevronDown, CheckSquare, Square, CircleDot, Circle, FileEdit, ImagePlus } from 'lucide-react-native';
@@ -28,6 +28,8 @@ export default function AddPacienteScreen() {
   const { prefillName } = useLocalSearchParams<{ prefillName?: string }>();
   const { addPet } = usePets();
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 640;
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -227,7 +229,11 @@ export default function AddPacienteScreen() {
 
   // ─── Progress Bar ───────────────────────────────────────────
   const renderProgressBar = () => (
-    <View style={styles.progressContainer}>
+    <ScrollView
+      horizontal={isMobile}
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={[styles.progressContainer, isMobile && styles.progressContainerMobile]}
+    >
       {STEP_LABELS.map((label, idx) => {
         const step = idx + 1;
         const isCompleted = step < currentStep;
@@ -272,7 +278,7 @@ export default function AddPacienteScreen() {
           </React.Fragment>
         );
       })}
-    </View>
+      </ScrollView>
   );
 
   // ─── Step 1: Información básica ─────────────────────────────
@@ -288,7 +294,7 @@ export default function AddPacienteScreen() {
         </View>
 
         {/* Row 1: Nombre, Especie, Raza */}
-        <View style={styles.grid3}>
+        <View style={[styles.grid3, isMobile && { flexDirection: 'column' }]}>
           <View style={styles.gridField}>
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Nombre del paciente *</Text>
             <TextInput
@@ -343,7 +349,7 @@ export default function AddPacienteScreen() {
         </View>
 
         {/* Row 2: Fecha nacimiento, Sexo, Estado reproductivo */}
-        <View style={styles.grid3}>
+        <View style={[styles.grid3, isMobile && { flexDirection: 'column' }]}>
           <View style={styles.gridField}>
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Fecha de nacimiento</Text>
             <TextInput
@@ -410,7 +416,7 @@ export default function AddPacienteScreen() {
         </View>
 
         {/* Row 3: Color/Pelaje, Peso, Microchip */}
-        <View style={styles.grid3}>
+        <View style={[styles.grid3, isMobile && { flexDirection: 'column' }]}>
           <View style={styles.gridField}>
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Color / Pelaje</Text>
             <TextInput
@@ -533,7 +539,7 @@ export default function AddPacienteScreen() {
           outlineColor={colors.border}
           activeOutlineColor={colors.primary}
         />
-        <View style={styles.row}>
+        <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
           <TextInput
             label="Teléfono"
             value={phone}
@@ -680,19 +686,19 @@ export default function AddPacienteScreen() {
         {examenExpanded && (
           <View style={styles.collapsibleContent}>
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Constantes fisiológicas</Text>
-            <View style={styles.row}>
+            <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
               <TextInput label="Temp (°C)" value={vitalTemp} onChangeText={setVitalTemp} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
               <TextInput label="FC (lpm)" value={vitalFC} onChangeText={setVitalFC} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
             </View>
-            <View style={styles.row}>
+            <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
               <TextInput label="FR (rpm)" value={vitalFR} onChangeText={setVitalFR} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
               <TextInput label="PA (mmHg)" value={vitalPA} onChangeText={setVitalPA} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
             </View>
-            <View style={styles.row}>
+            <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
               <TextInput label="SpO₂ (%)" value={vitalSpO2} onChangeText={setVitalSpO2} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
               <TextInput label="Mucosas" value={vitalMucosas} onChangeText={setVitalMucosas} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
             </View>
-            <View style={styles.row}>
+            <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
               <TextInput label="Hidratación" value={vitalHidratacion} onChangeText={setVitalHidratacion} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
               <TextInput label="Condición corporal" value={vitalCondicionCorporal} onChangeText={setVitalCondicionCorporal} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
             </View>
@@ -804,7 +810,7 @@ export default function AddPacienteScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header + Progress Bar */}
-      <View style={styles.header}>
+      <View style={[styles.header, isMobile && styles.headerMobile]}>
         <View style={styles.breadcrumb}>
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={[styles.breadcrumbLink, { color: colors.primary }]}>← Pacientes</Text>
@@ -812,21 +818,21 @@ export default function AddPacienteScreen() {
           <Text style={[styles.breadcrumbSeparator, { color: colors.textSecondary }]}>›</Text>
           <Text style={[styles.breadcrumbCurrent, { color: colors.text }]}>Nuevo Paciente</Text>
         </View>
-        <View style={styles.headerRow}>
+        <View style={[styles.headerRow, isMobile && styles.headerRowMobile]}>
           <View style={styles.headerLeft}>
-            <Text style={[styles.title, { color: colors.text }]}>Nuevo Paciente</Text>
+            <Text style={[styles.title, { color: colors.text }, isMobile && styles.titleMobile]}>Nuevo Paciente</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Completa la información para registrar un nuevo paciente en el sistema.
             </Text>
           </View>
-          <View style={styles.headerRight}>
+          <View style={[styles.headerRight, isMobile && styles.headerRightMobile]}>
             {renderProgressBar()}
           </View>
         </View>
       </View>
 
       {/* Step Content */}
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, isMobile && styles.scrollContentMobile]}>
         {currentStep === 1 && renderStep2()}
         {currentStep === 2 && renderStep1()}
         {currentStep === 3 && renderStep3()}
@@ -834,7 +840,7 @@ export default function AddPacienteScreen() {
       </ScrollView>
 
       {/* Navigation Bar */}
-      <View style={[styles.navBar, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+      <View style={[styles.navBar, { backgroundColor: colors.surface, borderTopColor: colors.border }, isMobile && styles.navBarMobile]}>
         <Button
           mode="outlined"
           onPress={currentStep === 1 ? () => router.back() : handlePrev}
@@ -876,11 +882,13 @@ export default function AddPacienteScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.xl, paddingBottom: SPACING.md },
+  headerMobile: { paddingHorizontal: SPACING.md, paddingTop: SPACING.md },
   breadcrumb: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginBottom: SPACING.md },
   breadcrumbLink: { fontSize: TYPOGRAPHY.sizes.sm },
   breadcrumbSeparator: { fontSize: TYPOGRAPHY.sizes.sm },
   breadcrumbCurrent: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold },
   title: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.bold },
+  titleMobile: { fontSize: TYPOGRAPHY.sizes.xl },
   subtitle: { fontSize: TYPOGRAPHY.sizes.md, marginTop: SPACING.xs },
 
   // Progress bar
@@ -891,6 +899,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.lg,
     gap: 0,
+  },
+  progressContainerMobile: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
   },
   progressStep: { alignItems: 'center', width: 100 },
   progressCircle: {
@@ -909,6 +921,7 @@ const styles = StyleSheet.create({
   // Scroll
   scrollView: { flex: 1 },
   scrollContent: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING['3xl'] },
+  scrollContentMobile: { paddingHorizontal: SPACING.md },
 
   // Steps
   stepContent: { gap: SPACING.md },
@@ -916,6 +929,13 @@ const styles = StyleSheet.create({
   step1Left: { flex: 2, gap: SPACING.xs },
   step1Right: { flex: 1 },
   stepSectionTitle: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.bold, marginBottom: SPACING.xs },
+
+  // Header row
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: SPACING.lg },
+  headerRowMobile: { flexDirection: 'column' },
+  headerLeft: { flex: 1 },
+  headerRight: { flexShrink: 0 },
+  headerRightMobile: { width: '100%' },
 
   // Cards
   card: { borderRadius: RADIUS.lg, padding: SPACING.lg, gap: SPACING.xs },
@@ -984,6 +1004,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.md,
     borderTopWidth: 1,
+  },
+  navBarMobile: {
+    paddingHorizontal: SPACING.md,
   },
   navBtn: { borderRadius: RADIUS.md },
   navBtnPrimary: { borderRadius: RADIUS.md },
