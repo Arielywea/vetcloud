@@ -49,6 +49,7 @@ export default function AddDiseaseScreen() {
   const [references, setReferences] = useState('');
   const [description, setDescription] = useState('');
   const [pathophysiology, setPathophysiology] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
 
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
   const [severityMenuVisible, setSeverityMenuVisible] = useState(false);
@@ -89,6 +90,7 @@ export default function AddDiseaseScreen() {
         },
         prevention: splitLines(prevention),
         references: splitLines(references),
+        photo_url: photoUrl.trim() || undefined,
       });
       router.back();
     } catch (error) {
@@ -336,6 +338,19 @@ export default function AddDiseaseScreen() {
           mode="outlined"
           multiline
           numberOfLines={3}
+          style={[styles.input, { backgroundColor: colors.surface }]}
+        />
+      </View>
+
+      {/* ── Section: Foto ── */}
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Foto de la Enfermedad</Text>
+        <TextInput
+          label="URL de la imagen (opcional)"
+          value={photoUrl}
+          onChangeText={setPhotoUrl}
+          mode="outlined"
+          placeholder="https://ejemplo.com/imagen.jpg"
           style={[styles.input, { backgroundColor: colors.surface }]}
         />
       </View>

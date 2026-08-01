@@ -4,16 +4,20 @@ import { DOG_DISEASES_2 } from './dog-diseases-2';
 import { DOG_DISEASES_3 } from './dog-diseases-3';
 import { CAT_DISEASES_1 } from './cat-diseases-1';
 import { CAT_DISEASES_2 } from './cat-diseases-2';
+import { PUPPY_DISEASES } from './puppy-diseases';
+import { KITTEN_DISEASES } from './kitten-diseases';
 
 export const ALL_DOG_DISEASES: DiseaseMaster[] = [
   ...DOG_DISEASES_1,
   ...DOG_DISEASES_2,
   ...DOG_DISEASES_3,
+  ...PUPPY_DISEASES,
 ];
 
 export const ALL_CAT_DISEASES: DiseaseMaster[] = [
   ...CAT_DISEASES_1,
   ...CAT_DISEASES_2,
+  ...KITTEN_DISEASES,
 ];
 
 export const ALL_DISEASES: DiseaseMaster[] = [

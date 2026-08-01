@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS diseases (
   is_zoonotic BOOLEAN DEFAULT false,
   references_list JSONB DEFAULT '[]'::jsonb,
   prevalence_rank INTEGER,
+  photo_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

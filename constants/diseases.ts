@@ -23,6 +23,7 @@ const DISEASE_CATEGORIES: Record<DiseaseCategory, { label: string; icon: string;
   reproductive: { label: 'Reproductivas', icon: 'baby-carriage', color: '#EC407A' },
   toxic: { label: 'Toxicas', icon: 'skull', color: '#D32F2F' },
   urological: { label: 'Urologicas', icon: 'kidney', color: '#00838F' },
+  hematologic: { label: 'Hematologicas', icon: 'droplet', color: '#C62828' },
 };
 
 function convertToDisease(raw: any): Disease {
@@ -71,6 +72,7 @@ function convertToDisease(raw: any): Disease {
     prognosis,
     isZoonotic: raw.is_zoonotic || false,
     references,
+    photoUrl: raw.photo_url || null,
   };
 }
 
