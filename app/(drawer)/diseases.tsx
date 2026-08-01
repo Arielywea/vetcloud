@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, FlatList, StyleSheet, TouchableOpacity, ScrollView, TextInput as RNTextInput } from 'react-native';
 import { Text, Modal, Portal } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { Search, Filter, FilterX, Plus, BriefcaseMedical, Dog, Cat, PawPrint, Baby } from 'lucide-react-native';
+import { Search, Filter, FilterX, Plus, BriefcaseMedical, Dog, Cat, PawPrint, Baby, ChevronDown } from 'lucide-react-native';
 import { useDiseases } from '../../hooks/useDirectus';
 import { SEVERITY_COLORS, SEVERITY_LABELS } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -25,6 +25,16 @@ export default function DiseasesScreen() {
   const [selectedSpecies, setSelectedSpecies] = useState<'dog' | 'cat' | 'all'>('all');
   const [selectedCategories, setSelectedCategories] = useState<DiseaseCategory[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set(['puppy', 'kitten']));
+
+  const toggleSection = (section: string) => {
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(section)) next.delete(section);
+      else next.add(section);
+      return next;
+    });
+  };
 
   const filteredDiseases = useMemo(() => {
     let results = [...diseases];
@@ -91,13 +101,25 @@ export default function DiseasesScreen() {
     );
   };
 
-  const renderSectionHeader = (title: string, icon: React.ReactNode, count: number, color: string) => (
-    <View style={[styles.sectionHeader, { backgroundColor: color + '15', borderLeftColor: color }]}>
-      {icon}
-      <Text style={[styles.sectionTitle, { color }]}>{title}</Text>
-      <VBadge variant="info">{count}</VBadge>
-    </View>
-  );
+  const renderSectionHeader = (title: string, icon: React.ReactNode, count: number, color: string, sectionKey: string) => {
+    const isCollapsed = collapsedSections.has(sectionKey);
+    return (
+      <TouchableOpacity
+        style={[styles.sectionHeader, { backgroundColor: color + '15', borderLeftColor: color }]}
+        onPress={() => toggleSection(sectionKey)}
+        activeOpacity={0.7}
+      >
+        {icon}
+        <Text style={[styles.sectionTitle, { color }]}>{title}</Text>
+        <VBadge variant="info">{count}</VBadge>
+        <ChevronDown
+          size={16}
+          color={color}
+          style={{ transform: [{ rotate: isCollapsed ? '-90deg' : '0deg' }] }}
+        />
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -165,23 +187,23 @@ export default function DiseasesScreen() {
           <>
             {puppyDiseases.length > 0 && (
               <>
-                {renderSectionHeader('Cachorros', <Baby size={18} color="#F57C00" />, puppyDiseases.length, '#F57C00')}
-                {puppyDiseases.map(d => (
+                {renderSectionHeader('Cachorros', <Baby size={18} color="#F57C00" />, puppyDiseases.length, '#F57C00', 'puppy')}
+                {!collapsedSections.has('puppy') && puppyDiseases.map(d => (
                   <View key={d.id}>{renderDiseaseCard({ item: d })}</View>
                 ))}
               </>
             )}
             {kittenDiseases.length > 0 && (
               <>
-                {renderSectionHeader('Gatitos', <Baby size={18} color="#EC407A" />, kittenDiseases.length, '#EC407A')}
-                {kittenDiseases.map(d => (
+                {renderSectionHeader('Gatitos', <Baby size={18} color="#EC407A" />, kittenDiseases.length, '#EC407A', 'kitten')}
+                {!collapsedSections.has('kitten') && kittenDiseases.map(d => (
                   <View key={d.id}>{renderDiseaseCard({ item: d })}</View>
                 ))}
               </>
             )}
             {generalDiseases.length > 0 && (
               <>
-                {renderSectionHeader('Enfermedades Generales', <BriefcaseMedical size={18} color={colors.primary} />, generalDiseases.length, colors.primary)}
+                {renderSectionHeader('Enfermedades Generales', <BriefcaseMedical size={18} color={colors.primary} />, generalDiseases.length, colors.primary, 'general')}
               </>
             )}
           </>
