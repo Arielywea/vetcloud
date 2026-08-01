@@ -12,7 +12,7 @@ interface DragState {
 }
 
 interface UseDragDropOptions {
-  onMove?: (appointmentId: string, newStartTime: Date, newEndTime: Date, newVet?: string) => void;
+  onMove?: (appointmentId: string, newStartTime: Date, newEndTime: Date, dayDelta?: number) => void;
   hourHeight?: number;
   startHour?: number;
   snapInterval?: number;
@@ -34,7 +34,7 @@ interface UseDragDropReturn {
 
 export default function useDragDrop({
   onMove,
-  hourHeight = 60,
+  hourHeight = 80,
   startHour = 6,
   snapInterval = 15,
 }: UseDragDropOptions = {}): UseDragDropReturn {
@@ -73,18 +73,27 @@ export default function useDragDrop({
   const onDragEnd = useCallback(() => {
     if (dragState.isDragging && dragState.appointmentId && dragState.appointmentData) {
       const deltaY = dragState.currentY - dragState.startY;
+      const deltaX = dragState.currentX - dragState.startX;
+
+      // Calculate time change from vertical movement
       const deltaMinutes = Math.round((deltaY / hourHeight) * 60 / snapInterval) * snapInterval;
 
-      if (deltaMinutes !== 0 && onMove) {
+      // Calculate day change from horizontal movement (column width ~ screen width / 7)
+      const colWidth = 120; // Approximate column width
+      const dayDelta = Math.round(deltaX / colWidth);
+
+      if (deltaMinutes !== 0 || dayDelta !== 0) {
         const originalStart = new Date(dragState.appointmentData.start_time);
         const originalEnd = dragState.appointmentData.end_time
           ? new Date(dragState.appointmentData.end_time)
           : new Date(originalStart.getTime() + 45 * 60000);
 
         const newStart = new Date(originalStart.getTime() + deltaMinutes * 60000);
+        newStart.setDate(newStart.getDate() + dayDelta);
         const newEnd = new Date(originalEnd.getTime() + deltaMinutes * 60000);
+        newEnd.setDate(newEnd.getDate() + dayDelta);
 
-        onMove(dragState.appointmentId, newStart, newEnd);
+        onMove?.(dragState.appointmentId, newStart, newEnd, dayDelta);
       }
     }
 

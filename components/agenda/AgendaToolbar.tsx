@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import {
   Plus, UserPlus, ChevronLeft, ChevronRight, CalendarDays,
-  Printer, Download, LayoutGrid, List, Calendar
+  Printer, Download, LayoutGrid, List, Calendar, Filter
 } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
@@ -16,8 +16,10 @@ interface AgendaToolbarProps {
   onViewChange: (mode: ViewMode) => void;
   onNewAppointment?: () => void;
   onNewPatient?: () => void;
+  onFilterPress?: () => void;
   onPrint?: () => void;
   onExport?: () => void;
+  isMobile?: boolean;
 }
 
 function formatDate(d: Date): string {
@@ -43,8 +45,10 @@ export default function AgendaToolbar({
   onViewChange,
   onNewAppointment,
   onNewPatient,
+  onFilterPress,
   onPrint,
   onExport,
+  isMobile,
 }: AgendaToolbarProps) {
   const { colors } = useTheme();
 
@@ -94,6 +98,11 @@ export default function AgendaToolbar({
 
       {/* Right: View switcher + actions */}
       <View style={styles.section}>
+        {isMobile && onFilterPress && (
+          <TouchableOpacity onPress={onFilterPress} style={[styles.iconBtn, { backgroundColor: colors.background }]}>
+            <Filter size={14} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
         <View style={[styles.viewSwitcher, { backgroundColor: colors.background, borderRadius: RADIUS.sm }]}>
           {(['week', 'day', 'month'] as ViewMode[]).map((mode) => (
             <TouchableOpacity
@@ -118,12 +127,16 @@ export default function AgendaToolbar({
             </TouchableOpacity>
           ))}
         </View>
-        <TouchableOpacity onPress={onPrint} style={[styles.iconBtn, { backgroundColor: colors.background }]}>
-          <Printer size={14} color={colors.textSecondary} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onExport} style={[styles.iconBtn, { backgroundColor: colors.background }]}>
-          <Download size={14} color={colors.textSecondary} />
-        </TouchableOpacity>
+        {!isMobile && (
+          <>
+            <TouchableOpacity onPress={onPrint} style={[styles.iconBtn, { backgroundColor: colors.background }]}>
+              <Printer size={14} color={colors.textSecondary} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onExport} style={[styles.iconBtn, { backgroundColor: colors.background }]}>
+              <Download size={14} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </View>
   );

@@ -13,6 +13,7 @@ import DaySummary from '../../components/agenda/DaySummary';
 import ContextMenu from '../../components/agenda/ContextMenu';
 
 import AppointmentDetailModal, { AppointmentDetail } from '../../components/agenda/AppointmentDetailModal';
+import AppointmentCreationModal from '../../components/agenda/AppointmentCreationModal';
 
 // Hooks
 import useAgendaData from '../../components/agenda/useAgendaData';
@@ -23,6 +24,9 @@ import useDragDrop from '../../components/agenda/useDragDrop';
 // Theme
 import { useTheme } from '../../contexts/ThemeContext';
 import { APP_COLORS } from '../../constants/colors';
+
+// API
+import { api } from '../../services/directus';
 
 type ViewMode = 'week' | 'day' | 'month';
 
@@ -68,6 +72,7 @@ function AgendaContent() {
   
   const [filters, setFilters] = useState({ veterinarian: '', species: '', appointmentType: '', status: '' });
   const [detailModal, setDetailModal] = useState({ visible: false, appointment: null as AppointmentDetail | null });
+  const [creationModal, setCreationModal] = useState({ visible: false, initialDate: new Date(), initialHour: 9 });
 
   const { appointments, loading, summary, refetch } = useAgendaData({
     selectedDate,
@@ -87,9 +92,17 @@ function AgendaContent() {
   const quickActions = useQuickActions({ onRefresh: refetch });
 
   const { dragState, onDragStart, onDragMove, onDragEnd, ghostStyle } = useDragDrop({
-    onMove: (id, newStart, newEnd) => {
-      console.log('Move appointment', id, newStart, newEnd);
-      refetch();
+    onMove: async (id, newStart, newEnd) => {
+      try {
+        await api.appointments.update(id, {
+          start_time: newStart.toISOString(),
+          end_time: newEnd.toISOString(),
+        });
+        refetch();
+      } catch (err) {
+        console.error('Failed to move appointment:', err);
+        refetch();
+      }
     },
   });
 
@@ -121,8 +134,15 @@ function AgendaContent() {
     setContextMenu({ visible: false, x: 0, y: 0, appointment: null });
   }, []);
 
-  const sidebarWidth = screenWidth > 1200 ? 320 : 0;
-  const showSidebar = screenWidth > 1200;
+  const handleSlotPress = useCallback((date: Date, hour: number) => {
+    setCreationModal({ visible: true, initialDate: date, initialHour: hour });
+  }, []);
+
+  const [mobileSidebarVisible, setMobileSidebarVisible] = useState(false);
+  const isMobile = screenWidth < 768;
+  const isDesktop = screenWidth > 1200;
+  const sidebarWidth = isDesktop ? 320 : 0;
+  const showSidebar = isDesktop;
   const mainContentWidth = showSidebar ? screenWidth - sidebarWidth : screenWidth;
 
   return (
@@ -132,10 +152,16 @@ function AgendaContent() {
         viewMode={viewMode}
         onDateChange={setSelectedDate}
         onViewChange={setViewMode}
-        onNewAppointment={() => console.log('New appointment')}
-        onNewPatient={() => console.log('New patient')}
+        onNewAppointment={() => {
+          const now = new Date();
+          const nextHour = Math.min(now.getHours() + 1, 19);
+          setCreationModal({ visible: true, initialDate: now, initialHour: nextHour });
+        }}
+        onNewPatient={() => router.push('/(drawer)/add-paciente')}
+        onFilterPress={isMobile ? () => setMobileSidebarVisible(true) : undefined}
         onPrint={() => console.log('Print')}
         onExport={() => console.log('Export')}
+        isMobile={isMobile}
       />
       <View style={styles.contentArea}>
         <View style={[styles.mainContent, { width: mainContentWidth }]}>
@@ -147,6 +173,11 @@ function AgendaContent() {
               onDateSelect={setSelectedDate}
               onAppointmentPress={handleAppointmentPress}
               onAppointmentContextMenu={handleContextMenu}
+              onSlotPress={handleSlotPress}
+              onDragStart={onDragStart}
+              onDragMove={onDragMove}
+              onDragEnd={onDragEnd}
+              dragState={dragState}
               loading={loading}
             />
           )}
@@ -156,6 +187,11 @@ function AgendaContent() {
               appointments={appointments}
               onAppointmentPress={handleAppointmentPress}
               onAppointmentContextMenu={handleContextMenu}
+              onSlotPress={handleSlotPress}
+              onDragStart={onDragStart}
+              onDragMove={onDragMove}
+              onDragEnd={onDragEnd}
+              dragState={dragState}
               loading={loading}
               columnWidth={mainContentWidth - 44}
             />
@@ -212,6 +248,40 @@ function AgendaContent() {
           setDetailModal({ visible: false, appointment: null });
         }}
       />
+
+      <AppointmentCreationModal
+        visible={creationModal.visible}
+        initialDate={creationModal.initialDate}
+        initialHour={creationModal.initialHour}
+        onClose={() => setCreationModal({ visible: false, initialDate: new Date(), initialHour: 9 })}
+        onCreated={refetch}
+      />
+
+      {/* Mobile Sidebar Overlay */}
+      {isMobile && mobileSidebarVisible && (
+        <View style={styles.sidebarOverlay}>
+          <View style={styles.sidebarOverlayBg} onTouchEnd={() => setMobileSidebarVisible(false)} />
+          <View style={[styles.mobileSidebar, { backgroundColor: colors.surface }]}>
+            <AgendaSidebar
+              selectedDate={selectedDate}
+              onDateSelect={(date) => {
+                setSelectedDate(date);
+                setMobileSidebarVisible(false);
+              }}
+              filters={filters}
+              onFilterChange={setFilters}
+              veterinarians={[]}
+              appointmentTypes={['consulta', 'vacuna', 'cirugia', 'control', 'terreno', 'examenes', 'hospitalizacion']}
+              statuses={['programada', 'confirmada', 'en_espera', 'en_consulta', 'completada', 'cancelada', 'ausente']}
+            />
+            {summary && (
+              <View style={styles.summaryContainer}>
+                <DaySummary summary={summary} />
+              </View>
+            )}
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -240,5 +310,26 @@ const styles = StyleSheet.create({
   },
   summaryContainer: {
     padding: 12,
+  },
+  sidebarOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1000,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  sidebarOverlayBg: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  mobileSidebar: {
+    width: 320,
+    height: '100%',
+    borderLeftWidth: 1,
+    borderLeftColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: -2, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
 });

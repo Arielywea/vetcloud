@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, ScrollView, Text, Dimensions } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, Dimensions, TouchableOpacity } from 'react-native';
+import { Plus } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import TimeGrid, { HOUR_HEIGHT, HOURS } from './TimeGrid';
 import AppointmentCard, { AppointmentCardData } from './AppointmentCard';
@@ -33,6 +34,11 @@ interface WeekViewProps {
   onDateSelect: (date: Date) => void;
   onAppointmentPress?: (appointment: AppointmentCardData) => void;
   onAppointmentContextMenu?: (appointment: AppointmentCardData, x: number, y: number) => void;
+  onSlotPress?: (date: Date, hour: number) => void;
+  onDragStart?: (appointmentId: string, data: AppointmentCardData, x: number, y: number) => void;
+  onDragMove?: (x: number, y: number) => void;
+  onDragEnd?: () => void;
+  dragState?: { isDragging: boolean; appointmentId: string | null };
   loading?: boolean;
   currentUserId?: string;
 }
@@ -62,6 +68,11 @@ export default function WeekView({
   onDateSelect,
   onAppointmentPress,
   onAppointmentContextMenu,
+  onSlotPress,
+  onDragStart,
+  onDragMove,
+  onDragEnd,
+  dragState,
   loading,
   currentUserId,
 }: WeekViewProps) {
@@ -135,7 +146,18 @@ export default function WeekView({
                   <View
                     key={hour}
                     style={[styles.hourLine, { top: (hour - 6) * HOUR_HEIGHT, backgroundColor: colors.border }]}
-                  />
+                  >
+                    {/* Add appointment button */}
+                    {onSlotPress && (
+                      <TouchableOpacity
+                        style={[styles.addBtn, { top: 2, right: 2 }]}
+                        onPress={() => onSlotPress(day, hour)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Plus size={10} color={colors.textSecondary + '60'} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 ))}
 
                 {/* Appointments */}
@@ -157,6 +179,10 @@ export default function WeekView({
                       height={height}
                       onPress={onAppointmentPress}
                       onContextMenu={onAppointmentContextMenu}
+                      onDragStart={onDragStart}
+                      onDragMove={onDragMove}
+                      onDragEnd={onDragEnd}
+                      isDragging={dragState?.isDragging && dragState?.appointmentId === appt.id}
                       compact={colWidth < 120}
                     />
                   );
@@ -206,5 +232,14 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     paddingRight: 8,
     transform: [{ translateY: -6 }],
+  },
+  addBtn: {
+    position: 'absolute',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 0,
   },
 });
