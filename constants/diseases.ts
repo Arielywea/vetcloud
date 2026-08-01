@@ -1,5 +1,5 @@
 import { Disease, DiseaseCategory } from '../types';
-import { ALL_DISEASES } from '../data';
+import { ALL_DISEASES, PUPPY_DISEASES, KITTEN_DISEASES } from '../data';
 
 const DISEASE_CATEGORIES: Record<DiseaseCategory, { label: string; icon: string; color: string }> = {
   infectious: { label: 'Infecciosas', icon: 'virus', color: '#E53935' },
@@ -86,10 +86,13 @@ const CAT_DISEASES: Disease[] = ALL_DISEASES
 
 const ALL_DISEASES_FOR_APP: Disease[] = ALL_DISEASES.map(convertToDisease);
 
+const PUPPY_DISEASES_FOR_APP: Disease[] = PUPPY_DISEASES.map(convertToDisease);
+const KITTEN_DISEASES_FOR_APP: Disease[] = KITTEN_DISEASES.map(convertToDisease);
+
 const SPECIES_INFO = {
   dog: { label: 'Perro', icon: 'dog', emoji: '🐕', color: '#2196F3' },
   cat: { label: 'Gato', icon: 'cat', emoji: '🐱', color: '#9C27B0' },
   both: { label: 'Ambos', icon: 'paw', emoji: '🐾', color: '#607D8B' },
 };
 
-export { DOG_DISEASES, CAT_DISEASES, ALL_DISEASES_FOR_APP, DISEASE_CATEGORIES, SPECIES_INFO };
+export { DOG_DISEASES, CAT_DISEASES, ALL_DISEASES_FOR_APP, PUPPY_DISEASES_FOR_APP, KITTEN_DISEASES_FOR_APP, DISEASE_CATEGORIES, SPECIES_INFO };
