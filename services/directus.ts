@@ -32,6 +32,7 @@ export interface DirectusDisease {
   prognosis: 'excellent' | 'good' | 'guarded' | 'poor' | 'grave';
   is_zoonotic: boolean;
   references: string[];
+  photo_url?: string | null;
 }
 
 export interface DirectusPet {

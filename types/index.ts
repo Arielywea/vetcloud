@@ -21,7 +21,8 @@ export type DiseaseCategory =
   | 'renal'
   | 'reproductive'
   | 'toxic'
-  | 'urological';
+  | 'urological'
+  | 'hematologic';
 
 export type Prognosis = 'excellent' | 'good' | 'guarded' | 'poor' | 'grave';
 
@@ -58,6 +59,7 @@ export interface Disease {
   prognosis: Prognosis;
   isZoonotic: boolean;
   references: string[];
+  photoUrl?: string | null;
 }
 
 export interface Pet {

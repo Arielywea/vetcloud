@@ -203,12 +203,12 @@ app.post('/items/diseases', authMiddleware, async (req, res) => {
   try {
     const d = req.body;
     const result = await pool.query(
-      `WITH ins AS (INSERT INTO diseases (name, scientific_name, species, category, severity, description, key_signs, diagnosis, treatment, prevention, prognosis, is_zoonotic, references_list)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *)
+      `WITH ins AS (INSERT INTO diseases (name, scientific_name, species, category, severity, description, key_signs, diagnosis, treatment, prevention, prognosis, is_zoonotic, references_list, photo_url)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *)
        SELECT *, references_list AS references FROM ins`,
       [d.name, d.scientific_name, d.species, d.category, d.severity, d.description,
        JSON.stringify(d.key_signs), JSON.stringify(d.diagnosis), JSON.stringify(d.treatment),
-       JSON.stringify(d.prevention), d.prognosis, d.is_zoonotic, JSON.stringify(d.references)]
+       JSON.stringify(d.prevention), d.prognosis, d.is_zoonotic, JSON.stringify(d.references), d.photo_url || null]
     );
     res.json({ data: result.rows[0] });
   } catch (err) {

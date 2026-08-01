@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, ScrollView, StyleSheet, TouchableOpacity, TextInput, Image } from 'react-native';
 import { Text, Card, Badge, Button, Modal, Portal, Dialog } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -112,6 +112,7 @@ export default function DiseaseDetailScreen() {
     modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border },
     cancelBtn: { borderColor: colors.border },
     saveBtn: { backgroundColor: colors.primary },
+    diseasePhoto: { width: '100%', height: 200, borderRadius: 12, marginTop: 12 },
   });
 
   if (loading) {
@@ -262,6 +263,9 @@ export default function DiseaseDetailScreen() {
                 <Text style={styles.listItemText}>{sign}</Text>
               </View>
             ))}
+            {disease.photo_url ? (
+              <Image source={{ uri: disease.photo_url }} style={styles.diseasePhoto} resizeMode="cover" />
+            ) : null}
           </Card.Content>
         </Card>
       )}
@@ -316,6 +320,13 @@ export default function DiseaseDetailScreen() {
               </Card.Content>
             </Card>
           )}
+          {disease.photo_url ? (
+            <Card style={styles.sectionCard}>
+              <Card.Content>
+                <Image source={{ uri: disease.photo_url }} style={styles.diseasePhoto} resizeMode="cover" />
+              </Card.Content>
+            </Card>
+          ) : null}
         </>
       )}
 
@@ -369,6 +380,13 @@ export default function DiseaseDetailScreen() {
               </Card.Content>
             </Card>
           )}
+          {disease.photo_url ? (
+            <Card style={styles.sectionCard}>
+              <Card.Content>
+                <Image source={{ uri: disease.photo_url }} style={styles.diseasePhoto} resizeMode="cover" />
+              </Card.Content>
+            </Card>
+          ) : null}
         </>
       )}
 

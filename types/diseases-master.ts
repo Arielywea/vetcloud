@@ -19,7 +19,8 @@ export type DiseaseCategory =
   | 'renal'
   | 'reproductive'
   | 'toxic'
-  | 'urological';
+  | 'urological'
+  | 'hematologic';
 
 export type DiseaseSpecies = 'dog' | 'cat' | 'both';
 export type DiseaseSeverity = 'mild' | 'moderate' | 'severe' | 'critical';
@@ -137,4 +138,5 @@ export interface DiseaseMaster {
   prevention: PreventionMeasure[];
   chilean_costs: ChileanCosts;
   references: Reference[];
+  photo_url?: string;
 }

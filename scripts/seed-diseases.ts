@@ -68,12 +68,12 @@ async function upsertDisease(d: any): Promise<boolean> {
   const prevalenceRank = getPrevalenceRank(d);
 
   const result = await pool.query(
-    `INSERT INTO diseases (name, scientific_name, species, category, severity, description, key_signs, diagnosis, treatment, prevention, prognosis, is_zoonotic, references_list, prevalence_rank)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+    `INSERT INTO diseases (name, scientific_name, species, category, severity, description, key_signs, diagnosis, treatment, prevention, prognosis, is_zoonotic, references_list, prevalence_rank, photo_url)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
      RETURNING id`,
     [d.name, scientificName, species, d.category, d.severity, d.description,
      JSON.stringify(keySigns), JSON.stringify(diagnosis), JSON.stringify(treatment),
-     JSON.stringify(prevention), prognosis, d.is_zoonotic || false, JSON.stringify(references), prevalenceRank]
+     JSON.stringify(prevention), prognosis, d.is_zoonotic || false, JSON.stringify(references), prevalenceRank, d.photo_url || null]
   );
 
   return result.rowCount! > 0;
