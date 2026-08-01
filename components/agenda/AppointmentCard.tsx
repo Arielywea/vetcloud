@@ -114,7 +114,14 @@ export default function AppointmentCard({
       }
     });
 
-  const composed = Gesture.Simultaneous(longPress, pan);
+  const tap = Gesture.Tap()
+    .onEnd(() => {
+      if (!isDragActive.current) {
+        onPress?.(appointment);
+      }
+    });
+
+  const composed = Gesture.Simultaneous(tap, longPress, pan);
 
   const cardContent = (
     <View style={styles.content}>

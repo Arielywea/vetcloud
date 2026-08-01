@@ -240,6 +240,6 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     alignItems: 'center',
     justifyContent: 'center',
-    opacity: 0,
+    backgroundColor: 'rgba(0,0,0,0.06)',
   },
 });

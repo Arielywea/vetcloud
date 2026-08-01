@@ -33,6 +33,7 @@ export interface DirectusDisease {
   is_zoonotic: boolean;
   references: string[];
   photo_url?: string | null;
+  life_stage?: 'puppy' | 'kitten' | 'adult' | 'senior' | 'all';
 }
 
 export interface DirectusPet {

@@ -7,22 +7,24 @@ import { CAT_DISEASES_2 } from './cat-diseases-2';
 import { PUPPY_DISEASES } from './puppy-diseases';
 import { KITTEN_DISEASES } from './kitten-diseases';
 
+export { PUPPY_DISEASES, KITTEN_DISEASES };
+
 export const ALL_DOG_DISEASES: DiseaseMaster[] = [
   ...DOG_DISEASES_1,
   ...DOG_DISEASES_2,
   ...DOG_DISEASES_3,
-  ...PUPPY_DISEASES,
 ];
 
 export const ALL_CAT_DISEASES: DiseaseMaster[] = [
   ...CAT_DISEASES_1,
   ...CAT_DISEASES_2,
-  ...KITTEN_DISEASES,
 ];
 
 export const ALL_DISEASES: DiseaseMaster[] = [
   ...ALL_DOG_DISEASES,
   ...ALL_CAT_DISEASES,
+  ...PUPPY_DISEASES,
+  ...KITTEN_DISEASES,
 ];
 
 export function getDiseaseById(id: string): DiseaseMaster | undefined {

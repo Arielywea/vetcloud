@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, FlatList, StyleSheet, TouchableOpacity, ScrollView, TextInput as RNTextInput } from 'react-native';
 import { Text, Modal, Portal } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { Search, Filter, FilterX, Plus, BriefcaseMedical, Dog, Cat, PawPrint } from 'lucide-react-native';
+import { Search, Filter, FilterX, Plus, BriefcaseMedical, Dog, Cat, PawPrint, Baby } from 'lucide-react-native';
 import { useDiseases } from '../../hooks/useDirectus';
 import { SEVERITY_COLORS, SEVERITY_LABELS } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -37,20 +37,38 @@ export default function DiseasesScreen() {
     return results;
   }, [diseases, searchQuery, selectedSpecies, selectedCategories]);
 
+  const puppyDiseases = useMemo(() => {
+    return filteredDiseases.filter(d => d.life_stage === 'puppy');
+  }, [filteredDiseases]);
+
+  const kittenDiseases = useMemo(() => {
+    return filteredDiseases.filter(d => d.life_stage === 'kitten');
+  }, [filteredDiseases]);
+
+  const generalDiseases = useMemo(() => {
+    return filteredDiseases.filter(d => d.life_stage !== 'puppy' && d.life_stage !== 'kitten');
+  }, [filteredDiseases]);
+
   const toggleCategory = (cat: DiseaseCategory) => {
     setSelectedCategories(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]);
   };
 
   const renderDiseaseCard = ({ item }: { item: DirectusDisease }) => {
     const SpeciesIcon = SPECIES_ICONS[item.species] || PawPrint;
+    const isPuppy = item.life_stage === 'puppy';
+    const isKitten = item.life_stage === 'kitten';
     return (
       <TouchableOpacity onPress={() => router.push(`/disease/${item.id}`)} activeOpacity={0.7}>
         <VCard style={styles.diseaseCard}>
           <View style={styles.cardTitleRow}>
             <Text variant="titleMedium" style={[styles.diseaseName, { color: colors.text }]}>{item.name}</Text>
-            <VBadge variant={item.severity === 'high' ? 'danger' : item.severity === 'medium' ? 'warning' : 'info'}>
-              {SEVERITY_LABELS[item.severity as keyof typeof SEVERITY_LABELS] || item.severity}
-            </VBadge>
+            <View style={styles.cardBadges}>
+              {isPuppy && <VBadge variant="warning">Cachorro</VBadge>}
+              {isKitten && <VBadge variant="warning">Gatito</VBadge>}
+              <VBadge variant={item.severity === 'high' ? 'danger' : item.severity === 'medium' ? 'warning' : 'info'}>
+                {SEVERITY_LABELS[item.severity as keyof typeof SEVERITY_LABELS] || item.severity}
+              </VBadge>
+            </View>
           </View>
           <Text variant="bodySmall" style={[styles.scientificName, { color: colors.textSecondary }]}>{item.scientific_name}</Text>
           <View style={styles.speciesRow}>
@@ -72,6 +90,14 @@ export default function DiseasesScreen() {
       </TouchableOpacity>
     );
   };
+
+  const renderSectionHeader = (title: string, icon: React.ReactNode, count: number, color: string) => (
+    <View style={[styles.sectionHeader, { backgroundColor: color + '15', borderLeftColor: color }]}>
+      {icon}
+      <Text style={[styles.sectionTitle, { color }]}>{title}</Text>
+      <VBadge variant="info">{count}</VBadge>
+    </View>
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -130,11 +156,36 @@ export default function DiseasesScreen() {
       </View>
 
       <FlatList
-        data={filteredDiseases}
+        data={generalDiseases}
         renderItem={renderDiseaseCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <>
+            {puppyDiseases.length > 0 && (
+              <>
+                {renderSectionHeader('Cachorros', <Baby size={18} color="#F57C00" />, puppyDiseases.length, '#F57C00')}
+                {puppyDiseases.map(d => (
+                  <View key={d.id}>{renderDiseaseCard({ item: d })}</View>
+                ))}
+              </>
+            )}
+            {kittenDiseases.length > 0 && (
+              <>
+                {renderSectionHeader('Gatitos', <Baby size={18} color="#EC407A" />, kittenDiseases.length, '#EC407A')}
+                {kittenDiseases.map(d => (
+                  <View key={d.id}>{renderDiseaseCard({ item: d })}</View>
+                ))}
+              </>
+            )}
+            {generalDiseases.length > 0 && (
+              <>
+                {renderSectionHeader('Enfermedades Generales', <BriefcaseMedical size={18} color={colors.primary} />, generalDiseases.length, colors.primary)}
+              </>
+            )}
+          </>
+        }
         ListEmptyComponent={
           <VEmptyState
             icon={<BriefcaseMedical size={32} color={colors.textLight} />}
@@ -167,6 +218,7 @@ const styles = StyleSheet.create({
   listContent: { padding: SPACING.lg, paddingBottom: 24 },
   diseaseCard: { marginBottom: SPACING.md },
   cardTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardBadges: { flexDirection: 'row', gap: 4 },
   diseaseName: { fontWeight: '700', flex: 1 },
   scientificName: { fontStyle: 'italic', marginTop: 2 },
   speciesRow: { flexDirection: 'row', alignItems: 'center', marginTop: SPACING.sm, gap: 6 },
@@ -174,6 +226,8 @@ const styles = StyleSheet.create({
   signsContainer: { marginTop: SPACING.md },
   signsTitle: { fontWeight: '600', marginBottom: 2 },
   signsText: { lineHeight: 18 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: SPACING.md, borderRadius: RADIUS.sm, borderLeftWidth: 3, marginBottom: SPACING.sm },
+  sectionTitle: { fontSize: 15, fontWeight: '700', flex: 1 },
   fab: { position: 'absolute', right: 16, bottom: 16, width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
 });
 

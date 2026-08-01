@@ -66,14 +66,15 @@ async function upsertDisease(d: any): Promise<boolean> {
   const references = (d.references || []).map((r: any) => r.citation || r);
   const scientificName = d.scientific_name || d.name;
   const prevalenceRank = getPrevalenceRank(d);
+  const lifeStage = d.life_stage || 'all';
 
   const result = await pool.query(
-    `INSERT INTO diseases (name, scientific_name, species, category, severity, description, key_signs, diagnosis, treatment, prevention, prognosis, is_zoonotic, references_list, prevalence_rank, photo_url)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+    `INSERT INTO diseases (name, scientific_name, species, category, severity, description, key_signs, diagnosis, treatment, prevention, prognosis, is_zoonotic, references_list, prevalence_rank, photo_url, life_stage)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
      RETURNING id`,
     [d.name, scientificName, species, d.category, d.severity, d.description,
      JSON.stringify(keySigns), JSON.stringify(diagnosis), JSON.stringify(treatment),
-     JSON.stringify(prevention), prognosis, d.is_zoonotic || false, JSON.stringify(references), prevalenceRank, d.photo_url || null]
+     JSON.stringify(prevention), prognosis, d.is_zoonotic || false, JSON.stringify(references), prevalenceRank, d.photo_url || null, lifeStage]
   );
 
   return result.rowCount! > 0;
@@ -83,9 +84,24 @@ async function seed() {
   console.log('════════════════════════════════════════════');
   console.log('🏥 VetCloud Disease Library Seed (Direct DB)');
   console.log('════════════════════════════════════════════');
+
+  // Add life_stage column if it doesn't exist
+  try {
+    await pool.query(`ALTER TABLE diseases ADD COLUMN IF NOT EXISTS life_stage TEXT DEFAULT 'all'`);
+    console.log('✓ life_stage column ensured');
+  } catch (err: any) {
+    console.log('⚠ life_stage column:', err.message);
+  }
+
+  // Clear existing diseases for clean re-seed
+  await pool.query('TRUNCATE TABLE diseases CASCADE');
+  console.log('✓ Cleared existing diseases');
+
   console.log(`📚 ${ALL_DISEASES.length} diseases from master data`);
   console.log(`  Dogs: ${ALL_DISEASES.filter(d => d.species === 'dog').length}`);
   console.log(`  Cats: ${ALL_DISEASES.filter(d => d.species === 'cat').length}`);
+  console.log(`  Puppy: ${ALL_DISEASES.filter(d => (d as any).life_stage === 'puppy').length}`);
+  console.log(`  Kitten: ${ALL_DISEASES.filter(d => (d as any).life_stage === 'kitten').length}`);
   console.log('');
 
   let created = 0;
