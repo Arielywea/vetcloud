@@ -90,7 +90,7 @@ export default function AppointmentCard({
       if (isDragActive.current) {
         translateX.setValue(e.translationX);
         translateY.setValue(e.translationY);
-        onDragMove?.(e.absoluteX, e.absoluteY);
+        onDragMove?.(e.translationX, e.translationY);
       }
     })
     .onEnd((e) => {

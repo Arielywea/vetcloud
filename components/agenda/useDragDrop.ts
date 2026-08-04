@@ -19,8 +19,8 @@ interface UseDragDropOptions {
 
 interface UseDragDropReturn {
   dragState: DragSnapshot;
-  onDragStart: (appointmentId: string, data: any, x: number, y: number) => void;
-  onDragMove: (x: number, y: number) => void;
+  onDragStart: (appointmentId: string, data: any, absoluteX: number, absoluteY: number) => void;
+  onDragMove: (translationX: number, translationY: number) => void;
   onDragEnd: () => void;
   wasDragGesture: React.MutableRefObject<boolean>;
 }
@@ -39,13 +39,9 @@ export default function useDragDrop({
   const resolvedColWidth = colWidth ?? Math.floor((Dimensions.get('window').width - TIME_LABEL_WIDTH) / 7);
 
   // Mutable refs — gesture callbacks always read latest values, no stale closure
-  const startX = useRef(0);
-  const startY = useRef(0);
-  const currentX = useRef(0);
-  const currentY = useRef(0);
+  const startDayIndex = useRef(0);
   const draggingId = useRef<string | null>(null);
   const draggingData = useRef<any>(null);
-  const startDayIndex = useRef(0);
 
   // wasDragGesture: set true in Pan.onEnd, checked by Tap to suppress onPress
   const wasDragGesture = useRef(false);
@@ -59,68 +55,51 @@ export default function useDragDrop({
     currentSnapY: 0,
   });
 
-  const onDragStart = useCallback((appointmentId: string, data: any, x: number, y: number) => {
-    startX.current = x;
-    startY.current = y;
-    currentX.current = x;
-    currentY.current = y;
+  // onDragStart receives absoluteX/absoluteY (page-relative) to determine which column the finger is in
+  const onDragStart = useCallback((appointmentId: string, data: any, absoluteX: number, _absoluteY: number) => {
     draggingId.current = appointmentId;
     draggingData.current = data;
     wasDragGesture.current = false;
 
-    // Determine which day column the drag started in (for WeekView)
-    const screenW = Dimensions.get('window').width;
-    const availW = screenW - TIME_LABEL_WIDTH;
-    const col = colWidth ?? Math.floor(availW / 7);
-    const relativeX = x - TIME_LABEL_WIDTH;
-    startDayIndex.current = Math.max(0, Math.min(6, Math.floor(relativeX / col)));
-
-    // Snap Y for time indicator
-    const snapY = Math.round(y / snapInterval) * snapInterval;
+    // Determine which day column the drag started in
+    const relativeX = absoluteX - TIME_LABEL_WIDTH;
+    startDayIndex.current = Math.max(0, Math.min(6, Math.floor(relativeX / resolvedColWidth)));
 
     setDragState({
       isDragging: true,
       appointmentId,
       appointmentData: data,
       currentTargetDay: startDayIndex.current,
-      currentSnapY: snapY,
+      currentSnapY: 0,
     });
-  }, [colWidth, snapInterval]);
+  }, [resolvedColWidth]);
 
-  const onDragMove = useCallback((x: number, y: number) => {
-    currentX.current = x;
-    currentY.current = y;
-
-    // Calculate target day from horizontal position
-    const screenW = Dimensions.get('window').width;
-    const availW = screenW - TIME_LABEL_WIDTH;
-    const col = colWidth ?? Math.floor(availW / 7);
-    const relativeX = x - TIME_LABEL_WIDTH;
-    const targetDay = Math.max(0, Math.min(6, Math.floor(relativeX / col)));
+  // onDragMove receives translationX/translationY (relative to touch start)
+  const onDragMove = useCallback((translationX: number, translationY: number) => {
+    // Calculate target day from horizontal translation
+    const targetDay = Math.max(0, Math.min(6, startDayIndex.current + Math.round(translationX / resolvedColWidth)));
 
     // Calculate snap Y for time indicator
-    const snapY = Math.round(y / snapInterval) * snapInterval;
+    const snapY = Math.round(translationY / snapInterval) * snapInterval;
 
     setDragState(prev => ({
       ...prev,
       currentTargetDay: targetDay,
       currentSnapY: snapY,
     }));
-  }, [colWidth, snapInterval]);
+  }, [resolvedColWidth, snapInterval]);
 
+  // onDragEnd receives translationX/translationY for final calculation
   const onDragEnd = useCallback(() => {
     const id = draggingId.current;
     const data = draggingData.current;
 
     if (id && data) {
-      const deltaX = currentX.current - startX.current;
-      const deltaY = currentY.current - startY.current;
+      // Day change from horizontal translation
+      const dayDelta = Math.round(dragState.currentTargetDay - startDayIndex.current);
 
-      // Day change from horizontal movement — uses ACTUAL colWidth
-      const dayDelta = Math.round(deltaX / resolvedColWidth);
-
-      // Time change from vertical movement
-      const deltaMinutes = Math.round((deltaY / hourHeight) * 60 / snapInterval) * snapInterval;
+      // Time change from vertical translation (approximate from last snapY)
+      const deltaMinutes = Math.round((dragState.currentSnapY / hourHeight) * 60 / snapInterval) * snapInterval;
 
       if (deltaMinutes !== 0 || dayDelta !== 0) {
         const originalStart = new Date(data.start_time);
@@ -157,7 +136,7 @@ export default function useDragDrop({
       currentTargetDay: 0,
       currentSnapY: 0,
     });
-  }, [resolvedColWidth, hourHeight, snapInterval, onMove]);
+  }, [dragState.currentTargetDay, dragState.currentSnapY, hourHeight, snapInterval, onMove]);
 
   return {
     dragState,
