@@ -38,7 +38,7 @@ interface WeekViewProps {
   onDragStart?: (appointmentId: string, data: AppointmentCardData, x: number, y: number) => void;
   onDragMove?: (x: number, y: number) => void;
   onDragEnd?: () => void;
-  dragState?: { isDragging: boolean; appointmentId: string | null };
+  dragState?: { isDragging: boolean; appointmentId: string | null; currentTargetDay?: number; currentSnapY?: number };
   loading?: boolean;
   currentUserId?: string;
 }
@@ -132,15 +132,25 @@ export default function WeekView({
           </View>
 
           {/* Day columns */}
-          {weekDays.map((day) => {
+          {weekDays.map((day, dayIdx) => {
             const dayStr = day.toDateString();
             const dayAppts = getApptsForDay(appointments, day);
+            const isDropTarget = dragState?.isDragging && dragState?.currentTargetDay === dayIdx;
 
             return (
               <View
                 key={dayStr}
                 style={[styles.dayColumn, { width: colWidth, borderRightColor: colors.border + '40' }]}
               >
+                {/* Drop-zone highlight */}
+                {isDropTarget && (
+                  <View style={[styles.dropHighlight, { backgroundColor: colors.primary + '12', borderColor: colors.primary + '30' }]} />
+                )}
+
+                {/* Time-snap indicator */}
+                {isDropTarget && dragState?.currentSnapY != null && (
+                  <View style={[styles.snapLine, { top: dragState.currentSnapY, backgroundColor: colors.primary }]} />
+                )}
                 {/* Hour lines */}
                 {HOURS.map((hour) => (
                   <View
@@ -219,6 +229,24 @@ const styles = StyleSheet.create({
   dayColumn: {
     position: 'relative',
     borderRightWidth: 1,
+  },
+  dropHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderWidth: 1,
+    borderRadius: 4,
+    zIndex: 0,
+  },
+  snapLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 2,
+    zIndex: 50,
+    opacity: 0.7,
   },
   hourLine: {
     position: 'absolute',

@@ -1,14 +1,12 @@
-import { useState, useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { Dimensions } from 'react-native';
 
-interface DragState {
+interface DragSnapshot {
   isDragging: boolean;
   appointmentId: string | null;
   appointmentData: any | null;
-  startX: number;
-  startY: number;
-  currentX: number;
-  currentY: number;
-  snapMinutes: number;
+  currentTargetDay: number;
+  currentSnapY: number;
 }
 
 interface UseDragDropOptions {
@@ -16,112 +14,156 @@ interface UseDragDropOptions {
   hourHeight?: number;
   startHour?: number;
   snapInterval?: number;
+  colWidth?: number;
 }
 
 interface UseDragDropReturn {
-  dragState: DragState;
+  dragState: DragSnapshot;
   onDragStart: (appointmentId: string, data: any, x: number, y: number) => void;
   onDragMove: (x: number, y: number) => void;
   onDragEnd: () => void;
-  ghostStyle: {
-    left: number;
-    top: number;
-    width: number;
-    height: number;
-    opacity: number;
-  } | null;
+  wasDragGesture: React.MutableRefObject<boolean>;
 }
+
+const SNAP_INTERVAL = 15;
+const START_HOUR = 6;
+const TIME_LABEL_WIDTH = 52;
 
 export default function useDragDrop({
   onMove,
   hourHeight = 80,
-  startHour = 6,
-  snapInterval = 15,
+  startHour = START_HOUR,
+  snapInterval = SNAP_INTERVAL,
+  colWidth,
 }: UseDragDropOptions = {}): UseDragDropReturn {
-  const [dragState, setDragState] = useState<DragState>({
+  const resolvedColWidth = colWidth ?? Math.floor((Dimensions.get('window').width - TIME_LABEL_WIDTH) / 7);
+
+  // Mutable refs — gesture callbacks always read latest values, no stale closure
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const currentX = useRef(0);
+  const currentY = useRef(0);
+  const draggingId = useRef<string | null>(null);
+  const draggingData = useRef<any>(null);
+  const startDayIndex = useRef(0);
+
+  // wasDragGesture: set true in Pan.onEnd, checked by Tap to suppress onPress
+  const wasDragGesture = useRef(false);
+
+  // React state only for triggering re-renders of visual indicators
+  const [dragState, setDragState] = useState<DragSnapshot>({
     isDragging: false,
     appointmentId: null,
     appointmentData: null,
-    startX: 0,
-    startY: 0,
-    currentX: 0,
-    currentY: 0,
-    snapMinutes: snapInterval,
+    currentTargetDay: 0,
+    currentSnapY: 0,
   });
 
   const onDragStart = useCallback((appointmentId: string, data: any, x: number, y: number) => {
+    startX.current = x;
+    startY.current = y;
+    currentX.current = x;
+    currentY.current = y;
+    draggingId.current = appointmentId;
+    draggingData.current = data;
+    wasDragGesture.current = false;
+
+    // Determine which day column the drag started in (for WeekView)
+    const screenW = Dimensions.get('window').width;
+    const availW = screenW - TIME_LABEL_WIDTH;
+    const col = colWidth ?? Math.floor(availW / 7);
+    const relativeX = x - TIME_LABEL_WIDTH;
+    startDayIndex.current = Math.max(0, Math.min(6, Math.floor(relativeX / col)));
+
+    // Snap Y for time indicator
+    const snapY = Math.round(y / snapInterval) * snapInterval;
+
     setDragState({
       isDragging: true,
       appointmentId,
       appointmentData: data,
-      startX: x,
-      startY: y,
-      currentX: x,
-      currentY: y,
-      snapMinutes: snapInterval,
+      currentTargetDay: startDayIndex.current,
+      currentSnapY: snapY,
     });
-  }, [snapInterval]);
+  }, [colWidth, snapInterval]);
 
   const onDragMove = useCallback((x: number, y: number) => {
+    currentX.current = x;
+    currentY.current = y;
+
+    // Calculate target day from horizontal position
+    const screenW = Dimensions.get('window').width;
+    const availW = screenW - TIME_LABEL_WIDTH;
+    const col = colWidth ?? Math.floor(availW / 7);
+    const relativeX = x - TIME_LABEL_WIDTH;
+    const targetDay = Math.max(0, Math.min(6, Math.floor(relativeX / col)));
+
+    // Calculate snap Y for time indicator
+    const snapY = Math.round(y / snapInterval) * snapInterval;
+
     setDragState(prev => ({
       ...prev,
-      currentX: x,
-      currentY: y,
+      currentTargetDay: targetDay,
+      currentSnapY: snapY,
     }));
-  }, []);
+  }, [colWidth, snapInterval]);
 
   const onDragEnd = useCallback(() => {
-    if (dragState.isDragging && dragState.appointmentId && dragState.appointmentData) {
-      const deltaY = dragState.currentY - dragState.startY;
-      const deltaX = dragState.currentX - dragState.startX;
+    const id = draggingId.current;
+    const data = draggingData.current;
 
-      // Calculate time change from vertical movement
+    if (id && data) {
+      const deltaX = currentX.current - startX.current;
+      const deltaY = currentY.current - startY.current;
+
+      // Day change from horizontal movement — uses ACTUAL colWidth
+      const dayDelta = Math.round(deltaX / resolvedColWidth);
+
+      // Time change from vertical movement
       const deltaMinutes = Math.round((deltaY / hourHeight) * 60 / snapInterval) * snapInterval;
 
-      // Calculate day change from horizontal movement (column width ~ screen width / 7)
-      const colWidth = 120; // Approximate column width
-      const dayDelta = Math.round(deltaX / colWidth);
-
       if (deltaMinutes !== 0 || dayDelta !== 0) {
-        const originalStart = new Date(dragState.appointmentData.start_time);
-        const originalEnd = dragState.appointmentData.end_time
-          ? new Date(dragState.appointmentData.end_time)
+        const originalStart = new Date(data.start_time);
+        const originalEnd = data.end_time
+          ? new Date(data.end_time)
           : new Date(originalStart.getTime() + 45 * 60000);
 
-        const newStart = new Date(originalStart.getTime() + deltaMinutes * 60000);
+        // Apply dayDelta to ORIGINAL date first, then add time — prevents vertical-shift bug
+        const newStart = new Date(originalStart);
         newStart.setDate(newStart.getDate() + dayDelta);
-        const newEnd = new Date(originalEnd.getTime() + deltaMinutes * 60000);
-        newEnd.setDate(newEnd.getDate() + dayDelta);
+        newStart.setMinutes(newStart.getMinutes() + deltaMinutes);
 
-        onMove?.(dragState.appointmentId, newStart, newEnd, dayDelta);
+        const newEnd = new Date(originalEnd);
+        newEnd.setDate(newEnd.getDate() + dayDelta);
+        newEnd.setMinutes(newEnd.getMinutes() + deltaMinutes);
+
+        onMove?.(id, newStart, newEnd, dayDelta);
       }
+
+      // Mark this as a drag gesture so Tap handler skips onPress
+      wasDragGesture.current = true;
+      setTimeout(() => { wasDragGesture.current = false; }, 300);
     }
 
+    // Reset refs
+    draggingId.current = null;
+    draggingData.current = null;
+
+    // Reset React state
     setDragState({
       isDragging: false,
       appointmentId: null,
       appointmentData: null,
-      startX: 0,
-      startY: 0,
-      currentX: 0,
-      currentY: 0,
-      snapMinutes: snapInterval,
+      currentTargetDay: 0,
+      currentSnapY: 0,
     });
-  }, [dragState, hourHeight, snapInterval, onMove]);
-
-  const ghostStyle = dragState.isDragging ? {
-    left: dragState.currentX - 10,
-    top: dragState.currentY - 15,
-    width: 200,
-    height: 60,
-    opacity: 0.85,
-  } : null;
+  }, [resolvedColWidth, hourHeight, snapInterval, onMove]);
 
   return {
     dragState,
     onDragStart,
     onDragMove,
     onDragEnd,
-    ghostStyle,
+    wasDragGesture,
   };
 }
