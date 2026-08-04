@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   },
   dayColumn: {
     position: 'relative',
-    borderRightWidth: 1,
+    borderRightWidth: StyleSheet.hairlineWidth,
   },
   hourLine: {
     position: 'absolute',

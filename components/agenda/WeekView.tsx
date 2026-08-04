@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   },
   headersRow: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     paddingBottom: SPACING.xs,
   },
   scrollArea: {
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   },
   dayColumn: {
     position: 'relative',
-    borderRightWidth: 1,
+    borderRightWidth: StyleSheet.hairlineWidth,
   },
   dropHighlight: {
     position: 'absolute',
