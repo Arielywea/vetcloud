@@ -6,7 +6,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDisease, useFavorites } from '../../hooks/useDirectus';
 import { DirectusDisease } from '../../services/directus';
 import { DISEASE_CATEGORIES, SPECIES_INFO } from '../../constants/diseases';
-import { CATEGORY_COLORS, SEVERITY_COLORS, SEVERITY_LABELS, PROGNOSIS_LABELS } from '../../constants/colors';
+import { CATEGORY_COLORS, SEVERITY_COLORS, SEVERITY_LABELS, PROGNOSIS_LABELS, TEXT_ON_PRIMARY } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 
 export default function DiseaseDetailScreen() {
@@ -83,7 +83,7 @@ export default function DiseaseDetailScreen() {
     diseaseName: { fontWeight: '800', color: colors.text, flex: 1, marginRight: 8 },
     scientificName: { fontStyle: 'italic', color: colors.textSecondary, marginTop: 4 },
     badgeRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 6 },
-    badge: { color: '#FFFFFF', fontSize: 11, paddingHorizontal: 8 },
+    badge: { color: TEXT_ON_PRIMARY.light.default, fontSize: 11, paddingHorizontal: 8 },
     prognosisRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border },
     prognosisLabel: { color: colors.textSecondary, marginLeft: 4 },
     prognosisValue: { fontWeight: '600' },

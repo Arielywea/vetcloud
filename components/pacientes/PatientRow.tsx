@@ -4,6 +4,7 @@ import { Text } from 'react-native-paper';
 import { MoreVertical, Eye, Pencil, Trash2 } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { TEXT_ON_PRIMARY } from '../../constants/colors';
 import { DirectusPet } from '../../services/directus';
 import { isActive } from '../../utils/patientFilters';
 import VAvatar from '../ui/Avatar';
@@ -129,7 +130,7 @@ const styles = StyleSheet.create({
   },
   checkbox: { width: 40, alignItems: 'center', justifyContent: 'center' },
   checkboxBox: { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  checkmark: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
+  checkmark: { color: TEXT_ON_PRIMARY.light.default, fontSize: 11, fontWeight: '700' },
   patientCell: { flex: 2, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, minWidth: 160 },
   patientName: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.semibold },
   cell: { flex: 1, minWidth: 90, paddingHorizontal: SPACING.xs },

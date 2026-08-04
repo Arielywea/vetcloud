@@ -101,22 +101,4 @@ export interface Vaccination {
   batchNumber: string;
 }
 
-export interface PersonalNote {
-  id: string;
-  diseaseId: string | null;
-  petId: string | null;
-  title: string;
-  content: string;
-  tags: string[];
-  createdAt: string;
-  updatedAt: string;
-}
 
-export interface Favorite {
-  id: string;
-  diseaseId: string;
-  addedAt: string;
-  category: 'frequently_used' | 'important' | 'study' | 'emergency';
-}
-
-export type TabRoute = 'diseases' | 'pets' | 'search' | 'notes';

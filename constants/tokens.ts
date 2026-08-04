@@ -133,3 +133,30 @@ export const BREAKPOINTS = {
   lg: 1024,
   xl: 1280,
 } as const;
+
+// Overlay colors for modals and overlays
+export const OVERLAY = {
+  light: 'rgba(0, 0, 0, 0.4)',
+  dark: 'rgba(0, 0, 0, 0.6)',
+} as const;
+
+// Chart palette for reportes (ordered for visual distinction)
+export const CHART_COLORS = [
+  '#3B82F6', // blue
+  '#10B981', // green
+  '#F59E0B', // amber
+  '#EF4444', // red
+  '#8B5CF6', // violet
+  '#EC407A', // pink
+  '#06B6D4', // cyan
+  '#8D6E63', // brown
+] as const;
+
+// Alpha helper — returns rgba string from hex + opacity
+export function alpha(hex: string, opacity: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}

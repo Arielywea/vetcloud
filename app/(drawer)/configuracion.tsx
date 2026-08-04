@@ -6,7 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { PALETTES, APP_COLORS, APP_COLORS_DARK } from '../../constants/colors';
 import { apiAuthChangePassword } from '../../services/auth';
-import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, alpha } from '../../constants/tokens';
 
 const PALETTE_OPTIONS = [
   { key: null, label: 'Predeterminada' },
@@ -250,16 +250,16 @@ export default function ConfiguracionScreen() {
           />
 
           {passwordError ? (
-            <View style={[styles.msgBox, { backgroundColor: '#FFEBEE' }]}>
-              <AlertCircle size={18} color="#E53935" />
-              <Text style={{ color: '#E53935', fontSize: 13, fontWeight: '500' }}>{passwordError}</Text>
+            <View style={[styles.msgBox, { backgroundColor: alpha(colors.error, 0.08) }]}>
+              <AlertCircle size={18} color={colors.error} />
+              <Text style={{ color: colors.error, fontSize: 13, fontWeight: '500' }}>{passwordError}</Text>
             </View>
           ) : null}
 
           {passwordSuccess ? (
-            <View style={[styles.msgBox, { backgroundColor: '#E8F5E9' }]}>
-              <Check size={18} color="#43A047" />
-              <Text style={{ color: '#43A047', fontSize: 13, fontWeight: '500' }}>Contraseña cambiada correctamente</Text>
+            <View style={[styles.msgBox, { backgroundColor: alpha(colors.success, 0.08) }]}>
+              <Check size={18} color={colors.success} />
+              <Text style={{ color: colors.success, fontSize: 13, fontWeight: '500' }}>Contraseña cambiada correctamente</Text>
             </View>
           ) : null}
 
@@ -271,10 +271,10 @@ export default function ConfiguracionScreen() {
 
       {/* Success Banner */}
       {saved && (
-        <Card style={[styles.savedCard, { backgroundColor: '#E8F5E9' }]}>
+        <Card style={[styles.savedCard, { backgroundColor: alpha(colors.success, 0.08) }]}>
           <Card.Content style={styles.savedContent}>
-            <Check size={20} color="#43A047" />
-            <Text style={{ color: '#43A047', fontWeight: '600' }}>Perfil actualizado correctamente</Text>
+            <Check size={20} color={colors.success} />
+            <Text style={{ color: colors.success, fontWeight: '600' }}>Perfil actualizado correctamente</Text>
           </Card.Content>
         </Card>
       )}

@@ -5,7 +5,7 @@ import { LogOut, ChevronLeft } from 'lucide-react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
 import { TEXT_ON_PRIMARY, getTextOnPrimary } from '../../constants/colors';
 import BeagleLogo from '../BeagleLogo';
 import VetCloudIcon, { VetCloudIconName } from '../icons/VetCloudIcon';
@@ -93,7 +93,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
         {NAV_SECTIONS.map((section) => (
           <View key={section.title} style={styles.section}>
             {!collapsed && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}><View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.accent + '80' }} /><Text style={[styles.sectionTitle, { color: mutedText }]}>{section.title}</Text></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}><View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: alpha(colors.accent, 0.5) }} /><Text style={[styles.sectionTitle, { color: mutedText }]}>{section.title}</Text></View>
             )}
             {section.items.map((item) => {
               const active = isActive(item.route);
@@ -103,7 +103,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
                   style={[
                     styles.navItem,
                     active && {
-                      backgroundColor: colors.accent + '1E',
+                      backgroundColor: alpha(colors.accent, 0.12),
                       borderLeftColor: activeIndicator,
                     },
                     !active && { borderLeftColor: 'transparent' },
@@ -133,7 +133,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
       </ScrollView>
 
       {/* Bottom section */}
-      <View style={[styles.bottomSection, { borderTopColor: colors.accent + '30' }]}>
+      <View style={[styles.bottomSection, { borderTopColor: alpha(colors.accent, 0.19) }]}>
         {BOTTOM_ITEMS.map((item) => {
           const active = isActive(item.route);
           return (
@@ -142,7 +142,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
               style={[
                 styles.navItem,
                 active && {
-                  backgroundColor: palette.default + '14',
+                  backgroundColor: alpha(palette.default, 0.08),
                   borderLeftColor: activeIndicator,
                 },
                 !active && { borderLeftColor: 'transparent' },
@@ -169,8 +169,8 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
         })}
 
         {/* User + Logout */}
-        <View style={[styles.userSection, { borderTopColor: colors.accent + '30' }]}>
-          <View style={[styles.avatar, { backgroundColor: palette.default + '26' }]}>
+        <View style={[styles.userSection, { borderTopColor: alpha(colors.accent, 0.19) }]}>
+          <View style={[styles.avatar, { backgroundColor: alpha(palette.default, 0.15) }]}>
             <Text style={[styles.avatarText, { color: textColor }]}>
               {user?.name?.charAt(0)?.toUpperCase() || 'U'}
             </Text>

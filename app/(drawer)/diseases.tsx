@@ -4,7 +4,7 @@ import { Text, Modal, Portal } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { Search, Filter, FilterX, Plus, BriefcaseMedical, Dog, Cat, PawPrint, Baby, ChevronDown } from 'lucide-react-native';
 import { useDiseases } from '../../hooks/useDirectus';
-import { SEVERITY_COLORS, SEVERITY_LABELS } from '../../constants/colors';
+import { SEVERITY_COLORS, SEVERITY_LABELS, TEXT_ON_PRIMARY } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { DISEASE_CATEGORIES, SPECIES_INFO } from '../../constants/diseases';
 import { DirectusDisease } from '../../services/directus';
@@ -146,7 +146,7 @@ export default function DiseasesScreen() {
               onPress={() => setSelectedSpecies(sp)}
               style={[styles.speciesChip, { backgroundColor: colors.surface, borderColor: colors.border }, selectedSpecies === sp && { backgroundColor: colors.primary, borderColor: colors.primary }]}
             >
-              <Text style={{ color: selectedSpecies === sp ? '#fff' : colors.text, fontSize: 13 }}>
+              <Text style={{ color: selectedSpecies === sp ? TEXT_ON_PRIMARY.light.default : colors.text, fontSize: 13 }}>
                 {sp === 'all' ? 'Todos' : sp === 'dog' ? 'Perros' : 'Gatos'}
               </Text>
             </TouchableOpacity>

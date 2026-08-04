@@ -7,6 +7,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { usePets } from '../../hooks/useDirectus';
 import { Reminder } from '../../services/directus';
 import { SPACING, RADIUS, SHADOWS } from '../../constants/tokens';
+import { TEXT_ON_PRIMARY } from '../../constants/colors';
 import VCard from '../../components/ui/Card';
 import VButton from '../../components/ui/Button';
 import VBadge from '../../components/ui/Badge';
@@ -143,7 +144,7 @@ export default function RemindersScreen() {
             <View style={styles.typeRow}>
               {(['vacuna', 'desparasitacion', 'cita', 'post_operatorio', 'control'] as const).map((t) => (
                 <TouchableOpacity key={t} onPress={() => setFormType(t)} style={[styles.typeBtn, { backgroundColor: colors.surface, borderColor: colors.border }, formType === t && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-                  <Text style={{ color: formType === t ? '#fff' : colors.text, fontSize: 12 }}>{t.replace('_', ' ')}</Text>
+                  <Text style={{ color: formType === t ? TEXT_ON_PRIMARY.light.default : colors.text, fontSize: 12 }}>{t.replace('_', ' ')}</Text>
                 </TouchableOpacity>
               ))}
             </View>
