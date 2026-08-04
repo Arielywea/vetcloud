@@ -63,6 +63,7 @@ export default function AppointmentCard({
   const translateX = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
   const isDragActive = useRef(false);
+  const wasDragGesture = useRef(false);
 
   const handleContextMenu = (e: any) => {
     if (onContextMenu) {
@@ -95,6 +96,8 @@ export default function AppointmentCard({
     .onEnd((e) => {
       if (isDragActive.current) {
         isDragActive.current = false;
+        wasDragGesture.current = true;
+        setTimeout(() => { wasDragGesture.current = false; }, 300);
         Animated.parallel([
           Animated.spring(translateX, { toValue: 0, useNativeDriver: true }),
           Animated.spring(translateY, { toValue: 0, useNativeDriver: true }),
@@ -106,6 +109,8 @@ export default function AppointmentCard({
     .onTouchesCancelled(() => {
       if (isDragActive.current) {
         isDragActive.current = false;
+        wasDragGesture.current = true;
+        setTimeout(() => { wasDragGesture.current = false; }, 300);
         Animated.parallel([
           Animated.spring(translateX, { toValue: 0, useNativeDriver: true }),
           Animated.spring(translateY, { toValue: 0, useNativeDriver: true }),
@@ -116,7 +121,7 @@ export default function AppointmentCard({
 
   const tap = Gesture.Tap()
     .onEnd(() => {
-      if (!isDragActive.current) {
+      if (!isDragActive.current && !wasDragGesture.current) {
         onPress?.(appointment);
       }
     });

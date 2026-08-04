@@ -91,7 +91,7 @@ function AgendaContent() {
 
   const quickActions = useQuickActions({ onRefresh: refetch });
 
-  const { dragState, onDragStart, onDragMove, onDragEnd, ghostStyle } = useDragDrop({
+  const { dragState, onDragStart, onDragMove, onDragEnd } = useDragDrop({
     onMove: async (id, newStart, newEnd) => {
       try {
         await api.appointments.update(id, {

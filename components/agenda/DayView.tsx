@@ -36,7 +36,7 @@ interface DayViewProps {
   onDragStart?: (appointmentId: string, data: AppointmentCardData, x: number, y: number) => void;
   onDragMove?: (x: number, y: number) => void;
   onDragEnd?: () => void;
-  dragState?: { isDragging: boolean; appointmentId: string | null };
+  dragState?: { isDragging: boolean; appointmentId: string | null; currentSnapY?: number };
   loading?: boolean;
   columnWidth?: number;
 }
@@ -155,6 +155,11 @@ export default function DayView({
                 />
               </View>
             )}
+
+            {/* Time-snap indicator */}
+            {dragState?.isDragging && dragState?.currentSnapY != null && (
+              <View style={[styles.snapLine, { top: dragState.currentSnapY, backgroundColor: colors.primary }]} />
+            )}
           </View>
         </View>
       </ScrollView>
@@ -204,6 +209,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
+  },
+  snapLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 2,
+    zIndex: 50,
+    opacity: 0.7,
   },
   addBtn: {
     position: 'absolute',
