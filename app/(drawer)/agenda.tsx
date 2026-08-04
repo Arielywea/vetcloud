@@ -159,8 +159,8 @@ function AgendaContent() {
         }}
         onNewPatient={() => router.push('/(drawer)/add-paciente')}
         onFilterPress={isMobile ? () => setMobileSidebarVisible(true) : undefined}
-        onPrint={() => console.log('Print')}
-        onExport={() => console.log('Export')}
+        onPrint={() => {}}
+        onExport={() => {}}
         isMobile={isMobile}
       />
       <View style={styles.contentArea}>

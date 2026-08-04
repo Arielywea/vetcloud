@@ -6,6 +6,7 @@ import { useAssistant } from '../hooks/useDirectus';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS } from '../constants/tokens';
+import { TEXT_ON_PRIMARY } from '../constants/colors';
 
 export default function VetAssistantWidget() {
   const { messages, loading, sendMessage, clearMessages } = useAssistant();
@@ -81,7 +82,7 @@ export default function VetAssistantWidget() {
               <View key={idx} style={[styles.messageBubble, msg.sender === 'user' ? styles.userBubble : styles.assistantBubble]}>
                 {msg.sender === 'assistant' && <Bot size={16} color={colors.accent} style={{ marginRight: 6, marginTop: 2 }} />}
                 <View style={[styles.messageBox, msg.sender === 'user' ? { backgroundColor: colors.primary, borderBottomRightRadius: 4 } : { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderBottomLeftRadius: 4 }]}>
-                  <Text style={{ fontSize: 14, lineHeight: 21, color: msg.sender === 'user' ? '#fff' : colors.text }}>{msg.text}</Text>
+                  <Text style={{ fontSize: 14, lineHeight: 21, color: msg.sender === 'user' ? TEXT_ON_PRIMARY.light.default : colors.text }}>{msg.text}</Text>
                   {msg.actions && msg.actions.length > 0 && (
                     <View style={styles.actionsContainer}>
                       {msg.actions.map((act: any, aIdx: number) => (

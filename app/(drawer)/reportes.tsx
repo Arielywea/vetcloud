@@ -4,6 +4,7 @@ import { Text } from 'react-native-paper';
 import { BarChart3, PawPrint, Calendar, Package } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
+import { TEXT_ON_PRIMARY } from '../../constants/colors';
 import { RECORD_TYPE_COLORS } from '../../constants/colors';
 import VCard from '../../components/ui/Card';
 import VStatCard from '../../components/ui/StatCard';
@@ -28,10 +29,10 @@ export default function ReportesScreen() {
   const { colors } = useTheme();
 
   const stats = [
-    { label: 'Pacientes', value: '127', icon: <PawPrint size={20} color="#FFF" />, color: colors.info },
-    { label: 'Citas (Mes)', value: '89', icon: <Calendar size={20} color="#FFF" />, color: colors.success },
-    { label: 'Inventario', value: '45', icon: <Package size={20} color="#FFF" />, color: colors.warning },
-    { label: 'Internados', value: '5', icon: <BarChart3 size={20} color="#FFF" />, color: colors.error },
+    { label: 'Pacientes', value: '127', icon: <PawPrint size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.info },
+    { label: 'Citas (Mes)', value: '89', icon: <Calendar size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.success },
+    { label: 'Inventario', value: '45', icon: <Package size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.warning },
+    { label: 'Internados', value: '5', icon: <BarChart3 size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.error },
   ];
 
   return (

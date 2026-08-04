@@ -7,7 +7,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { usePets } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { uploadPetPhoto } from '../../services/cloudinary';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
+import { TEXT_ON_PRIMARY } from '../../constants/colors';
 import VoiceNotes from '../../components/VoiceNotes';
 
 const TEMPERAMENT_OPTIONS = ['Dócil', 'Inquieto', 'Agresivo', 'Nervioso'];
@@ -251,9 +252,9 @@ export default function AddPacienteScreen() {
                 },
               ]}>
                 {isCompleted ? (
-                  <Check size={14} color="#FFFFFF" strokeWidth={3} />
+                  <Check size={14} color={TEXT_ON_PRIMARY.light.default} strokeWidth={3} />
                 ) : (
-                  <Text style={[styles.progressNumber, { color: isCurrent ? '#FFFFFF' : colors.textSecondary }]}>
+                  <Text style={[styles.progressNumber, { color: isCurrent ? TEXT_ON_PRIMARY.light.default : colors.textSecondary }]}>
                     {step}
                   </Text>
                 )}
@@ -314,9 +315,9 @@ export default function AddPacienteScreen() {
                 mode={species === 'dog' ? 'contained' : 'outlined'}
                 onPress={() => setSpecies('dog')}
                 style={[styles.speciesPill, species === 'dog' && { backgroundColor: colors.primary }]}
-                labelStyle={[styles.speciesPillLabel, species === 'dog' ? { color: '#FFFFFF' } : { color: colors.primary }]}
+                labelStyle={[styles.speciesPillLabel, species === 'dog' ? { color: TEXT_ON_PRIMARY.light.default } : { color: colors.primary }]}
                 icon={({ size }) => (
-                  <Dog size={size} color={species === 'dog' ? '#FFFFFF' : colors.primary} />
+                  <Dog size={size} color={species === 'dog' ? TEXT_ON_PRIMARY.light.default : colors.primary} />
                 )}
               >
                 Perro
@@ -325,9 +326,9 @@ export default function AddPacienteScreen() {
                 mode={species === 'cat' ? 'contained' : 'outlined'}
                 onPress={() => setSpecies('cat')}
                 style={[styles.speciesPill, species === 'cat' && { backgroundColor: colors.primary }]}
-                labelStyle={[styles.speciesPillLabel, species === 'cat' ? { color: '#FFFFFF' } : { color: colors.primary }]}
+                labelStyle={[styles.speciesPillLabel, species === 'cat' ? { color: TEXT_ON_PRIMARY.light.default } : { color: colors.primary }]}
                 icon={({ size }) => (
-                  <Cat size={size} color={species === 'cat' ? '#FFFFFF' : colors.primary} />
+                  <Cat size={size} color={species === 'cat' ? TEXT_ON_PRIMARY.light.default : colors.primary} />
                 )}
               >
                 Gato
@@ -369,8 +370,8 @@ export default function AddPacienteScreen() {
                 mode={sex === 'macho' ? 'contained' : 'outlined'}
                 onPress={() => { setSex('macho'); if (!REPRODUCTIVE_MACHO.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
                 style={[styles.sexPill, sex === 'macho' && { backgroundColor: colors.primary }]}
-                labelStyle={sex === 'macho' ? { color: '#FFFFFF' } : { color: colors.primary }}
-                icon={({ size }) => <Mars size={size} color={sex === 'macho' ? '#FFFFFF' : colors.primary} />}
+                labelStyle={sex === 'macho' ? { color: TEXT_ON_PRIMARY.light.default } : { color: colors.primary }}
+                icon={({ size }) => <Mars size={size} color={sex === 'macho' ? TEXT_ON_PRIMARY.light.default : colors.primary} />}
               >
                 Macho
               </Button>
@@ -378,8 +379,8 @@ export default function AddPacienteScreen() {
                 mode={sex === 'hembra' ? 'contained' : 'outlined'}
                 onPress={() => { setSex('hembra'); if (!REPRODUCTIVE_HEMBRA.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
                 style={[styles.sexPill, sex === 'hembra' && { backgroundColor: colors.primary }]}
-                labelStyle={sex === 'hembra' ? { color: '#FFFFFF' } : { color: colors.primary }}
-                icon={({ size }) => <Venus size={size} color={sex === 'hembra' ? '#FFFFFF' : colors.primary} />}
+                labelStyle={sex === 'hembra' ? { color: TEXT_ON_PRIMARY.light.default } : { color: colors.primary }}
+                icon={({ size }) => <Venus size={size} color={sex === 'hembra' ? TEXT_ON_PRIMARY.light.default : colors.primary} />}
               >
                 Hembra
               </Button>
@@ -853,7 +854,7 @@ export default function AddPacienteScreen() {
           mode="contained"
           onPress={currentStep === 4 ? handleSave : handleNext}
           style={[styles.navBtnPrimary, { backgroundColor: colors.primary }]}
-          labelStyle={{ color: '#FFFFFF' }}
+          labelStyle={{ color: TEXT_ON_PRIMARY.light.default }}
           loading={saving}
           disabled={saving}
         >
@@ -993,7 +994,7 @@ const styles = StyleSheet.create({
   summaryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm },
   summaryPhoto: { width: 80, height: 80, borderRadius: RADIUS.lg, marginBottom: SPACING.sm },
   summaryGrid: { gap: SPACING.sm },
-  summaryItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: SPACING.xs, borderBottomWidth: 1, borderBottomColor: '#00000008' },
+  summaryItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: SPACING.xs, borderBottomWidth: 1, borderBottomColor: alpha('#000000', 0.03) },
   summaryLabel: { fontSize: TYPOGRAPHY.sizes.sm },
   summaryValue: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, flex: 1, textAlign: 'right', marginLeft: SPACING.md },
 

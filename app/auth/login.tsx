@@ -4,7 +4,8 @@ import { Text } from 'react-native-paper';
 import { User, Lock, AlertCircle, LogIn, Eye, EyeOff } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
+import { TEXT_ON_PRIMARY } from '../../constants/colors';
 import BeagleLogo from '../../components/BeagleLogo';
 import VInput from '../../components/ui/Input';
 import VButton from '../../components/ui/Button';
@@ -20,8 +21,10 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!rut.trim() || !password.trim()) { setError('Ingresa RUT y contraseña'); return; }
+    const rutClean = rut.replace(/\./g, '-').trim();
+    if (!/^\d{7,8}-[\dkK]$/.test(rutClean)) { setError('Formato de RUT inválido (ej: 12345678-9)'); return; }
     setLoading(true); setError('');
-    try { await login(rut.trim(), password); } catch (e: any) { setError(e.message || 'Error al iniciar sesión'); } finally { setLoading(false); }
+    try { await login(rutClean, password); } catch (e: any) { setError(e.message || 'Error al iniciar sesión'); } finally { setLoading(false); }
   };
 
   return (
@@ -31,7 +34,7 @@ export default function LoginScreen() {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
-        <View style={[styles.logoCircle, { backgroundColor: '#FFFFFF18' }]}>
+        <View style={[styles.logoCircle, { backgroundColor: alpha('#FFFFFF', 0.1) }]}>
           <BeagleLogo size={64} variant="light" />
         </View>
         <Text style={styles.logoTitle}>VetCloud</Text>
@@ -50,14 +53,17 @@ export default function LoginScreen() {
             value={rut}
             onChangeText={setRut}
             leftIcon={<User size={18} color={colors.primary} />}
+            accessibilityLabel="RUT del usuario"
           />
 
           <VInput
             label="Contraseña"
+            placeholder="Ingresa tu contraseña"
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
             leftIcon={<Lock size={18} color={colors.primary} />}
+            accessibilityLabel="Contraseña"
             rightIcon={
               <View style={{ padding: 4 }}>
                 {showPassword ? (
@@ -81,7 +87,7 @@ export default function LoginScreen() {
             loading={loading}
             disabled={loading}
             fullWidth
-            icon={<LogIn size={18} color="#FFFFFF" />}
+            icon={<LogIn size={18} color={TEXT_ON_PRIMARY.light.default} />}
           >
             Ingresar
           </VButton>
@@ -111,8 +117,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: SPACING.lg,
   },
-  logoTitle: { fontSize: TYPOGRAPHY.sizes['4xl'], fontWeight: TYPOGRAPHY.weights.extrabold, color: '#FFFFFF' },
-  logoSubtitle: { fontSize: TYPOGRAPHY.sizes.md, color: '#FFFFFFBB', marginTop: SPACING.xs },
+  logoTitle: { fontSize: TYPOGRAPHY.sizes['4xl'], fontWeight: TYPOGRAPHY.weights.bold, color: TEXT_ON_PRIMARY.light.default },
+  logoSubtitle: { fontSize: TYPOGRAPHY.sizes.md, color: TEXT_ON_PRIMARY.light.muted, marginTop: SPACING.xs },
   formSection: { flex: 1, justifyContent: 'center', paddingHorizontal: SPACING.xl },
   card: {
     borderRadius: RADIUS.xl,

@@ -149,16 +149,7 @@ export const RECORD_TYPE_COLORS: Record<string, string> = {
   terreno: '#8D6E63',
 };
 
-// ─────────────────────────────────────────────────────────
-// Reminder type colors
-// ─────────────────────────────────────────────────────────
-export const REMINDER_TYPE_COLORS: Record<string, string> = {
-  vacuna: '#10B981',
-  desparasitacion: '#F59E0B',
-  cita: '#3B82F6',
-  post_operatorio: '#EF4444',
-  control: '#8B5CF6',
-};
+
 
 // Appointment type colors � centralized (used in agenda.tsx, HistoryTimeline)
 export const APPOINTMENT_TYPE_COLORS: Record<string, string> = {
@@ -192,14 +183,4 @@ export const APPOINTMENT_STATUS_LIST = Object.entries(APPOINTMENT_STATUS_COLORS)
   key, ...val,
 }));
 
-export const STATUS_COLORS = {
-  pending:  { bg: '#FFF3E0', text: '#E65100' },
-  sent:     { bg: '#E8F5E9', text: '#2E7D32' },
-  cancelled: { bg: '#FFEBEE', text: '#C62828' },
-  success:  { bg: '#E8F5E9', text: '#43A047' },
-  error:    { bg: '#FFEBEE', text: '#E53935' },
-  internado: { bg: '#E3F2FD', text: '#1565C0' },
-  cirugia:  { bg: '#FFEBEE', text: '#C62828' },
-  recuperacion: { bg: '#FFF3E0', text: '#E65100' },
-  alta:     { bg: '#E8F5E9', text: '#2E7D32' },
-};
+
