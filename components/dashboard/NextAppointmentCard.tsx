@@ -36,7 +36,7 @@ export default function NextAppointmentCard({
       <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.sm]}>
         <View style={styles.header}>
           <Calendar size={18} color={colors.primary} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>PrÃ³xima Cita</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Próxima Cita</Text>
         </View>
         <View style={styles.emptyState}>
           <CalendarDays size={32} color={colors.textLight} />
@@ -59,7 +59,7 @@ export default function NextAppointmentCard({
     <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.sm]}>
       <View style={styles.header}>
         <Calendar size={18} color={colors.primary} />
-        <Text style={[styles.headerTitle, { color: colors.text }]}>PrÃ³xima Cita</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Próxima Cita</Text>
       </View>
 
       <View style={styles.content}>
@@ -69,7 +69,7 @@ export default function NextAppointmentCard({
           <Text style={[styles.type, { color: colors.textSecondary }]} numberOfLines={1}>{type}</Text>
           {(petBreed || petAge) && (
             <Text style={[styles.breed, { color: colors.textSecondary }]} numberOfLines={1}>
-              {[petBreed, petAge].filter(Boolean).join(' Â· ')}
+              {[petBreed, petAge].filter(Boolean).join(' · ')}
             </Text>
           )}
         </View>
@@ -153,6 +153,7 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: SPACING.md,
   },
   btnOutlined: {

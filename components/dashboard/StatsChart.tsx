@@ -204,6 +204,7 @@ const styles = StyleSheet.create({
   },
   subStats: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     borderTopWidth: 1,
     paddingTop: SPACING.xl,
   },
