@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   labelText: {
     color: '#FFF',
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '700' },
+    fontWeight: TYPOGRAPHY.weights.bold },
   line: {
     height: 2 },
   nextBadge: {
@@ -82,4 +82,4 @@ const styles = StyleSheet.create({
     paddingVertical: 2 },
   nextText: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '600' } });
+    fontWeight: TYPOGRAPHY.weights.semibold } });

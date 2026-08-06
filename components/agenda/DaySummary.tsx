@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '700',
+    fontWeight: TYPOGRAPHY.weights.bold,
     marginBottom: SPACING.sm,
   },
   statsGrid: {
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '700',
+    fontWeight: TYPOGRAPHY.weights.bold,
   },
   statLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
@@ -165,11 +165,11 @@ const styles = StyleSheet.create({
   },
   occupationTitle: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   occupationPercent: {
     fontSize: TYPOGRAPHY.sizes.md,
-    fontWeight: '700',
+    fontWeight: TYPOGRAPHY.weights.bold,
   },
   occupationBar: {
     height: 6,
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   },
   typeTitle: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.weights.semibold,
     marginBottom: 4,
   },
   typeRow: {
@@ -214,6 +214,6 @@ const styles = StyleSheet.create({
   },
   typeCount: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
 });

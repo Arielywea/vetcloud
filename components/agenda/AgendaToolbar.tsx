@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.weights.semibold,
     color: '#FFF',
   },
   secondaryBtn: {
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '500',
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   navBtn: {
     padding: 4,
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   viewSwitcher: {
     flexDirection: 'row',
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   },
   viewBtnText: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   iconBtn: {
     width: 30,

@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   },
   monthTitle: {
     fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: '700',
+    fontWeight: TYPOGRAPHY.weights.bold,
   },
   dayNamesRow: {
     flexDirection: 'row',
@@ -203,8 +203,8 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '600',
-    textTransform: 'uppercase',
+    fontWeight: TYPOGRAPHY.weights.semibold,
+    letterSpacing: 0.5, textTransform: 'uppercase',
     marginBottom: SPACING.xs,
   },
   grid: {
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   },
   moreDots: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   dayDetail: {
     marginTop: SPACING.sm,
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   },
   dayDetailTitle: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '700',
+    fontWeight: TYPOGRAPHY.weights.bold,
     marginBottom: SPACING.sm,
   },
   dayApptRow: {
@@ -259,12 +259,12 @@ const styles = StyleSheet.create({
   },
   dayApptTime: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '700',
+    fontWeight: TYPOGRAPHY.weights.bold,
     width: 50,
   },
   dayApptName: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '500',
+    fontWeight: TYPOGRAPHY.weights.semibold,
     flex: 1,
   },
   dayApptBadge: {
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   },
   dayApptType: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.weights.semibold,
     textTransform: 'capitalize',
   },
 });

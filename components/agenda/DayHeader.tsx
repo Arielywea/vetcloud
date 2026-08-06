@@ -53,8 +53,8 @@ const styles = StyleSheet.create({
   },
   dayName: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '600',
-    textTransform: 'uppercase',
+    fontWeight: TYPOGRAPHY.weights.semibold,
+    letterSpacing: 0.5, textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   dayNumberWrap: {
@@ -80,6 +80,6 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '700',
+    fontWeight: TYPOGRAPHY.weights.bold,
   },
 });

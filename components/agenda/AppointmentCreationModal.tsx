@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: '700',
+    fontWeight: TYPOGRAPHY.weights.bold,
   },
   closeBtn: {
     padding: 4,
@@ -507,8 +507,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '600',
-    textTransform: 'uppercase',
+    fontWeight: TYPOGRAPHY.weights.semibold,
+    letterSpacing: 0.5, textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 6,
   },
@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
   selectedPetName: {
     flex: 1,
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   dropdown: {
     position: 'absolute',
@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
   },
   dropdownName: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   dropdownDetail: {
     fontSize: TYPOGRAPHY.sizes.xs,
@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
   },
   typeChipText: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   textAreaContainer: {
     flexDirection: 'row',
@@ -669,7 +669,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '500',
+    fontWeight: TYPOGRAPHY.weights.semibold,
     flex: 1,
   },
   footer: {
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     color: '#FFF',
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   secondaryBtn: {
     paddingVertical: 14,
@@ -702,6 +702,6 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '500',
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
 });

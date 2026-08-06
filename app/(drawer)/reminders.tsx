@@ -176,7 +176,7 @@ export default function RemindersScreen() {
               <TouchableOpacity key={pet.id} onPress={() => setSelectedPetId(pet.id)} style={[styles.petCard, { backgroundColor: colors.background, borderColor: selectedPetId === pet.id ? colors.primary : colors.border }]}>
                 {pet.species === 'dog' ? <Dog size={24} color={colors.primary} /> : <Cat size={24} color={colors.primary} />}
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.text, fontWeight: '600' }} numberOfLines={1}>{pet.name}</Text>
+                  <Text style={{ color: colors.text, fontWeight: TYPOGRAPHY.weights.semibold }} numberOfLines={1}>{pet.name}</Text>
                   <Text style={{ color: colors.textSecondary, fontSize: TYPOGRAPHY.sizes.xs }}>{pet.breed || 'N/D'} — {pet.email}</Text>
                 </View>
                 {selectedPetId === pet.id && <CheckCircle size={20} color={colors.primary} />}
@@ -208,16 +208,16 @@ const styles = StyleSheet.create({
   card: { marginBottom: SPACING.md },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginBottom: SPACING.sm },
   typeIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  cardTitle: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: '600' },
+  cardTitle: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: TYPOGRAPHY.weights.semibold },
   cardSubtitle: { fontSize: TYPOGRAPHY.sizes.xs, marginTop: 2 },
   cardMessage: { fontSize: TYPOGRAPHY.sizes.sm, lineHeight: 18, marginBottom: SPACING.sm },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardDate: { fontSize: TYPOGRAPHY.sizes.xs },
   cardActions: { flexDirection: 'row', gap: SPACING.md },
   modal: { margin: 20, padding: 20, borderRadius: RADIUS.lg, maxHeight: '85%' },
-  modalTitle: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: '700', marginBottom: SPACING.lg },
+  modalTitle: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.bold, marginBottom: SPACING.lg },
   modalDesc: { fontSize: TYPOGRAPHY.sizes.sm, marginBottom: SPACING.lg, lineHeight: 18 },
-  modalLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '600', marginBottom: SPACING.xs, marginTop: SPACING.sm },
+  modalLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, marginBottom: SPACING.xs, marginTop: SPACING.sm },
   petSelector: { marginBottom: SPACING.sm },
   petChip: { flexDirection: 'row', alignItems: 'center', gap: 6, marginRight: 6, paddingVertical: SPACING.xs, paddingHorizontal: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1 },
   typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: SPACING.sm },
