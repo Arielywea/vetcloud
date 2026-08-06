@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   headerEmoji: {
-    fontSize: 18,
+    fontSize: TYPOGRAPHY.sizes.lg,
   },
   headerTitle: {
     fontSize: TYPOGRAPHY.sizes.md,
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.sizes.sm,
   },
   mainStatValue: {
-    fontSize: 40,
+    fontSize: TYPOGRAPHY.sizes['4xl'],
     fontWeight: TYPOGRAPHY.weights.bold,
     marginTop: SPACING.xs,
   },

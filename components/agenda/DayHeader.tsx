@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   dayName: {
-    fontSize: 11,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   dayNumber: {
-    fontSize: 14,
+    fontSize: TYPOGRAPHY.sizes.md,
   },
   badge: {
     marginTop: 2,
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   badgeText: {
-    fontSize: 10,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '700',
   },
 });

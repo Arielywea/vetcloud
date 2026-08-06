@@ -5,7 +5,7 @@ import { StickyNote, Pencil, Trash2, Plus, AlertTriangle } from 'lucide-react-na
 import { useNotes } from '../../hooks/useDirectus';
 import { DirectusNote, api } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, SHADOWS } from '../../constants/tokens';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/tokens';
 import VCard from '../../components/ui/Card';
 import VButton from '../../components/ui/Button';
 import VEmptyState from '../../components/ui/EmptyState';
@@ -67,7 +67,7 @@ export default function NotesScreen() {
           <View style={styles.tagsRow}>
             {item.tags.map((tag, i) => (
               <View key={i} style={[styles.tagChip, { backgroundColor: colors.primaryContainer }]}>
-                <Text style={{ fontSize: 11, color: colors.primary }}>{tag}</Text>
+                <Text style={{ fontSize: TYPOGRAPHY.sizes.xs, color: colors.primary }}>{tag}</Text>
               </View>
             ))}
           </View>
@@ -149,8 +149,8 @@ const styles = StyleSheet.create({
   fab: { position: 'absolute', right: SPACING.lg, bottom: SPACING.lg, width: 56, height: 56, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
   modal: { padding: 20, margin: 20, borderRadius: RADIUS.lg, maxHeight: '85%' },
   modalTitle: { fontWeight: '700', marginBottom: SPACING.lg },
-  fieldLabel: { fontSize: 13, fontWeight: '600', marginBottom: SPACING.xs },
-  input: { borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.md, fontSize: 14 },
+  fieldLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '600', marginBottom: SPACING.xs },
+  input: { borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.md, fontSize: TYPOGRAPHY.sizes.md },
   contentInput: { minHeight: 120, textAlignVertical: 'top' },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: SPACING.sm, gap: SPACING.sm },
 });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
-import { Typography } from '../../constants/tokens';
+import { TYPOGRAPHY } from '../../constants/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface CurrentTimeLineProps {
@@ -59,34 +59,27 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
-    pointerEvents: 'none',
-  },
+    pointerEvents: 'none' },
   label: {
     position: 'absolute',
     left: -4,
     top: -8,
     borderRadius: 4,
     paddingHorizontal: 4,
-    paddingVertical: 2,
-  },
+    paddingVertical: 2 },
   labelText: {
     color: '#FFF',
-    fontSize: 10,
-    fontWeight: '700',
-  },
+    fontSize: TYPOGRAPHY.sizes.xs,
+    fontWeight: '700' },
   line: {
-    height: 2,
-  },
+    height: 2 },
   nextBadge: {
     position: 'absolute',
     left: 48,
     top: -10,
     borderRadius: 4,
     paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
+    paddingVertical: 2 },
   nextText: {
-    fontSize: 9,
-    fontWeight: '600',
-  },
-});
+    fontSize: TYPOGRAPHY.sizes.xs,
+    fontWeight: '600' } });

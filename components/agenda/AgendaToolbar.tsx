@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   viewBtnText: {
-    fontSize: 11,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '600',
   },
   iconBtn: {

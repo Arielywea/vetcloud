@@ -51,7 +51,7 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
 
         {/* Center: Pet info */}
         <View style={styles.infoSection}>
-          <Text style={[styles.petName, { color: colors.text }]}>{pet.name}</Text>
+          <Text style={[styles.petName, { color: colors.text }]} numberOfLines={1}>{pet.name}</Text>
           <Text style={[styles.petBreed, { color: colors.textSecondary }]}>
             {pet.breed || 'Sin raza'} � {age}
           </Text>
@@ -80,14 +80,14 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
           {pet.tutor_name && (
             <>
               <Text style={[styles.ownerLabel, { color: colors.textSecondary }]}>PROPIETARIO</Text>
-              <Text style={[styles.ownerName, { color: colors.text }]}>{pet.tutor_name}</Text>
+              <Text style={[styles.ownerName, { color: colors.text }]} numberOfLines={1}>{pet.tutor_name}</Text>
             </>
           )}
           {pet.phone && (
-            <Text style={[styles.ownerDetail, { color: colors.textSecondary }]}>{pet.phone}</Text>
+            <Text style={[styles.ownerDetail, { color: colors.textSecondary }]} numberOfLines={1}>{pet.phone}</Text>
           )}
           {pet.email && (
-            <Text style={[styles.ownerDetail, { color: colors.textSecondary }]}>{pet.email}</Text>
+            <Text style={[styles.ownerDetail, { color: colors.textSecondary }]} numberOfLines={1}>{pet.email}</Text>
           )}
           <View style={styles.actionsRow}>
             {pet.phone && (

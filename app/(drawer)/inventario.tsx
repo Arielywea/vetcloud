@@ -4,7 +4,7 @@ import { Text, Modal, Portal, Menu } from 'react-native-paper';
 import { Package, Pill, Syringe, Scissors, AlertTriangle, Pencil, Trash2, Plus, X } from 'lucide-react-native';
 import { useInventory } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, SHADOWS } from '../../constants/tokens';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
 import VCard from '../../components/ui/Card';
 import VButton from '../../components/ui/Button';
 import VEmptyState from '../../components/ui/EmptyState';
@@ -210,7 +210,7 @@ export default function InventarioScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   alertCard: { flexDirection: 'row', alignItems: 'center', gap: 8, margin: SPACING.lg, padding: SPACING.md, borderRadius: RADIUS.lg, borderWidth: 1 },
-  alertText: { fontWeight: '600', fontSize: 13 },
+  alertText: { fontWeight: '600', fontSize: TYPOGRAPHY.sizes.sm },
   listContent: { padding: SPACING.lg, paddingBottom: 80 },
   emptyText: { textAlign: 'center', marginTop: 40 },
   itemCard: { marginBottom: SPACING.md, borderRadius: RADIUS.lg },
@@ -218,20 +218,20 @@ const styles = StyleSheet.create({
   itemIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   itemInfo: { flex: 1, marginLeft: SPACING.md },
   itemName: { fontWeight: '700' },
-  itemCategory: { fontSize: 12, marginTop: 2 },
+  itemCategory: { fontSize: TYPOGRAPHY.sizes.xs, marginTop: 2 },
   stockSection: { alignItems: 'flex-end', minWidth: 70 },
-  stockNumber: { fontSize: 16, fontWeight: '800' },
-  stockUnit: { fontSize: 11, fontWeight: '400' },
+  stockNumber: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: '800' },
+  stockUnit: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: '400' },
   stockBar: { width: 60, height: 4, borderRadius: 2, marginTop: 4 },
   stockFill: { height: 4, borderRadius: 2 },
-  minStock: { fontSize: 10, marginTop: 2 },
+  minStock: { fontSize: TYPOGRAPHY.sizes.xs, marginTop: 2 },
   itemActions: { flexDirection: 'row', gap: SPACING.md },
   fab: { position: 'absolute', right: SPACING.lg, bottom: SPACING.lg, width: 56, height: 56, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
   modal: { padding: 24, margin: 20, borderRadius: RADIUS.lg, maxHeight: '85%' },
   dialogModal: { padding: 24, margin: 20, borderRadius: RADIUS.lg },
   modalTitle: { fontWeight: '700', marginBottom: SPACING.lg },
-  fieldLabel: { fontSize: 13, fontWeight: '600', marginBottom: SPACING.xs },
-  input: { borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.md, fontSize: 15 },
+  fieldLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '600', marginBottom: SPACING.xs },
+  input: { borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.md, fontSize: TYPOGRAPHY.sizes.base },
   row: { flexDirection: 'row', gap: SPACING.md },
   rowField: { flex: 1 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: SPACING.md, marginTop: SPACING.sm },

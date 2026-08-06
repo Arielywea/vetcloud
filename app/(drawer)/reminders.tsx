@@ -6,7 +6,7 @@ import { useReminders } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { usePets } from '../../hooks/useDirectus';
 import { Reminder } from '../../services/directus';
-import { SPACING, RADIUS, SHADOWS } from '../../constants/tokens';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
 import { TEXT_ON_PRIMARY } from '../../constants/colors';
 import VCard from '../../components/ui/Card';
 import VButton from '../../components/ui/Button';
@@ -106,8 +106,8 @@ export default function RemindersScreen() {
                   <TypeIcon size={20} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.cardTitle, { color: colors.text }]}>{reminder.title}</Text>
-                  <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
+                  <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>{reminder.title}</Text>
+                  <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
                     {reminder.pet_name} — {reminder.species === 'dog' ? 'Canino' : 'Felino'}
                   </Text>
                 </View>
@@ -144,7 +144,7 @@ export default function RemindersScreen() {
               {pets.map((pet) => (
                 <TouchableOpacity key={pet.id} onPress={() => setFormPetId(pet.id)} style={[styles.petChip, { backgroundColor: colors.surface, borderColor: colors.border }, formPetId === pet.id && { backgroundColor: colors.primaryContainer, borderColor: colors.primary }]}>
                   {pet.species === 'dog' ? <Dog size={14} color={colors.primary} /> : <Cat size={14} color={colors.primary} />}
-                  <Text style={{ color: formPetId === pet.id ? colors.primary : colors.text, fontSize: 13 }}>{pet.name}</Text>
+                  <Text style={{ color: formPetId === pet.id ? colors.primary : colors.text, fontSize: 13 }} numberOfLines={1}>{pet.name}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -152,7 +152,7 @@ export default function RemindersScreen() {
             <View style={styles.typeRow}>
               {(['vacuna', 'desparasitacion', 'cita', 'post_operatorio', 'control'] as const).map((t) => (
                 <TouchableOpacity key={t} onPress={() => setFormType(t)} style={[styles.typeBtn, { backgroundColor: colors.surface, borderColor: colors.border }, formType === t && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-                  <Text style={{ color: formType === t ? TEXT_ON_PRIMARY.light.default : colors.text, fontSize: 12 }}>{t.replace('_', ' ')}</Text>
+                  <Text style={{ color: formType === t ? TEXT_ON_PRIMARY.light.default : colors.text, fontSize: TYPOGRAPHY.sizes.xs }}>{t.replace('_', ' ')}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -176,8 +176,8 @@ export default function RemindersScreen() {
               <TouchableOpacity key={pet.id} onPress={() => setSelectedPetId(pet.id)} style={[styles.petCard, { backgroundColor: colors.background, borderColor: selectedPetId === pet.id ? colors.primary : colors.border }]}>
                 {pet.species === 'dog' ? <Dog size={24} color={colors.primary} /> : <Cat size={24} color={colors.primary} />}
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.text, fontWeight: '600' }}>{pet.name}</Text>
-                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{pet.breed || 'N/D'} — {pet.email}</Text>
+                  <Text style={{ color: colors.text, fontWeight: '600' }} numberOfLines={1}>{pet.name}</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: TYPOGRAPHY.sizes.xs }}>{pet.breed || 'N/D'} — {pet.email}</Text>
                 </View>
                 {selectedPetId === pet.id && <CheckCircle size={20} color={colors.primary} />}
               </TouchableOpacity>
@@ -208,21 +208,21 @@ const styles = StyleSheet.create({
   card: { marginBottom: SPACING.md },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginBottom: SPACING.sm },
   typeIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  cardTitle: { fontSize: 15, fontWeight: '600' },
-  cardSubtitle: { fontSize: 12, marginTop: 2 },
-  cardMessage: { fontSize: 13, lineHeight: 18, marginBottom: SPACING.sm },
+  cardTitle: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: '600' },
+  cardSubtitle: { fontSize: TYPOGRAPHY.sizes.xs, marginTop: 2 },
+  cardMessage: { fontSize: TYPOGRAPHY.sizes.sm, lineHeight: 18, marginBottom: SPACING.sm },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardDate: { fontSize: 12 },
+  cardDate: { fontSize: TYPOGRAPHY.sizes.xs },
   cardActions: { flexDirection: 'row', gap: SPACING.md },
   modal: { margin: 20, padding: 20, borderRadius: RADIUS.lg, maxHeight: '85%' },
-  modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: SPACING.lg },
-  modalDesc: { fontSize: 13, marginBottom: SPACING.lg, lineHeight: 18 },
-  modalLabel: { fontSize: 13, fontWeight: '600', marginBottom: SPACING.xs, marginTop: SPACING.sm },
+  modalTitle: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: '700', marginBottom: SPACING.lg },
+  modalDesc: { fontSize: TYPOGRAPHY.sizes.sm, marginBottom: SPACING.lg, lineHeight: 18 },
+  modalLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '600', marginBottom: SPACING.xs, marginTop: SPACING.sm },
   petSelector: { marginBottom: SPACING.sm },
   petChip: { flexDirection: 'row', alignItems: 'center', gap: 6, marginRight: 6, paddingVertical: SPACING.xs, paddingHorizontal: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1 },
   typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: SPACING.sm },
   typeBtn: { paddingVertical: SPACING.xs, paddingHorizontal: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1 },
-  input: { borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.md, fontSize: 14 },
+  input: { borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.md, fontSize: TYPOGRAPHY.sizes.md },
   petList: { gap: 8, marginBottom: SPACING.lg },
   petCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.md, borderRadius: RADIUS.lg, borderWidth: 1 },
 });

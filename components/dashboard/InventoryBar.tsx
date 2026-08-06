@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   headerEmoji: {
-    fontSize: 18,
+    fontSize: TYPOGRAPHY.sizes.lg,
   },
   headerTitle: {
     fontSize: TYPOGRAPHY.sizes.md,
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   itemIcon: {
-    fontSize: 14,
+    fontSize: TYPOGRAPHY.sizes.md,
   },
   itemLabel: {
     flex: 1,

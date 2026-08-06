@@ -7,6 +7,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { api } from '../../services/directus';
 import { DISEASE_CATEGORIES, SPECIES_INFO } from '../../constants/diseases';
 import { DiseaseCategory } from '../../types';
+import { TYPOGRAPHY } from '../../constants/tokens';
 
 const SEVERITY_OPTIONS = [
   { value: 'mild', label: 'Leve' },
@@ -398,10 +399,10 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontWeight: '700',
-    fontSize: 15,
+    fontSize: TYPOGRAPHY.sizes.base,
     marginBottom: 12,
   },
-  fieldLabel: { fontSize: 13, fontWeight: '600', marginBottom: 4 },
+  fieldLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '600', marginBottom: 4 },
   input: { marginBottom: 8 },
   segmented: { marginBottom: 12 },
   row: { flexDirection: 'row', gap: 12 },

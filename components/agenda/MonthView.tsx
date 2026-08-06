@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   dayName: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 11,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '600',
     textTransform: 'uppercase',
     marginBottom: SPACING.xs,
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   dayNumber: {
-    fontSize: 13,
+    fontSize: TYPOGRAPHY.sizes.sm,
   },
   dotsRow: {
     flexDirection: 'row',
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   moreDots: {
-    fontSize: 8,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '600',
   },
   dayDetail: {
@@ -258,12 +258,12 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   dayApptTime: {
-    fontSize: 12,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '700',
     width: 50,
   },
   dayApptName: {
-    fontSize: 12,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '500',
     flex: 1,
   },
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   dayApptType: {
-    fontSize: 10,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '600',
     textTransform: 'capitalize',
   },

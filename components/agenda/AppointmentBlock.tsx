@@ -79,17 +79,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   time: {
-    fontSize: 10,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.bold,
     lineHeight: 13,
   },
   name: {
-    fontSize: 11,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
     lineHeight: 14,
   },
   breed: {
-    fontSize: 10,
+    fontSize: TYPOGRAPHY.sizes.xs,
     lineHeight: 13,
   },
 });

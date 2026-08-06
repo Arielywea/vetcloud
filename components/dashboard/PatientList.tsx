@@ -63,12 +63,12 @@ export default function PatientList({ patients = [], onViewAll }: PatientListPro
               {getSpeciesIcon(patient.species)}
             </View>
             <View style={styles.patientInfo}>
-              <Text style={[styles.patientName, { color: colors.text }]}>{patient.name}</Text>
+              <Text style={[styles.patientName, { color: colors.text }]} numberOfLines={1}>{patient.name}</Text>
               <Text style={[styles.patientDetail, { color: colors.textSecondary }]}>
                 {patient.species} · {patient.breed}
               </Text>
             </View>
-            <Text style={[styles.patientDate, { color: colors.textLight }]}>{patient.lastVisit}</Text>
+            <Text style={[styles.patientDate, { color: colors.textLight }]} numberOfLines={1}>{patient.lastVisit}</Text>
           </View>
         ))
       )}

@@ -7,7 +7,7 @@ import AppointmentCard, { AppointmentCardData } from './AppointmentCard';
 import DayHeader from './DayHeader';
 import CurrentTimeLine from './CurrentTimeLine';
 import SkeletonLoader from './SkeletonLoader';
-import { SPACING } from '../../constants/tokens';
+import { TYPOGRAPHY,  SPACING } from '../../constants/tokens';
 
 export interface EnrichedAppointment {
   id: string;
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     height: 1,
   },
   timeLabel: {
-    fontSize: 10,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '500',
     textAlign: 'right',
     paddingRight: 8,

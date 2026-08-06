@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   photoEmoji: {
-    fontSize: 14,
+    fontSize: TYPOGRAPHY.sizes.md,
   },
   info: {
     flex: 1,
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   time: {
-    fontSize: 10,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '700',
     lineHeight: 13,
   },
@@ -270,16 +270,16 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   name: {
-    fontSize: 11,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '600',
     lineHeight: 14,
   },
   detail: {
-    fontSize: 10,
+    fontSize: TYPOGRAPHY.sizes.xs,
     lineHeight: 13,
   },
   tutor: {
-    fontSize: 9,
+    fontSize: TYPOGRAPHY.sizes.xs,
     lineHeight: 12,
   },
 });
