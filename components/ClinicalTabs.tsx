@@ -80,10 +80,10 @@ const styles = StyleSheet.create({
     marginRight: 8, borderWidth: 1,
     gap: 6,
   },
-  tabText: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '600' },
+  tabText: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold },
   badge: {
     borderRadius: 10, minWidth: 20, height: 20,
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6,
   },
-  badgeText: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: '700' },
+  badgeText: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.bold },
 });

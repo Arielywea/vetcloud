@@ -398,11 +398,11 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
   },
   sectionTitle: {
-    fontWeight: '700',
+    fontWeight: TYPOGRAPHY.weights.bold,
     fontSize: TYPOGRAPHY.sizes.base,
     marginBottom: 12,
   },
-  fieldLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '600', marginBottom: 4 },
+  fieldLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, marginBottom: 4 },
   input: { marginBottom: 8 },
   segmented: { marginBottom: 12 },
   row: { flexDirection: 'row', gap: 12 },

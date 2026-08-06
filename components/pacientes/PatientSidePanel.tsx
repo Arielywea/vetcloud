@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
+    letterSpacing: 0.5, textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   ownerName: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.semibold },

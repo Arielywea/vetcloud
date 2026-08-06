@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
+    letterSpacing: 0.5, textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginTop: SPACING.xs,
   },

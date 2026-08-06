@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
   timeLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '500',
+    fontWeight: TYPOGRAPHY.weights.semibold,
     textAlign: 'right',
     paddingRight: 8,
     transform: [{ translateY: -6 }],

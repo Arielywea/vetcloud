@@ -199,11 +199,11 @@ const styles = StyleSheet.create({
   },
   calNav: {
     fontSize: TYPOGRAPHY.sizes.xl,
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   calTitle: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '700',
+    fontWeight: TYPOGRAPHY.weights.bold,
   },
   dayNamesRow: {
     flexDirection: 'row',
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.weights.semibold,
     marginBottom: 4,
   },
   daysGrid: {
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
   },
   filterTitle: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '700',
+    fontWeight: TYPOGRAPHY.weights.bold,
     marginBottom: SPACING.sm,
   },
   filterGroup: {
@@ -243,9 +243,9 @@ const styles = StyleSheet.create({
   },
   filterLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.weights.semibold,
     marginBottom: 4,
-    textTransform: 'uppercase',
+    letterSpacing: 0.5, textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   filterChips: {
@@ -269,6 +269,6 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '500',
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
 });

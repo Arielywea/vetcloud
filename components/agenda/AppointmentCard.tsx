@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   },
   time: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '700',
+    fontWeight: TYPOGRAPHY.weights.bold,
     lineHeight: 13,
   },
   statusDot: {
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.weights.semibold,
     lineHeight: 14,
   },
   detail: {

@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
   },
   patientName: {
     fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: '700',
+    fontWeight: TYPOGRAPHY.weights.bold,
   },
   breed: {
     fontSize: TYPOGRAPHY.sizes.sm,
@@ -290,13 +290,13 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: '500',
-    textTransform: 'uppercase',
+    fontWeight: TYPOGRAPHY.weights.semibold,
+    letterSpacing: 0.5, textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   rowValue: {
     fontSize: TYPOGRAPHY.sizes.md,
-    fontWeight: '500',
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   typeBadge: {
     flexDirection: 'row',
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
   unregisteredText: {
     fontSize: TYPOGRAPHY.sizes.sm,
     color: '#92400E',
-    fontWeight: '500',
+    fontWeight: TYPOGRAPHY.weights.semibold,
     flex: 1,
   },
   footer: {
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     color: '#FFF',
     fontSize: TYPOGRAPHY.sizes.md,
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   secondaryBtn: {
     paddingVertical: 12,
@@ -362,6 +362,6 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: {
     fontSize: TYPOGRAPHY.sizes.md,
-    fontWeight: '500',
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
 });

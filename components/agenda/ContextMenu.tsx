@@ -141,6 +141,6 @@ const styles = StyleSheet.create({
   },
   itemLabel: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: '500',
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
 });
