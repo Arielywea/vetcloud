@@ -134,6 +134,19 @@ function AgendaContent() {
     setContextMenu({ visible: false, x: 0, y: 0, appointment: null });
   }, []);
 
+  const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
+    try {
+      await api(`/items/appointments/${appointmentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      refetch();
+    } catch (err: any) {
+      console.error('Failed to change status:', err?.message || err);
+    }
+  }, [refetch]);
+
   const handleSlotPress = useCallback((date: Date, hour: number) => {
     setCreationModal({ visible: true, initialDate: date, initialHour: hour });
   }, []);
@@ -173,6 +186,7 @@ function AgendaContent() {
               onDateSelect={setSelectedDate}
               onAppointmentPress={handleAppointmentPress}
               onAppointmentContextMenu={handleContextMenu}
+              onStatusChange={handleStatusChange}
               onSlotPress={handleSlotPress}
               onDragStart={onDragStart}
               onDragMove={onDragMove}
@@ -187,6 +201,7 @@ function AgendaContent() {
               appointments={appointments}
               onAppointmentPress={handleAppointmentPress}
               onAppointmentContextMenu={handleContextMenu}
+              onStatusChange={handleStatusChange}
               onSlotPress={handleSlotPress}
               onDragStart={onDragStart}
               onDragMove={onDragMove}

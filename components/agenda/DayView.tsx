@@ -32,6 +32,7 @@ interface DayViewProps {
   appointments: EnrichedAppointment[];
   onAppointmentPress?: (appointment: AppointmentCardData) => void;
   onAppointmentContextMenu?: (appointment: AppointmentCardData, x: number, y: number) => void;
+  onStatusChange?: (appointmentId: string, newStatus: string) => void;
   onSlotPress?: (date: Date, hour: number) => void;
   onDragStart?: (appointmentId: string, data: AppointmentCardData, x: number, y: number) => void;
   onDragMove?: (x: number, y: number) => void;
@@ -46,6 +47,7 @@ export default function DayView({
   appointments,
   onAppointmentPress,
   onAppointmentContextMenu,
+  onStatusChange,
   onSlotPress,
   onDragStart,
   onDragMove,
@@ -135,6 +137,7 @@ export default function DayView({
                   height={height}
                   onPress={onAppointmentPress}
                   onContextMenu={onAppointmentContextMenu}
+                  onStatusChange={onStatusChange}
                   onDragStart={onDragStart}
                   onDragMove={onDragMove}
                   onDragEnd={onDragEnd}

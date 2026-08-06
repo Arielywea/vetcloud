@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Alert, useWindowDimensions } from 'react-native';
 import { Text, TextInput, Button, Menu, Dialog, Portal } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -10,6 +10,7 @@ import { uploadPetPhoto } from '../../services/cloudinary';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
 import { TEXT_ON_PRIMARY } from '../../constants/colors';
 import VoiceNotes from '../../components/VoiceNotes';
+import { DOG_BREEDS, CAT_BREEDS, filterBreeds } from '../../constants/breeds';
 
 const TEMPERAMENT_OPTIONS = ['Dócil', 'Inquieto', 'Agresivo', 'Nervioso'];
 const HABITAT_OPTIONS = ['Casa', 'Depto', 'Finca', 'Exteriores'];
@@ -48,6 +49,7 @@ export default function AddPacienteScreen() {
   const [species, setSpecies] = useState<'dog' | 'cat'>('dog');
   const [sex, setSex] = useState<'macho' | 'hembra' | null>(null);
   const [breed, setBreed] = useState('');
+  const [breedFocused, setBreedFocused] = useState(false);
   const [birthDate, setBirthDate] = useState('');
   const [weight, setWeight] = useState('');
   const [color, setColor] = useState('');
@@ -98,6 +100,11 @@ export default function AddPacienteScreen() {
 
   // Hallazgos examen físico
   const [hallazgosExamenFisico, setHallazgosExamenFisico] = useState('');
+
+  const breedSuggestions = useMemo(() => {
+    const breeds = species === 'dog' ? DOG_BREEDS : CAT_BREEDS;
+    return filterBreeds(breeds, breed);
+  }, [species, breed]);
 
   const toggleTemperament = (t: string) => {
     setTemperament(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
@@ -337,15 +344,32 @@ export default function AddPacienteScreen() {
           </View>
           <View style={styles.gridField}>
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Raza</Text>
-            <TextInput
-              value={breed}
-              onChangeText={setBreed}
-              mode="outlined"
-              placeholder="Ej: Golden Retriever"
-              style={[styles.input, { backgroundColor: colors.surface }]}
-              outlineColor={colors.border}
-              activeOutlineColor={colors.primary}
-            />
+            <View>
+              <TextInput
+                value={breed}
+                onChangeText={(t) => { setBreed(t); setBreedFocused(true); }}
+                onFocus={() => setBreedFocused(true)}
+                onBlur={() => setTimeout(() => setBreedFocused(false), 200)}
+                mode="outlined"
+                placeholder="Ej: Golden Retriever"
+                style={[styles.input, { backgroundColor: colors.surface }]}
+                outlineColor={colors.border}
+                activeOutlineColor={colors.primary}
+              />
+              {breedFocused && breed.length > 0 && breedSuggestions.length > 0 && (
+                <View style={[styles.breedDropdown, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  {breedSuggestions.map((suggestion) => (
+                    <TouchableOpacity
+                      key={suggestion}
+                      onPress={() => { setBreed(suggestion); setBreedFocused(false); }}
+                      style={[styles.breedOption, { borderBottomColor: colors.border }]}
+                    >
+                      <Text style={[styles.breedOptionText, { color: colors.text }]}>{suggestion}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
           </View>
         </View>
 
@@ -1011,4 +1035,26 @@ const styles = StyleSheet.create({
   },
   navBtn: { borderRadius: RADIUS.md },
   navBtnPrimary: { borderRadius: RADIUS.md },
+
+  // Breed autocomplete
+  breedDropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    borderWidth: 1,
+    borderRadius: RADIUS.md,
+    maxHeight: 200,
+    overflow: 'hidden',
+    ...SHADOWS.lg,
+  },
+  breedOption: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm + 2,
+    borderBottomWidth: 1,
+  },
+  breedOptionText: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+  },
 });
