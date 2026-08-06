@@ -36,7 +36,7 @@ interface AppointmentCreationModalProps {
 }
 
 function formatHour(hour: number): string {
-  return `${hour.toString().padStart(2, '0')}:00`;
+  return hour.toString().padStart(2, '0');
 }
 
 function formatDateKey(d: Date): string {
