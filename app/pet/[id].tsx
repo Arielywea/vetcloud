@@ -16,6 +16,9 @@ import ClinicalHistory from '../../components/pet/ClinicalHistory';
 import RecentRecord from '../../components/pet/RecentRecord';
 import RecordTimeline from '../../components/pet/RecordTimeline';
 import PrescriptionList from '../../components/pet/PrescriptionList';
+import WeightChart from '../../components/pet/WeightChart';
+import RecordDetail from '../../components/pet/RecordDetail';
+import PreSurgicalChecklist from '../../components/pet/PreSurgicalChecklist';
 import VoiceNotes from '../../components/VoiceNotes';
 import DynamicIcon from '../../components/ui/DynamicIcon';
 export default function PetDetailScreen() {
@@ -165,6 +168,7 @@ export default function PetDetailScreen() {
       <PetHeader pet={pet} onEdit={() => {}} onCall={() => {}} onEmail={() => {}} />
       <ClinicalHistory pet={pet} fieldCount={clinicalFieldCount} />
       {mostRecentRecord && <RecentRecord record={mostRecentRecord} onView={() => setSelectedRecord(mostRecentRecord)} onGenerateRx={() => openRxModal(mostRecentRecord.id)} />}
+      <WeightChart records={records} />
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Historial Completo</Text>
@@ -192,15 +196,36 @@ export default function PetDetailScreen() {
             <TextInput label="Fecha y hora" value={recordDate} onChangeText={setRecordDate} mode="outlined" style={styles.input} />
             <TextInput label="Veterinario (opcional)" value={recordVet} onChangeText={setRecordVet} mode="outlined" style={styles.input} />
             <TextInput label="Peso (kg, opcional)" value={recordWeight} onChangeText={setRecordWeight} mode="outlined" style={styles.input} keyboardType="numeric" />
-            <TextInput label="Motivo de consulta" value={recordMotivoConsulta} onChangeText={setRecordMotivoConsulta} mode="outlined" multiline numberOfLines={3} style={styles.input} />
+
+            {/* SOAP: Subjective */}
+            <Text variant="titleSmall" style={[styles.subTitle, { color: colors.primary }]}>Subjetivo</Text>
+            <TextInput label="Motivo de consulta" value={recordMotivoConsulta} onChangeText={setRecordMotivoConsulta} mode="outlined" multiline numberOfLines={2} style={styles.input} />
             <TextInput label="Anamnesis" value={recordAnamnesis} onChangeText={setRecordAnamnesis} mode="outlined" multiline numberOfLines={3} style={styles.input} />
             <VoiceNotes onTranscription={(text) => setRecordNotes(text)} onSoapParsed={(soapData) => { const parts: string[] = []; if (soapData.subjective) parts.push("S: " + soapData.subjective); if (soapData.objective) parts.push("O: " + soapData.objective); if (soapData.assessment) parts.push("A: " + soapData.assessment); if (soapData.plan) parts.push("P: " + soapData.plan); if (parts.length > 0) setRecordNotes(parts.join('\n\n')); }} />
+
+            {/* SOAP: Objective */}
+            <Text variant="titleSmall" style={[styles.subTitle, { color: colors.info }]}>Objetivo</Text>
+            <TextInput label="Hallazgos examen fisico" value={recordHallazgos} onChangeText={setRecordHallazgos} mode="outlined" multiline numberOfLines={3} style={styles.input} />
             <Text variant="titleSmall" style={[styles.subTitle, { color: colors.primary }]}>Constantes fisiologicas</Text>
             <View style={styles.rxFieldRow}><View style={styles.rxFieldHalf}><TextInput label="Temp (C)" value={recordVitalTemp} onChangeText={setRecordVitalTemp} mode="outlined" style={styles.rxInput} keyboardType="numeric" /></View><View style={styles.rxFieldHalf}><TextInput label="FC (lpm)" value={recordVitalFC} onChangeText={setRecordVitalFC} mode="outlined" style={styles.rxInput} keyboardType="numeric" /></View></View>
             <View style={styles.rxFieldRow}><View style={styles.rxFieldHalf}><TextInput label="FR (rpm)" value={recordVitalFR} onChangeText={setRecordVitalFR} mode="outlined" style={styles.rxInput} keyboardType="numeric" /></View><View style={styles.rxFieldHalf}><TextInput label="PA (mmHg)" value={recordVitalPA} onChangeText={setRecordVitalPA} mode="outlined" style={styles.rxInput} /></View></View>
             <TextInput label="SpO2 (%)" value={recordVitalSpO2} onChangeText={setRecordVitalSpO2} mode="outlined" style={styles.input} keyboardType="numeric" />
-            <TextInput label="Hallazgos examen fisico" value={recordHallazgos} onChangeText={setRecordHallazgos} mode="outlined" multiline numberOfLines={3} style={styles.input} />
-            <TextInput label="Notas *" value={recordNotes} onChangeText={setRecordNotes} mode="outlined" multiline numberOfLines={4} style={styles.input} />
+
+            {/* SOAP: Assessment */}
+            <Text variant="titleSmall" style={[styles.subTitle, { color: colors.warning }]}>Evaluacion</Text>
+            <TextInput label="Diagnostico / Evaluacion" value={recordNotes} onChangeText={setRecordNotes} mode="outlined" multiline numberOfLines={3} style={styles.input} />
+
+            {/* SOAP: Plan */}
+            <Text variant="titleSmall" style={[styles.subTitle, { color: colors.success }]}>Plan</Text>
+            <TextInput label="Notas / Tratamiento" value={recordNotes} onChangeText={setRecordNotes} mode="outlined" multiline numberOfLines={3} style={styles.input} />
+
+            {/* Pre-Surgical Checklist */}
+            {recordType === 'cirugia' && (
+              <View style={{ marginTop: SPACING.md }}>
+                <PreSurgicalChecklist onChange={(checklistData) => {}} />
+              </View>
+            )}
+
             <Button mode="contained" onPress={handleAddRecord} style={styles.saveButton} loading={saving} disabled={saving}>Guardar Registro</Button>
           </ScrollView>
         </Modal>
@@ -216,7 +241,12 @@ export default function PetDetailScreen() {
               <View style={styles.detailRow}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Fecha:</Text><Text style={[styles.detailValue, { color: colors.text }]}>{new Date(selectedRecord.date).toLocaleString('es-CL')}</Text></View>
               {selectedRecord.veterinarian && <View style={styles.detailRow}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Veterinario:</Text><Text style={[styles.detailValue, { color: colors.text }]}>{selectedRecord.veterinarian}</Text></View>}
               {selectedRecord.details?.weight && <View style={styles.detailRow}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Peso:</Text><Text style={[styles.detailValue, { color: colors.text }]}>{selectedRecord.details.weight} kg</Text></View>}
-              {selectedRecord.details?.notes && <View style={{ marginBottom: 8 }}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Notas:</Text><Text style={{ color: colors.text, lineHeight: 22, marginTop: 4 }}>{selectedRecord.details.notes}</Text></View>}
+              <RecordDetail record={selectedRecord} />
+              {selectedRecord.record_type === 'cirugia' && selectedRecord.details?.pre_surgical_checklist && (
+                <View style={{ marginTop: SPACING.md }}>
+                  <PreSurgicalChecklist data={selectedRecord.details.pre_surgical_checklist} readonly />
+                </View>
+              )}
               <View style={styles.detailActions}>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <Button mode="contained" compact onPress={() => { setSelectedRecord(null); openRxModal(selectedRecord.id); }}>Generar Receta</Button>

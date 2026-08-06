@@ -35,10 +35,25 @@ export default function RecordTimeline({ records, onViewRecord }: RecordTimeline
     );
   }
 
+  const getSoapPreview = (record: ClinicalRecord): string => {
+    const d = record.details || {};
+    if (d.subjective || d.objective || d.assessment || d.plan) {
+      const parts: string[] = [];
+      if (d.subjective) parts.push(`S: ${d.subjective.substring(0, 30)}`);
+      if (d.objective) parts.push(`O: ${d.objective.substring(0, 30)}`);
+      return parts.join(' | ') || 'Formato SOAP';
+    }
+    if (d.notes) return d.notes.substring(0, 50);
+    return '';
+  };
+
   return (
     <View style={styles.container}>
       {records.map((record, i) => {
         const config = RECORD_TYPE_CONFIG[record.record_type] || RECORD_TYPE_CONFIG.consulta;
+        const preview = getSoapPreview(record);
+        const hasChecklist = record.record_type === 'cirugia' && record.details?.pre_surgical_checklist;
+        const hasSoap = !!(record.details?.subjective || record.details?.objective);
         return (
           <View key={record.id} style={styles.timelineItem}>
             {i < records.length - 1 && <View style={[styles.line, { backgroundColor: colors.border }]} />}
@@ -52,11 +67,27 @@ export default function RecordTimeline({ records, onViewRecord }: RecordTimeline
                     <View style={[styles.typeIcon, { backgroundColor: config.bgColor }]}>
                       <DynamicIcon name={config.icon as any} size={16} color={config.color} />
                     </View>
-                    <View>
-                      <Text style={[styles.recordTitle, { color: colors.text }]}>
-                        {config.label}{record.details?.notes ? ` - ${record.details.notes.substring(0, 40)}` : ''}
-                      </Text>
-                      <Text style={[styles.recordDate, { color: colors.textSecondary }]}>{formatDate(record.date)}</Text>
+                    <View style={styles.cardInfo}>
+                      <View style={styles.cardTitleRow}>
+                        <Text style={[styles.recordTitle, { color: colors.text }]}>
+                          {config.label}
+                        </Text>
+                        {hasSoap && (
+                          <View style={[styles.badge, { backgroundColor: colors.primary + '20' }]}>
+                            <Text style={[styles.badgeText, { color: colors.primary }]}>SOAP</Text>
+                          </View>
+                        )}
+                        {hasChecklist && (
+                          <View style={[styles.badge, { backgroundColor: colors.success + '20' }]}>
+                            <DynamicIcon name="clipboard-check" size={10} color={colors.success} />
+                            <Text style={[styles.badgeText, { color: colors.success }]}>Check</Text>
+                          </View>
+                        )}
+                      </View>
+                      {preview ? (
+                        <Text style={[styles.recordPreview, { color: colors.textSecondary }]} numberOfLines={1}>{preview}</Text>
+                      ) : null}
+                      <Text style={[styles.recordDate, { color: colors.textLight }]}>{formatDate(record.date)}</Text>
                     </View>
                   </View>
                   {onViewRecord && (
@@ -140,8 +171,34 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: TYPOGRAPHY.weights.semibold,
   },
+  recordPreview: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    marginTop: 2,
+  },
   recordDate: {
     fontSize: TYPOGRAPHY.sizes.xs,
     marginTop: SPACING['2xs'],
+  },
+  cardInfo: {
+    flex: 1,
+  },
+  cardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: RADIUS.full,
+  },
+  badgeText: {
+    fontSize: 9,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });
