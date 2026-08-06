@@ -53,7 +53,7 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
         <View style={styles.infoSection}>
           <Text style={[styles.petName, { color: colors.text }]} numberOfLines={1}>{pet.name}</Text>
           <Text style={[styles.petBreed, { color: colors.textSecondary }]}>
-            {pet.breed || 'Sin raza'} � {age}
+            {pet.breed || 'Sin raza'}  ·  {age}
           </Text>
           <View style={styles.statusRow}>
             {pet.sex && (
