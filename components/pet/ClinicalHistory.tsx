@@ -75,7 +75,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
       {expanded && (
         <View style={styles.content}>
           {pet.motivo_consulta && renderField('comment-alert-outline', 'Motivo de consulta', pet.motivo_consulta)}
-          {pet.habitat && renderField('home', 'Habitat', `${pet.habitat}${pet.habitat_other ? ` � ${pet.habitat_other}` : ''}`)}
+          {pet.habitat && renderField('home', 'Habitat', `${pet.habitat}${pet.habitat_other ? `  ·  ${pet.habitat_other}` : ''}`)}
           {(pet.food || pet.food_frequency) && (
             <View style={styles.fieldBlock}>
               <View style={styles.fieldHeader}>
@@ -131,7 +131,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
               {pet.vital_signs.temperature != null && (
                 <View style={styles.vitalItem}>
                   <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>Temp</Text>
-                  <Text style={[styles.vitalValue, { color: colors.text }]}>{pet.vital_signs.temperature}�C</Text>
+                  <Text style={[styles.vitalValue, { color: colors.text }]}>{pet.vital_signs.temperature}  °C</Text>
                 </View>
               )}
               {pet.vital_signs.heart_rate != null && (
