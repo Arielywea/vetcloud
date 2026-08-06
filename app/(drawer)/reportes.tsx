@@ -1,39 +1,76 @@
-import React from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { Text } from 'react-native-paper';
 import { BarChart3, PawPrint, Calendar, Package } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
-import { TEXT_ON_PRIMARY } from '../../constants/colors';
-import { RECORD_TYPE_COLORS } from '../../constants/colors';
+import { TEXT_ON_PRIMARY, RECORD_TYPE_COLORS } from '../../constants/colors';
 import VCard from '../../components/ui/Card';
 import VStatCard from '../../components/ui/StatCard';
+import { api } from '../../services/directus';
 
-const MOCK_WEEKLY = [
-  { day: 'Lun', consultations: 8 },
-  { day: 'Mar', consultations: 12 },
-  { day: 'Mié', consultations: 6 },
-  { day: 'Jue', consultations: 10 },
-  { day: 'Vie', consultations: 9 },
-  { day: 'Sáb', consultations: 4 },
-];
+interface DashboardStats {
+  totalPets: number;
+  todayAppointments: number;
+  totalRecords: number;
+  lowStockAlerts: number;
+}
 
-const MOCK_TOP_RECORDS = [
-  { type: 'Consulta', count: 45, pct: 38 },
-  { type: 'Vacuna', count: 28, pct: 24 },
-  { type: 'Cirugía', count: 12, pct: 10 },
-  { type: 'Control', count: 35, pct: 30 },
-];
+interface WeeklyData {
+  day: string;
+  count: number;
+}
+
+interface RecordTypeData {
+  record_type: string;
+  count: number;
+}
 
 export default function ReportesScreen() {
   const { colors } = useTheme();
+  const [loading, setLoading] = useState(true);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
+  const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
+  const [recordTypes, setRecordTypes] = useState<RecordTypeData[]>([]);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  async function loadData() {
+    try {
+      const [stats, weekly, records] = await Promise.all([
+        api.stats.dashboard(),
+        api.stats.weekly(),
+        api.stats.recordTypes(),
+      ]);
+      setDashboardStats(stats);
+      setWeeklyData(weekly);
+      setRecordTypes(records);
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   const stats = [
-    { label: 'Pacientes', value: '127', icon: <PawPrint size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.info },
-    { label: 'Citas (Mes)', value: '89', icon: <Calendar size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.success },
-    { label: 'Inventario', value: '45', icon: <Package size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.warning },
-    { label: 'Internados', value: '5', icon: <BarChart3 size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.error },
+    { label: 'Pacientes', value: String(dashboardStats?.totalPets ?? 0), icon: <PawPrint size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.info },
+    { label: 'Citas (Hoy)', value: String(dashboardStats?.todayAppointments ?? 0), icon: <Calendar size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.success },
+    { label: 'Fichas', value: String(dashboardStats?.totalRecords ?? 0), icon: <Package size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.warning },
+    { label: 'Stock Bajo', value: String(dashboardStats?.lowStockAlerts ?? 0), icon: <BarChart3 size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.error },
   ];
+
+  const maxWeekly = weeklyData.length > 0 ? Math.max(...weeklyData.map(d => d.count)) : 1;
+  const totalRecords = recordTypes.reduce((sum, r) => sum + r.count, 0);
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
@@ -62,12 +99,11 @@ export default function ReportesScreen() {
       <VCard style={styles.card}>
         <Text style={[styles.cardTitle, { color: colors.text }]}>Actividad de la Semana</Text>
         <View style={styles.chart}>
-          {MOCK_WEEKLY.map((day, idx) => {
-            const maxVal = Math.max(...MOCK_WEEKLY.map(d => d.consultations));
-            const heightPct = (day.consultations / maxVal) * 120;
+          {weeklyData.map((day, idx) => {
+            const heightPct = (day.count / maxWeekly) * 120;
             return (
               <View key={idx} style={styles.barCol}>
-                <Text style={[styles.barValue, { color: colors.textSecondary }]}>{day.consultations}</Text>
+                <Text style={[styles.barValue, { color: colors.textSecondary }]}>{day.count}</Text>
                 <View style={[styles.bar, { height: heightPct, backgroundColor: colors.primary }]} />
                 <Text style={[styles.barLabel, { color: colors.textSecondary }]}>{day.day}</Text>
               </View>
@@ -78,20 +114,21 @@ export default function ReportesScreen() {
 
       <VCard style={styles.card}>
         <Text style={[styles.cardTitle, { color: colors.text }]}>Tipos de Fichas</Text>
-        {MOCK_TOP_RECORDS.map(record => {
-          const recordColor = RECORD_TYPE_COLORS[record.type.toLowerCase()] || colors.primary;
+        {recordTypes.map(record => {
+          const recordColor = RECORD_TYPE_COLORS[record.record_type.toLowerCase()] || colors.primary;
+          const pct = totalRecords > 0 ? Math.round((record.count / totalRecords) * 100) : 0;
           return (
-            <View key={record.type} style={styles.recordRow}>
+            <View key={record.record_type} style={styles.recordRow}>
               <View style={styles.recordInfo}>
                 <View style={[styles.recordDot, { backgroundColor: recordColor }]} />
-                <Text style={[styles.recordType, { color: colors.text }]}>{record.type}</Text>
+                <Text style={[styles.recordType, { color: colors.text }]}>{record.record_type}</Text>
               </View>
               <View style={styles.recordStats}>
                 <Text style={[styles.recordCount, { color: colors.text }]}>{record.count}</Text>
                 <View style={[styles.barBg, { backgroundColor: colors.surfaceVariant }]}>
-                  <View style={[styles.barFill, { width: `${record.pct}%`, backgroundColor: recordColor }]} />
+                  <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: recordColor }]} />
                 </View>
-                <Text style={[styles.recordPct, { color: colors.textSecondary }]}>{record.pct}%</Text>
+                <Text style={[styles.recordPct, { color: colors.textSecondary }]}>{pct}%</Text>
               </View>
             </View>
           );
@@ -103,6 +140,7 @@ export default function ReportesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  loadingContainer: { alignItems: 'center', justifyContent: 'center' },
   content: { padding: SPACING.xl, paddingBottom: SPACING['4xl'] },
   header: { marginBottom: SPACING.xl },
   title: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.bold },

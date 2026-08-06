@@ -53,6 +53,8 @@ const SCREEN_TITLES: Record<string, string> = {
   '/(drawer)/inventario': 'Inventario',
   '/(drawer)/reportes': 'Reportes',
   '/(drawer)/configuracion': 'Configuración',
+  '/(drawer)/notes': 'Notas Personales',
+  '/(drawer)/reminders': 'Recordatorios',
 };
 
 export default function DrawerLayout() {
@@ -118,6 +120,7 @@ export default function DrawerLayout() {
               <Stack.Screen name="inventario" />
               <Stack.Screen name="reportes" />
               <Stack.Screen name="configuracion" />
+              <Stack.Screen name="notes" />
               <Stack.Screen name="reminders" />
             </Stack>
           </ErrorBoundary>

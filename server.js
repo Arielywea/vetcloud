@@ -45,6 +45,38 @@ try {
 
 const upload = multer({ storage: multer.memoryStorage() });
 
+function sanitizeColumns(allowed, body) {
+  const safe = {};
+  for (const key of Object.keys(body)) {
+    if (allowed.includes(key)) {
+      safe[key] = body[key];
+    }
+  }
+  return safe;
+}
+
+function isValidUUID(str) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
+const rateLimitStore = new Map();
+function rateLimit(key, maxAttempts, windowMs) {
+  const now = Date.now();
+  const record = rateLimitStore.get(key) || { count: 0, resetAt: now + windowMs };
+  if (now > record.resetAt) {
+    record.count = 0;
+    record.resetAt = now + windowMs;
+  }
+  record.count++;
+  rateLimitStore.set(key, record);
+  return record.count <= maxAttempts;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
 // ─── AUTH MIDDLEWARE ──────────────────────────────────────
 function authMiddleware(req, res, next) {
   const header = req.headers.authorization;
@@ -64,6 +96,10 @@ function authMiddleware(req, res, next) {
 // ─── AUTH ENDPOINTS ───────────────────────────────────────
 app.post('/auth/login', async (req, res) => {
   try {
+    const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
+    if (!rateLimit(`login:${clientIp}`, 5, 60000)) {
+      return res.status(429).json({ error: 'Demasiados intentos. Intente en 1 minuto.' });
+    }
     const { rut, password } = req.body;
     if (!rut || !password) return res.status(400).json({ error: 'RUT y contraseña requeridos' });
     const result = await pool.query('SELECT * FROM users WHERE rut = $1', [rut]);
@@ -135,8 +171,11 @@ app.patch('/auth/password', authMiddleware, async (req, res) => {
     if (!current_password || !new_password) {
       return res.status(400).json({ error: 'Contraseña actual y nueva contraseña requeridas' });
     }
-    if (new_password.length < 4) {
-      return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 4 caracteres' });
+    if (new_password.length < 8) {
+      return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres' });
+    }
+    if (!/[A-Z]/.test(new_password) || !/[a-z]/.test(new_password) || !/[0-9]/.test(new_password)) {
+      return res.status(400).json({ error: 'La contraseña debe contener mayúsculas, minúsculas y números' });
     }
     const result = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.userId]);
     if (!result.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -219,12 +258,13 @@ app.post('/items/diseases', authMiddleware, async (req, res) => {
 app.patch('/items/diseases/:id', authMiddleware, async (req, res) => {
   try {
     const d = req.body;
+    const allowed = ['name','scientific_name','species','category','severity','description','pathophysiology','key_signs','diagnosis','treatment','prevention','prognosis','is_zoonotic','references_list','photo_url','life_stage'];
+    const safe = sanitizeColumns(allowed, d);
+    const aliasMap = { references: 'references_list' };
     const fields = [];
     const values = [];
     let idx = 1;
-    const aliasMap = { references: 'references_list' };
-    for (const [key, val] of Object.entries(d)) {
-      if (key === 'id' || key === 'created_at' || key === 'updated_at') continue;
+    for (const [key, val] of Object.entries(safe)) {
       const column = aliasMap[key] || key;
       const valStr = typeof val === 'object' ? JSON.stringify(val) : val;
       fields.push(`${column} = $${idx}`);
@@ -275,6 +315,8 @@ app.get('/items/pets/:id', authMiddleware, async (req, res) => {
 app.post('/items/pets', authMiddleware, async (req, res) => {
   try {
     const p = req.body;
+    if (!p.name || !String(p.name).trim()) return res.status(400).json({ error: 'El nombre es obligatorio' });
+    if (p.species && !['dog', 'cat'].includes(p.species)) return res.status(400).json({ error: 'La especie debe ser dog o cat' });
     const result = await pool.query(
        `INSERT INTO pets (name, species, breed, birth_date, weight, color, photo, allergies, notes, tutor_name, phone, email, address, clinic_location, reproductive_status, status, anamnesis, user_id,
         id_number, sex, temperament, habitat, habitat_other, food, food_frequency, water_consumption, urination, lives_with_other_animals, vaccines, deworming, flea_treatment, last_heat, surgeries, other_diseases, medications)
@@ -300,11 +342,12 @@ app.post('/items/pets', authMiddleware, async (req, res) => {
 app.patch('/items/pets/:id', authMiddleware, async (req, res) => {
   try {
     const p = req.body;
+    const allowed = ['name','species','breed','birth_date','weight','color','photo','allergies','notes','tutor_name','phone','email','address','clinic_location','id_number','sex','temperament','habitat','habitat_other','food','food_frequency','water_consumption','urination','lives_with_other_animals','vaccines','deworming','flea_treatment','last_heat','surgeries','other_diseases','medications','reproductive_status','anamnesis','vital_signs','hallazgos_examen_fisico','motivo_consulta','entorno','areneros','status','receive_reminders','last_visit'];
+    const safe = sanitizeColumns(allowed, p);
     const fields = [];
     const values = [];
     let idx = 1;
-    for (const [key, val] of Object.entries(p)) {
-      if (key === 'id' || key === 'created_at' || key === 'updated_at') continue;
+    for (const [key, val] of Object.entries(safe)) {
       const valStr = typeof val === 'object' ? JSON.stringify(val) : val;
       fields.push(`${key} = $${idx}`);
       values.push(valStr);
@@ -394,11 +437,12 @@ app.post('/items/personal_notes', authMiddleware, async (req, res) => {
 app.patch('/items/personal_notes/:id', authMiddleware, async (req, res) => {
   try {
     const n = req.body;
+    const allowed = ['title','content','tags','disease_id','pet_id'];
+    const safe = sanitizeColumns(allowed, n);
     const fields = [];
     const values = [];
     let idx = 1;
-    for (const [key, val] of Object.entries(n)) {
-      if (key === 'id' || key === 'created_at' || key === 'updated_at') continue;
+    for (const [key, val] of Object.entries(safe)) {
       const valStr = typeof val === 'object' ? JSON.stringify(val) : val;
       fields.push(`${key} = $${idx}`);
       values.push(valStr);
@@ -494,6 +538,8 @@ app.get('/items/appointments/:id', authMiddleware, async (req, res) => {
 app.post('/items/appointments', authMiddleware, async (req, res) => {
   try {
     const a = req.body;
+    if (!a.patient_name || !String(a.patient_name).trim()) return res.status(400).json({ error: 'El nombre del paciente es obligatorio' });
+    if (!a.start_time || isNaN(Date.parse(a.start_time))) return res.status(400).json({ error: 'Fecha de inicio válida es requerida' });
     const result = await pool.query(
       `INSERT INTO appointments (user_id, patient_name, tutor_phone, start_time, end_time, appointment_type, description)
        VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
@@ -509,11 +555,12 @@ app.post('/items/appointments', authMiddleware, async (req, res) => {
 app.patch('/items/appointments/:id', authMiddleware, async (req, res) => {
   try {
     const a = req.body;
+    const allowed = ['patient_name','tutor_phone','start_time','end_time','appointment_type','description','veterinarian','status','pet_id','room'];
+    const safe = sanitizeColumns(allowed, a);
     const fields = [];
     const values = [];
     let idx = 1;
-    for (const [key, val] of Object.entries(a)) {
-      if (key === 'id' || key === 'created_at' || key === 'user_id') continue;
+    for (const [key, val] of Object.entries(safe)) {
       const valStr = typeof val === 'object' ? JSON.stringify(val) : val;
       fields.push(`${key} = $${idx}`);
       values.push(valStr);
@@ -566,6 +613,10 @@ app.get('/items/clinical_records', authMiddleware, async (req, res) => {
 app.post('/items/clinical_records', authMiddleware, async (req, res) => {
   try {
     const r = req.body;
+    if (!r.pet_id || !isValidUUID(r.pet_id)) return res.status(400).json({ error: 'pet_id válido es requerido' });
+    if (!r.record_type || !['consulta', 'vacuna', 'cirugia', 'control'].includes(r.record_type)) {
+      return res.status(400).json({ error: 'record_type debe ser consulta, vacuna, cirugia o control' });
+    }
     const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [r.pet_id, req.userId]);
     if (!ownerCheck.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa mascota' });
     const result = await pool.query(
@@ -588,11 +639,12 @@ app.post('/items/clinical_records', authMiddleware, async (req, res) => {
 app.patch('/items/clinical_records/:id', authMiddleware, async (req, res) => {
   try {
     const r = req.body;
+    const allowed = ['pet_id','record_type','date','veterinarian','details'];
+    const safe = sanitizeColumns(allowed, r);
     const fields = [];
     const values = [];
     let idx = 1;
-    for (const [key, val] of Object.entries(r)) {
-      if (key === 'id' || key === 'created_at' || key === 'user_id' || key === 'pet_id') continue;
+    for (const [key, val] of Object.entries(safe)) {
       const valStr = key === 'details' ? JSON.stringify(val) : (typeof val === 'object' ? JSON.stringify(val) : val);
       fields.push(`${key} = $${idx}`);
       values.push(valStr);
@@ -669,11 +721,12 @@ app.post('/items/inventory', authMiddleware, async (req, res) => {
 app.patch('/items/inventory/:id', authMiddleware, async (req, res) => {
   try {
     const i = req.body;
+    const allowed = ['name','category','current_stock','min_stock','unit','last_restocked'];
+    const safe = sanitizeColumns(allowed, i);
     const fields = [];
     const values = [];
     let idx = 1;
-    for (const [key, val] of Object.entries(i)) {
-      if (key === 'id' || key === 'created_at' || key === 'user_id') continue;
+    for (const [key, val] of Object.entries(safe)) {
       const valStr = typeof val === 'object' ? JSON.stringify(val) : val;
       fields.push(`${key} = $${idx}`);
       values.push(valStr);
@@ -754,11 +807,12 @@ app.post('/items/prescriptions', authMiddleware, async (req, res) => {
 app.patch('/items/prescriptions/:id', authMiddleware, async (req, res) => {
   try {
     const r = req.body;
+    const allowed = ['pet_id','clinical_record_id','veterinarian_name','clinic_branch','prescription_body','format','status','issued_at'];
+    const safe = sanitizeColumns(allowed, r);
     const fields = [];
     const values = [];
     let idx = 1;
-    for (const [key, val] of Object.entries(r)) {
-      if (key === 'id' || key === 'created_at' || key === 'user_id' || key === 'pet_id') continue;
+    for (const [key, val] of Object.entries(safe)) {
       const valStr = typeof val === 'object' ? JSON.stringify(val) : val;
       fields.push(`${key} = $${idx}`);
       values.push(valStr);
@@ -790,6 +844,9 @@ app.delete('/items/prescriptions/:id', authMiddleware, async (req, res) => {
 // ─── PRESCRIPTION EMAIL ───────────────────────────────
 app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
   try {
+    if (!rateLimit(`email:${req.userId}`, 10, 3600000)) {
+      return res.status(429).json({ error: 'Límite de emails alcanzado (máx 10 por hora)' });
+    }
     const result = await pool.query(
       `SELECT pr.*, p.name AS pet_name, p.species, p.breed, p.weight, p.sex,
               p.tutor_name, p.email AS tutor_email, p.phone AS tutor_phone,
@@ -877,7 +934,7 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
     </div>
     <div style="background: #FAFAFA; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
       <h3 style="margin: 0 0 12px; color: #FF8F00; font-size: 14px; font-weight: 700;">Receta</h3>
-      <div style="white-space: pre-wrap; line-height: 1.8; font-size: 14px;">${rx.prescription_body.replace(/\n/g, '<br>')}</div>
+      <div style="white-space: pre-wrap; line-height: 1.8; font-size: 14px;">${escapeHtml(rx.prescription_body).replace(/\n/g, '<br>')}</div>
     </div>
   </div>
   <div style="text-align: center; padding: 16px; font-size: 11px; color: #999; background: #fff; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 12px 12px;">
@@ -1083,6 +1140,9 @@ app.delete('/items/reminders/:id', authMiddleware, async (req, res) => {
 
 app.post('/items/reminders/send-pending', authMiddleware, async (req, res) => {
   try {
+    if (!rateLimit(`email:${req.userId}`, 10, 3600000)) {
+      return res.status(429).json({ error: 'Límite de emails alcanzado (máx 10 por hora)' });
+    }
     const result = await pool.query(
       `SELECT r.*, p.name AS pet_name, p.species, p.breed
        FROM reminders r JOIN pets p ON p.id = r.pet_id
@@ -1125,8 +1185,8 @@ app.post('/items/reminders/send-pending', authMiddleware, async (req, res) => {
       <p style="margin: 4px 0 0; font-size: 13px; color: #666;">${speciesLabel} — ${reminder.breed || 'N/D'}</p>
     </div>
     <div style="background: #FAFAFA; padding: 16px; border-radius: 8px; border: 1px solid #e0e0e0;">
-      <h3 style="margin: 0 0 8px; color: #333; font-size: 14px;">${reminder.title}</h3>
-      <p style="margin: 0; font-size: 14px; line-height: 1.6;">${reminder.message}</p>
+      <h3 style="margin: 0 0 8px; color: #333; font-size: 14px;">${escapeHtml(reminder.title)}</h3>
+      <p style="margin: 0; font-size: 14px; line-height: 1.6;">${escapeHtml(reminder.message)}</p>
       <p style="margin: 12px 0 0; font-size: 13px; color: #999;">Fecha: ${new Date(reminder.scheduled_for).toLocaleDateString('es-CL')}</p>
     </div>
   </div>
@@ -1155,23 +1215,210 @@ app.post('/items/reminders/send-pending', authMiddleware, async (req, res) => {
   }
 });
 
+// ─── HOSPITALIZATIONS ──────────────────────────────────
+app.get('/items/hospitalizations', authMiddleware, async (req, res) => {
+  try {
+    const { status } = req.query;
+    let query = 'SELECT h.*, p.name as pet_name, p.species, p.breed FROM hospitalizations h LEFT JOIN pets p ON h.pet_id = p.id WHERE h.user_id = $1';
+    const params = [req.userId];
+    if (status && status !== 'todos') {
+      query += ' AND h.status = $2';
+      params.push(status);
+    }
+    query += ' ORDER BY h.admission_date DESC';
+    const result = await pool.query(query, params);
+    res.json({ data: result.rows });
+  } catch (error) {
+    console.error('Error fetching hospitalizations:', error);
+    res.status(500).json({ error: 'Failed to fetch hospitalizations' });
+  }
+});
+
+app.post('/items/hospitalizations', authMiddleware, async (req, res) => {
+  try {
+    const { pet_id, reason, status, veterinarian, notes } = req.body;
+    if (!pet_id || !isValidUUID(pet_id)) return res.status(400).json({ error: 'pet_id válido es requerido' });
+    if (!reason || !String(reason).trim()) return res.status(400).json({ error: 'El motivo es obligatorio' });
+    const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [pet_id, req.userId]);
+    if (!ownerCheck.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa mascota' });
+    const result = await pool.query(
+      'INSERT INTO hospitalizations (pet_id, user_id, reason, status, veterinarian, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [pet_id, req.userId, reason, status || 'internado', veterinarian || null, notes || null]
+    );
+    res.json({ data: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating hospitalization:', error);
+    res.status(500).json({ error: 'Failed to create hospitalization' });
+  }
+});
+
+app.patch('/items/hospitalizations/:id', authMiddleware, async (req, res) => {
+  try {
+    if (!isValidUUID(req.params.id)) return res.status(400).json({ error: 'ID inválido' });
+    const allowed = ['discharge_date', 'status', 'veterinarian', 'notes', 'reason'];
+    const safe = sanitizeColumns(allowed, req.body);
+    if (Object.keys(safe).length === 0) return res.status(400).json({ error: 'Sin cambios' });
+    const sets = Object.keys(safe).map((k, i) => `${k} = $${i + 2}`).join(', ');
+    const values = [req.params.id, ...Object.values(safe), req.userId];
+    const result = await pool.query(`UPDATE hospitalizations SET ${sets} WHERE id = $1 AND user_id = $${values.length} RETURNING *`, values);
+    if (!result.rows.length) return res.status(404).json({ error: 'No encontrado' });
+    res.json({ data: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating hospitalization:', error);
+    res.status(500).json({ error: 'Failed to update hospitalization' });
+  }
+});
+
+app.delete('/items/hospitalizations/:id', authMiddleware, async (req, res) => {
+  try {
+    if (!isValidUUID(req.params.id)) return res.status(400).json({ error: 'ID inválido' });
+    const result = await pool.query('DELETE FROM hospitalizations WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
+    if (!result.rows.length) return res.status(404).json({ error: 'No encontrado' });
+    res.json({ data: { success: true } });
+  } catch (error) {
+    console.error('Error deleting hospitalization:', error);
+    res.status(500).json({ error: 'Failed to delete hospitalization' });
+  }
+});
+
+// ─── LAB EXAMS ─────────────────────────────────────────
+app.get('/items/lab_exams', authMiddleware, async (req, res) => {
+  try {
+    const { status } = req.query;
+    let query = 'SELECT le.*, p.name as pet_name, p.species, p.breed FROM lab_exams le LEFT JOIN pets p ON le.pet_id = p.id WHERE le.user_id = $1';
+    const params = [req.userId];
+    if (status && status !== 'todos') {
+      query += ' AND le.status = $2';
+      params.push(status);
+    }
+    query += ' ORDER BY le.date DESC';
+    const result = await pool.query(query, params);
+    res.json({ data: result.rows });
+  } catch (error) {
+    console.error('Error fetching lab exams:', error);
+    res.status(500).json({ error: 'Failed to fetch lab exams' });
+  }
+});
+
+app.post('/items/lab_exams', authMiddleware, async (req, res) => {
+  try {
+    const { pet_id, exam_name, exam_type, status, result: examResult, veterinarian } = req.body;
+    if (!pet_id || !isValidUUID(pet_id)) return res.status(400).json({ error: 'pet_id válido es requerido' });
+    if (!exam_name || !String(exam_name).trim()) return res.status(400).json({ error: 'El nombre del examen es obligatorio' });
+    const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [pet_id, req.userId]);
+    if (!ownerCheck.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa mascota' });
+    const result = await pool.query(
+      'INSERT INTO lab_exams (pet_id, user_id, exam_name, exam_type, status, result, veterinarian) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [pet_id, req.userId, exam_name, exam_type || null, status || 'pendiente', examResult || null, veterinarian || null]
+    );
+    res.json({ data: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating lab exam:', error);
+    res.status(500).json({ error: 'Failed to create lab exam' });
+  }
+});
+
+app.patch('/items/lab_exams/:id', authMiddleware, async (req, res) => {
+  try {
+    if (!isValidUUID(req.params.id)) return res.status(400).json({ error: 'ID inválido' });
+    const allowed = ['exam_name', 'exam_type', 'status', 'result', 'veterinarian'];
+    const safe = sanitizeColumns(allowed, req.body);
+    if (Object.keys(safe).length === 0) return res.status(400).json({ error: 'Sin cambios' });
+    const sets = Object.keys(safe).map((k, i) => `${k} = $${i + 2}`).join(', ');
+    const values = [req.params.id, ...Object.values(safe), req.userId];
+    const result = await pool.query(`UPDATE lab_exams SET ${sets} WHERE id = $1 AND user_id = $${values.length} RETURNING *`, values);
+    if (!result.rows.length) return res.status(404).json({ error: 'No encontrado' });
+    res.json({ data: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating lab exam:', error);
+    res.status(500).json({ error: 'Failed to update lab exam' });
+  }
+});
+
+app.delete('/items/lab_exams/:id', authMiddleware, async (req, res) => {
+  try {
+    if (!isValidUUID(req.params.id)) return res.status(400).json({ error: 'ID inválido' });
+    const result = await pool.query('DELETE FROM lab_exams WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
+    if (!result.rows.length) return res.status(404).json({ error: 'No encontrado' });
+    res.json({ data: { success: true } });
+  } catch (error) {
+    console.error('Error deleting lab exam:', error);
+    res.status(500).json({ error: 'Failed to delete lab exam' });
+  }
+});
+
+// ─── STATS ─────────────────────────────────────────────
+app.get('/stats/dashboard', authMiddleware, async (req, res) => {
+  try {
+    const [pets, appointments, records, lowStock] = await Promise.all([
+      pool.query('SELECT COUNT(*) FROM pets WHERE user_id = $1', [req.userId]),
+      pool.query("SELECT COUNT(*) FROM appointments WHERE user_id = $1 AND start_time::date = CURRENT_DATE", [req.userId]),
+      pool.query('SELECT COUNT(*) FROM clinical_records WHERE user_id = $1', [req.userId]),
+      pool.query('SELECT COUNT(*) FROM inventory WHERE user_id = $1 AND current_stock <= min_stock', [req.userId])
+    ]);
+    res.json({
+      data: {
+        totalPets: parseInt(pets.rows[0].count),
+        todayAppointments: parseInt(appointments.rows[0].count),
+        totalRecords: parseInt(records.rows[0].count),
+        lowStockAlerts: parseInt(lowStock.rows[0].count)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+app.get('/stats/weekly', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT TO_CHAR(date, 'Dy') as day, COUNT(*)::int as count
+      FROM clinical_records
+      WHERE user_id = $1 AND date >= NOW() - INTERVAL '7 days'
+      GROUP BY TO_CHAR(date, 'Dy'), EXTRACT(DOW FROM date)
+      ORDER BY EXTRACT(DOW FROM date)
+    `, [req.userId]);
+    res.json({ data: result.rows });
+  } catch (error) {
+    console.error('Error fetching weekly stats:', error);
+    res.status(500).json({ error: 'Failed to fetch weekly stats' });
+  }
+});
+
+app.get('/stats/record-types', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT record_type, COUNT(*)::int as count
+      FROM clinical_records
+      WHERE user_id = $1
+      GROUP BY record_type
+    `, [req.userId]);
+    res.json({ data: result.rows });
+  } catch (error) {
+    console.error('Error fetching record types:', error);
+    res.status(500).json({ error: 'Failed to fetch record types' });
+  }
+});
+
 // ─── FILE UPLOAD ─────────────────────────────────────────
-app.post('/files', authMiddleware, upload.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No file upload' });
-  res.json({
-    data: {
-      id: `${Date.now()}-${req.file.originalname}`,
-      filename_disk: `${Date.now()}-${req.file.originalname}`,
-      filename_download: req.file.originalname,
-      type: req.file.mimetype,
-      filesize: req.file.size,
-    },
-  });
+// NOTE: Client should upload directly to Cloudinary via services/cloudinary.ts
+// This endpoint is kept for backwards compatibility but returns an error
+app.post('/files', authMiddleware, (req, res) => {
+  res.status(501).json({ error: 'Use client-side Cloudinary upload instead (services/cloudinary.ts)' });
 });
 
 // ─── ADMIN PANEL ───────────────────────────────────────
 app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'admin.html'));
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+    res.sendFile(path.join(__dirname, 'admin.html'));
+  } catch (e) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
 });
 
 if (!process.env.VERCEL_ENV) {

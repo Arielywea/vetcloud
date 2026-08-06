@@ -1,59 +1,50 @@
-import React from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text } from 'react-native-paper';
-import { Heart, Clock, Stethoscope } from 'lucide-react-native';
+import React, { useState, useMemo } from 'react';
+import { View, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { Text, Button } from 'react-native-paper';
+import { Heart, Clock, Stethoscope, CheckCircle } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
+import { useHospitalizations } from '../../hooks/useDirectus';
 import VCard from '../../components/ui/Card';
 import VEmptyState from '../../components/ui/EmptyState';
 import VBadge from '../../components/ui/Badge';
 
-const MOCK_ADMISSIONS = [
-  {
-    id: '1',
-    petName: 'Max',
-    species: 'Canino',
-    breed: 'Pastor Alemán',
-    reason: 'Cirugía Ortopédica',
-    vet: 'Dr. García',
-    status: 'internado',
-    admitDate: '2026-07-21',
-    timeline: [
-      { date: '21/07 10:00', event: 'Ingreso', type: 'info' },
-      { date: '21/07 14:00', event: 'Post-operatorio', type: 'warning' },
-      { date: '22/07 09:00', event: 'Control', type: 'success' },
-    ],
-  },
-  {
-    id: '2',
-    petName: 'Luna',
-    species: 'Felino',
-    breed: 'Siamés',
-    reason: 'Observación',
-    vet: 'Dra. Pérez',
-    status: 'recuperacion',
-    admitDate: '2026-07-22',
-    timeline: [
-      { date: '22/07 08:00', event: 'Ingreso', type: 'info' },
-      { date: '22/07 15:00', event: 'Estabilización', type: 'success' },
-    ],
-  },
-];
+const STATUS_LABELS: Record<string, string> = {
+  todos: 'Todos',
+  internado: 'Internado',
+  cirugia: 'Cirugía',
+  recuperacion: 'Recuperación',
+  discharged: 'Alta',
+};
 
 export default function HospitalizacionScreen() {
   const { colors } = useTheme();
-  const [filter, setFilter] = React.useState('todos');
+  const [filter, setFilter] = useState('todos');
 
-  const filtered = filter === 'todos'
-    ? MOCK_ADMISSIONS
-    : MOCK_ADMISSIONS.filter(a => a.status === filter);
+  const { hospitalizations, loading, discharge } = useHospitalizations(filter);
+
+  const filtered = useMemo(() => {
+    if (filter === 'todos') return hospitalizations;
+    return hospitalizations.filter(a => a.status === filter);
+  }, [hospitalizations, filter]);
+
+  const handleDischarge = (id: string, petName: string) => {
+    Alert.alert(
+      'Dar de alta',
+      `¿Confirmar el alta de ${petName}?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Confirmar', onPress: () => discharge(id) },
+      ]
+    );
+  };
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Hospitalización</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Pacientes internados y en recuperación
+          {loading ? 'Cargando...' : `${filtered.length} paciente${filtered.length !== 1 ? 's' : ''}`}
         </Text>
       </View>
 
@@ -74,7 +65,11 @@ export default function HospitalizacionScreen() {
         ))}
       </ScrollView>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : filtered.length === 0 ? (
         <VEmptyState
           icon={<Heart size={32} color={colors.textLight} />}
           title="Sin internamientos"
@@ -85,15 +80,20 @@ export default function HospitalizacionScreen() {
           <VCard key={admission.id} style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.petInfo}>
-                <Text style={[styles.petName, { color: colors.text }]}>{admission.petName}</Text>
+                <Text style={[styles.petName, { color: colors.text }]}>{admission.pet_name}</Text>
                 <Text style={[styles.petDetail, { color: colors.textSecondary }]}>
                   {admission.species} · {admission.breed}
                 </Text>
               </View>
               <VBadge
-                label={admission.status === 'internado' ? 'Internado' : admission.status === 'cirugia' ? 'Cirugía' : 'Recuperación'}
+                label={STATUS_LABELS[admission.status] || admission.status}
                 variant="soft"
-                color={admission.status === 'internado' ? colors.info : admission.status === 'cirugia' ? colors.error : colors.warning}
+                color={
+                  admission.status === 'internado' ? colors.info
+                  : admission.status === 'cirugia' ? colors.error
+                  : admission.status === 'recuperacion' ? colors.warning
+                  : colors.success
+                }
               />
             </View>
 
@@ -102,25 +102,30 @@ export default function HospitalizacionScreen() {
                 <Stethoscope size={14} color={colors.textSecondary} />
                 <Text style={[styles.metaText, { color: colors.textSecondary }]}>{admission.reason}</Text>
               </View>
+              {admission.veterinarian && (
+                <View style={styles.metaRow}>
+                  <Heart size={14} color={colors.textSecondary} />
+                  <Text style={[styles.metaText, { color: colors.textSecondary }]}>{admission.veterinarian}</Text>
+                </View>
+              )}
               <View style={styles.metaRow}>
-                <Heart size={14} color={colors.textSecondary} />
-                <Text style={[styles.metaText, { color: colors.textSecondary }]}>{admission.vet}</Text>
+                <Clock size={14} color={colors.textSecondary} />
+                <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                  Ingreso: {new Date(admission.admission_date).toLocaleDateString('es-CL')}
+                </Text>
               </View>
             </View>
 
-            {admission.timeline.length > 0 && (
-              <View style={[styles.timeline, { borderTopColor: colors.border }]}>
-                <Text style={[styles.timelineTitle, { color: colors.text }]}>Timeline</Text>
-                {admission.timeline.map((event, idx) => (
-                  <View key={idx} style={styles.timelineItem}>
-                    <View style={[styles.timelineDot, {
-                      backgroundColor: event.type === 'info' ? colors.info : event.type === 'warning' ? colors.warning : colors.success
-                    }]} />
-                    <Text style={[styles.timelineDate, { color: colors.textSecondary }]}>{event.date}</Text>
-                    <Text style={[styles.timelineEvent, { color: colors.text }]}>{event.event}</Text>
-                  </View>
-                ))}
-              </View>
+            {admission.status !== 'discharged' && (
+              <Button
+                mode="outlined"
+                onPress={() => handleDischarge(admission.id, admission.pet_name)}
+                style={[styles.dischargeButton, { borderColor: colors.success }]}
+                textColor={colors.success}
+                icon={() => <CheckCircle size={16} color={colors.success} />}
+              >
+                Dar de Alta
+              </Button>
             )}
           </VCard>
         ))
@@ -136,6 +141,7 @@ const styles = StyleSheet.create({
   title: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.bold },
   subtitle: { fontSize: TYPOGRAPHY.sizes.md, marginTop: SPACING.sm },
   filterRow: { marginBottom: SPACING.xl, gap: SPACING.sm },
+  loadingContainer: { paddingVertical: SPACING['4xl'], alignItems: 'center' },
   card: { marginBottom: SPACING.lg },
   cardHeader: {
     flexDirection: 'row',
@@ -149,14 +155,8 @@ const styles = StyleSheet.create({
   cardMeta: { gap: SPACING.sm, marginBottom: SPACING.lg },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   metaText: { fontSize: TYPOGRAPHY.sizes.sm },
-  timeline: {
-    borderTopWidth: 1,
-    paddingTop: SPACING.lg,
+  dischargeButton: {
     marginTop: SPACING.sm,
+    borderRadius: RADIUS.md,
   },
-  timelineTitle: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, marginBottom: SPACING.md },
-  timelineItem: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.sm },
-  timelineDot: { width: 8, height: 8, borderRadius: 4 },
-  timelineDate: { fontSize: TYPOGRAPHY.sizes.xs, width: 80 },
-  timelineEvent: { fontSize: TYPOGRAPHY.sizes.sm, flex: 1 },
 });
