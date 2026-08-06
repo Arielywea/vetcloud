@@ -9,6 +9,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
 import { calculateAge } from '../../utils/age';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { SkeletonCard } from '../../components/ui/Skeleton';
 import ClinicalTabs, { ClinicalTabType } from '../../components/ClinicalTabs';
 import PetHeader from '../../components/pet/PetHeader';
 import ClinicalHistory from '../../components/pet/ClinicalHistory';
@@ -156,7 +157,7 @@ export default function PetDetailScreen() {
     try { await removeRecord(deleteRecordTarget.id); setDeleteRecordTarget(null); setSelectedRecord(null); }
     catch { setErrorDialog('No se pudo eliminar el registro'); }
   };
-  if (loading) return <View style={[styles.center, { backgroundColor: colors.background }]}><Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando...</Text></View>;
+  if (loading) return <View style={[styles.center, { backgroundColor: colors.background }]}><SkeletonCard style={{ margin: SPACING.lg, width: '90%' }} /></View>;
   if (!pet) return <View style={[styles.center, { backgroundColor: colors.background }]}><Text style={[styles.loadingText, { color: colors.textSecondary }]}>Paciente no encontrado</Text></View>;
 
   return (
@@ -174,8 +175,8 @@ export default function PetDetailScreen() {
         </View>
         <ClinicalTabs activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
         {activeTab === 'recetas' ? (
-          rxLoading ? <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando recetas...</Text> : <PrescriptionList prescriptions={filteredPrescriptions} onView={setSelectedRx} onSendEmail={handleSendRxEmail} />
-        ) : recordsLoading ? <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando registros...</Text> : <RecordTimeline records={filteredRecords} onViewRecord={setSelectedRecord} />}
+          rxLoading ? <SkeletonCard style={{ marginTop: SPACING.md }} /> : <PrescriptionList prescriptions={filteredPrescriptions} onView={setSelectedRx} onSendEmail={handleSendRxEmail} />
+        ) : recordsLoading ? <SkeletonCard style={{ marginTop: SPACING.md }} /> : <RecordTimeline records={filteredRecords} onViewRecord={setSelectedRecord} />}
       </View>
 
       {/* Modal: Nuevo Registro */}

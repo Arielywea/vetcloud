@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { View, StyleSheet, ViewStyle, TouchableOpacity, Animated } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, ANIMATION } from '../../constants/tokens';
@@ -10,6 +10,7 @@ interface VCardProps {
   style?: ViewStyle;
   variant?: 'default' | 'outlined' | 'elevated';
   hoverable?: boolean;
+  entrance?: boolean;
 }
 
 export default function VCard({
@@ -19,9 +20,29 @@ export default function VCard({
   style,
   variant = 'default',
   hoverable = true,
+  entrance = false,
 }: VCardProps) {
   const { colors } = useTheme();
-  const elevation = React.useRef(new Animated.Value(0)).current;
+  const elevation = useRef(new Animated.Value(0)).current;
+  const entranceOpacity = useRef(new Animated.Value(entrance ? 0 : 1)).current;
+  const entranceY = useRef(new Animated.Value(entrance ? 12 : 0)).current;
+
+  React.useEffect(() => {
+    if (entrance) {
+      Animated.parallel([
+        Animated.timing(entranceOpacity, {
+          toValue: 1,
+          duration: ANIMATION.slower,
+          useNativeDriver: true,
+        }),
+        Animated.timing(entranceY, {
+          toValue: 0,
+          duration: ANIMATION.slower,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, []);
 
   const onHoverIn = React.useCallback(() => {
     if (!hoverable) return;
@@ -72,7 +93,7 @@ export default function VCard({
 
   if (onPress) {
     return (
-      <Animated.View style={[animatedStyle]}>
+      <Animated.View style={[animatedStyle, { opacity: entranceOpacity, transform: [{ translateY: entranceY }] }]}>
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={onPress}
@@ -87,7 +108,7 @@ export default function VCard({
   }
 
   return (
-    <Animated.View style={[animatedStyle, getCardStyle(), style]}>
+    <Animated.View style={[animatedStyle, getCardStyle(), { opacity: entranceOpacity, transform: [{ translateY: entranceY }] }, style]}>
       {children}
     </Animated.View>
   );

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { Text } from 'react-native-paper';
 import { BarChart3, PawPrint, Calendar, Package } from 'lucide-react-native';
@@ -7,6 +7,7 @@ import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import { TEXT_ON_PRIMARY, RECORD_TYPE_COLORS } from '../../constants/colors';
 import VCard from '../../components/ui/Card';
 import VStatCard from '../../components/ui/StatCard';
+import VRefreshControl from '../../components/ui/VRefreshControl';
 import { api } from '../../services/directus';
 
 interface DashboardStats {
@@ -29,6 +30,7 @@ interface RecordTypeData {
 export default function ReportesScreen() {
   const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
   const [recordTypes, setRecordTypes] = useState<RecordTypeData[]>([]);
@@ -54,6 +56,11 @@ export default function ReportesScreen() {
     }
   }
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try { await loadData(); } finally { setRefreshing(false); }
+  }, []);
+
   if (loading) {
     return (
       <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
@@ -73,7 +80,7 @@ export default function ReportesScreen() {
   const totalRecords = recordTypes.reduce((sum, r) => sum + r.count, 0);
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} refreshControl={<VRefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Reportes</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>

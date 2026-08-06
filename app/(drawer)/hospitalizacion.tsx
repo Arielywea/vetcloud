@@ -1,13 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { View, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
-import { Text, Button } from 'react-native-paper';
+import { View, ScrollView, StyleSheet, Alert } from 'react-native';
+import { Text } from 'react-native-paper';
 import { Heart, Clock, Stethoscope, CheckCircle } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import { useHospitalizations } from '../../hooks/useDirectus';
 import VCard from '../../components/ui/Card';
+import VButton from '../../components/ui/Button';
 import VEmptyState from '../../components/ui/EmptyState';
 import VBadge from '../../components/ui/Badge';
+import VRefreshControl from '../../components/ui/VRefreshControl';
+import { SkeletonList } from '../../components/ui/Skeleton';
 
 const STATUS_LABELS: Record<string, string> = {
   todos: 'Todos',
@@ -21,7 +24,8 @@ export default function HospitalizacionScreen() {
   const { colors } = useTheme();
   const [filter, setFilter] = useState('todos');
 
-  const { hospitalizations, loading, discharge } = useHospitalizations(filter);
+  const { hospitalizations, loading, discharge, refresh } = useHospitalizations(filter);
+  const [refreshing, setRefreshing] = useState(false);
 
   const filtered = useMemo(() => {
     if (filter === 'todos') return hospitalizations;
@@ -39,12 +43,17 @@ export default function HospitalizacionScreen() {
     );
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try { await refresh(); } finally { setRefreshing(false); }
+  };
+
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} refreshControl={<VRefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Hospitalización</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          {loading ? 'Cargando...' : `${filtered.length} paciente${filtered.length !== 1 ? 's' : ''}`}
+          {loading ? '' : `${filtered.length} paciente${filtered.length !== 1 ? 's' : ''}`}
         </Text>
       </View>
 
@@ -66,14 +75,13 @@ export default function HospitalizacionScreen() {
       </ScrollView>
 
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <SkeletonList count={3} />
       ) : filtered.length === 0 ? (
         <VEmptyState
           icon={<Heart size={32} color={colors.textLight} />}
           title="Sin internamientos"
           description="No hay pacientes internados actualmente"
+          variant="medical"
         />
       ) : (
         filtered.map(admission => (
@@ -117,15 +125,14 @@ export default function HospitalizacionScreen() {
             </View>
 
             {admission.status !== 'discharged' && (
-              <Button
-                mode="outlined"
+              <VButton
+                variant="secondary"
+                size="sm"
                 onPress={() => handleDischarge(admission.id, admission.pet_name)}
-                style={[styles.dischargeButton, { borderColor: colors.success }]}
-                textColor={colors.success}
-                icon={() => <CheckCircle size={16} color={colors.success} />}
+                icon={<CheckCircle size={16} color={colors.success} />}
               >
                 Dar de Alta
-              </Button>
+              </VButton>
             )}
           </VCard>
         ))

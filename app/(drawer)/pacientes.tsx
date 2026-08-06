@@ -142,7 +142,7 @@ export default function PacientesScreen() {
         <View style={styles.headerTextWrap}>
           <Text style={[styles.title, { color: colors.text }]}>Pacientes</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {loading ? 'Cargando...' : `${filteredPatients.length} paciente${filteredPatients.length !== 1 ? 's' : ''}`}
+            {loading ? '' : `${filteredPatients.length} paciente${filteredPatients.length !== 1 ? 's' : ''}`}
           </Text>
         </View>
         <Button

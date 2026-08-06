@@ -8,6 +8,7 @@ import { DirectusDisease } from '../../services/directus';
 import { DISEASE_CATEGORIES, SPECIES_INFO } from '../../constants/diseases';
 import { CATEGORY_COLORS, SEVERITY_COLORS, SEVERITY_LABELS, PROGNOSIS_LABELS, TEXT_ON_PRIMARY } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
+import { SkeletonCard } from '../../components/ui/Skeleton';
 
 export default function DiseaseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -118,7 +119,7 @@ export default function DiseaseDetailScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.loadingText}>Cargando...</Text>
+        <SkeletonCard style={{ margin: 16 }} />
       </View>
     );
   }

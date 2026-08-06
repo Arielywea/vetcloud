@@ -9,6 +9,7 @@ import { SPACING, RADIUS, SHADOWS } from '../../constants/tokens';
 import VCard from '../../components/ui/Card';
 import VButton from '../../components/ui/Button';
 import VEmptyState from '../../components/ui/EmptyState';
+import VRefreshControl from '../../components/ui/VRefreshControl';
 
 export default function NotesScreen() {
   const { notes, loading, addNote, updateNote, refresh } = useNotes();
@@ -17,6 +18,7 @@ export default function NotesScreen() {
   const [editingNote, setEditingNote] = useState<DirectusNote | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<DirectusNote | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -75,6 +77,11 @@ export default function NotesScreen() {
     );
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try { await refresh(); } finally { setRefreshing(false); }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
@@ -83,11 +90,13 @@ export default function NotesScreen() {
         keyExtractor={(item) => item.id}
         extraData={refreshKey}
         contentContainerStyle={styles.listContent}
+        refreshControl={<VRefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         ListEmptyComponent={
           <VEmptyState
             icon={<StickyNote size={32} color={colors.textLight} />}
             title="No tienes notas guardadas"
             description="Crea notas para guardar observaciones o recordatorios"
+            variant="data"
           />
         }
       />
@@ -137,7 +146,7 @@ const styles = StyleSheet.create({
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: SPACING.sm, gap: 4 },
   tagChip: { height: 24, paddingHorizontal: SPACING.sm, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center' },
   noteDate: { marginTop: SPACING.sm, fontSize: 11 },
-  fab: { position: 'absolute', right: 16, bottom: 16, width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  fab: { position: 'absolute', right: SPACING.lg, bottom: SPACING.lg, width: 56, height: 56, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
   modal: { padding: 20, margin: 20, borderRadius: RADIUS.lg, maxHeight: '85%' },
   modalTitle: { fontWeight: '700', marginBottom: SPACING.lg },
   fieldLabel: { fontSize: 13, fontWeight: '600', marginBottom: SPACING.xs },
