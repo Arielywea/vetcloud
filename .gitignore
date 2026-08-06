@@ -13,3 +13,6 @@ backup.sql
 api/.env
 
 .vercel
+test-results/
+tests/responsive/screenshots/
+tests/e2e/*.png
