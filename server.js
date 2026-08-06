@@ -671,10 +671,60 @@ app.post('/items/appointments', authMiddleware, async (req, res) => {
   }
 });
 
+// Valid appointment status transitions
+const APPOINTMENT_TRANSITIONS = {
+  programada: ['confirmada', 'en_espera', 'cancelada', 'ausente'],
+  confirmada: ['en_espera', 'cancelada', 'ausente'],
+  pendiente: ['en_espera', 'cancelada', 'ausente'],
+  en_espera: ['en_consulta', 'cancelada'],
+  en_consulta: ['completada'],
+  completada: [],
+  cancelada: [],
+  ausente: [],
+};
+
+function isValidTransition(from, to) {
+  const allowed = APPOINTMENT_TRANSITIONS[from];
+  return allowed ? allowed.includes(to) : false;
+}
+
+function getStatusTimestamps(newStatus, current) {
+  const now = new Date().toISOString();
+  const ts = {};
+  if (newStatus === 'en_espera' && !current.checked_in_at) ts.checked_in_at = now;
+  if (newStatus === 'en_consulta' && !current.started_at) ts.started_at = now;
+  if (newStatus === 'completada' && !current.finished_at) ts.finished_at = now;
+  return ts;
+}
+
 app.patch('/items/appointments/:id', authMiddleware, async (req, res) => {
   try {
     const a = req.body;
-    const allowed = ['patient_name','tutor_phone','start_time','end_time','appointment_type','description','veterinarian','status','pet_id','room'];
+
+    // If changing status, validate transition
+    if (a.status) {
+      const currentResult = await pool.query(
+        'SELECT status, checked_in_at, started_at, finished_at FROM appointments WHERE id = $1 AND user_id = $2',
+        [req.params.id, req.userId]
+      );
+      if (!currentResult.rows.length) return res.status(404).json({ error: 'Not found' });
+      const current = currentResult.rows[0];
+
+      if (!isValidTransition(current.status, a.status)) {
+        return res.status(400).json({
+          error: `Transicion invalida: ${current.status} -> ${a.status}`,
+          valid_transitions: APPOINTMENT_TRANSITIONS[current.status] || [],
+        });
+      }
+
+      // Auto-set timestamps
+      const timestamps = getStatusTimestamps(a.status, current);
+      for (const [key, val] of Object.entries(timestamps)) {
+        a[key] = val;
+      }
+    }
+
+    const allowed = ['patient_name','tutor_phone','start_time','end_time','appointment_type','description','veterinarian','status','pet_id','room','checked_in_at','started_at','finished_at'];
     const safe = sanitizeColumns(allowed, a);
     const fields = [];
     const values = [];

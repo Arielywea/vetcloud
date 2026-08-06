@@ -30,6 +30,7 @@ interface AppointmentCardProps {
   height: number;
   onPress?: (appointment: AppointmentCardData) => void;
   onContextMenu?: (appointment: AppointmentCardData, x: number, y: number) => void;
+  onStatusChange?: (appointmentId: string, newStatus: string) => void;
   onDragStart?: (appointmentId: string, data: AppointmentCardData, x: number, y: number) => void;
   onDragMove?: (x: number, y: number) => void;
   onDragEnd?: () => void;
@@ -42,12 +43,53 @@ const SPECIES_EMOJI: Record<string, string> = {
   cat: '🐈',
 };
 
+const STATUS_TRANSITIONS: Record<string, string> = {
+  programada: 'en_espera',
+  confirmada: 'en_espera',
+  pendiente: 'en_espera',
+  en_espera: 'en_consulta',
+  en_consulta: 'completada',
+};
+
+const STATUS_BUTTON_LABELS: Record<string, string> = {
+  programada: 'Llego',
+  confirmada: 'Llego',
+  pendiente: 'Llego',
+  en_espera: 'Atender',
+  en_consulta: 'Finalizar',
+};
+
+const STATUS_BUTTON_COLORS: Record<string, string> = {
+  programada: '#F59E0B',
+  confirmada: '#10B981',
+  pendiente: '#F59E0B',
+  en_espera: '#3B82F6',
+  en_consulta: '#10B981',
+};
+
+function getNextStatus(current: string): string | null {
+  return STATUS_TRANSITIONS[current] || null;
+}
+
+function QuickStatusButton({ status, onPress }: { status: string; onPress: () => void }) {
+  const next = STATUS_TRANSITIONS[status];
+  if (!next) return null;
+  const label = STATUS_BUTTON_LABELS[status];
+  const color = STATUS_BUTTON_COLORS[status] || '#6B7280';
+  return (
+    <TouchableOpacity onPress={onPress} style={[quickStyles.btn, { backgroundColor: color + '20', borderColor: color }]} activeOpacity={0.7}>
+      <Text style={[quickStyles.label, { color }]} numberOfLines={1}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
 export default function AppointmentCard({
   appointment,
   top,
   height,
   onPress,
   onContextMenu,
+  onStatusChange,
   onDragStart,
   onDragMove,
   onDragEnd,
@@ -146,6 +188,12 @@ export default function AppointmentCard({
             {formatTimeRange(appointment.start_time, appointment.end_time)}
           </Text>
           <View style={[styles.statusDot, { backgroundColor: status.dot }]} />
+          {!compact && onStatusChange && (
+            <QuickStatusButton status={appointment.status} onPress={() => {
+              const next = getNextStatus(appointment.status);
+              if (next) onStatusChange(appointment.id, next);
+            }} />
+          )}
         </View>
         <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>{appointment.patient_name}</Text>
         {!compact && height > 50 && (
@@ -281,5 +329,21 @@ const styles = StyleSheet.create({
   tutor: {
     fontSize: TYPOGRAPHY.sizes.xs,
     lineHeight: 12,
+  },
+});
+
+const quickStyles = StyleSheet.create({
+  btn: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    marginLeft: 4,
+  },
+  label: {
+    fontSize: 9,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
 });

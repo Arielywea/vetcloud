@@ -19,6 +19,7 @@ import PrescriptionList from '../../components/pet/PrescriptionList';
 import WeightChart from '../../components/pet/WeightChart';
 import RecordDetail from '../../components/pet/RecordDetail';
 import PreSurgicalChecklist from '../../components/pet/PreSurgicalChecklist';
+import AlertBanner from '../../components/pet/AlertBanner';
 import VoiceNotes from '../../components/VoiceNotes';
 import DynamicIcon from '../../components/ui/DynamicIcon';
 export default function PetDetailScreen() {
@@ -166,6 +167,7 @@ export default function PetDetailScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       <PetHeader pet={pet} onEdit={() => {}} onCall={() => {}} onEmail={() => {}} />
+      <AlertBanner pet={pet} />
       <ClinicalHistory pet={pet} fieldCount={clinicalFieldCount} />
       {mostRecentRecord && <RecentRecord record={mostRecentRecord} onView={() => setSelectedRecord(mostRecentRecord)} onGenerateRx={() => openRxModal(mostRecentRecord.id)} />}
       <WeightChart records={records} />
