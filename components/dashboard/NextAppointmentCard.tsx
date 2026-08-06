@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import { Calendar, CalendarDays, PawPrint } from 'lucide-react-native';
@@ -36,7 +36,7 @@ export default function NextAppointmentCard({
       <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.sm]}>
         <View style={styles.header}>
           <Calendar size={18} color={colors.primary} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Próxima Cita</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>PrÃ³xima Cita</Text>
         </View>
         <View style={styles.emptyState}>
           <CalendarDays size={32} color={colors.textLight} />
@@ -59,17 +59,17 @@ export default function NextAppointmentCard({
     <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.sm]}>
       <View style={styles.header}>
         <Calendar size={18} color={colors.primary} />
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Próxima Cita</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>PrÃ³xima Cita</Text>
       </View>
 
       <View style={styles.content}>
         <View style={styles.info}>
-          <Text style={[styles.time, { color: colors.warning }]}>{time}</Text>
-          <Text style={[styles.petName, { color: colors.text }]}>{petName}</Text>
-          <Text style={[styles.type, { color: colors.textSecondary }]}>{type}</Text>
+          <Text style={[styles.time, { color: colors.warning }]} numberOfLines={1}>{time}</Text>
+          <Text style={[styles.petName, { color: colors.text }]} numberOfLines={1}>{petName}</Text>
+          <Text style={[styles.type, { color: colors.textSecondary }]} numberOfLines={1}>{type}</Text>
           {(petBreed || petAge) && (
-            <Text style={[styles.breed, { color: colors.textSecondary }]}>
-              {[petBreed, petAge].filter(Boolean).join(' · ')}
+            <Text style={[styles.breed, { color: colors.textSecondary }]} numberOfLines={1}>
+              {[petBreed, petAge].filter(Boolean).join(' Â· ')}
             </Text>
           )}
         </View>
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarEmoji: {
-    fontSize: 32,
+    fontSize: TYPOGRAPHY.sizes['3xl'],
   },
   actions: {
     flexDirection: 'row',
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.lg,
   },
   emptyEmoji: {
-    fontSize: 32,
+    fontSize: TYPOGRAPHY.sizes['3xl'],
   },
   emptyTitle: {
     fontSize: TYPOGRAPHY.sizes.sm,

@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   calNav: {
-    fontSize: 20,
+    fontSize: TYPOGRAPHY.sizes.xl,
     fontWeight: '600',
   },
   calTitle: {
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   dayName: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 10,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '600',
     marginBottom: 4,
   },
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dayText: {
-    fontSize: 12,
+    fontSize: TYPOGRAPHY.sizes.xs,
   },
   filterSection: {
     padding: SPACING.md,
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   filterLabel: {
-    fontSize: 11,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '600',
     marginBottom: 4,
     textTransform: 'uppercase',
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   chipText: {
-    fontSize: 11,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '500',
   },
 });

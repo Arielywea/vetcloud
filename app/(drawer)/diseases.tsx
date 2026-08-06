@@ -9,7 +9,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { DISEASE_CATEGORIES, SPECIES_INFO } from '../../constants/diseases';
 import { DirectusDisease } from '../../services/directus';
 import { DiseaseCategory } from '../../types';
-import { SPACING, RADIUS, SHADOWS } from '../../constants/tokens';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
 import VCard from '../../components/ui/Card';
 import VBadge from '../../components/ui/Badge';
 import VEmptyState from '../../components/ui/EmptyState';
@@ -81,7 +81,7 @@ export default function DiseasesScreen() {
               </VBadge>
             </View>
           </View>
-          <Text variant="bodySmall" style={[styles.scientificName, { color: colors.textSecondary }]}>{item.scientific_name}</Text>
+          <Text variant="bodySmall" style={[styles.scientificName, { color: colors.textSecondary }]} numberOfLines={1}>{item.scientific_name}</Text>
           <View style={styles.speciesRow}>
             <SpeciesIcon size={16} color={colors.primary} />
             <Text style={[styles.speciesText, { color: colors.primary }]}>
@@ -111,7 +111,7 @@ export default function DiseasesScreen() {
         activeOpacity={0.7}
       >
         {icon}
-        <Text style={[styles.sectionTitle, { color }]}>{title}</Text>
+        <Text style={[styles.sectionTitle, { color }]} numberOfLines={1}>{title}</Text>
         <VBadge variant="info">{count}</VBadge>
         <ChevronDown
           size={16}
@@ -147,7 +147,7 @@ export default function DiseasesScreen() {
               onPress={() => setSelectedSpecies(sp)}
               style={[styles.speciesChip, { backgroundColor: colors.surface, borderColor: colors.border }, selectedSpecies === sp && { backgroundColor: colors.primary, borderColor: colors.primary }]}
             >
-              <Text style={{ color: selectedSpecies === sp ? TEXT_ON_PRIMARY.light.default : colors.text, fontSize: 13 }}>
+              <Text style={{ color: selectedSpecies === sp ? TEXT_ON_PRIMARY.light.default : colors.text, fontSize: TYPOGRAPHY.sizes.sm }}>
                 {sp === 'all' ? 'Todos' : sp === 'dog' ? 'Perros' : 'Gatos'}
               </Text>
             </TouchableOpacity>
@@ -165,7 +165,7 @@ export default function DiseasesScreen() {
                 onPress={() => toggleCategory(key as DiseaseCategory)}
                 style={[styles.categoryChip, { backgroundColor: colors.surface, borderColor: colors.border }, selectedCategories.includes(key as DiseaseCategory) && { backgroundColor: (value as any).color + '30', borderColor: (value as any).color }]}
               >
-                <Text style={{ color: selectedCategories.includes(key as DiseaseCategory) ? (value as any).color : colors.text, fontSize: 12 }}>{value.label}</Text>
+                <Text style={{ color: selectedCategories.includes(key as DiseaseCategory) ? (value as any).color : colors.text, fontSize: TYPOGRAPHY.sizes.xs }}>{value.label}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -233,10 +233,10 @@ export default function DiseasesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   searchContainer: { flexDirection: 'row', alignItems: 'center', margin: SPACING.lg, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: RADIUS.lg, borderWidth: 1 },
-  searchInput: { flex: 1, marginLeft: SPACING.sm, fontSize: 15 },
+  searchInput: { flex: 1, marginLeft: SPACING.sm, fontSize: TYPOGRAPHY.sizes.base },
   filterRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.lg, marginBottom: SPACING.sm },
   filterButton: { flexDirection: 'row', alignItems: 'center', padding: SPACING.md, marginRight: SPACING.sm, borderRadius: RADIUS.md, gap: 6 },
-  filterButtonText: { fontSize: 13, fontWeight: '500' },
+  filterButtonText: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '500' },
   speciesScroll: { flex: 1 },
   speciesChip: { marginRight: 6, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1, minHeight: 44, justifyContent: 'center' },
   categoriesContainer: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.sm },
@@ -250,12 +250,12 @@ const styles = StyleSheet.create({
   diseaseName: { fontWeight: '700', flex: 1 },
   scientificName: { fontStyle: 'italic', marginTop: 2 },
   speciesRow: { flexDirection: 'row', alignItems: 'center', marginTop: SPACING.sm, gap: 6 },
-  speciesText: { fontSize: 12, fontWeight: '500' },
+  speciesText: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: '500' },
   signsContainer: { marginTop: SPACING.md },
   signsTitle: { fontWeight: '600', marginBottom: 2 },
   signsText: { lineHeight: 18 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: SPACING.md, borderRadius: RADIUS.sm, borderLeftWidth: 3, marginBottom: SPACING.sm },
-  sectionTitle: { fontSize: 15, fontWeight: '700', flex: 1 },
+  sectionTitle: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: '700', flex: 1 },
   fab: { position: 'absolute', right: SPACING.lg, bottom: SPACING.lg, width: 56, height: 56, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
 });
 

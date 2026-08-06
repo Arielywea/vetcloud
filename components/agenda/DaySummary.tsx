@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: TYPOGRAPHY.sizes.xs,
   },
   occupationSection: {
     marginTop: SPACING.sm,
@@ -164,11 +164,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   occupationTitle: {
-    fontSize: 12,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '600',
   },
   occupationPercent: {
-    fontSize: 14,
+    fontSize: TYPOGRAPHY.sizes.md,
     fontWeight: '700',
   },
   occupationBar: {
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   timeText: {
-    fontSize: 11,
+    fontSize: TYPOGRAPHY.sizes.xs,
   },
   typeSection: {
     marginTop: SPACING.sm,
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   typeTitle: {
-    fontSize: 11,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '600',
     marginBottom: 4,
   },
@@ -209,11 +209,11 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   typeName: {
-    fontSize: 12,
+    fontSize: TYPOGRAPHY.sizes.xs,
     textTransform: 'capitalize',
   },
   typeCount: {
-    fontSize: 12,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '600',
   },
 });

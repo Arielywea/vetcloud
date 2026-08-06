@@ -3,6 +3,7 @@ import { ScrollView, TouchableOpacity, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import DynamicIcon from './ui/DynamicIcon';
 import { useTheme } from '../contexts/ThemeContext';
+import { TYPOGRAPHY } from '../constants/tokens';
 
 export type ClinicalTabType = 'historial' | 'consultas' | 'vacunas' | 'cirugias' | 'recetas';
 
@@ -79,10 +80,10 @@ const styles = StyleSheet.create({
     marginRight: 8, borderWidth: 1,
     gap: 6,
   },
-  tabText: { fontSize: 13, fontWeight: '600' },
+  tabText: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '600' },
   badge: {
     borderRadius: 10, minWidth: 20, height: 20,
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6,
   },
-  badgeText: { fontSize: 11, fontWeight: '700' },
+  badgeText: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: '700' },
 });

@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   hourLabel: {
-    fontSize: 11,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
     transform: [{ translateY: -7 }],
   },

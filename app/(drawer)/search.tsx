@@ -7,7 +7,7 @@ import { useDiseases } from '../../hooks/useDirectus';
 import { SEVERITY_COLORS, SEVERITY_LABELS, TEXT_ON_PRIMARY } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { DirectusDisease } from '../../services/directus';
-import { SPACING, RADIUS, SHADOWS } from '../../constants/tokens';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/tokens';
 import VCard from '../../components/ui/Card';
 import VBadge from '../../components/ui/Badge';
 import VEmptyState from '../../components/ui/EmptyState';
@@ -64,11 +64,11 @@ export default function SearchScreen() {
       <View style={styles.modeRow}>
         <TouchableOpacity onPress={() => setMode('name')} style={[styles.modeBtn, { backgroundColor: colors.surface, borderColor: colors.border }, mode === 'name' && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
           <Search size={14} color={mode === 'name' ? TEXT_ON_PRIMARY.light.default : colors.textSecondary} />
-          <Text style={{ color: mode === 'name' ? TEXT_ON_PRIMARY.light.default : colors.text, fontSize: 13 }}>Por nombre</Text>
+          <Text style={{ color: mode === 'name' ? TEXT_ON_PRIMARY.light.default : colors.text, fontSize: TYPOGRAPHY.sizes.sm }}>Por nombre</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setMode('symptoms')} style={[styles.modeBtn, { backgroundColor: colors.surface, borderColor: colors.border }, mode === 'symptoms' && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
           <Stethoscope size={14} color={mode === 'symptoms' ? TEXT_ON_PRIMARY.light.default : colors.textSecondary} />
-          <Text style={{ color: mode === 'symptoms' ? TEXT_ON_PRIMARY.light.default : colors.text, fontSize: 13 }}>Por síntomas</Text>
+          <Text style={{ color: mode === 'symptoms' ? TEXT_ON_PRIMARY.light.default : colors.text, fontSize: TYPOGRAPHY.sizes.sm }}>Por síntomas</Text>
         </TouchableOpacity>
       </View>
 
@@ -86,7 +86,7 @@ export default function SearchScreen() {
       <View style={styles.speciesRow}>
         {(['all', 'dog', 'cat'] as const).map(sp => (
           <TouchableOpacity key={sp} onPress={() => setSelectedSpecies(sp)} style={[styles.speciesChip, { backgroundColor: colors.surface, borderColor: colors.border }, selectedSpecies === sp && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-            <Text style={{ color: selectedSpecies === sp ? TEXT_ON_PRIMARY.light.default : colors.text, fontSize: 13 }}>
+            <Text style={{ color: selectedSpecies === sp ? TEXT_ON_PRIMARY.light.default : colors.text, fontSize: TYPOGRAPHY.sizes.sm }}>
               {sp === 'all' ? 'Todos' : sp === 'dog' ? 'Perros' : 'Gatos'}
             </Text>
           </TouchableOpacity>
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   modeRow: { flexDirection: 'row', margin: SPACING.lg, gap: SPACING.sm },
   modeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1 },
   searchContainer: { flexDirection: 'row', alignItems: 'center', marginHorizontal: SPACING.lg, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: RADIUS.lg, borderWidth: 1 },
-  searchInput: { flex: 1, marginLeft: SPACING.sm, fontSize: 15 },
+  searchInput: { flex: 1, marginLeft: SPACING.sm, fontSize: TYPOGRAPHY.sizes.base },
   speciesRow: { flexDirection: 'row', paddingHorizontal: SPACING.lg, gap: 6 },
   speciesChip: { paddingVertical: SPACING.xs, paddingHorizontal: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1 },
   resultsHeader: { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm },
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   resultName: { fontWeight: '700', flex: 1 },
   resultScientific: { fontStyle: 'italic', marginTop: 2 },
   resultMeta: { flexDirection: 'row', alignItems: 'center', marginTop: SPACING.sm, gap: 6 },
-  resultSpecies: { fontSize: 12, fontWeight: '500' },
+  resultSpecies: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: '500' },
   matchedSigns: { marginTop: SPACING.md, paddingTop: SPACING.md, borderTopWidth: 1 },
   matchedLabel: { marginBottom: 4 },
   matchedSign: { marginBottom: 2 },

@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   petAvatarEmoji: {
-    fontSize: 16,
+    fontSize: TYPOGRAPHY.sizes.base,
   },
   selectedPetName: {
     flex: 1,
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dropdownAvatarEmoji: {
-    fontSize: 18,
+    fontSize: TYPOGRAPHY.sizes.lg,
   },
   dropdownInfo: {
     flex: 1,

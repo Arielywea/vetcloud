@@ -87,7 +87,7 @@ export default function AppointmentDetailModal({
                 </View>
               )}
               <View>
-                <Text style={[styles.patientName, { color: colors.text }]}>{appointment.patient_name}</Text>
+                <Text style={[styles.patientName, { color: colors.text }]} numberOfLines={1}>{appointment.patient_name}</Text>
                 {appointment.petBreed ? (
                   <Text style={[styles.breed, { color: colors.textSecondary }]}>
                     {speciesEmoji} {appointment.petBreed}
@@ -114,7 +114,7 @@ export default function AppointmentDetailModal({
                 <Text style={[styles.rowValue, { color: colors.text }]}>
                   {formatDate(appointment.start_time)}
                 </Text>
-                <Text style={[styles.rowValue, { color }]}>
+                <Text style={[styles.rowValue, { color }]} numberOfLines={1}>
                   {formatTime(appointment.start_time)} - {appointment.end_time ? formatTime(appointment.end_time) : 'por definir'}
                 </Text>
               </View>
@@ -141,7 +141,7 @@ export default function AppointmentDetailModal({
                 <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>Estado</Text>
                 <View style={styles.statusBadge}>
                   <View style={[styles.statusDot, { backgroundColor: status.color }]} />
-                  <Text style={[styles.rowValue, { color: status.color }]}>{status.label}</Text>
+                  <Text style={[styles.rowValue, { color: status.color }]} numberOfLines={1}>{status.label}</Text>
                 </View>
               </View>
             </View>
@@ -152,7 +152,7 @@ export default function AppointmentDetailModal({
                 <User size={18} color={colors.textSecondary} />
                 <View style={styles.rowText}>
                   <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>Veterinario</Text>
-                  <Text style={[styles.rowValue, { color: colors.text }]}>{appointment.veterinarian}</Text>
+                  <Text style={[styles.rowValue, { color: colors.text }]} numberOfLines={1}>{appointment.veterinarian}</Text>
                 </View>
               </View>
             ) : null}
@@ -163,7 +163,7 @@ export default function AppointmentDetailModal({
                 <Phone size={18} color={colors.textSecondary} />
                 <View style={styles.rowText}>
                   <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>Teléfono del tutor</Text>
-                  <Text style={[styles.rowValue, { color: colors.text }]}>{appointment.tutor_phone}</Text>
+                  <Text style={[styles.rowValue, { color: colors.text }]} numberOfLines={1}>{appointment.tutor_phone}</Text>
                 </View>
               </View>
             ) : null}
@@ -174,7 +174,7 @@ export default function AppointmentDetailModal({
                 <FileText size={18} color={colors.textSecondary} />
                 <View style={styles.rowText}>
                   <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>Descripción</Text>
-                  <Text style={[styles.rowValue, { color: colors.text }]}>{appointment.description}</Text>
+                  <Text style={[styles.rowValue, { color: colors.text }]} numberOfLines={3}>{appointment.description}</Text>
                 </View>
               </View>
             ) : null}
@@ -259,14 +259,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarEmoji: {
-    fontSize: 22,
+    fontSize: TYPOGRAPHY.sizes.lg,
   },
   patientName: {
-    fontSize: 17,
+    fontSize: TYPOGRAPHY.sizes.lg,
     fontWeight: '700',
   },
   breed: {
-    fontSize: 13,
+    fontSize: TYPOGRAPHY.sizes.sm,
     marginTop: 2,
   },
   closeBtn: {
@@ -289,13 +289,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   rowLabel: {
-    fontSize: 11,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '500',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   rowValue: {
-    fontSize: 14,
+    fontSize: TYPOGRAPHY.sizes.md,
     fontWeight: '500',
   },
   typeBadge: {
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   unregisteredText: {
-    fontSize: 13,
+    fontSize: TYPOGRAPHY.sizes.sm,
     color: '#92400E',
     fontWeight: '500',
     flex: 1,
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: '#FFF',
-    fontSize: 14,
+    fontSize: TYPOGRAPHY.sizes.md,
     fontWeight: '600',
   },
   secondaryBtn: {
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   secondaryBtnText: {
-    fontSize: 14,
+    fontSize: TYPOGRAPHY.sizes.md,
     fontWeight: '500',
   },
 });

@@ -236,14 +236,14 @@ export default function ConfiguracionScreen() {
           {passwordError ? (
             <View style={[styles.msgBox, { backgroundColor: alpha(colors.error, 0.08) }]}>
               <AlertCircle size={18} color={colors.error} />
-              <Text style={{ color: colors.error, fontSize: 13, fontWeight: '500' }}>{passwordError}</Text>
+              <Text style={{ color: colors.error, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '500' }}>{passwordError}</Text>
             </View>
           ) : null}
 
           {passwordSuccess ? (
             <View style={[styles.msgBox, { backgroundColor: alpha(colors.success, 0.08) }]}>
               <Check size={18} color={colors.success} />
-              <Text style={{ color: colors.success, fontSize: 13, fontWeight: '500' }}>Contraseña cambiada correctamente</Text>
+              <Text style={{ color: colors.success, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '500' }}>Contraseña cambiada correctamente</Text>
             </View>
           ) : null}
 
@@ -278,19 +278,19 @@ const styles = StyleSheet.create({
   card: { marginBottom: 12, borderRadius: 12 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
   cardTitle: { fontWeight: '700', fontSize: TYPOGRAPHY.sizes.lg },
-  sectionLabel: { fontSize: 13, fontWeight: '600', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '600', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   divider: { height: 1, marginVertical: 12 },
   modeRow: { flexDirection: 'row', gap: 10 },
   modeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 8, borderWidth: 1 },
-  modeBtnText: { fontSize: 14, fontWeight: '600' },
+  modeBtnText: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: '600' },
   paletteGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   paletteCard: { width: '30%', borderRadius: 10, borderWidth: 1, padding: 10, alignItems: 'center', position: 'relative' },
   paletteCheck: { position: 'absolute', top: 6, right: 6, borderRadius: 10, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
   swatchRow: { flexDirection: 'row', gap: 4, marginBottom: 6 },
   swatch: { width: 16, height: 16, borderRadius: 8 },
-  paletteLabel: { fontSize: 11, fontWeight: '600', textAlign: 'center' },
+  paletteLabel: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: '600', textAlign: 'center' },
   notiRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1 },
-  notiLabel: { fontSize: 15 },
+  notiLabel: { fontSize: TYPOGRAPHY.sizes.base },
   passwordField: { position: 'relative' },
   msgBox: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 10, borderRadius: 8, marginBottom: 10 },
   passwordBtn: { marginTop: 4 },

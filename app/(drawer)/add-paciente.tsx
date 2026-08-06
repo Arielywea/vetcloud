@@ -480,7 +480,7 @@ export default function AddPacienteScreen() {
                 mode="outlined"
                 onPress={pickImage}
                 style={[styles.photoBtn, { borderColor: colors.primary }]}
-                labelStyle={{ color: colors.primary, fontSize: 13 }}
+                labelStyle={{ color: colors.primary, fontSize: TYPOGRAPHY.sizes.sm }}
               >
                 Seleccionar archivo
               </Button>
@@ -915,7 +915,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   progressNumber: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.bold },
-  progressLabel: { fontSize: 11, marginTop: SPACING.xs, textAlign: 'center' },
+  progressLabel: { fontSize: TYPOGRAPHY.sizes.xs, marginTop: SPACING.xs, textAlign: 'center' },
   progressLabelActive: { fontWeight: TYPOGRAPHY.weights.semibold },
   progressLine: { flex: 1, height: 2, marginTop: 15, marginHorizontal: -4 },
 

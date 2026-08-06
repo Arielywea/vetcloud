@@ -4,7 +4,7 @@ import { Text, Button } from 'react-native-paper';
 import { Mic, MicOff, Play, Pause, Square, Wand2, X } from 'lucide-react-native';
 import { parseToSoap } from '../utils/soapParser';
 import { useTheme } from '../contexts/ThemeContext';
-import { SPACING, RADIUS } from '../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY } from '../constants/tokens';
 
 interface VoiceNotesProps {
   onTranscription: (text: string) => void;
@@ -151,12 +151,12 @@ export default function VoiceNotes({ onTranscription, onSoapParsed }: VoiceNotes
           <View style={styles.transcriptHeader}>
             <Text style={[styles.transcriptLabel, { color: colors.textSecondary }]}>Transcripción:</Text>
             {transcript && (
-              <Button mode="text" onPress={handleParseSoap} compact icon="creation" labelStyle={{ fontSize: 12 }}>SOAP</Button>
+              <Button mode="text" onPress={handleParseSoap} compact icon="creation" labelStyle={{ fontSize: TYPOGRAPHY.sizes.xs }}>SOAP</Button>
             )}
           </View>
           <View style={[styles.transcriptBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            {transcript && <Text style={{ fontSize: 14, lineHeight: 20, color: colors.text }}>{transcript}</Text>}
-            {interimTranscript && <Text style={{ fontSize: 14, lineHeight: 20, color: colors.textLight, fontStyle: 'italic' }}>{interimTranscript}</Text>}
+            {transcript && <Text style={{ fontSize: TYPOGRAPHY.sizes.md, lineHeight: 20, color: colors.text }}>{transcript}</Text>}
+            {interimTranscript && <Text style={{ fontSize: TYPOGRAPHY.sizes.md, lineHeight: 20, color: colors.textLight, fontStyle: 'italic' }}>{interimTranscript}</Text>}
           </View>
         </View>
       )}
@@ -182,20 +182,20 @@ export default function VoiceNotes({ onTranscription, onSoapParsed }: VoiceNotes
 const styles = StyleSheet.create({
   container: { marginVertical: SPACING.sm, padding: SPACING.md, borderRadius: RADIUS.lg, borderWidth: 1 },
   unsupported: { alignItems: 'center', padding: SPACING.lg },
-  unsupportedText: { marginTop: SPACING.sm, fontSize: 13, textAlign: 'center' },
+  unsupportedText: { marginTop: SPACING.sm, fontSize: TYPOGRAPHY.sizes.sm, textAlign: 'center' },
   controls: { alignItems: 'center' },
   recordButton: { borderRadius: 24, paddingHorizontal: 24 },
   activeControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
   recordingIndicator: { flexDirection: 'row', alignItems: 'center', marginRight: 8 },
   recordingDot: { width: 10, height: 10, borderRadius: 5, marginRight: 6 },
-  recordingText: { fontSize: 16, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  recordingText: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: '600', fontVariant: ['tabular-nums'] },
   transcriptContainer: { marginTop: SPACING.md },
   transcriptHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  transcriptLabel: { fontSize: 13, fontWeight: '600' },
+  transcriptLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '600' },
   transcriptBox: { borderRadius: RADIUS.md, padding: SPACING.sm, borderWidth: 1, maxHeight: 150 },
   soapContainer: { marginTop: SPACING.md, borderRadius: RADIUS.md, padding: SPACING.md, borderWidth: 1 },
-  soapTitle: { fontSize: 14, fontWeight: '700', marginBottom: SPACING.sm },
+  soapTitle: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: '700', marginBottom: SPACING.sm },
   soapField: { marginBottom: SPACING.sm },
-  soapFieldLabel: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', marginBottom: 2 },
-  soapFieldValue: { fontSize: 13, lineHeight: 18 },
+  soapFieldLabel: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: '600', textTransform: 'uppercase', marginBottom: 2 },
+  soapFieldValue: { fontSize: TYPOGRAPHY.sizes.sm, lineHeight: 18 },
 });

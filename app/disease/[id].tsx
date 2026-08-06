@@ -9,6 +9,7 @@ import { DISEASE_CATEGORIES, SPECIES_INFO } from '../../constants/diseases';
 import { CATEGORY_COLORS, SEVERITY_COLORS, SEVERITY_LABELS, PROGNOSIS_LABELS, TEXT_ON_PRIMARY } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SkeletonCard } from '../../components/ui/Skeleton';
+import { TYPOGRAPHY } from '../../constants/tokens';
 
 export default function DiseaseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -84,17 +85,17 @@ export default function DiseaseDetailScreen() {
     diseaseName: { fontWeight: '800', color: colors.text, flex: 1, marginRight: 8 },
     scientificName: { fontStyle: 'italic', color: colors.textSecondary, marginTop: 4 },
     badgeRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 6 },
-    badge: { color: TEXT_ON_PRIMARY.light.default, fontSize: 11, paddingHorizontal: 8 },
+    badge: { color: TEXT_ON_PRIMARY.light.default, fontSize: TYPOGRAPHY.sizes.xs, paddingHorizontal: 8 },
     prognosisRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border },
     prognosisLabel: { color: colors.textSecondary, marginLeft: 4 },
     prognosisValue: { fontWeight: '600' },
     sectionCard: { marginHorizontal: 12, marginBottom: 12, borderRadius: 12, backgroundColor: colors.surface },
-    sectionTitle: { fontWeight: '700', color: colors.text, marginBottom: 12, fontSize: 16 },
+    sectionTitle: { fontWeight: '700', color: colors.text, marginBottom: 12, fontSize: TYPOGRAPHY.sizes.base },
     description: { color: colors.text, lineHeight: 22 },
     tabBar: { flexDirection: 'row', marginHorizontal: 12, marginBottom: 12, backgroundColor: colors.surface, borderRadius: 12, padding: 4 },
     tab: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 8 },
     activeTab: { backgroundColor: colors.primaryContainer || '#E0F2F1' },
-    tabLabel: { fontSize: 11, color: colors.textSecondary, marginTop: 4 },
+    tabLabel: { fontSize: TYPOGRAPHY.sizes.xs, color: colors.textSecondary, marginTop: 4 },
     activeTabLabel: { color: colors.primary, fontWeight: '600' },
     listItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10, gap: 10 },
     listItemText: { flex: 1, color: colors.text, lineHeight: 20 },
@@ -102,14 +103,14 @@ export default function DiseaseDetailScreen() {
     emergencyHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
     emergencyTitle: { fontWeight: '700', color: colors.error },
     emergencyText: { color: colors.text, lineHeight: 20 },
-    reference: { color: colors.textSecondary, fontSize: 12, marginBottom: 4, lineHeight: 18 },
+    reference: { color: colors.textSecondary, fontSize: TYPOGRAPHY.sizes.xs, marginBottom: 4, lineHeight: 18 },
     modalContent: { backgroundColor: colors.surface, margin: 16, borderRadius: 16, padding: 20, maxHeight: '90%' },
     modalTitle: { fontWeight: '700', color: colors.text, marginBottom: 16 },
     editField: { marginBottom: 12 },
-    editLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
+    editLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
     editInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, fontSize: 14 },
     editTextarea: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, fontSize: 14, minHeight: 60, textAlignVertical: 'top' },
-    editSection: { fontSize: 15, fontWeight: '700', color: colors.primary, marginTop: 16, marginBottom: 8, paddingBottom: 6, borderBottomWidth: 2, borderBottomColor: colors.primaryContainer || '#E0F2F1' },
+    editSection: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: '700', color: colors.primary, marginTop: 16, marginBottom: 8, paddingBottom: 6, borderBottomWidth: 2, borderBottomColor: colors.primaryContainer || '#E0F2F1' },
     modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border },
     cancelBtn: { borderColor: colors.border },
     saveBtn: { backgroundColor: colors.primary },
@@ -164,7 +165,7 @@ export default function DiseaseDetailScreen() {
         <Card.Content>
           <View style={styles.headerTop}>
             <View style={styles.headerTitle}>
-              <Text variant="headlineSmall" style={styles.diseaseName}>{disease.name}</Text>
+              <Text variant="headlineSmall" style={styles.diseaseName} numberOfLines={2}>{disease.name}</Text>
               <View style={styles.headerActions}>
                 <TouchableOpacity onPress={openEdit} style={styles.editBtn}>
                   <MaterialCommunityIcons name="pencil" size={22} color={colors.primary} />
@@ -212,7 +213,7 @@ export default function DiseaseDetailScreen() {
       <Card style={styles.sectionCard}>
         <Card.Content>
           <Text variant="titleSmall" style={styles.sectionTitle}>Descripción</Text>
-          <Text style={styles.description}>{disease.description}</Text>
+          <Text style={styles.description} numberOfLines={6}>{disease.description}</Text>
         </Card.Content>
       </Card>
 
@@ -261,7 +262,7 @@ export default function DiseaseDetailScreen() {
                   size={16}
                   color={SEVERITY_COLORS[disease.severity as keyof typeof SEVERITY_COLORS] || colors.textSecondary}
                 />
-                <Text style={styles.listItemText}>{sign}</Text>
+                <Text style={styles.listItemText} numberOfLines={3}>{sign}</Text>
               </View>
             ))}
             {disease.photo_url ? (

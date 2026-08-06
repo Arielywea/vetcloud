@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
   },
   headerEmoji: {
-    fontSize: 18,
+    fontSize: TYPOGRAPHY.sizes.lg,
   },
   headerTitle: {
     fontSize: TYPOGRAPHY.sizes.md,

@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   timeLabel: {
-    fontSize: 10,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: '500',
     textAlign: 'right',
     paddingRight: 8,
