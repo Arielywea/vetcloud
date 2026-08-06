@@ -13,6 +13,7 @@ import { SPACING, RADIUS, SHADOWS } from '../../constants/tokens';
 import VCard from '../../components/ui/Card';
 import VBadge from '../../components/ui/Badge';
 import VEmptyState from '../../components/ui/EmptyState';
+import { SkeletonList } from '../../components/ui/Skeleton';
 import AnimatedIcon from '../../components/icons/AnimatedIcon';
 
 const SPECIES_ICONS: Record<string, typeof Dog> = { dog: Dog, cat: Cat };
@@ -173,7 +174,7 @@ export default function DiseasesScreen() {
 
       <View style={styles.resultsCount}>
         <Text variant="bodySmall" style={{ color: colors.textSecondary }}>
-          {loading ? 'Cargando...' : `${filteredDiseases.length} enfermedades encontradas`}
+          {loading ? '' : `${filteredDiseases.length} enfermedades encontradas`}
         </Text>
       </View>
 
@@ -209,11 +210,16 @@ export default function DiseasesScreen() {
           </>
         }
         ListEmptyComponent={
-          <VEmptyState
-            icon={<BriefcaseMedical size={32} color={colors.textLight} />}
-            title={loading ? 'Cargando enfermedades...' : 'No se encontraron enfermedades'}
-            description="Intenta ajustar los filtros de búsqueda"
-          />
+          loading ? (
+            <SkeletonList count={4} style={{ padding: SPACING.lg }} />
+          ) : (
+            <VEmptyState
+              icon={<BriefcaseMedical size={32} color={colors.textLight} />}
+              title="No se encontraron enfermedades"
+              description="Intenta ajustar los filtros de búsqueda"
+              variant="medical"
+            />
+          )
         }
       />
 
@@ -250,7 +256,7 @@ const styles = StyleSheet.create({
   signsText: { lineHeight: 18 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: SPACING.md, borderRadius: RADIUS.sm, borderLeftWidth: 3, marginBottom: SPACING.sm },
   sectionTitle: { fontSize: 15, fontWeight: '700', flex: 1 },
-  fab: { position: 'absolute', right: 16, bottom: 16, width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  fab: { position: 'absolute', right: SPACING.lg, bottom: SPACING.lg, width: 56, height: 56, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
 });
 
 

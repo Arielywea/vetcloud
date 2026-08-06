@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, ScrollView, StyleSheet, Pressable, Image, ImageStyle, useWindowDimensions } from 'react-native';
+import React, { useMemo, useEffect, useRef } from 'react';
+import { View, ScrollView, StyleSheet, Pressable, Image, ImageStyle, useWindowDimensions, Animated, Easing } from 'react-native';
 import { Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar, CheckCircle, User, Sparkles, CalendarDays, ChevronRight, Users } from 'lucide-react-native';
@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { usePets, useAppointments, useClinicalRecords, useInventory } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, ANIMATION } from '../../constants/tokens';
 import { TEXT_ON_PRIMARY } from '../../constants/colors';
 import VetCloudIcon from '../../components/icons/VetCloudIcon';
 import NextAppointmentCard from '../../components/dashboard/NextAppointmentCard';
@@ -50,6 +50,18 @@ function getGreeting(): string {
   return 'Buenas noches';
 }
 
+// Animated number display — renders Animated.Value as integer text
+function AnimatedText({ value, style }: { value: Animated.Value; style?: any }) {
+  const [display, setDisplay] = React.useState('0');
+  React.useEffect(() => {
+    const id = value.addListener(({ value: v }) => {
+      setDisplay(String(Math.round(v)));
+    });
+    return () => value.removeListener(id);
+  }, [value]);
+  return <Text style={style}>{display}</Text>;
+}
+
 function BannerIllustration({ isMobile }: { isMobile: boolean }) {
   return (
     <Image
@@ -72,6 +84,77 @@ export default function DashboardScreen() {
   const { items: inventoryItems, lowStockItems, loading: loadingInventory } = useInventory();
 
   const isLoading = loadingPets || loadingAppointments || loadingRecords || loadingInventory;
+
+  // ─── Entrance Animations ──────────────────────────────
+  const heroOpacity = useRef(new Animated.Value(0)).current;
+  const heroY = useRef(new Animated.Value(16)).current;
+  const statCardAnims = useRef(
+    Array.from({ length: 4 }, () => ({
+      opacity: new Animated.Value(0),
+      translateY: new Animated.Value(16),
+    }))
+  ).current;
+  const row3Opacity = useRef(new Animated.Value(0)).current;
+  const row3Y = useRef(new Animated.Value(16)).current;
+  const row4Opacity = useRef(new Animated.Value(0)).current;
+  const row4Y = useRef(new Animated.Value(16)).current;
+
+  // Count-up values for stat cards
+  const petCountVal = useRef(new Animated.Value(0)).current;
+  const aptCountVal = useRef(new Animated.Value(0)).current;
+  const recordCountVal = useRef(new Animated.Value(0)).current;
+  const alertCountVal = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    // Hero entrance
+    Animated.parallel([
+      Animated.timing(heroOpacity, { toValue: 1, duration: ANIMATION.slower, useNativeDriver: true }),
+      Animated.timing(heroY, { toValue: 0, duration: ANIMATION.slower, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+    ]).start();
+
+    // Stat cards stagger
+    const statAnims = statCardAnims.map((anim, i) =>
+      Animated.sequence([
+        Animated.delay(150 + i * 80),
+        Animated.parallel([
+          Animated.timing(anim.opacity, { toValue: 1, duration: ANIMATION.slower, useNativeDriver: true }),
+          Animated.timing(anim.translateY, { toValue: 0, duration: ANIMATION.slower, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        ]),
+      ])
+    );
+
+    // Count-up animations (JS driver needed for numbers)
+    const countDuration = 600;
+    const countDelay = 200;
+    const countAnims = Animated.parallel([
+      Animated.sequence([Animated.delay(countDelay), Animated.timing(petCountVal, { toValue: pets.length, duration: countDuration, easing: Easing.out(Easing.cubic), useNativeDriver: false })]),
+      Animated.sequence([Animated.delay(countDelay + 80), Animated.timing(aptCountVal, { toValue: appointments.length, duration: countDuration, easing: Easing.out(Easing.cubic), useNativeDriver: false })]),
+      Animated.sequence([Animated.delay(countDelay + 160), Animated.timing(recordCountVal, { toValue: clinicalRecords.length, duration: countDuration, easing: Easing.out(Easing.cubic), useNativeDriver: false })]),
+      Animated.sequence([Animated.delay(countDelay + 240), Animated.timing(alertCountVal, { toValue: lowStockItems.length, duration: countDuration, easing: Easing.out(Easing.cubic), useNativeDriver: false })]),
+    ]);
+
+    // Row 3 & 4 entrance
+    const rowAnims = Animated.parallel([
+      Animated.sequence([
+        Animated.delay(500),
+        Animated.parallel([
+          Animated.timing(row3Opacity, { toValue: 1, duration: ANIMATION.slower, useNativeDriver: true }),
+          Animated.timing(row3Y, { toValue: 0, duration: ANIMATION.slower, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        ]),
+      ]),
+      Animated.sequence([
+        Animated.delay(650),
+        Animated.parallel([
+          Animated.timing(row4Opacity, { toValue: 1, duration: ANIMATION.slower, useNativeDriver: true }),
+          Animated.timing(row4Y, { toValue: 0, duration: ANIMATION.slower, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        ]),
+      ]),
+    ]);
+
+    Animated.parallel([...statAnims, countAnims, rowAnims]).start();
+  }, [isLoading, pets.length, appointments.length, clinicalRecords.length, lowStockItems.length]);
 
   const todayStr = new Date().toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -241,7 +324,7 @@ export default function DashboardScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* Row 1: Hero + Próxima Cita */}
-      <View style={[styles.topRow, isMobile && styles.topRowMobile]}>
+      <Animated.View style={[styles.topRow, isMobile && styles.topRowMobile, { opacity: heroOpacity, transform: [{ translateY: heroY }] }]}>
         <LinearGradient
           colors={[colors.primaryDark, colors.primary, colors.primaryLight]}
           start={{ x: 0, y: 0 }}
@@ -278,27 +361,29 @@ export default function DashboardScreen() {
           <BannerIllustration isMobile={isMobile} />
         </LinearGradient>
         <NextAppointmentCard {...nextAppointment} />
-      </View>
+      </Animated.View>
 
       {/* Row 2: Stats Cards */}
       <View style={[styles.statsRow, isMobile && styles.statsRowMobile]}>
-        {[{ icon: 'pacientes' as const, color: colors.primary, bg: colors.primaryContainer, value: pets.length, label: 'Pacientes' },
-          { icon: 'agenda' as const, color: colors.info, bg: colors.info + '18', value: todayAppointments.length, label: 'Citas Hoy' },
-          { icon: 'laboratorio' as const, color: colors.success, bg: colors.success + '18', value: clinicalRecords.length, label: 'Fichas Clínicas' },
-          { icon: 'inventario' as const, color: colors.warning, bg: colors.warning + '18', value: lowStockItems.length, label: 'Alertas Stock' }
+        {[{ icon: 'pacientes' as const, color: colors.primary, bg: colors.primaryContainer, value: pets.length, label: 'Pacientes', anim: statCardAnims[0], countVal: petCountVal },
+          { icon: 'agenda' as const, color: colors.info, bg: colors.info + '18', value: todayAppointments.length, label: 'Citas Hoy', anim: statCardAnims[1], countVal: aptCountVal },
+          { icon: 'laboratorio' as const, color: colors.success, bg: colors.success + '18', value: clinicalRecords.length, label: 'Fichas Clínicas', anim: statCardAnims[2], countVal: recordCountVal },
+          { icon: 'inventario' as const, color: colors.warning, bg: colors.warning + '18', value: lowStockItems.length, label: 'Alertas Stock', anim: statCardAnims[3], countVal: alertCountVal }
         ].map((stat, i) => (
-          <View key={i} style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs, isMobile && styles.statCardMobile]}>
+          <Animated.View key={i} style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs, isMobile && styles.statCardMobile, { opacity: stat.anim.opacity, transform: [{ translateY: stat.anim.translateY }] }]}>
             <View style={[styles.statIcon, { backgroundColor: stat.bg }]}>
               <VetCloudIcon name={stat.icon} size={24} color={stat.color} />
             </View>
-            <Text style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
+            <Animated.View>
+              <AnimatedText value={stat.countVal} style={[styles.statValue, { color: colors.text }]} />
+            </Animated.View>
             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{stat.label}</Text>
-          </View>
+          </Animated.View>
         ))}
       </View>
 
       {/* Row 3: Pacientes + Estadísticas + Acciones */}
-      <View style={[styles.threeColRow, isMobile && styles.threeColRowMobile]}>
+      <Animated.View style={[styles.threeColRow, isMobile && styles.threeColRowMobile, { opacity: row3Opacity, transform: [{ translateY: row3Y }] }]}>
         <View style={[styles.colLeft, isMobile && styles.colMobile]}>
           <PatientList patients={recentPatients} />
         </View>
@@ -317,17 +402,17 @@ export default function DashboardScreen() {
         <View style={[styles.colRight, isMobile && styles.colMobile]}>
           <QuickActions />
         </View>
-      </View>
+      </Animated.View>
 
       {/* Row 4: Inventario + Actividad */}
-      <View style={[styles.twoColRow, isMobile && styles.twoColRowMobile]}>
+      <Animated.View style={[styles.twoColRow, isMobile && styles.twoColRowMobile, { opacity: row4Opacity, transform: [{ translateY: row4Y }] }]}>
         <View style={[styles.colHalf, isMobile && styles.colMobile]}>
           <InventoryBar items={groupedInventory} />
         </View>
         <View style={[styles.colHalf, isMobile && styles.colMobile]}>
           <ActivityFeed items={activityItems} />
         </View>
-      </View>
+      </Animated.View>
     </ScrollView>
   );
 }

@@ -12,6 +12,8 @@ import VCard from '../../components/ui/Card';
 import VButton from '../../components/ui/Button';
 import VBadge from '../../components/ui/Badge';
 import VEmptyState from '../../components/ui/EmptyState';
+import VRefreshControl from '../../components/ui/VRefreshControl';
+import { SkeletonList } from '../../components/ui/Skeleton';
 
 const TYPE_ICONS: Record<string, typeof Syringe> = { vacuna: Syringe, desparasitacion: Bug, cita: CalendarClock, post_operatorio: BriefcaseMedical, control: ClipboardCheck };
 
@@ -25,6 +27,7 @@ export default function RemindersScreen() {
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [errorDialog, setErrorDialog] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [formPetId, setFormPetId] = useState('');
   const [formType, setFormType] = useState<Reminder['reminder_type']>('cita');
@@ -66,8 +69,13 @@ export default function RemindersScreen() {
     try { const result = await sendPending(); const sent = (result as any)?.sent || 0; if (sent === 0) setErrorDialog('No hay recordatorios pendientes para enviar'); } catch { setErrorDialog('No se pudieron enviar los recordatorios'); } finally { setSaving(false); }
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try { await refresh(); } finally { setRefreshing(false); }
+  };
+
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} refreshControl={<VRefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
       <View style={styles.actions}>
         <VButton variant="primary" onPress={() => setShowCreateModal(true)} icon={<Plus size={16} color="#fff" />}>Nuevo</VButton>
         <VButton variant="accent" onPress={() => setShowAutoModal(true)} icon={<Wand2 size={16} />}>Auto</VButton>
@@ -85,9 +93,9 @@ export default function RemindersScreen() {
       </View>
 
       {loading ? (
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Cargando...</Text>
+        <SkeletonList count={3} />
       ) : filtered.length === 0 ? (
-        <VEmptyState icon={<BellOff size={32} color={colors.textLight} />} title="No hay recordatorios" description="Crea recordatorios para tus pacientes" />
+        <VEmptyState icon={<BellOff size={32} color={colors.textLight} />} title="No hay recordatorios" description="Crea recordatorios para tus pacientes" variant="medical" />
       ) : (
         filtered.map((reminder) => {
           const TypeIcon = TYPE_ICONS[reminder.reminder_type] || Bell;

@@ -7,12 +7,14 @@ import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import VCard from '../../components/ui/Card';
 import VEmptyState from '../../components/ui/EmptyState';
 import VBadge from '../../components/ui/Badge';
+import VRefreshControl from '../../components/ui/VRefreshControl';
 import { api, DirectusLabExam } from '../../services/directus';
 
 export default function LaboratorioScreen() {
   const { colors } = useTheme();
   const [exams, setExams] = useState<DirectusLabExam[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState('todos');
 
   const fetchExams = useCallback(async () => {
@@ -43,8 +45,13 @@ export default function LaboratorioScreen() {
     }
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try { await fetchExams(); } finally { setRefreshing(false); }
+  };
+
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} refreshControl={<VRefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Laboratorio</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>

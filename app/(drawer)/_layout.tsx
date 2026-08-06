@@ -9,15 +9,15 @@ import VetAssistantWidget from '../../components/VetAssistantWidget';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING } from '../../constants/tokens';
 
-class ErrorBoundary extends Component<{ children: ReactNode; colors?: { text: string; textSecondary: string } }, { error: Error | null }> {
+class ErrorBoundary extends Component<{ children: ReactNode; colors?: { text: string; textSecondary: string; error: string } }, { error: Error | null }> {
   state = { error: null as Error | null };
   static getDerivedStateFromError(error: Error) { return { error }; }
   render() {
     if (this.state.error) {
-      const colors = this.props.colors || { text: '#1A2332', textSecondary: '#5A6B80' };
+      const colors = this.props.colors || { text: '#1A2332', textSecondary: '#5A6B80', error: '#EF4444' };
       return (
         <ScrollView style={{ flex: 1, padding: 20 }}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#EF4444', marginBottom: 8 }}>Screen Error</Text>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.error, marginBottom: 8 }}>Screen Error</Text>
           <Text style={{ fontSize: 14, color: colors.text, marginBottom: 4 }}>{this.state.error.message}</Text>
           <Text style={{ fontSize: 12, color: colors.textSecondary, fontFamily: 'monospace' }}>{this.state.error.stack}</Text>
         </ScrollView>
@@ -102,11 +102,13 @@ export default function DrawerLayout() {
           title={isMobile ? pageTitle : undefined}
         />
         <View style={styles.screenArea}>
-          <ErrorBoundary colors={{ text: colors.text, textSecondary: colors.textSecondary }}>
+          <ErrorBoundary colors={{ text: colors.text, textSecondary: colors.textSecondary, error: colors.error }}>
             <Stack
               screenOptions={{
                 headerShown: false,
                 contentStyle: { backgroundColor: colors.background },
+                animation: 'fade',
+                animationDuration: 200,
               }}
             >
               <Stack.Screen name="index" />

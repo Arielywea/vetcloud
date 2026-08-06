@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Switch } from 'react-native';
-import { Text, TextInput, Button, Card, Divider } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 import { User, Palette, Bell, Shield, Check, AlertCircle, Lock, Eye, EyeOff } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { PALETTES, APP_COLORS, APP_COLORS_DARK } from '../../constants/colors';
 import { apiAuthChangePassword } from '../../services/auth';
-import { SPACING, RADIUS, TYPOGRAPHY, alpha } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
+import VCard from '../../components/ui/Card';
+import VInput from '../../components/ui/Input';
+import VButton from '../../components/ui/Button';
 
 const PALETTE_OPTIONS = [
   { key: null, label: 'Predeterminada' },
@@ -114,25 +117,22 @@ export default function ConfiguracionScreen() {
       </View>
 
       {/* Datos Personales */}
-      <Card style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Card.Content>
-          <View style={styles.cardHeader}>
-            <User size={20} color={colors.primary} />
-            <Text variant="titleMedium" style={[styles.cardTitle, { color: colors.text }]}>Datos Personales</Text>
-          </View>
-          <TextInput label="Nombre" value={name} onChangeText={setName} mode="outlined" style={styles.input} textColor={colors.text} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-          <TextInput label="Correo electrónico" value={email} onChangeText={setEmail} mode="outlined" keyboardType="email-address" style={styles.input} textColor={colors.text} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-          <TextInput label="RUT" value={user?.rut || ''} mode="outlined" disabled style={styles.input} />
-        </Card.Content>
-      </Card>
+      <VCard style={styles.card}>
+        <View style={styles.cardHeader}>
+          <User size={20} color={colors.primary} />
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Datos Personales</Text>
+        </View>
+        <VInput label="Nombre" value={name} onChangeText={setName} />
+        <VInput label="Correo electrónico" value={email} onChangeText={setEmail} keyboardType="email-address" />
+        <VInput label="RUT" value={user?.rut || ''} editable={false} />
+      </VCard>
 
       {/* Personalización */}
-      <Card style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Card.Content>
-          <View style={styles.cardHeader}>
-            <Palette size={20} color={colors.primary} />
-            <Text variant="titleMedium" style={[styles.cardTitle, { color: colors.text }]}>Personalización</Text>
-          </View>
+      <VCard style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Palette size={20} color={colors.primary} />
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Personalización</Text>
+        </View>
 
           <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Modo</Text>
           <View style={styles.modeRow}>
@@ -150,7 +150,7 @@ export default function ConfiguracionScreen() {
             </TouchableOpacity>
           </View>
 
-          <Divider style={[styles.divider, { backgroundColor: colors.border }]} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Paleta</Text>
           <View style={styles.paletteGrid}>
@@ -180,16 +180,14 @@ export default function ConfiguracionScreen() {
               );
             })}
           </View>
-        </Card.Content>
-      </Card>
+      </VCard>
 
       {/* Notificaciones */}
-      <Card style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Card.Content>
-          <View style={styles.cardHeader}>
-            <Bell size={20} color={colors.primary} />
-            <Text variant="titleMedium" style={[styles.cardTitle, { color: colors.text }]}>Notificaciones</Text>
-          </View>
+      <VCard style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Bell size={20} color={colors.primary} />
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Notificaciones</Text>
+        </View>
           <View style={[styles.notiRow, { borderBottomColor: colors.border }]}>
             <Text style={[styles.notiLabel, { color: colors.text }]}>Recordatorios por email</Text>
             <Switch value={notiEmail} onValueChange={(v) => { setNotiEmail(v); handleNotiToggle('notification_email_reminders', v); }} trackColor={{ false: colors.disabled, true: colors.primary }} thumbColor={colors.surface} />
@@ -202,55 +200,38 @@ export default function ConfiguracionScreen() {
             <Text style={[styles.notiLabel, { color: colors.text }]}>Notificaciones push</Text>
             <Switch value={notiPush} onValueChange={(v) => { setNotiPush(v); handleNotiToggle('notification_push', v); }} trackColor={{ false: colors.disabled, true: colors.primary }} thumbColor={colors.surface} />
           </View>
-        </Card.Content>
-      </Card>
+      </VCard>
 
       {/* Seguridad */}
-      <Card style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Card.Content>
-          <View style={styles.cardHeader}>
-            <Shield size={20} color={colors.primary} />
-            <Text variant="titleMedium" style={[styles.cardTitle, { color: colors.text }]}>Cambiar Contraseña</Text>
-          </View>
-          <View style={styles.passwordField}>
-            <TextInput
-              label="Contraseña actual"
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              mode="outlined"
-              secureTextEntry={!showCurrentPassword}
-              style={styles.input}
-              textColor={colors.text}
-              outlineColor={colors.border}
-              activeOutlineColor={colors.primary}
-              right={<TextInput.Icon icon={() => showCurrentPassword ? <EyeOff size={18} color={colors.textSecondary} /> : <Eye size={18} color={colors.textSecondary} />} onPress={() => setShowCurrentPassword(!showCurrentPassword)} />}
-            />
-          </View>
-          <View style={styles.passwordField}>
-            <TextInput
-              label="Nueva contraseña"
-              value={newPassword}
-              onChangeText={setNewPassword}
-              mode="outlined"
-              secureTextEntry={!showNewPassword}
-              style={styles.input}
-              textColor={colors.text}
-              outlineColor={colors.border}
-              activeOutlineColor={colors.primary}
-              right={<TextInput.Icon icon={() => showNewPassword ? <EyeOff size={18} color={colors.textSecondary} /> : <Eye size={18} color={colors.textSecondary} />} onPress={() => setShowNewPassword(!showNewPassword)} />}
-            />
-          </View>
-          <TextInput
-            label="Confirmar nueva contraseña"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            mode="outlined"
-            secureTextEntry
-            style={styles.input}
-            textColor={colors.text}
-            outlineColor={colors.border}
-            activeOutlineColor={colors.primary}
+      <VCard style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Shield size={20} color={colors.primary} />
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Cambiar Contraseña</Text>
+        </View>
+        <View style={styles.passwordField}>
+          <VInput
+            label="Contraseña actual"
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+            secureTextEntry={!showCurrentPassword}
+            rightIcon={<TouchableOpacity onPress={() => setShowCurrentPassword(!showCurrentPassword)}>{showCurrentPassword ? <EyeOff size={18} color={colors.textSecondary} /> : <Eye size={18} color={colors.textSecondary} />}</TouchableOpacity>}
           />
+        </View>
+        <View style={styles.passwordField}>
+          <VInput
+            label="Nueva contraseña"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            secureTextEntry={!showNewPassword}
+            rightIcon={<TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>{showNewPassword ? <EyeOff size={18} color={colors.textSecondary} /> : <Eye size={18} color={colors.textSecondary} />}</TouchableOpacity>}
+          />
+        </View>
+        <VInput
+          label="Confirmar nueva contraseña"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+        />
 
           {passwordError ? (
             <View style={[styles.msgBox, { backgroundColor: alpha(colors.error, 0.08) }]}>
@@ -266,26 +247,25 @@ export default function ConfiguracionScreen() {
             </View>
           ) : null}
 
-          <Button mode="outlined" onPress={handleChangePassword} loading={changingPassword} disabled={changingPassword} style={styles.passwordBtn} icon="lock-reset">
+          <VButton variant="secondary" onPress={handleChangePassword} loading={changingPassword} disabled={changingPassword}>
             Cambiar Contraseña
-          </Button>
-        </Card.Content>
-      </Card>
+          </VButton>
+      </VCard>
 
       {/* Success Banner */}
       {saved && (
-        <Card style={[styles.savedCard, { backgroundColor: alpha(colors.success, 0.08) }]}>
-          <Card.Content style={styles.savedContent}>
+        <VCard style={{ marginBottom: SPACING.lg, borderRadius: RADIUS.md, backgroundColor: alpha(colors.success, 0.08) }}>
+          <View style={styles.savedContent}>
             <Check size={20} color={colors.success} />
             <Text style={{ color: colors.success, fontWeight: '600' }}>Perfil actualizado correctamente</Text>
-          </Card.Content>
-        </Card>
+          </View>
+        </VCard>
       )}
 
       {/* Save Button */}
-      <Button mode="contained" onPress={handleSave} loading={saving} disabled={saving} style={styles.saveButton} icon="content-save">
+      <VButton variant="primary" onPress={handleSave} loading={saving} disabled={saving} fullWidth>
         Guardar Cambios
-      </Button>
+      </VButton>
     </ScrollView>
   );
 }
@@ -297,10 +277,9 @@ const styles = StyleSheet.create({
   title: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.bold },
   card: { marginBottom: 12, borderRadius: 12 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  cardTitle: { fontWeight: '700' },
-  input: { marginBottom: 10 },
+  cardTitle: { fontWeight: '700', fontSize: TYPOGRAPHY.sizes.lg },
   sectionLabel: { fontSize: 13, fontWeight: '600', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-  divider: { marginVertical: 12 },
+  divider: { height: 1, marginVertical: 12 },
   modeRow: { flexDirection: 'row', gap: 10 },
   modeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 8, borderWidth: 1 },
   modeBtnText: { fontSize: 14, fontWeight: '600' },

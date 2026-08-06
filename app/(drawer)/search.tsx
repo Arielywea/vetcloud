@@ -107,7 +107,8 @@ export default function SearchScreen() {
         ListEmptyComponent={
           <VEmptyState
             icon={<Search size={32} color={colors.textLight} />}
-            title={loading ? 'Cargando...' : query ? 'No se encontraron resultados' : 'Escribe para buscar'}
+            title={loading ? '' : query ? 'No se encontraron resultados' : 'Escribe para buscar'}
+            variant="data"
           />
         }
       />

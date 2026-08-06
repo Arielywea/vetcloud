@@ -8,6 +8,8 @@ import { SPACING, RADIUS, SHADOWS } from '../../constants/tokens';
 import VCard from '../../components/ui/Card';
 import VButton from '../../components/ui/Button';
 import VEmptyState from '../../components/ui/EmptyState';
+import VRefreshControl from '../../components/ui/VRefreshControl';
+import { SkeletonList } from '../../components/ui/Skeleton';
 
 const CATEGORY_OPTIONS = [
   { value: 'medicamento', label: 'Medicamento' },
@@ -27,7 +29,8 @@ const CATEGORY_ICONS: Record<string, typeof Pill> = {
 
 export default function InventarioScreen() {
   const { colors } = useTheme();
-  const { items, lowStockItems, loading, addItem, updateItem, removeItem } = useInventory();
+  const { items, lowStockItems, loading, addItem, updateItem, removeItem, refresh } = useInventory();
+  const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
@@ -43,6 +46,11 @@ export default function InventarioScreen() {
 
   const resetForm = () => {
     setItemName(''); setItemCategory('insumo'); setItemStock(''); setItemMinStock('5'); setItemUnit('unidades'); setEditingItem(null);
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try { await refresh(); } finally { setRefreshing(false); }
   };
 
   const openEdit = (item: any) => {
@@ -80,14 +88,15 @@ export default function InventarioScreen() {
         </View>
       )}
 
-      <ScrollView contentContainerStyle={styles.listContent}>
+      <ScrollView contentContainerStyle={styles.listContent} refreshControl={<VRefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
         {loading ? (
-          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Cargando inventario...</Text>
+          <SkeletonList count={4} />
         ) : items.length === 0 ? (
           <VEmptyState
             icon={<Package size={32} color={colors.textLight} />}
             title="Sin items en inventario"
             description="Agrega medicamentos, insumos y más"
+            variant="data"
           />
         ) : (
           items.map(item => {
@@ -217,7 +226,7 @@ const styles = StyleSheet.create({
   stockFill: { height: 4, borderRadius: 2 },
   minStock: { fontSize: 10, marginTop: 2 },
   itemActions: { flexDirection: 'row', gap: SPACING.md },
-  fab: { position: 'absolute', right: 16, bottom: 16, width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  fab: { position: 'absolute', right: SPACING.lg, bottom: SPACING.lg, width: 56, height: 56, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
   modal: { padding: 24, margin: 20, borderRadius: RADIUS.lg, maxHeight: '85%' },
   dialogModal: { padding: 24, margin: 20, borderRadius: RADIUS.lg },
   modalTitle: { fontWeight: '700', marginBottom: SPACING.lg },

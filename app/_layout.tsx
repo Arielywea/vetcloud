@@ -7,6 +7,7 @@ import { StyleSheet, ActivityIndicator, View, Text } from 'react-native';
 import React from 'react';
 import { AuthProvider, useAuth } from '../hooks/useAuth';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
+import { ToastProvider } from '../components/ui/VToast';
 import { APP_COLORS } from '../constants/colors';
 import LoginScreen from './auth/login';
 
@@ -92,10 +93,12 @@ export default function RootLayout() {
         <AuthProvider>
           <ThemeProvider>
             <ThemedPaperProvider>
-              <RootErrorBoundary>
-                <AppContent />
-              </RootErrorBoundary>
-              <StatusBar style="auto" />
+              <ToastProvider>
+                <RootErrorBoundary>
+                  <AppContent />
+                </RootErrorBoundary>
+                <StatusBar style="auto" />
+              </ToastProvider>
             </ThemedPaperProvider>
           </ThemeProvider>
         </AuthProvider>

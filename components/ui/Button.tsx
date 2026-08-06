@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { TouchableOpacity, StyleSheet, ActivityIndicator, ViewStyle, Animated } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -31,30 +31,47 @@ export default function VButton({
   style,
 }: VButtonProps) {
   const { colors } = useTheme();
-  const brightness = React.useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
 
-  const onHoverIn = React.useCallback(() => {
-    Animated.timing(brightness, {
-      toValue: 1.08,
-      duration: ANIMATION.normal,
-      useNativeDriver: false,
-    }).start();
-  }, [brightness]);
+  const onPressIn = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 0.96,
+        damping: 15,
+        stiffness: 180,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0.8,
+        duration: ANIMATION.fast,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
-  const onHoverOut = React.useCallback(() => {
-    Animated.timing(brightness, {
-      toValue: 1,
-      duration: ANIMATION.normal,
-      useNativeDriver: false,
-    }).start();
-  }, [brightness]);
+  const onPressOut = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        damping: 15,
+        stiffness: 180,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: ANIMATION.fast,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   const getButtonStyle = (): ViewStyle => {
     const base: ViewStyle = {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 12,
+      borderRadius: RADIUS.md,
       gap: SPACING.sm,
     };
 
@@ -97,21 +114,22 @@ export default function VButton({
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.7}
-      onPressIn={onHoverIn}
-      onPressOut={onHoverOut}
-      style={[getButtonStyle(), style]}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
     >
-      {loading ? (
-        <ActivityIndicator size="small" color={getTextColor()} />
-      ) : (
-        <>
-          {icon && iconPosition === 'left' && icon}
-          <Text style={[styles.text, { color: getTextColor(), fontSize: size === 'sm' ? TYPOGRAPHY.sizes.sm : TYPOGRAPHY.sizes.md }]}>
-            {children}
-          </Text>
-          {icon && iconPosition === 'right' && icon}
-        </>
-      )}
+      <Animated.View style={[getButtonStyle(), { transform: [{ scale: scaleAnim }], opacity: opacityAnim }, style]}>
+        {loading ? (
+          <ActivityIndicator size="small" color={getTextColor()} />
+        ) : (
+          <>
+            {icon && iconPosition === 'left' && icon}
+            <Text style={[styles.text, { color: getTextColor(), fontSize: size === 'sm' ? TYPOGRAPHY.sizes.sm : TYPOGRAPHY.sizes.md }]}>
+              {children}
+            </Text>
+            {icon && iconPosition === 'right' && icon}
+          </>
+        )}
+      </Animated.View>
     </TouchableOpacity>
   );
 }

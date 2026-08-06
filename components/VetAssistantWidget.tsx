@@ -5,7 +5,7 @@ import { Bot, X, Calendar, Syringe, HelpCircle, Send } from 'lucide-react-native
 import { useAssistant } from '../hooks/useDirectus';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../contexts/ThemeContext';
-import { SPACING, RADIUS, SHADOWS } from '../constants/tokens';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../constants/tokens';
 import { TEXT_ON_PRIMARY } from '../constants/colors';
 
 export default function VetAssistantWidget() {
@@ -82,7 +82,7 @@ export default function VetAssistantWidget() {
               <View key={idx} style={[styles.messageBubble, msg.sender === 'user' ? styles.userBubble : styles.assistantBubble]}>
                 {msg.sender === 'assistant' && <Bot size={16} color={colors.accent} style={{ marginRight: 6, marginTop: 2 }} />}
                 <View style={[styles.messageBox, msg.sender === 'user' ? { backgroundColor: colors.primary, borderBottomRightRadius: 4 } : { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderBottomLeftRadius: 4 }]}>
-                  <Text style={{ fontSize: 14, lineHeight: 21, color: msg.sender === 'user' ? TEXT_ON_PRIMARY.light.default : colors.text }}>{msg.text}</Text>
+                  <Text style={{ fontSize: TYPOGRAPHY.sizes.md, lineHeight: 21, color: msg.sender === 'user' ? TEXT_ON_PRIMARY.light.default : colors.text }}>{msg.text}</Text>
                   {msg.actions && msg.actions.length > 0 && (
                     <View style={styles.actionsContainer}>
                       {msg.actions.map((act: any, aIdx: number) => (
@@ -126,25 +126,25 @@ export default function VetAssistantWidget() {
 }
 
 const styles = StyleSheet.create({
-  fab: { position: 'absolute', left: 16, bottom: 16, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', zIndex: 999 },
-  panel: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 420, maxWidth: '90%', borderTopRightRadius: 20, borderBottomRightRadius: 20, overflow: 'hidden', margin: 0, padding: 0 },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 16, paddingTop: 20, gap: 10 },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700' },
+  fab: { position: 'absolute', left: SPACING.lg, bottom: SPACING.lg, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', zIndex: 999 },
+  panel: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 420, maxWidth: '90%', borderTopRightRadius: RADIUS.xl, borderBottomRightRadius: RADIUS.xl, overflow: 'hidden', margin: 0, padding: 0 },
+  header: { flexDirection: 'row', alignItems: 'center', padding: SPACING.lg, paddingTop: SPACING.xl, gap: SPACING.sm + 2 },
+  headerTitle: { flex: 1, fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.bold },
   messagesContainer: { flex: 1 },
-  messagesContent: { padding: 14, paddingBottom: 8 },
-  welcomeContainer: { alignItems: 'center', paddingVertical: 40 },
-  welcomeTitle: { fontSize: 20, fontWeight: '700', marginTop: 12 },
-  welcomeDesc: { fontSize: 14, marginTop: 6, textAlign: 'center' },
-  quickActions: { flexDirection: 'row', gap: 12, marginTop: 24 },
-  quickBtn: { alignItems: 'center', paddingVertical: 14, paddingHorizontal: 18, borderRadius: RADIUS.lg, borderWidth: 1, minWidth: 90 },
-  quickBtnText: { fontSize: 12, fontWeight: '600', marginTop: 6 },
-  messageBubble: { flexDirection: 'row', marginBottom: 12, maxWidth: '100%' },
+  messagesContent: { padding: SPACING.md + 2, paddingBottom: SPACING.sm + 2 },
+  welcomeContainer: { alignItems: 'center', paddingVertical: SPACING['4xl'] + SPACING.xl },
+  welcomeTitle: { fontSize: TYPOGRAPHY.sizes.xl, fontWeight: TYPOGRAPHY.weights.bold, marginTop: SPACING.sm + 4 },
+  welcomeDesc: { fontSize: TYPOGRAPHY.sizes.md, marginTop: SPACING.sm - 2, textAlign: 'center' },
+  quickActions: { flexDirection: 'row', gap: SPACING.sm + 4, marginTop: SPACING['2xl'] + SPACING.sm },
+  quickBtn: { alignItems: 'center', paddingVertical: SPACING.md + 2, paddingHorizontal: SPACING.xl - SPACING.xs, borderRadius: RADIUS.lg, borderWidth: 1, minWidth: 90 },
+  quickBtnText: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.semibold, marginTop: SPACING.sm - 2 },
+  messageBubble: { flexDirection: 'row', marginBottom: SPACING.sm + 4, maxWidth: '100%' },
   userBubble: { justifyContent: 'flex-end' },
   assistantBubble: { justifyContent: 'flex-start' },
-  messageBox: { borderRadius: 14, padding: 12, maxWidth: '88%' },
-  actionsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
-  actionBtn: { paddingVertical: 7, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1 },
-  actionBtnText: { fontSize: 12, fontWeight: '600' },
-  inputRow: { padding: 10, borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  input: { flex: 1, borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.sm, fontSize: 14 },
+  messageBox: { borderRadius: RADIUS.md + 2, padding: SPACING.sm + 4, maxWidth: '88%' },
+  actionsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm - 2, marginTop: SPACING.sm + 2 },
+  actionBtn: { paddingVertical: SPACING.sm - 1, paddingHorizontal: SPACING.sm + 4, borderRadius: RADIUS.full, borderWidth: 1 },
+  actionBtnText: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.semibold },
+  inputRow: { padding: SPACING.sm + 2, borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  input: { flex: 1, borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.sm, fontSize: TYPOGRAPHY.sizes.md },
 });
