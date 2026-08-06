@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { Text } from 'react-native-paper';
 import { FlaskConical, CheckCircle, Clock, AlertCircle } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -7,21 +7,41 @@ import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import VCard from '../../components/ui/Card';
 import VEmptyState from '../../components/ui/EmptyState';
 import VBadge from '../../components/ui/Badge';
-
-const MOCK_EXAMS = [
-  { id: '1', name: 'Hemograma Completo', petName: 'Max', species: 'Canino', date: '2026-07-22', status: 'pendiente', vet: 'Dr. García' },
-  { id: '2', name: 'Perfil Bioquímico', petName: 'Luna', species: 'Felino', date: '2026-07-21', status: 'completado', vet: 'Dra. Pérez', result: 'Dentro de parámetros normales' },
-  { id: '3', name: 'Análisis de Orina', petName: 'Max', species: 'Canino', date: '2026-07-20', status: 'completado', vet: 'Dr. García', result: 'Sin anomalías detectadas' },
-  { id: '4', name: 'Radiografía', petName: 'Luna', species: 'Felino', date: '2026-07-19', status: 'pendiente', vet: 'Dra. Pérez' },
-];
+import { api, DirectusLabExam } from '../../services/directus';
 
 export default function LaboratorioScreen() {
   const { colors } = useTheme();
-  const [filter, setFilter] = React.useState('todos');
+  const [exams, setExams] = useState<DirectusLabExam[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('todos');
 
-  const filtered = filter === 'todos'
-    ? MOCK_EXAMS
-    : MOCK_EXAMS.filter(e => e.status === filter);
+  const fetchExams = useCallback(async () => {
+    try {
+      setLoading(true);
+      const params = filter === 'todos' ? undefined : { status: filter };
+      const data = await api.labExams.list(params);
+      setExams(data);
+    } catch (error) {
+      console.error('Error fetching lab exams:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [filter]);
+
+  useEffect(() => {
+    fetchExams();
+  }, [fetchExams]);
+
+  const handleComplete = async (id: string) => {
+    try {
+      await api.labExams.update(id, { status: 'completado' });
+      setExams(prev => prev.map(exam =>
+        exam.id === id ? { ...exam, status: 'completado' } : exam
+      ));
+    } catch (error) {
+      console.error('Error completing exam:', error);
+    }
+  };
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
@@ -48,20 +68,24 @@ export default function LaboratorioScreen() {
         ))}
       </ScrollView>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : exams.length === 0 ? (
         <VEmptyState
           icon={<FlaskConical size={32} color={colors.textLight} />}
           title="Sin exámenes"
           description="No hay exámenes registrados"
         />
       ) : (
-        filtered.map(exam => (
+        exams.map(exam => (
           <VCard key={exam.id} style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.examInfo}>
-                <Text style={[styles.examName, { color: colors.text }]}>{exam.name}</Text>
+                <Text style={[styles.examName, { color: colors.text }]}>{exam.exam_name}</Text>
                 <Text style={[styles.examPet, { color: colors.textSecondary }]}>
-                  {exam.petName} ({exam.species}) · {exam.vet}
+                  {exam.pet_name} ({exam.species}) · {exam.breed}
                 </Text>
               </View>
               <VBadge
@@ -80,6 +104,15 @@ export default function LaboratorioScreen() {
                   {exam.result}
                 </Text>
               )}
+              {exam.status === 'pendiente' && (
+                <VBadge
+                  label="Completar"
+                  variant="filled"
+                  color={colors.primary}
+                  onPress={() => handleComplete(exam.id)}
+                  style={styles.completeButton}
+                />
+              )}
             </View>
           </VCard>
         ))
@@ -95,6 +128,7 @@ const styles = StyleSheet.create({
   title: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.bold },
   subtitle: { fontSize: TYPOGRAPHY.sizes.md, marginTop: SPACING.sm },
   filterRow: { marginBottom: SPACING.xl, gap: SPACING.sm },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: SPACING['4xl'] },
   card: { marginBottom: SPACING.lg },
   cardHeader: {
     flexDirection: 'row',
@@ -111,4 +145,5 @@ const styles = StyleSheet.create({
   },
   examDate: { fontSize: TYPOGRAPHY.sizes.xs },
   examResult: { fontSize: TYPOGRAPHY.sizes.sm, marginTop: SPACING.sm },
+  completeButton: { marginTop: SPACING.sm, alignSelf: 'flex-start' },
 });

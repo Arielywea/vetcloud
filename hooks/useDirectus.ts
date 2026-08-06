@@ -8,6 +8,7 @@ import {
   DirectusFavorite,
   Appointment,
   ClinicalRecord,
+  Hospitalization,
   InventoryItem,
   Prescription,
   Reminder,
@@ -390,6 +391,63 @@ export function useClinicalRecords(petId?: string, recordType?: string) {
   };
 
   return { records, loading, error, addRecord, updateRecord, removeRecord, refresh: fetchRecords };
+}
+
+// ─────────────────────────────────────────────────────────
+// Hook: Hospitalizations
+// ─────────────────────────────────────────────────────────
+
+export function useHospitalizations(status?: string) {
+  const [hospitalizations, setHospitalizations] = useState<Hospitalization[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchHospitalizations = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params: { status?: string } = {};
+      if (status && status !== 'todos') params.status = status;
+      const result = await api.hospitalizations.list(Object.keys(params).length ? params : undefined);
+      setHospitalizations(result as Hospitalization[]);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [status]);
+
+  useEffect(() => {
+    fetchHospitalizations();
+  }, [fetchHospitalizations]);
+
+  const addHospitalization = async (data: Omit<Hospitalization, 'id' | 'created_at' | 'pet_name' | 'species' | 'breed'>) => {
+    const result = await api.hospitalizations.create(data);
+    await fetchHospitalizations();
+    return result;
+  };
+
+  const updateHospitalization = async (id: string, data: Partial<Hospitalization>) => {
+    const result = await api.hospitalizations.update(id, data);
+    await fetchHospitalizations();
+    return result;
+  };
+
+  const discharge = async (id: string) => {
+    const result = await api.hospitalizations.update(id, {
+      status: 'discharged',
+      discharge_date: new Date().toISOString(),
+    });
+    await fetchHospitalizations();
+    return result;
+  };
+
+  const removeHospitalization = async (id: string) => {
+    await api.hospitalizations.delete(id);
+    await fetchHospitalizations();
+  };
+
+  return { hospitalizations, loading, error, addHospitalization, updateHospitalization, discharge, removeHospitalization, refresh: fetchHospitalizations };
 }
 
 // ─────────────────────────────────────────────────────────

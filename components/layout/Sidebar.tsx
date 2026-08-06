@@ -40,6 +40,13 @@ const NAV_SECTIONS = [
       { label: 'Reportes', iconName: 'reportes' as VetCloudIconName, route: '/(drawer)/reportes' },
     ],
   },
+  {
+    title: 'PERSONAL',
+    items: [
+      { label: 'Notas', iconName: 'notas' as VetCloudIconName, route: '/(drawer)/notes' },
+      { label: 'Recordatorios', iconName: 'recordatorios' as VetCloudIconName, route: '/(drawer)/reminders' },
+    ],
+  },
 ];
 
 const BOTTOM_ITEMS = [

@@ -154,6 +154,22 @@ export interface DirectusFavorite {
   added_at: string;
 }
 
+export interface Hospitalization {
+  id: string;
+  pet_id: string;
+  user_id: string;
+  pet_name: string;
+  species: string;
+  breed: string;
+  admission_date: string;
+  discharge_date: string | null;
+  reason: string;
+  status: 'internado' | 'cirugia' | 'recuperacion' | 'discharged';
+  veterinarian: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface InventoryItem {
   id: string;
   user_id: string;
@@ -182,6 +198,23 @@ export interface Reminder {
   status: 'pending' | 'sent' | 'cancelled';
   related_record_id: string | null;
   created_at: string;
+}
+
+export interface DirectusLabExam {
+  id: string;
+  user_id: string;
+  pet_id: string;
+  exam_name: string;
+  pet_name: string;
+  species: string;
+  breed: string;
+  date: string;
+  status: 'pendiente' | 'completado';
+  result: string | null;
+  veterinarian: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
 }
 // ─────────────────────────────────────────────────────────
 
@@ -282,6 +315,14 @@ export const api = {
     update: (id: string, data: any) => apiPatch(`/items/clinical_records/${id}`, data),
     delete: (id: string) => apiDelete(`/items/clinical_records/${id}`),
   },
+  hospitalizations: {
+    list: (params?: { status?: string }) =>
+      apiGet('/items/hospitalizations', params),
+    get: (id: string) => apiGet(`/items/hospitalizations/${id}`),
+    create: (data: any) => apiPost('/items/hospitalizations', data),
+    update: (id: string, data: any) => apiPatch(`/items/hospitalizations/${id}`, data),
+    delete: (id: string) => apiDelete(`/items/hospitalizations/${id}`),
+  },
   inventory: {
     list: () => apiGet('/items/inventory'),
     lowStock: () => apiGet('/items/inventory/low-stock'),
@@ -307,8 +348,21 @@ export const api = {
     delete: (id: string) => apiDelete(`/items/reminders/${id}`),
     sendPending: () => apiPost('/items/reminders/send-pending', {}),
   },
+  labExams: {
+    list: (params?: { status?: string }) =>
+      apiGet('/items/lab_exams', params),
+    get: (id: string) => apiGet(`/items/lab_exams/${id}`),
+    create: (data: any) => apiPost('/items/lab_exams', data),
+    update: (id: string, data: any) => apiPatch(`/items/lab_exams/${id}`, data),
+    delete: (id: string) => apiDelete(`/items/lab_exams/${id}`),
+  },
   assistant: {
     query: (message: string) => apiPost('/assistant', { message }),
+  },
+  stats: {
+    dashboard: () => apiGet('/stats/dashboard'),
+    weekly: () => apiGet('/stats/weekly'),
+    recordTypes: () => apiGet('/stats/record-types'),
   },
 };
 

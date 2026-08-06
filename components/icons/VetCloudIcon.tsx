@@ -10,7 +10,9 @@ export type VetCloudIconName =
   | 'laboratorio'
   | 'inventario'
   | 'reportes'
-  | 'configuracion';
+  | 'configuracion'
+  | 'notas'
+  | 'recordatorios';
 
 interface VetCloudIconProps {
   name: VetCloudIconName;
@@ -132,6 +134,27 @@ function ConfiguracionIcon({ color }: { color: string }) {
   );
 }
 
+function NotasIcon({ color }: { color: string }) {
+  return (
+    <>
+      <Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Path d="M14 2v6h6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Path d="M16 13H8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Path d="M16 17H8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Path d="M10 9H8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </>
+  );
+}
+
+function RecordatoriosIcon({ color }: { color: string }) {
+  return (
+    <>
+      <Path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke={color} strokeWidth="2" fill="none" />
+      <Path d="M12 6v6l4 2" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </>
+  );
+}
+
 const ICONS: Record<VetCloudIconName, React.FC<{ color: string }>> = {
   dashboard: DashboardIcon,
   pacientes: PacientesIcon,
@@ -142,6 +165,8 @@ const ICONS: Record<VetCloudIconName, React.FC<{ color: string }>> = {
   inventario: InventarioIcon,
   reportes: ReportesIcon,
   configuracion: ConfiguracionIcon,
+  notas: NotasIcon,
+  recordatorios: RecordatoriosIcon,
 };
 
 export default function VetCloudIcon({ name, size = 24, color = '#C9A227' }: VetCloudIconProps) {

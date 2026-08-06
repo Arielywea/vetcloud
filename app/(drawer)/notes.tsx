@@ -34,7 +34,9 @@ export default function NotesScreen() {
         await addNote({ title: title.trim(), content: content.trim(), tags: tagList, disease_id: null, pet_id: null });
       }
       resetForm(); setShowModal(false);
-    } catch {}
+    } catch (error: any) {
+      console.error('Error:', error);
+    }
   };
 
   const handleEdit = (note: DirectusNote) => {
@@ -43,7 +45,7 @@ export default function NotesScreen() {
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
-    try { await api.notes.delete(deleteTarget.id); setRefreshKey(k => k + 1); refresh(); } catch {} finally { setDeleteTarget(null); }
+    try { await api.notes.delete(deleteTarget.id); setRefreshKey(k => k + 1); refresh(); } catch (error: any) { console.error('Error:', error); } finally { setDeleteTarget(null); }
   };
 
   const renderNote = ({ item }: { item: DirectusNote }) => {

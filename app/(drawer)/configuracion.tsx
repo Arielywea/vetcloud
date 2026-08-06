@@ -62,7 +62,8 @@ export default function ConfiguracionScreen() {
         notification_push: notiPush,
       });
       setSaved(true);
-    } catch (e) {
+    } catch (error: any) {
+      console.error('Error:', error);
     } finally {
       setSaving(false);
     }
@@ -71,7 +72,9 @@ export default function ConfiguracionScreen() {
   const handleNotiToggle = async (field: string, value: boolean) => {
     try {
       await updateProfile({ [field]: value });
-    } catch {}
+    } catch (error: any) {
+      console.error('Error:', error);
+    }
   };
 
   const handleChangePassword = async () => {
