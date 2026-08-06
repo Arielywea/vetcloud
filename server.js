@@ -87,6 +87,8 @@ function authMiddleware(req, res, next) {
     const token = header.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
     req.userId = decoded.userId;
+    req.organizationId = decoded.organizationId || null;
+    req.userRole = decoded.role || 'owner';
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Token inválido' });
@@ -100,18 +102,35 @@ app.post('/auth/login', async (req, res) => {
     if (!rateLimit(`login:${clientIp}`, 5, 60000)) {
       return res.status(429).json({ error: 'Demasiados intentos. Intente en 1 minuto.' });
     }
-    const { rut, password } = req.body;
-    if (!rut || !password) return res.status(400).json({ error: 'RUT y contraseña requeridos' });
-    const result = await pool.query('SELECT * FROM users WHERE rut = $1', [rut]);
+    const { identifier, password, rut } = req.body;
+    const loginId = identifier || rut;
+    if (!loginId || !password) return res.status(400).json({ error: 'Usuario/correo y contraseña requeridos' });
+
+    // Detect if identifier is email (contains @) or username/rut
+    let result;
+    if (String(loginId).includes('@')) {
+      result = await pool.query('SELECT * FROM users WHERE email = $1', [loginId]);
+    } else {
+      // Try username first, then fallback to RUT for backward compatibility
+      result = await pool.query('SELECT * FROM users WHERE username = $1', [loginId]);
+      if (!result.rows.length) {
+        result = await pool.query('SELECT * FROM users WHERE rut = $1', [loginId]);
+      }
+    }
+
     if (!result.rows.length) return res.status(401).json({ error: 'Credenciales inválidas' });
     const user = result.rows[0];
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(401).json({ error: 'Credenciales inválidas' });
-    const token = jwt.sign({ userId: user.id, rut: user.rut, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+    const token = jwt.sign(
+      { userId: user.id, organizationId: user.organization_id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
     res.json({
       data: {
         token,
-        user: { id: user.id, rut: user.rut, name: user.name, email: user.email, role: user.role, theme_preference: user.theme_preference || 'light', color_palette: user.color_palette || null },
+        user: { id: user.id, rut: user.rut, username: user.username, name: user.name, email: user.email, role: user.role, organization_id: user.organization_id, theme_preference: user.theme_preference || 'light', color_palette: user.color_palette || null },
       },
     });
   } catch (err) {
@@ -119,9 +138,90 @@ app.post('/auth/login', async (req, res) => {
   }
 });
 
+app.post('/auth/register', async (req, res) => {
+  try {
+    const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
+    if (!rateLimit(`register:${clientIp}`, 3, 300000)) {
+      return res.status(429).json({ error: 'Demasiados registros. Intente en 5 minutos.' });
+    }
+    const { username, email, password, org_name, org_type } = req.body;
+
+    // Validations
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'Usuario, correo y contraseña requeridos' });
+    }
+    if (username.length < 3 || username.length > 50) {
+      return res.status(400).json({ error: 'El usuario debe tener entre 3 y 50 caracteres' });
+    }
+    if (!/^[a-zA-Z0-9._]+$/.test(username)) {
+      return res.status(400).json({ error: 'El usuario solo puede contener letras, numeros, puntos y guiones bajos' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Formato de correo invalido' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+
+    // Check uniqueness
+    const existingUser = await pool.query('SELECT id FROM users WHERE username = $1 OR email = $2', [username, email]);
+    if (existingUser.rows.length) {
+      return res.status(409).json({ error: 'El usuario o correo ya esta registrado' });
+    }
+
+    // Create org + user in a transaction
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Create organization
+      const orgName = org_name || `${username}'s Clinic`;
+      const orgType = org_type === 'clinic' ? 'clinic' : 'solo';
+      const orgResult = await client.query(
+        'INSERT INTO organizations (name, org_type) VALUES ($1, $2) RETURNING id',
+        [orgName, orgType]
+      );
+      const organizationId = orgResult.rows[0].id;
+
+      // Create user
+      const hash = bcrypt.hashSync(password, 10);
+      const userResult = await client.query(
+        'INSERT INTO users (username, email, password_hash, name, role, organization_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, username, email, name, role, organization_id',
+        [username, email, hash, username, 'owner', organizationId]
+      );
+      const user = userResult.rows[0];
+
+      await client.query('COMMIT');
+
+      const token = jwt.sign(
+        { userId: user.id, organizationId: user.organization_id, role: user.role },
+        JWT_SECRET,
+        { expiresIn: '30d' }
+      );
+
+      res.status(201).json({
+        data: {
+          token,
+          user: { id: user.id, username: user.username, name: user.name, email: user.email, role: user.role, organization_id: user.organization_id },
+        },
+      });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'El usuario o correo ya esta registrado' });
+    }
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 app.get('/auth/me', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, rut, name, email, role, theme_preference, color_palette, created_at, smtp_email, clinic_name, veterinarian_name, clinic_phone, clinic_address, notification_email_reminders, notification_upcoming_appointments, notification_push FROM users WHERE id = $1', [req.userId]);
+    const result = await pool.query('SELECT id, rut, username, name, email, role, organization_id, theme_preference, color_palette, created_at, smtp_email, clinic_name, veterinarian_name, clinic_phone, clinic_address, notification_email_reminders, notification_upcoming_appointments, notification_push FROM users WHERE id = $1', [req.userId]);
     if (!result.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
     const user = result.rows[0];
     if (user.smtp_password) user.smtp_password = '••••••••';
@@ -196,6 +296,24 @@ app.get('/items/diseases', async (req, res) => {
     const params = [];
     const conditions = [];
 
+    // Org filtering: show global diseases + org-specific diseases
+    // Extract orgId from token if available (optional endpoint)
+    let orgId = null;
+    const header = req.headers.authorization;
+    if (header && header.startsWith('Bearer ')) {
+      try {
+        const token = header.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
+        orgId = decoded.organizationId || null;
+      } catch {}
+    }
+    if (orgId) {
+      conditions.push(`(organization_id IS NULL OR organization_id = $${params.length + 1})`);
+      params.push(orgId);
+    } else {
+      conditions.push('(organization_id IS NULL)');
+    }
+
     if (req.query.species && req.query.species !== 'all') {
       conditions.push(`(species = $${params.length + 1} OR species = 'both')`);
       params.push(req.query.species);
@@ -242,12 +360,13 @@ app.post('/items/diseases', authMiddleware, async (req, res) => {
   try {
     const d = req.body;
     const result = await pool.query(
-      `WITH ins AS (INSERT INTO diseases (name, scientific_name, species, category, severity, description, key_signs, diagnosis, treatment, prevention, prognosis, is_zoonotic, references_list, photo_url)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *)
+      `WITH ins AS (INSERT INTO diseases (name, scientific_name, species, category, severity, description, key_signs, diagnosis, treatment, prevention, prognosis, is_zoonotic, references_list, photo_url, organization_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *)
        SELECT *, references_list AS references FROM ins`,
       [d.name, d.scientific_name, d.species, d.category, d.severity, d.description,
        JSON.stringify(d.key_signs), JSON.stringify(d.diagnosis), JSON.stringify(d.treatment),
-       JSON.stringify(d.prevention), d.prognosis, d.is_zoonotic, JSON.stringify(d.references), d.photo_url || null]
+       JSON.stringify(d.prevention), d.prognosis, d.is_zoonotic, JSON.stringify(d.references), d.photo_url || null,
+       req.organizationId || null]
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
@@ -318,14 +437,14 @@ app.post('/items/pets', authMiddleware, async (req, res) => {
     if (!p.name || !String(p.name).trim()) return res.status(400).json({ error: 'El nombre es obligatorio' });
     if (p.species && !['dog', 'cat'].includes(p.species)) return res.status(400).json({ error: 'La especie debe ser dog o cat' });
     const result = await pool.query(
-       `INSERT INTO pets (name, species, breed, birth_date, weight, color, photo, allergies, notes, tutor_name, phone, email, address, clinic_location, reproductive_status, status, anamnesis, user_id,
+       `INSERT INTO pets (name, species, breed, birth_date, weight, color, photo, allergies, notes, tutor_name, phone, email, address, clinic_location, reproductive_status, status, anamnesis, user_id, organization_id,
         id_number, sex, temperament, habitat, habitat_other, food, food_frequency, water_consumption, urination, lives_with_other_animals, vaccines, deworming, flea_treatment, last_heat, surgeries, other_diseases, medications)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35) RETURNING *`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36) RETURNING *`,
        [p.name, p.species, p.breed, p.birth_date, p.weight, p.color, p.photo,
         JSON.stringify(p.allergies || []), p.notes,
         p.tutor_name || null, p.phone || null, p.email || null, p.address || null, p.clinic_location || null,
         p.reproductive_status || 'intacto', p.status || 'alive', p.anamnesis || null,
-        req.userId,
+        req.userId, req.organizationId || null,
         p.id_number || null, p.sex || null, JSON.stringify(p.temperament || []),
         p.habitat || null, p.habitat_other || null,
         p.food || null, p.food_frequency || null, p.water_consumption || null, p.urination || null,
@@ -541,10 +660,10 @@ app.post('/items/appointments', authMiddleware, async (req, res) => {
     if (!a.patient_name || !String(a.patient_name).trim()) return res.status(400).json({ error: 'El nombre del paciente es obligatorio' });
     if (!a.start_time || isNaN(Date.parse(a.start_time))) return res.status(400).json({ error: 'Fecha de inicio válida es requerida' });
     const result = await pool.query(
-      `INSERT INTO appointments (user_id, patient_name, tutor_phone, start_time, end_time, appointment_type, description)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      `INSERT INTO appointments (user_id, patient_name, tutor_phone, start_time, end_time, appointment_type, description, organization_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
       [req.userId, a.patient_name, a.tutor_phone || null, a.start_time, a.end_time || null,
-       a.appointment_type || 'consulta', a.description || null]
+       a.appointment_type || 'consulta', a.description || null, req.organizationId || null]
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
@@ -620,10 +739,10 @@ app.post('/items/clinical_records', authMiddleware, async (req, res) => {
     const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [r.pet_id, req.userId]);
     if (!ownerCheck.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa mascota' });
     const result = await pool.query(
-      `INSERT INTO clinical_records (pet_id, user_id, record_type, date, veterinarian, details)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      `INSERT INTO clinical_records (pet_id, user_id, record_type, date, veterinarian, details, organization_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
       [r.pet_id, req.userId, r.record_type || 'consulta', r.date || new Date().toISOString(),
-       r.veterinarian || null, JSON.stringify(r.details || {})]
+       r.veterinarian || null, JSON.stringify(r.details || {}), req.organizationId || null]
     );
     // Auto-update pet's last_visit
     await pool.query(
@@ -707,10 +826,10 @@ app.post('/items/inventory', authMiddleware, async (req, res) => {
   try {
     const i = req.body;
     const result = await pool.query(
-      `INSERT INTO inventory (user_id, name, category, current_stock, min_stock, unit, last_restocked)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      `INSERT INTO inventory (user_id, name, category, current_stock, min_stock, unit, last_restocked, organization_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
       [req.userId, i.name, i.category || 'insumo', i.current_stock || 0, i.min_stock || 5,
-       i.unit || 'unidades', i.last_restocked || null]
+       i.unit || 'unidades', i.last_restocked || null, req.organizationId || null]
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
@@ -791,12 +910,12 @@ app.post('/items/prescriptions', authMiddleware, async (req, res) => {
     const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [r.pet_id, req.userId]);
     if (!ownerCheck.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa mascota' });
     const result = await pool.query(
-      `INSERT INTO prescriptions (pet_id, user_id, clinical_record_id, veterinarian_name, clinic_branch, prescription_body, format, status, issued_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      `INSERT INTO prescriptions (pet_id, user_id, clinical_record_id, veterinarian_name, clinic_branch, prescription_body, format, status, issued_at, organization_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
       [r.pet_id, req.userId, r.clinical_record_id || null,
        r.veterinarian_name || null, r.clinic_branch || 'Casa Matriz',
        r.prescription_body, r.format || 'standard', r.status || 'active',
-       r.issued_at || new Date().toISOString()]
+       r.issued_at || new Date().toISOString(), req.organizationId || null]
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
@@ -1043,9 +1162,9 @@ app.post('/items/reminders', authMiddleware, async (req, res) => {
     const petCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [pet_id, req.userId]);
     if (!petCheck.rows.length) return res.status(403).json({ error: 'No autorizado' });
     const result = await pool.query(
-      `INSERT INTO reminders (user_id, pet_id, tutor_email, reminder_type, title, message, scheduled_for)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [req.userId, pet_id, tutor_email, reminder_type, title, message, scheduled_for]
+      `INSERT INTO reminders (user_id, pet_id, tutor_email, reminder_type, title, message, scheduled_for, organization_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [req.userId, pet_id, tutor_email, reminder_type, title, message, scheduled_for, req.organizationId || null]
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
@@ -1087,12 +1206,12 @@ app.post('/items/reminders/auto-generate', authMiddleware, async (req, res) => {
         );
         if (!existing.rows.length) {
           const r = await pool.query(
-            `INSERT INTO reminders (user_id, pet_id, tutor_email, reminder_type, title, message, scheduled_for, related_record_id)
-             VALUES ($1, $2, $3, 'vacuna', $4, $5, $6, $7) RETURNING *`,
+            `INSERT INTO reminders (user_id, pet_id, tutor_email, reminder_type, title, message, scheduled_for, related_record_id, organization_id)
+             VALUES ($1, $2, $3, 'vacuna', $4, $5, $6, $7, $8) RETURNING *`,
             [req.userId, pet_id, pet.email,
              `Refuerzo de ${vaccineName} — ${pet.name}`,
              `Es hora del refuerzo de ${vaccineName} para ${pet.name} (${pet.breed || 'N/D'}). Agende su cita.`,
-             nextDate.toISOString(), rec.id]
+             nextDate.toISOString(), rec.id, req.organizationId || null]
           );
           reminders.push(r.rows[0]);
         }
@@ -1242,8 +1361,8 @@ app.post('/items/hospitalizations', authMiddleware, async (req, res) => {
     const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [pet_id, req.userId]);
     if (!ownerCheck.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa mascota' });
     const result = await pool.query(
-      'INSERT INTO hospitalizations (pet_id, user_id, reason, status, veterinarian, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [pet_id, req.userId, reason, status || 'internado', veterinarian || null, notes || null]
+      'INSERT INTO hospitalizations (pet_id, user_id, reason, status, veterinarian, notes, organization_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [pet_id, req.userId, reason, status || 'internado', veterinarian || null, notes || null, req.organizationId || null]
     );
     res.json({ data: result.rows[0] });
   } catch (error) {
@@ -1308,8 +1427,8 @@ app.post('/items/lab_exams', authMiddleware, async (req, res) => {
     const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [pet_id, req.userId]);
     if (!ownerCheck.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa mascota' });
     const result = await pool.query(
-      'INSERT INTO lab_exams (pet_id, user_id, exam_name, exam_type, status, result, veterinarian) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [pet_id, req.userId, exam_name, exam_type || null, status || 'pendiente', examResult || null, veterinarian || null]
+      'INSERT INTO lab_exams (pet_id, user_id, exam_name, exam_type, status, result, veterinarian, organization_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [pet_id, req.userId, exam_name, exam_type || null, status || 'pendiente', examResult || null, veterinarian || null, req.organizationId || null]
     );
     res.json({ data: result.rows[0] });
   } catch (error) {

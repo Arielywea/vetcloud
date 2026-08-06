@@ -19,14 +19,31 @@ export async function clearToken() {
   await AsyncStorage.removeItem('vetcloud_token');
 }
 
-export async function apiAuthLogin(rut: string, password: string) {
+export async function apiAuthLogin(identifier: string, password: string) {
   const res = await fetch(`${API_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ rut, password }),
+    body: JSON.stringify({ identifier, password }),
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || 'Error al iniciar sesión');
+  return json.data;
+}
+
+export async function apiAuthRegister(data: {
+  username: string;
+  email: string;
+  password: string;
+  org_name?: string;
+  org_type?: string;
+}) {
+  const res = await fetch(`${API_URL}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Error al registrar');
   return json.data;
 }
 
