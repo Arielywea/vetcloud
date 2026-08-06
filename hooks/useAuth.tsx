@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { apiAuthLogin, apiAuthMe, apiAuthUpdateProfile, getToken, setToken, clearToken } from '../services/auth';
+import { apiAuthLogin, apiAuthRegister, apiAuthMe, apiAuthUpdateProfile, getToken, setToken, clearToken } from '../services/auth';
 
 interface User {
   id: string;
   rut: string;
+  username: string;
   name: string;
   email: string | null;
   role: string;
+  organization_id: number | null;
   theme_preference: 'light' | 'dark';
   color_palette: string | null;
   clinic_name: string | null;
@@ -23,7 +25,8 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAuthenticated: boolean;
-  login: (rut: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
+  register: (data: { username: string; email: string; password: string; org_name?: string; org_type?: string }) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Record<string, any>) => Promise<void>;
 }
@@ -33,6 +36,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   isAuthenticated: false,
   login: async () => {},
+  register: async () => {},
   logout: async () => {},
   updateProfile: async () => {},
 });
@@ -56,8 +60,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { checkSession(); }, [checkSession]);
 
-  const login = async (rut: string, password: string) => {
-    const result = await apiAuthLogin(rut, password);
+  const login = async (identifier: string, password: string) => {
+    const result = await apiAuthLogin(identifier, password);
+    await setToken(result.token);
+    setUser(result.user);
+  };
+
+  const register = async (data: { username: string; email: string; password: string; org_name?: string; org_type?: string }) => {
+    const result = await apiAuthRegister(data);
     await setToken(result.token);
     setUser(result.user);
   };
@@ -73,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, register, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

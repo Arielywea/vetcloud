@@ -80,11 +80,13 @@ export interface DirectusPet {
   created_at: string;
   updated_at: string;
   last_visit: string | null;
+  organization_id: number | null;
 }
 
 export interface Appointment {
   id: string;
   user_id: string;
+  organization_id: number | null;
   patient_name: string;
   tutor_phone: string | null;
   start_time: string;

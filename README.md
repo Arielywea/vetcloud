@@ -83,9 +83,9 @@ Migraciones disponibles en `scripts/`:
 node scripts/seed-users.js
 ```
 
-Usuarios por defecto:
-- **Ariel** — RUT: `21293992-7`, Password: `1245`
-- **Paz Quintana** — RUT: `21392885-6`, Password: `1245`
+Los passwords se generan aleatoriamente al ejecutar el script. Se imprimen en consola — guardalos.
+
+Alternativamente, podés crear cuentas directamente desde la pantalla de registro de la app.
 
 ### 5. Sembrar enfermedades
 
@@ -208,9 +208,9 @@ vet-cloud/
 
 Variables de entorno en Vercel:
 - `DATABASE_URL` — Neon PostgreSQL connection string
-- `JWT_SECRET` — Secreto JWT
-- `SMTP_EMAIL` — noreply.vetcloud@gmail.com
-- `SMTP_PASSWORD` — Contraseña de aplicación Gmail
+- `JWT_SECRET` — Secreto JWT (generar con `openssl rand -hex 32`)
+- `SMTP_EMAIL` — Email para envío de notificaciones
+- `SMTP_PASSWORD` — Contraseña de aplicación del email configurado
 
 ## Seguridad
 
