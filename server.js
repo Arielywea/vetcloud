@@ -202,7 +202,7 @@ app.post('/auth/register', async (req, res) => {
       res.status(201).json({
         data: {
           token,
-          user: { id: user.id, username: user.username, name: user.name, email: user.email, role: user.role, organization_id: user.organization_id },
+          user: { id: user.id, username: user.username, name: user.name, email: user.email, role: user.role, organization_id: user.organization_id, rut: user.rut || null },
         },
       });
     } catch (err) {
@@ -215,6 +215,7 @@ app.post('/auth/register', async (req, res) => {
     if (err.code === '23505') {
       return res.status(409).json({ error: 'El usuario o correo ya esta registrado' });
     }
+    console.error('[REGISTER ERROR]', JSON.stringify({ message: err.message, code: err.code, detail: err.detail, stack: err.stack?.split('\n').slice(0,3) }));
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1567,6 +1568,141 @@ app.get('/stats/record-types', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Error fetching record types:', error);
     res.status(500).json({ error: 'Failed to fetch record types' });
+  }
+});
+
+// ─── VITAL MEASUREMENTS ───────────────────────────────
+app.get('/vital-measurements', authMiddleware, async (req, res) => {
+  try {
+    const { pet_id } = req.query;
+    let query = 'SELECT vm.*, p.name as pet_name FROM vital_measurements vm LEFT JOIN pets p ON vm.pet_id = p.id WHERE vm.user_id = $1';
+    const params = [req.userId];
+    if (pet_id && isValidUUID(pet_id)) {
+      query += ' AND vm.pet_id = $2';
+      params.push(pet_id);
+    }
+    query += ' ORDER BY vm.recorded_at DESC LIMIT 200';
+    const result = await pool.query(query, params);
+    res.json({ data: result.rows });
+  } catch (error) {
+    console.error('Error fetching vital measurements:', error);
+    res.status(500).json({ error: 'Failed to fetch vital measurements' });
+  }
+});
+
+app.post('/vital-measurements', authMiddleware, async (req, res) => {
+  try {
+    const allowed = ['pet_id', 'weight', 'temperature', 'heart_rate', 'respiratory_rate', 'blood_pressure', 'spo2', 'mucous_membranes', 'hydration', 'body_condition', 'notes'];
+    const data = sanitizeColumns(allowed, req.body);
+    if (!data.pet_id || !isValidUUID(data.pet_id)) {
+      return res.status(400).json({ error: 'pet_id requerido y debe ser UUID valido' });
+    }
+    const result = await pool.query(
+      'INSERT INTO vital_measurements (pet_id, user_id, organization_id, weight, temperature, heart_rate, respiratory_rate, blood_pressure, spo2, mucous_membranes, hydration, body_condition, notes, recorded_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *',
+      [data.pet_id, req.userId, req.organizationId, data.weight || null, data.temperature || null, data.heart_rate || null, data.respiratory_rate || null, data.blood_pressure || null, data.spo2 || null, data.mucous_membranes || null, data.hydration || null, data.body_condition || null, data.notes || null, req.userId]
+    );
+    res.status(201).json({ data: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating vital measurement:', error);
+    res.status(500).json({ error: 'Failed to create vital measurement' });
+  }
+});
+
+// ─── PAYMENTS ─────────────────────────────────────────
+app.get('/payments', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT py.*, p.name as pet_name FROM payments py LEFT JOIN pets p ON py.pet_id = p.id WHERE py.organization_id = $1 ORDER BY py.paid_at DESC LIMIT 200',
+      [req.organizationId]
+    );
+    res.json({ data: result.rows });
+  } catch (error) {
+    console.error('Error fetching payments:', error);
+    res.status(500).json({ error: 'Failed to fetch payments' });
+  }
+});
+
+app.post('/payments', authMiddleware, async (req, res) => {
+  try {
+    const allowed = ['appointment_id', 'pet_id', 'amount', 'method', 'description'];
+    const data = sanitizeColumns(allowed, req.body);
+    if (!data.amount || isNaN(parseFloat(data.amount))) {
+      return res.status(400).json({ error: 'amount requerido y debe ser numerico' });
+    }
+    const validMethods = ['efectivo', 'debito', 'credito', 'transferencia', 'otro'];
+    if (data.method && !validMethods.includes(data.method)) {
+      return res.status(400).json({ error: 'method invalido. Use: ' + validMethods.join(', ') });
+    }
+    const result = await pool.query(
+      'INSERT INTO payments (organization_id, user_id, appointment_id, pet_id, amount, method, description) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
+      [req.organizationId, req.userId, data.appointment_id || null, data.pet_id || null, parseFloat(data.amount), data.method || 'efectivo', data.description || null]
+    );
+    res.status(201).json({ data: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating payment:', error);
+    res.status(500).json({ error: 'Failed to create payment' });
+  }
+});
+
+// ─── REPORTS ──────────────────────────────────────────
+app.get('/reports/summary', authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.organizationId;
+    const [patients, appointments, payments, records] = await Promise.all([
+      pool.query('SELECT COUNT(*)::int as total FROM pets WHERE organization_id = $1', [orgId]),
+      pool.query(`SELECT COUNT(*)::int as total, COUNT(CASE WHEN status = 'completada' THEN 1 END)::int as completed FROM appointments WHERE organization_id = $1 AND start_time >= date_trunc('month', now())`, [orgId]),
+      pool.query('SELECT COALESCE(SUM(amount),0)::numeric as total, COUNT(*)::int as count FROM payments WHERE organization_id = $1 AND paid_at >= date_trunc(\'month\', now())', [orgId]),
+      pool.query('SELECT COUNT(*)::int as total FROM clinical_records WHERE user_id = $1 AND created_at >= date_trunc(\'month\', now())', [req.userId]),
+    ]);
+    res.json({
+      data: {
+        patients: patients.rows[0].total,
+        appointments: { total: appointments.rows[0].total, completed: appointments.rows[0].completed },
+        revenue: { total: payments.rows[0].total, count: payments.rows[0].count },
+        records: records.rows[0].total,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching report summary:', error);
+    res.status(500).json({ error: 'Failed to fetch report summary' });
+  }
+});
+
+app.get('/reports/expiring-inventory', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM inventory WHERE organization_id = $1 AND expiration_date IS NOT NULL AND expiration_date <= now() + interval '30 days' ORDER BY expiration_date ASC LIMIT 50",
+      [req.organizationId]
+    );
+    res.json({ data: result.rows });
+  } catch (error) {
+    console.error('Error fetching expiring inventory:', error);
+    res.status(500).json({ error: 'Failed to fetch expiring inventory' });
+  }
+});
+
+// ─── GLOBAL SEARCH ────────────────────────────────────
+app.get('/search', authMiddleware, async (req, res) => {
+  try {
+    const q = req.query.q;
+    if (!q || q.trim().length < 2) {
+      return res.status(400).json({ error: 'Query debe tener al menos 2 caracteres' });
+    }
+    const term = `%${q.trim().toLowerCase()}%`;
+    const [pets, owners] = await Promise.all([
+      pool.query(
+        'SELECT id, name, species, breed, tutor_name, tutor_phone FROM pets WHERE LOWER(name) LIKE $1 OR LOWER(breed) LIKE $1 OR LOWER(tutor_name) LIKE $1 OR tutor_phone LIKE $1 LIMIT 20',
+        [term]
+      ),
+      pool.query(
+        'SELECT DISTINCT tutor_name, tutor_phone FROM pets WHERE LOWER(tutor_name) LIKE $1 OR tutor_phone LIKE $1 LIMIT 20',
+        [term]
+      ),
+    ]);
+    res.json({ data: { pets: pets.rows, owners: owners.rows } });
+  } catch (error) {
+    console.error('Error searching:', error);
+    res.status(500).json({ error: 'Failed to search' });
   }
 });
 

@@ -358,6 +358,19 @@ export const api = {
     update: (id: string, data: any) => apiPatch(`/items/lab_exams/${id}`, data),
     delete: (id: string) => apiDelete(`/items/lab_exams/${id}`),
   },
+  vitals: {
+    list: (petId?: string) => apiGet('/vital-measurements', petId ? { pet_id: petId } : undefined),
+    create: (data: any) => apiPost('/vital-measurements', data),
+  },
+  payments: {
+    list: () => apiGet('/payments'),
+    create: (data: any) => apiPost('/payments', data),
+  },
+  reports: {
+    summary: () => apiGet('/reports/summary'),
+    expiringInventory: () => apiGet('/reports/expiring-inventory'),
+  },
+  search: (q: string) => apiGet('/search', { q }),
   assistant: {
     query: (message: string) => apiPost('/assistant', { message }),
   },

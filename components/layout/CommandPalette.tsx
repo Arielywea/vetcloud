@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import { usePets } from '../../hooks/useDirectus';
+import { directus } from '../../services/directus';
 
 interface CommandPaletteProps {
   visible: boolean;
@@ -30,6 +31,7 @@ export default function CommandPalette({ visible, onClose }: CommandPaletteProps
   const { pets } = usePets();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [remoteResults, setRemoteResults] = useState<{ pets: any[]; owners: any[] }>({ pets: [], owners: [] });
 
   const navigationItems: PaletteItem[] = useMemo(() => [
     { id: 'nav-home', category: 'NAVIGATION', label: 'Inicio', icon: <Home size={18} color={colors.primary} />, route: '/(drawer)' },
@@ -57,8 +59,28 @@ export default function CommandPalette({ visible, onClose }: CommandPaletteProps
     { id: 'act-new-appt', category: 'ACCIONES', label: 'Nueva Cita', icon: <Plus size={18} color={colors.info} />, route: '/(drawer)/agenda' },
   ], [colors.success, colors.info]);
 
-  const allItems = useMemo(() => [...navigationItems, ...patientItems, ...actionItems],
-    [navigationItems, patientItems, actionItems]);
+  useEffect(() => {
+    if (!visible || !query.trim() || query.trim().length < 2) { setRemoteResults({ pets: [], owners: [] }); return; }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await directus.search(query.trim());
+        setRemoteResults(res.data || { pets: [], owners: [] });
+      } catch { setRemoteResults({ pets: [], owners: [] }); }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [query, visible]);
+
+  const allItems = useMemo(() => {
+    const remotePetItems: PaletteItem[] = remoteResults.pets.map((p: any) => ({
+      id: `rp-${p.id}`, category: 'RESULTADOS', label: `${p.name} — ${p.tutor_name || 'Sin tutor'} (${p.tutor_phone || ''})`,
+      icon: <PawPrint size={18} color={colors.primary} />, route: `/pet/${p.id}`,
+    }));
+    const remoteOwnerItems: PaletteItem[] = remoteResults.owners.map((o: any, i: number) => ({
+      id: `ro-${i}`, category: 'PROPIETARIOS', label: `${o.tutor_name} — ${o.tutor_phone || 'Sin telefono'}`,
+      icon: <PawPrint size={18} color={colors.info} />, action: () => { /* could navigate to owner */ },
+    }));
+    return [...navigationItems, ...patientItems, ...actionItems, ...remotePetItems, ...remoteOwnerItems];
+  }, [navigationItems, patientItems, actionItems, remoteResults, colors.primary, colors.info]);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return allItems;

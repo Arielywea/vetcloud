@@ -20,6 +20,8 @@ import WeightChart from '../../components/pet/WeightChart';
 import RecordDetail from '../../components/pet/RecordDetail';
 import PreSurgicalChecklist from '../../components/pet/PreSurgicalChecklist';
 import AlertBanner from '../../components/pet/AlertBanner';
+import VitalSignsForm from '../../components/pet/VitalSignsForm';
+import PaymentForm from '../../components/pet/PaymentForm';
 import VoiceNotes from '../../components/VoiceNotes';
 import DynamicIcon from '../../components/ui/DynamicIcon';
 export default function PetDetailScreen() {
@@ -59,6 +61,8 @@ export default function PetDetailScreen() {
   const [emailTarget, setEmailTarget] = useState<Prescription | null>(null);
   const [emailRecipient, setEmailRecipient] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [showVitals, setShowVitals] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
 
   const counts = useMemo(() => ({
     historial: records.length,
@@ -175,6 +179,8 @@ export default function PetDetailScreen() {
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Historial Completo</Text>
           <View style={styles.headerButtons}>
+            <Button mode="outlined" compact onPress={() => setShowVitals(true)} style={{ marginRight: 8 }}>Signos</Button>
+            <Button mode="outlined" compact onPress={() => setShowPayment(true)} style={{ marginRight: 8 }}>Cobrar</Button>
             <Button mode="outlined" compact onPress={() => openRxModal()} style={{ marginRight: 8 }}>Receta</Button>
             <Button mode="contained" compact onPress={() => setShowRecordModal(true)}>Agregar</Button>
           </View>
@@ -360,6 +366,12 @@ export default function PetDetailScreen() {
           </ScrollView>
         </Modal>
       </Portal>
+
+      {/* VitalSignsForm */}
+      <VitalSignsForm petId={id || ''} visible={showVitals} onClose={() => setShowVitals(false)} />
+
+      {/* PaymentForm */}
+      <PaymentForm visible={showPayment} onClose={() => setShowPayment(false)} petId={id} />
 
       {/* Dialogs */}
       <Portal>
