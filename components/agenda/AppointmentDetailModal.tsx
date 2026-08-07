@@ -93,7 +93,7 @@ export default function AppointmentDetailModal({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} style={[styles.container, { backgroundColor: colors.surface }]}>
+        <TouchableOpacity activeOpacity={1} style={[styles.container, { backgroundColor: colors.surface }]} onPress={() => {}}>
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 420,
     borderRadius: RADIUS.lg,
-    overflow: 'hidden',
+    overflow: 'visible',
     ...SHADOWS.md,
   },
   header: {
@@ -349,8 +349,8 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    letterSpacing: 0.5, textTransform: 'uppercase',
     letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   rowValue: {
     fontSize: TYPOGRAPHY.sizes.md,
