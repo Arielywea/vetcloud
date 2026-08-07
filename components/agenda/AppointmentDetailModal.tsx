@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, Modal, TouchableOpacity, Image } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import { APPOINTMENT_TYPE_COLORS, APPOINTMENT_STATUS_COLORS } from '../../constants/colors';
-import { X, Calendar, Stethoscope, Flag, User, Phone, FileText, AlertTriangle, FolderOpen, UserPlus } from 'lucide-react-native';
+import { X, Calendar, Stethoscope, Flag, User, Phone, FileText, AlertTriangle, FolderOpen, UserPlus, ChevronDown, Check } from 'lucide-react-native';
 
 const TYPE_LABELS: Record<string, string> = {
   consulta: 'Consulta',
@@ -39,7 +39,19 @@ interface AppointmentDetailModalProps {
   onClose: () => void;
   onGoToPatient?: () => void;
   onRegisterPatient?: () => void;
+  onStatusChange?: (appointmentId: string, newStatus: string) => void;
 }
+
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  programada: ['confirmada', 'en_espera', 'cancelada', 'ausente'],
+  confirmada: ['en_espera', 'cancelada', 'ausente'],
+  pendiente: ['en_espera', 'cancelada', 'ausente'],
+  en_espera: ['en_consulta', 'cancelada'],
+  en_consulta: ['completada'],
+  completada: [],
+  cancelada: [],
+  ausente: [],
+};
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -62,8 +74,12 @@ export default function AppointmentDetailModal({
   onClose,
   onGoToPatient,
   onRegisterPatient,
+  onStatusChange,
 }: AppointmentDetailModalProps) {
   const { colors } = useTheme();
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+
+  useEffect(() => { setStatusDropdownOpen(false); }, [appointment?.id]);
 
   if (!appointment) return null;
 
@@ -71,6 +87,8 @@ export default function AppointmentDetailModal({
   const status = APPOINTMENT_STATUS_COLORS[appointment.status] || APPOINTMENT_STATUS_COLORS.programada;
   const speciesEmoji = SPECIES_EMOJI[appointment.petSpecies || ''] || '';
   const isRegistered = !!appointment.pet_id;
+  const validStatuses = VALID_TRANSITIONS[appointment.status] || [];
+  const canChangeStatus = validStatuses.length > 0 && onStatusChange;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -139,10 +157,50 @@ export default function AppointmentDetailModal({
               <Flag size={18} color={colors.textSecondary} />
               <View style={styles.rowText}>
                 <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>Estado</Text>
-                <View style={styles.statusBadge}>
-                  <View style={[styles.statusDot, { backgroundColor: status.color }]} />
-                  <Text style={[styles.rowValue, { color: status.color }]} numberOfLines={1}>{status.label}</Text>
-                </View>
+                {canChangeStatus ? (
+                  <View>
+                    <TouchableOpacity
+                      style={[styles.statusDropdown, { backgroundColor: status.color + '15', borderColor: status.color + '40' }]}
+                      onPress={() => setStatusDropdownOpen(!statusDropdownOpen)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.statusBadge}>
+                        <View style={[styles.statusDot, { backgroundColor: status.color }]} />
+                        <Text style={[styles.rowValue, { color: status.color }]} numberOfLines={1}>{status.label}</Text>
+                      </View>
+                      <ChevronDown size={16} color={status.color} style={{ transform: [{ rotate: statusDropdownOpen ? '180deg' : '0deg' }] }} />
+                    </TouchableOpacity>
+                    {statusDropdownOpen && (
+                      <View style={[styles.statusMenu, { backgroundColor: colors.surface, borderColor: colors.border }, SHADOWS.lg]}>
+                        {validStatuses.map((s) => {
+                          const sData = APPOINTMENT_STATUS_COLORS[s] || APPOINTMENT_STATUS_COLORS.programada;
+                          return (
+                            <TouchableOpacity
+                              key={s}
+                              style={[styles.statusOption, { borderBottomColor: colors.border + '40' }]}
+                              onPress={() => {
+                                setStatusDropdownOpen(false);
+                                onStatusChange!(appointment.id, s);
+                              }}
+                              activeOpacity={0.6}
+                            >
+                              <View style={styles.statusOptionLeft}>
+                                <View style={[styles.statusDot, { backgroundColor: sData.color }]} />
+                                <Text style={[styles.statusOptionLabel, { color: colors.text }]}>{sData.label}</Text>
+                              </View>
+                              {appointment.status === s && <Check size={16} color={colors.primary} />}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    )}
+                  </View>
+                ) : (
+                  <View style={styles.statusBadge}>
+                    <View style={[styles.statusDot, { backgroundColor: status.color }]} />
+                    <Text style={[styles.rowValue, { color: status.color }]} numberOfLines={1}>{status.label}</Text>
+                  </View>
+                )}
               </View>
             </View>
 
@@ -317,6 +375,44 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+  },
+  statusDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: RADIUS.sm,
+    borderWidth: 1,
+  },
+  statusMenu: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    marginTop: 4,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    zIndex: 1000,
+    overflow: 'hidden',
+  },
+  statusOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  statusOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statusOptionLabel: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   unregisteredBanner: {
     flexDirection: 'row',
