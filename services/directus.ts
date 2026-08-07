@@ -77,6 +77,8 @@ export interface DirectusPet {
   areneros: string | null;
   vital_signs: { temperature?: number; heart_rate?: number; respiratory_rate?: number; blood_pressure?: string; spo2?: number; mucous_membranes?: string; hydration?: string; body_condition?: string } | null;
   hallazgos_examen_fisico: string | null;
+  pre_diagnostico: string | null;
+  base_diseases: string[];
   created_at: string;
   updated_at: string;
   last_visit: string | null;

@@ -100,6 +100,21 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
               {pet.flea_treatment && renderField('shield-bug', 'Antipulgas', pet.flea_treatment, colors.warning)}
               {pet.last_heat && renderField('calendar-heart', 'Ultimo celo', pet.last_heat)}
               {pet.other_diseases && renderField('hospital-box-outline', 'Enfermedades previas', pet.other_diseases, colors.warning)}
+              {pet.base_diseases && pet.base_diseases.length > 0 && (
+                <View style={styles.fieldBlock}>
+                  <View style={styles.fieldHeader}>
+                    <DynamicIcon name="medical-bag" size={14} color={colors.warning} />
+                    <Text style={[styles.fieldLabel, { color: colors.warning }]}>Enfermedades de base</Text>
+                  </View>
+                  <View style={styles.chipRow}>
+                    {pet.base_diseases.map((d: string, i: number) => (
+                      <View key={i} style={[styles.chip, { backgroundColor: colors.warning + '15', borderColor: colors.warning }]}>
+                        <Text style={[styles.chipText, { color: colors.warning }]}>{d}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
               {pet.surgeries && renderField('scissors-cutting', 'Cirugias previas', pet.surgeries, colors.error)}
               {pet.medications && renderField('pill', 'Medicamentos actuales', pet.medications, colors.info)}
               {pet.allergies && pet.allergies.length > 0 && (
@@ -123,6 +138,11 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
           {/* Anamnesis */}
           {pet.anamnesis && renderSubSection('Anamnesis', 'stethoscope', colors.primary, anamnesisExpanded, () => setAnamnesisExpanded(!anamnesisExpanded), (
             <Text style={[styles.fieldValue, { color: colors.text }]}>{pet.anamnesis}</Text>
+          ))}
+
+          {/* Pre-diagnóstico */}
+          {pet.pre_diagnostico && renderSubSection('Pre-diagnóstico', 'clipboard-check-outline', colors.info, false, null, (
+            <Text style={[styles.fieldValue, { color: colors.text }]}>{pet.pre_diagnostico}</Text>
           ))}
 
           {/* Constantes fisiologicas */}
@@ -168,7 +188,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
           {pet.notes && renderField('note-text-outline', 'Notas', pet.notes, colors.textSecondary)}
 
           {/* Empty state */}
-          {!pet.motivo_consulta && !pet.anamnesis && (!pet.allergies || pet.allergies.length === 0) && !pet.habitat && !pet.food && !pet.vaccines && !pet.surgeries && !pet.medications && !pet.notes && !pet.vital_signs && !pet.hallazgos_examen_fisico && (
+          {!pet.motivo_consulta && !pet.anamnesis && (!pet.allergies || pet.allergies.length === 0) && !pet.habitat && !pet.food && !pet.vaccines && !pet.surgeries && !pet.medications && !pet.notes && !pet.vital_signs && !pet.hallazgos_examen_fisico && !pet.pre_diagnostico && (!pet.base_diseases || pet.base_diseases.length === 0) && (
             <View style={styles.emptyState}>
               <RoundTableIcon size={48} color={colors.textLight} accentColor="#C9A22740" />
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Sin datos clinicos iniciales registrados</Text>

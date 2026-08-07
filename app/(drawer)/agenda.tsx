@@ -136,11 +136,7 @@ function AgendaContent() {
 
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
     try {
-      await api(`/items/appointments/${appointmentId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      await api.appointments.update(appointmentId, { status: newStatus });
       refetch();
     } catch (err: any) {
       console.error('Failed to change status:', err?.message || err);
