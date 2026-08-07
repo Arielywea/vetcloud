@@ -244,21 +244,22 @@ function AgendaContent() {
         onClose={closeContextMenu}
       />
 
-      <AppointmentDetailModal
-        visible={detailModal.visible}
-        appointment={detailModal.appointment}
-        onClose={() => setDetailModal({ visible: false, appointment: null })}
-        onGoToPatient={() => {
-          if (detailModal.appointment?.pet_id) {
-            router.push(`/pet/${detailModal.appointment.pet_id}`);
-          }
-          setDetailModal({ visible: false, appointment: null });
-        }}
-        onRegisterPatient={() => {
-          router.push({ pathname: '/(drawer)/add-paciente', params: { prefillName: detailModal.appointment?.patient_name || '' } });
-          setDetailModal({ visible: false, appointment: null });
-        }}
-      />
+<AppointmentDetailModal
+          visible={detailModal.visible}
+          appointment={detailModal.appointment}
+          onClose={() => setDetailModal({ visible: false, appointment: null })}
+          onGoToPatient={() => {
+            if (detailModal.appointment?.pet_id) {
+              router.push(`/pet/${detailModal.appointment.pet_id}`);
+            }
+            setDetailModal({ visible: false, appointment: null });
+          }}
+          onRegisterPatient={() => {
+            router.push({ pathname: '/(drawer)/add-paciente', params: { prefillName: detailModal.appointment?.patient_name || '' } });
+            setDetailModal({ visible: false, appointment: null });
+          }}
+          onStatusChange={handleStatusChange}
+        />
 
       <AppointmentCreationModal
         visible={creationModal.visible}
