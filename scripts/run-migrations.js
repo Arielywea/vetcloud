@@ -13,6 +13,9 @@ const MIGRATIONS = [
   '002_auth_overhaul.sql',
   '003_multi_tenancy.sql',
   '004_appointment_lifecycle.sql',
+  '005_vital_measurements.sql',
+  '006_inventory_expiration_payments.sql',
+  '007_make_rut_nullable.sql',
 ];
 
 async function runMigrations() {
