@@ -137,6 +137,10 @@ function AgendaContent() {
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
     try {
       await api.appointments.update(appointmentId, { status: newStatus });
+      setDetailModal(prev => prev.appointment?.id === appointmentId
+        ? { ...prev, appointment: { ...prev.appointment, status: newStatus } }
+        : prev
+      );
       refetch();
     } catch (err: any) {
       console.error('Failed to change status:', err?.message || err);
