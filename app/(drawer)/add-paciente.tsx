@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Alert, useWindowDimensions } from 'react-native';
 import { Text, TextInput, Button, Menu, Dialog, Portal } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Check, UserRound, Camera, Dog, Cat, Mars, Venus, Stethoscope, ShieldCheck, ChevronUp, ChevronDown, CheckSquare, Square, CircleDot, Circle, FileEdit, ImagePlus } from 'lucide-react-native';
+import { Check, UserRound, Camera, Dog, Cat, Mars, Venus, Stethoscope, ShieldCheck, ChevronUp, ChevronDown, CheckSquare, Square, CircleDot, Circle, FileEdit, ImagePlus, ClipboardCheck } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { usePets } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -87,6 +87,18 @@ export default function AddPacienteScreen() {
   const [surgeries, setSurgeries] = useState('');
   const [otherDiseases, setOtherDiseases] = useState('');
   const [medications, setMedications] = useState('');
+
+  // Pre-diagnóstico
+  const [preDiagnostico, setPreDiagnostico] = useState('');
+
+  // Enfermedades de base (chips)
+  const BASE_DISEASE_OPTIONS = [
+    'Diabetes', 'Artritis', 'Cardiopatía', 'Renal crónica', 'Hepática',
+    'Epilepsia', 'Hipotiroidismo', 'Hipertiroidismo', 'Asma / BRC', 'Dermatitis',
+    'Oncológica', 'Dental', 'Obesidad', 'Glaucoma', 'Anemia',
+  ];
+  const [baseDiseases, setBaseDiseases] = useState<string[]>([]);
+  const [baseDiseasesOther, setBaseDiseasesOther] = useState('');
 
   // Constantes fisiológicas
   const [vitalTemp, setVitalTemp] = useState('');
@@ -193,6 +205,8 @@ export default function AddPacienteScreen() {
         other_diseases: otherDiseases.trim() || null,
         medications: medications.trim() || null,
         hallazgos_examen_fisico: hallazgosExamenFisico.trim() || null,
+        pre_diagnostico: preDiagnostico.trim() || null,
+        base_diseases: [...baseDiseases, ...(baseDiseasesOther.trim() ? [baseDiseasesOther.trim()] : [])],
         vital_signs: (vitalTemp || vitalFC || vitalFR || vitalPA || vitalSpO2 || vitalMucosas || vitalHidratacion || vitalCondicionCorporal) ? {
           temperature: vitalTemp ? parseFloat(vitalTemp) : undefined,
           heart_rate: vitalFC ? parseInt(vitalFC) : undefined,
@@ -699,6 +713,55 @@ export default function AddPacienteScreen() {
         />
       </View>
 
+      {/* Section D.5 — Pre-diagnóstico */}
+      <View style={[styles.card, { backgroundColor: colors.surface }]}>
+        <View style={styles.collapsibleTitleRow}>
+          <ClipboardCheck size={18} color={colors.info} />
+          <Text style={[styles.cardTitle, { color: colors.info, marginBottom: 0 }]}>Pre-diagnóstico</Text>
+        </View>
+        <Text style={[styles.fieldHint, { color: colors.textSecondary }]}>Enfermedades de base conocidas y sospecha diagnóstica</Text>
+
+        <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Enfermedades de base</Text>
+        <View style={styles.chipWrap}>
+          {BASE_DISEASE_OPTIONS.map((d) => {
+            const selected = baseDiseases.includes(d);
+            return (
+              <TouchableOpacity
+                key={d}
+                onPress={() => setBaseDiseases(prev => selected ? prev.filter(x => x !== d) : [...prev, d])}
+                style={[styles.chip, { borderColor: selected ? colors.warning : colors.border, backgroundColor: selected ? colors.warning + '18' : 'transparent' }]}
+              >
+                <Text style={[styles.chipText, { color: selected ? colors.warning : colors.textSecondary }]}>{d}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <TextInput
+          label="Otras enfermedades"
+          value={baseDiseasesOther}
+          onChangeText={setBaseDiseasesOther}
+          mode="outlined"
+          placeholder="Ej: Síndrome de Cushing, mielopatía..."
+          style={[styles.input, { backgroundColor: colors.surface }]}
+          outlineColor={colors.border}
+          activeOutlineColor={colors.primary}
+        />
+
+        <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginTop: SPACING.md }]}>Pre-diagnóstico / Sospecha</Text>
+        <TextInput
+          label="Pre-diagnóstico"
+          value={preDiagnostico}
+          onChangeText={setPreDiagnostico}
+          mode="outlined"
+          multiline
+          numberOfLines={3}
+          placeholder="Sospecha diagnóstica, diferencias clínicas..."
+          style={[styles.input, { backgroundColor: colors.surface }]}
+          outlineColor={colors.border}
+          activeOutlineColor={colors.primary}
+        />
+      </View>
+
       {/* Section E — Examen físico */}
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={() => setExamenExpanded(!examenExpanded)} style={styles.collapsibleHeader}>
@@ -817,6 +880,10 @@ export default function AddPacienteScreen() {
             {medications ? <SummaryItem label="Medicamentos" value={medications} colors={colors} /> : null}
             <SummaryItem label="Anamnesis" value={anamnesis || '-'} colors={colors} />
             {hallazgosExamenFisico ? <SummaryItem label="Examen físico" value={hallazgosExamenFisico} colors={colors} /> : null}
+            {baseDiseases.length > 0 || baseDiseasesOther ? (
+              <SummaryItem label="Enfermedades de base" value={[...baseDiseases, ...(baseDiseasesOther ? [baseDiseasesOther] : [])].join(', ')} colors={colors} />
+            ) : null}
+            {preDiagnostico ? <SummaryItem label="Pre-diagnóstico" value={preDiagnostico} colors={colors} /> : null}
           </View>
         </View>
       </View>
@@ -1056,5 +1123,27 @@ const styles = StyleSheet.create({
   },
   breedOptionText: {
     fontSize: TYPOGRAPHY.sizes.sm,
+  },
+
+  // Chips for base diseases
+  chipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.xs,
+    marginBottom: SPACING.sm,
+  },
+  chip: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs + 2,
+    borderRadius: RADIUS.full,
+    borderWidth: 1.5,
+  },
+  chipText: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    fontWeight: TYPOGRAPHY.weights.semibold,
+  },
+  fieldHint: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    marginBottom: SPACING.md,
   },
 });

@@ -16,6 +16,7 @@ const MIGRATIONS = [
   '005_vital_measurements.sql',
   '006_inventory_expiration_payments.sql',
   '007_make_rut_nullable.sql',
+  '008_pre_diagnostico_base_diseases.sql',
 ];
 
 async function runMigrations() {
