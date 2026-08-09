@@ -158,7 +158,7 @@ export default function AppointmentDetailModal({
               <View style={styles.rowText}>
                 <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>Estado</Text>
                 {canChangeStatus ? (
-                  <View>
+                  <>
                     <TouchableOpacity
                       style={[styles.statusDropdown, { backgroundColor: status.color + '15', borderColor: status.color + '40' }]}
                       onPress={() => setStatusDropdownOpen(!statusDropdownOpen)}
@@ -171,7 +171,7 @@ export default function AppointmentDetailModal({
                       <ChevronDown size={16} color={status.color} style={{ transform: [{ rotate: statusDropdownOpen ? '180deg' : '0deg' }] }} />
                     </TouchableOpacity>
                     {statusDropdownOpen && (
-                      <View style={[styles.statusMenu, { backgroundColor: colors.surface, borderColor: colors.border }, SHADOWS.lg]}>
+                      <View style={[styles.statusMenu, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                         {validStatuses.map((s) => {
                           const sData = APPOINTMENT_STATUS_COLORS[s] || APPOINTMENT_STATUS_COLORS.programada;
                           return (
@@ -194,7 +194,7 @@ export default function AppointmentDetailModal({
                         })}
                       </View>
                     )}
-                  </View>
+                  </>
                 ) : (
                   <View style={styles.statusBadge}>
                     <View style={[styles.statusDot, { backgroundColor: status.color }]} />
@@ -387,14 +387,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   statusMenu: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    marginTop: 4,
+    marginTop: 6,
     borderRadius: RADIUS.md,
     borderWidth: 1,
-    zIndex: 1000,
     overflow: 'hidden',
   },
   statusOption: {
