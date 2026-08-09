@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Image, TouchableOpacity, Linking } from 'react-native';
 import { Text, Divider } from 'react-native-paper';
 import { ClinicalRecord } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -150,26 +150,50 @@ export default function RecordDetail({ record }: RecordDetailProps) {
         </View>
       ))}
 
-      {/* Pre-Surgical Checklist */}
-      {d.pre_surgical_checklist && (
+      {/* Cirugia: Procedimiento, Descripcion, Postoperatorio, Archivos */}
+      {(d.procedimiento || d.descripcion || d.postoperatorio || d.files?.length > 0) && (
         <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={[styles.sectionHeader, { borderBottomColor: colors.border }]}>
-            <View style={[styles.sectionIcon, { backgroundColor: colors.success + '20' }]}>
-              <DynamicIcon name="clipboard-check-outline" size={16} color={colors.success} />
+            <View style={[styles.sectionIcon, { backgroundColor: colors.error + '20' }]}>
+              <DynamicIcon name="scissors-cutting" size={16} color={colors.error} />
             </View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Checklist Pre-Cirugia</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Datos de Cirugia</Text>
           </View>
-          {d.pre_surgical_checklist.items?.map((item: any, i: number) => (
-            <View key={i} style={[styles.checklistItem, { borderBottomColor: colors.border }]}>
-              <DynamicIcon name={item.checked ? 'check-circle' : 'circle-outline'} size={16} color={item.checked ? colors.success : colors.textLight} />
-              <Text style={[styles.checklistLabel, { color: item.checked ? colors.textSecondary : colors.text, textDecorationLine: item.checked ? 'line-through' : 'none' }]}>{item.label}</Text>
+          {d.procedimiento && (
+            <View style={styles.cirugiaField}>
+              <Text style={[styles.cirugiaLabel, { color: colors.textSecondary }]}>Procedimiento</Text>
+              <Text style={[styles.cirugiaValue, { color: colors.text }]}>{d.procedimiento}</Text>
             </View>
-          ))}
-          {d.pre_surgical_checklist.cirujano && (
-            <Text style={[styles.checklistMeta, { color: colors.textSecondary }]}>Cirujano: {d.pre_surgical_checklist.cirujano}</Text>
           )}
-          {d.pre_surgical_checklist.anestesista && (
-            <Text style={[styles.checklistMeta, { color: colors.textSecondary }]}>Anestesista: {d.pre_surgical_checklist.anestesista}</Text>
+          {d.descripcion && (
+            <View style={styles.cirugiaField}>
+              <Text style={[styles.cirugiaLabel, { color: colors.textSecondary }]}>Descripcion</Text>
+              <Text style={[styles.cirugiaContent, { color: colors.text }]}>{d.descripcion}</Text>
+            </View>
+          )}
+          {d.postoperatorio && (
+            <View style={styles.cirugiaField}>
+              <Text style={[styles.cirugiaLabel, { color: colors.textSecondary }]}>Postoperatorio</Text>
+              <Text style={[styles.cirugiaContent, { color: colors.text }]}>{d.postoperatorio}</Text>
+            </View>
+          )}
+          {d.files?.length > 0 && (
+            <View style={styles.cirugiaField}>
+              <Text style={[styles.cirugiaLabel, { color: colors.textSecondary }]}>Archivos</Text>
+              <View style={styles.filesRow}>
+                {d.files.map((fileUrl: string, idx: number) => (
+                  <TouchableOpacity key={idx} style={[styles.fileThumbContainer, { borderColor: colors.border }]} onPress={() => Linking.openURL(fileUrl)}>
+                    {fileUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                      <Image source={{ uri: fileUrl }} style={styles.fileThumb} />
+                    ) : (
+                      <View style={[styles.fileThumb, styles.fileThumbPdf, { backgroundColor: colors.errorContainer }]}>
+                        <DynamicIcon name="file-pdf-box" size={24} color={colors.error} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
           )}
         </View>
       )}
@@ -255,22 +279,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
   },
-  checklistItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
+  cirugiaField: {
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderBottomWidth: 1,
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
-  checklistLabel: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    flex: 1,
-  },
-  checklistMeta: {
+  cirugiaLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    fontStyle: 'italic',
+    fontWeight: TYPOGRAPHY.weights.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  cirugiaValue: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: TYPOGRAPHY.weights.semibold,
+  },
+  cirugiaContent: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    lineHeight: TYPOGRAPHY.lineHeights.relaxed * TYPOGRAPHY.sizes.sm,
+  },
+  filesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+  },
+  fileThumbContainer: {
+    borderRadius: RADIUS.sm,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  fileThumb: {
+    width: 64,
+    height: 64,
+  },
+  fileThumbPdf: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
