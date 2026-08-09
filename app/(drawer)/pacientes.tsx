@@ -108,7 +108,7 @@ export default function PacientesScreen() {
   }, []);
 
   const handleExport = useCallback(() => {
-    exportCsv(filteredPatients, 'pacientes');
+    exportCsv(filteredPatients, 'pacientes', { includeMedical: true });
   }, [filteredPatients]);
 
   const handleDelete = useCallback(async () => {
