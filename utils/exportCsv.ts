@@ -7,6 +7,17 @@ function formatDate(dateStr: string | null): string {
   return new Date(dateStr).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function calculateAge(birthDate: string | null): string {
+  if (!birthDate) return 'N/D';
+  const bd = new Date(birthDate);
+  if (isNaN(bd.getTime())) return 'N/D';
+  const months = Math.floor((Date.now() - bd.getTime()) / (30.44 * 24 * 60 * 60 * 1000));
+  const yrs = Math.floor(months / 12);
+  const mos = months % 12;
+  if (yrs > 0) return `${yrs}a ${mos}m`;
+  return `${mos}m`;
+}
+
 function escapeCsv(value: string): string {
   if (value.includes(',') || value.includes('"') || value.includes('\n')) {
     return `"${value.replace(/"/g, '""')}"`;
@@ -14,17 +25,46 @@ function escapeCsv(value: string): string {
   return value;
 }
 
-export async function exportCsv(patients: DirectusPet[], filename: string): Promise<void> {
-  const headers = ['Nombre', 'Especie', 'Raza', 'Propietario', 'Telefono', 'Ultima visita', 'Estado'];
-  const rows = patients.map(p => [
-    p.name,
-    p.species === 'dog' ? 'Canino' : 'Felino',
-    p.breed || 'Sin raza',
-    p.tutor_name || 'Sin propietario',
-    p.phone || 'Sin telefono',
-    formatDate(p.last_visit),
-    isActive(p) ? 'Activo' : 'Inactivo',
-  ].map(escapeCsv).join(','));
+export async function exportCsv(patients: DirectusPet[], filename: string, options?: { includeMedical?: boolean }): Promise<void> {
+  const baseHeaders = [
+    'Nombre', 'Especie', 'Raza', 'Sexo', 'Edad', 'Peso (kg)',
+    'Propietario', 'Telefono', 'Email', 'Direccion',
+    'Ultima visita', 'Estado'
+  ];
+
+  const medicalHeaders = options?.includeMedical ? [
+    'Alergias', 'Enfermedades base', 'Pre-diagnostico', 'Color', 'Esterilizado', 'Notas'
+  ] : [];
+
+  const headers = [...baseHeaders, ...medicalHeaders];
+
+  const rows = patients.map(p => {
+    const base = [
+      p.name,
+      p.species === 'dog' ? 'Canino' : p.species === 'cat' ? 'Felino' : 'N/D',
+      p.breed || 'Sin raza',
+      p.sex === 'macho' ? 'Macho' : p.sex === 'hembra' ? 'Hembra' : 'N/D',
+      calculateAge(p.birth_date || null),
+      p.weight ? String(p.weight) : 'N/D',
+      p.tutor_name || 'Sin propietario',
+      p.phone || 'Sin telefono',
+      p.tutor_email || '',
+      p.address || '',
+      formatDate(p.last_visit),
+      isActive(p) ? 'Activo' : 'Inactivo',
+    ];
+
+    const medical = options?.includeMedical ? [
+      p.allergies || '',
+      p.base_diseases?.join('; ') || '',
+      p.pre_diagnostico || '',
+      p.color || '',
+      p.reproductive_status || '',
+      p.notes || '',
+    ] : [];
+
+    return [...base, ...medical].map(escapeCsv).join(',');
+  });
 
   const csvContent = '\uFEFF' + headers.join(',') + '\n' + rows.join('\n');
 
