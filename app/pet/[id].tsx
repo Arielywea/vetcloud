@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Platform, Alert } from 'react-native';
 import { Text, Button, TextInput, Portal, Modal, Dialog, Divider } from 'react-native-paper';
 
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { usePet, useClinicalRecords, usePrescriptions } from '../../hooks/useDirectus';
-import { api, ClinicalRecord, Prescription } from '../../services/directus';
+import { ClinicalRecord, Prescription } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
 import { calculateAge } from '../../utils/age';
@@ -18,12 +18,15 @@ import RecordTimeline from '../../components/pet/RecordTimeline';
 import PrescriptionList from '../../components/pet/PrescriptionList';
 import WeightChart from '../../components/pet/WeightChart';
 import RecordDetail from '../../components/pet/RecordDetail';
-import PreSurgicalChecklist from '../../components/pet/PreSurgicalChecklist';
 import AlertBanner from '../../components/pet/AlertBanner';
 import VitalSignsForm from '../../components/pet/VitalSignsForm';
 import PaymentForm from '../../components/pet/PaymentForm';
 import VoiceNotes from '../../components/VoiceNotes';
 import DynamicIcon from '../../components/ui/DynamicIcon';
+import { authHeaders } from '../../services/auth';
+import { uploadPetPhoto } from '../../services/cloudinary';
+import * as ImagePicker from 'expo-image-picker';
+
 export default function PetDetailScreen() {
   const { colors } = useTheme();
   const { user } = useAuth();
@@ -65,12 +68,12 @@ export default function PetDetailScreen() {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [showVitals, setShowVitals] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
-  const [showFollowUpModal, setShowFollowUpModal] = useState(false);
-  const [followUpDate, setFollowUpDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16));
-  const [followUpNotes, setFollowUpNotes] = useState('');
-  const [followUpLinkedRecord, setFollowUpLinkedRecord] = useState<ClinicalRecord | null>(null);
-  const [savingFollowUp, setSavingFollowUp] = useState(false);
-  const [recordChecklist, setRecordChecklist] = useState<any>(null);
+
+  const [recordProcedimiento, setRecordProcedimiento] = useState('');
+  const [recordDescripcion, setRecordDescripcion] = useState('');
+  const [recordPostoperatorio, setRecordPostoperatorio] = useState('');
+  const [recordFiles, setRecordFiles] = useState<string[]>([]);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   const counts = useMemo(() => ({
     historial: records.length,
@@ -139,21 +142,29 @@ export default function PetDetailScreen() {
           blood_pressure: recordVitalPA.trim() || undefined,
           spo2: recordVitalSpO2 ? parseInt(recordVitalSpO2) : undefined },
       };
-      if (recordType === 'cirugia' && recordChecklist) {
-        details.pre_surgical_checklist = recordChecklist;
+      if (recordType === 'cirugia') {
+        details.procedimiento = recordProcedimiento.trim() || undefined;
+        details.descripcion = recordDescripcion.trim() || undefined;
+        details.postoperatorio = recordPostoperatorio.trim() || undefined;
+        if (recordFiles.length > 0) details.files = recordFiles;
       }
       await addRecord({
         pet_id: id, record_type: recordType, date: new Date(recordDate).toISOString(),
         veterinarian: recordVet.trim() || null,
         details,
       });
-      setRecordAssessment(''); setRecordPlan(''); setRecordTreatment('');
-      setRecordVet(''); setRecordWeight(''); setRecordMotivoConsulta('');
-      setRecordAnamnesis(''); setRecordHallazgos(''); setRecordVitalTemp('');
-      setRecordVitalFC(''); setRecordVitalFR(''); setRecordVitalPA(''); setRecordVitalSpO2('');
-      setRecordChecklist(null);
+      resetForm();
       setShowRecordModal(false);
     } catch { setErrorDialog('No se pudo guardar el registro'); } finally { setSaving(false); }
+  };
+
+  const resetForm = () => {
+    setRecordAssessment(''); setRecordPlan(''); setRecordTreatment('');
+    setRecordVet(''); setRecordWeight(''); setRecordMotivoConsulta('');
+    setRecordAnamnesis(''); setRecordHallazgos(''); setRecordVitalTemp('');
+    setRecordVitalFC(''); setRecordVitalFR(''); setRecordVitalPA(''); setRecordVitalSpO2('');
+    setRecordProcedimiento(''); setRecordDescripcion(''); setRecordPostoperatorio('');
+    setRecordFiles([]);
   };
 
   const openRxModal = (linkedRecordId?: string) => {
@@ -161,38 +172,29 @@ export default function PetDetailScreen() {
     setRxBranch(''); setRxFormat('standard'); setRxBody(''); setShowRxModal(true);
   };
 
-  const openFollowUpModal = (record?: ClinicalRecord) => {
-    setFollowUpLinkedRecord(record || mostRecentRecord);
-    setFollowUpDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16));
-    setFollowUpNotes(record?.details?.treatment || '');
-    setShowFollowUpModal(true);
-  };
-
-  const handleCreateFollowUp = async () => {
-    if (!pet) return;
-    setSavingFollowUp(true);
+  const handleUploadFile = async () => {
     try {
-      await api.appointments.create({
-        patient_name: pet.name,
-        tutor_phone: pet.owner_phone || null,
-        start_time: new Date(followUpDate).toISOString(),
-        appointment_type: 'control',
-        description: followUpNotes.trim() || `Control post-${followUpLinkedRecord?.record_type || 'consulta'}`,
-        pet_id: pet.id,
-        follow_up_of: followUpLinkedRecord?.id || null,
-        veterinarian: user?.name || null,
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galeria para subir archivos.'); return; }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: false,
+        quality: 0.8,
       });
-      setShowFollowUpModal(false);
-      setFollowUpNotes('');
-      setFollowUpLinkedRecord(null);
-    } catch { setErrorDialog('No se pudo crear el control'); } finally { setSavingFollowUp(false); }
+      if (result.canceled || !result.assets?.[0]) return;
+      setUploadingFile(true);
+      const url = await uploadPetPhoto(result.assets[0].uri);
+      setRecordFiles(prev => [...prev, url]);
+    } catch { Alert.alert('Error', 'No se pudo subir el archivo'); }
+    finally { setUploadingFile(false); }
   };
 
   const handleDownloadPdf = async () => {
     if (!id) return;
     try {
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8055';
-      const response = await fetch(`${baseUrl}/items/pets/${id}/file-pdf`);
+      const headers = await authHeaders();
+      const response = await fetch(`${baseUrl}/items/pets/${id}/file-pdf`, { headers });
       if (!response.ok) throw new Error('Error generating PDF');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -247,7 +249,6 @@ export default function PetDetailScreen() {
             <Button mode="outlined" compact onPress={() => setShowVitals(true)} style={{ marginRight: 8 }}>Signos</Button>
             <Button mode="outlined" compact onPress={() => setShowPayment(true)} style={{ marginRight: 8 }}>Cobrar</Button>
             <Button mode="outlined" compact onPress={() => openRxModal()} style={{ marginRight: 8 }}>Receta</Button>
-            <Button mode="outlined" compact onPress={() => openFollowUpModal()} style={{ marginRight: 8, borderColor: colors.warning }}>Control</Button>
             <Button mode="outlined" compact onPress={handleDownloadPdf} style={{ marginRight: 8, borderColor: colors.info }}>Ficha PDF</Button>
             <Button mode="contained" compact onPress={() => setShowRecordModal(true)}>Agregar</Button>
           </View>
@@ -298,10 +299,38 @@ export default function PetDetailScreen() {
             <Text variant="titleSmall" style={[styles.subTitle, { color: colors.primary }]}>Tratamiento</Text>
             <TextInput label="Tratamiento indicado" value={recordTreatment} onChangeText={setRecordTreatment} mode="outlined" multiline numberOfLines={3} placeholder="Medicamentos, dosis, duracion..." style={styles.input} />
 
-            {/* Pre-Surgical Checklist */}
+            {/* Cirugia: Campos especificos */}
             {recordType === 'cirugia' && (
               <View style={{ marginTop: SPACING.md }}>
-                <PreSurgicalChecklist onChange={(checklistData) => setRecordChecklist(checklistData)} />
+                <Divider style={[styles.rxDivider, { backgroundColor: colors.border }]} />
+                <Text variant="titleSmall" style={[styles.subTitle, { color: colors.error }]}>Datos de Cirugia</Text>
+                <TextInput label="Nombre de procedimiento" value={recordProcedimiento} onChangeText={setRecordProcedimiento} mode="outlined" style={styles.input} placeholder="Ej: Esterilizacion, LDA, Toracotomia..." />
+                <TextInput label="Descripcion del procedimiento" value={recordDescripcion} onChangeText={setRecordDescripcion} mode="outlined" multiline numberOfLines={4} style={styles.input} placeholder="Detalles tecnicos del procedimiento..." />
+                <TextInput label="Indicaciones postoperatorias" value={recordPostoperatorio} onChangeText={setRecordPostoperatorio} mode="outlined" multiline numberOfLines={4} style={styles.input} placeholder="Cuidados, medicacion, controles..." />
+
+                <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Archivos (imagenes / PDF)</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                  {recordFiles.map((fileUrl, idx) => (
+                    <TouchableOpacity key={idx} style={[styles.fileChip, { backgroundColor: colors.primaryContainer, borderColor: colors.border }]} onPress={() => { setRecordFiles(prev => prev.filter((_, i) => i !== idx)); }}>
+                      {fileUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                        <Image source={{ uri: fileUrl }} style={styles.fileThumb} />
+                      ) : (
+                        <DynamicIcon name="file-pdf-box" size={24} color={colors.error} />
+                      )}
+                      <DynamicIcon name="close-circle" size={16} color={colors.error} />
+                    </TouchableOpacity>
+                  ))}
+                  <TouchableOpacity style={[styles.fileUploadBtn, { borderColor: colors.primary }]} onPress={handleUploadFile} disabled={uploadingFile}>
+                    {uploadingFile ? (
+                      <DynamicIcon name="loading" size={20} color={colors.primary} />
+                    ) : (
+                      <>
+                        <DynamicIcon name="plus-circle-outline" size={20} color={colors.primary} />
+                        <Text style={[styles.fileUploadText, { color: colors.primary }]}>Agregar</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
 
@@ -321,11 +350,6 @@ export default function PetDetailScreen() {
               {selectedRecord.veterinarian && <View style={styles.detailRow}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Veterinario:</Text><Text style={[styles.detailValue, { color: colors.text }]}>{selectedRecord.veterinarian}</Text></View>}
               {selectedRecord.details?.weight && <View style={styles.detailRow}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Peso:</Text><Text style={[styles.detailValue, { color: colors.text }]}>{selectedRecord.details.weight} kg</Text></View>}
               <RecordDetail record={selectedRecord} />
-              {selectedRecord.record_type === 'cirugia' && selectedRecord.details?.pre_surgical_checklist && (
-                <View style={{ marginTop: SPACING.md }}>
-                  <PreSurgicalChecklist data={selectedRecord.details.pre_surgical_checklist} readonly />
-                </View>
-              )}
               <View style={styles.detailActions}>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <Button mode="contained" compact onPress={() => { setSelectedRecord(null); openRxModal(selectedRecord.id); }}>Generar Receta</Button>
@@ -337,6 +361,7 @@ export default function PetDetailScreen() {
           )}
         </Modal>
       </Portal>
+
       {/* Modal: Nueva Receta */}
       <Portal>
         <Modal visible={showRxModal} onDismiss={() => setShowRxModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
@@ -444,30 +469,6 @@ export default function PetDetailScreen() {
       {/* PaymentForm */}
       <PaymentForm visible={showPayment} onClose={() => setShowPayment(false)} petId={id} />
 
-      {/* Modal: Crear Control */}
-      <Portal>
-        <Modal visible={showFollowUpModal} onDismiss={() => setShowFollowUpModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
-          <ScrollView>
-            <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Crear Control</Text>
-            {followUpLinkedRecord && (
-              <View style={[styles.followUpInfo, { backgroundColor: colors.primaryContainer, borderColor: colors.border }]}>
-                <Text style={[styles.followUpLabel, { color: colors.textSecondary }]}>Vinculado a:</Text>
-                <Text style={[styles.followUpValue, { color: colors.text }]}>{followUpLinkedRecord.record_type} del {new Date(followUpLinkedRecord.date).toLocaleDateString('es-CL')}</Text>
-                {followUpLinkedRecord.details?.treatment && (
-                  <Text style={[styles.followUpTreatment, { color: colors.textSecondary }]} numberOfLines={2}>Tratamiento: {followUpLinkedRecord.details.treatment}</Text>
-                )}
-              </View>
-            )}
-            <TextInput label="Fecha y hora del control" value={followUpDate} onChangeText={setFollowUpDate} mode="outlined" style={styles.input} />
-            <TextInput label="Notas / Motivo del control" value={followUpNotes} onChangeText={setFollowUpNotes} mode="outlined" multiline numberOfLines={3} style={styles.input} placeholder="Seguimiento de tratamiento, revision post-operatoria..." />
-            <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
-              <Button mode="outlined" onPress={() => setShowFollowUpModal(false)} style={{ flex: 1 }}>Cancelar</Button>
-              <Button mode="contained" onPress={handleCreateFollowUp} style={{ flex: 1 }} loading={savingFollowUp} disabled={savingFollowUp}>Crear Control</Button>
-            </View>
-          </ScrollView>
-        </Modal>
-      </Portal>
-
       {/* Dialogs */}
       <Portal>
         <Dialog visible={!!deleteRecordTarget} onDismiss={() => setDeleteRecordTarget(null)}>
@@ -526,8 +527,8 @@ const styles = StyleSheet.create({
   rxBodyCard: { marginTop: 8, marginBottom: 8, borderRadius: 8, borderWidth: 1, padding: 12 },
   emailHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
   emailPreviewCard: { marginBottom: 12, borderRadius: 8, borderWidth: 1, padding: 12 },
-  followUpInfo: { padding: 12, borderRadius: 8, borderWidth: 1, marginBottom: 16 },
-  followUpLabel: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.bold, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  followUpValue: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, marginBottom: 4 },
-  followUpTreatment: { fontSize: TYPOGRAPHY.sizes.xs, fontStyle: 'italic' },
+  fileChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.sm, borderWidth: 1 },
+  fileThumb: { width: 32, height: 32, borderRadius: 4 },
+  fileUploadBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, borderRadius: RADIUS.sm, borderWidth: 1, borderStyle: 'dashed' },
+  fileUploadText: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold },
 });

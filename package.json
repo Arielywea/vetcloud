@@ -52,7 +52,8 @@
     "react-native-url-polyfill": "^4.0.0",
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "~0.19.13",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.114.0",
