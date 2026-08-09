@@ -188,6 +188,24 @@ export default function PetDetailScreen() {
     } catch { setErrorDialog('No se pudo crear el control'); } finally { setSavingFollowUp(false); }
   };
 
+  const handleDownloadPdf = async () => {
+    if (!id) return;
+    try {
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8055';
+      const response = await fetch(`${baseUrl}/items/pets/${id}/file-pdf`);
+      if (!response.ok) throw new Error('Error generating PDF');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ficha_${pet?.name || 'paciente'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch { setErrorDialog('No se pudo generar el PDF'); }
+  };
+
   const handleSaveRx = async () => {
     if (!rxBody.trim()) { setErrorDialog('El cuerpo de la receta es obligatorio'); return; }
     if (!id) return; setSaving(true);
@@ -230,6 +248,7 @@ export default function PetDetailScreen() {
             <Button mode="outlined" compact onPress={() => setShowPayment(true)} style={{ marginRight: 8 }}>Cobrar</Button>
             <Button mode="outlined" compact onPress={() => openRxModal()} style={{ marginRight: 8 }}>Receta</Button>
             <Button mode="outlined" compact onPress={() => openFollowUpModal()} style={{ marginRight: 8, borderColor: colors.warning }}>Control</Button>
+            <Button mode="outlined" compact onPress={handleDownloadPdf} style={{ marginRight: 8, borderColor: colors.info }}>Ficha PDF</Button>
             <Button mode="contained" compact onPress={() => setShowRecordModal(true)}>Agregar</Button>
           </View>
         </View>

@@ -1136,6 +1136,44 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
   }
 });
 
+// ─── PATIENT FILE PDF ──────────────────────────────────
+app.get('/items/pets/:id/file-pdf', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id || id === 'undefined') return res.status(400).json({ error: 'ID requerido' });
+
+    const petResult = await pool.query('SELECT * FROM pets WHERE id = $1 AND user_id = $2', [id, req.userId]);
+    if (!petResult.rows.length) return res.status(404).json({ error: 'Paciente no encontrado' });
+    const pet = petResult.rows[0];
+
+    const recordsResult = await pool.query(
+      'SELECT * FROM clinical_records WHERE pet_id = $1 AND user_id = $2 ORDER BY date DESC',
+      [id, req.userId]
+    );
+
+    const rxResult = await pool.query(
+      'SELECT * FROM prescriptions WHERE pet_id = $1 AND user_id = $2 ORDER BY issued_at DESC',
+      [id, req.userId]
+    );
+
+    const userResult = await pool.query(
+      'SELECT clinic_name, veterinarian_name, clinic_phone, clinic_address FROM users WHERE id = $1',
+      [req.userId]
+    );
+    const userProfile = userResult.rows[0] || {};
+
+    const { generatePatientFilePdf } = require('./utils/generatePatientFilePdf');
+    const pdfBuffer = await generatePatientFilePdf(pet, recordsResult.rows, rxResult.rows, userProfile);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=ficha_${pet.name.replace(/\s+/g, '_')}.pdf`);
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error('Patient file PDF error:', err);
+    res.status(500).json({ error: 'Error generando PDF' });
+  }
+});
+
 // ─── VET ASSISTANT ──────────────────────────────────────
 app.post('/assistant', authMiddleware, async (req, res) => {
   try {
