@@ -70,6 +70,7 @@ export default function PetDetailScreen() {
   const [followUpNotes, setFollowUpNotes] = useState('');
   const [followUpLinkedRecord, setFollowUpLinkedRecord] = useState<ClinicalRecord | null>(null);
   const [savingFollowUp, setSavingFollowUp] = useState(false);
+  const [recordChecklist, setRecordChecklist] = useState<any>(null);
 
   const counts = useMemo(() => ({
     historial: records.length,
@@ -123,29 +124,34 @@ export default function PetDetailScreen() {
     if (!recordAssessment.trim() && !recordTreatment.trim()) { setErrorDialog('La evaluacion o tratamiento son obligatorios'); return; }
     if (!id) return; setSaving(true);
     try {
+      const details: any = {
+        notes: recordAssessment.trim() || undefined,
+        assessment: recordAssessment.trim() || undefined,
+        plan: recordPlan.trim() || undefined,
+        treatment: recordTreatment.trim() || undefined,
+        weight: recordWeight ? parseFloat(recordWeight) : undefined,
+        motivo_consulta: recordMotivoConsulta.trim() || undefined,
+        anamnesis: recordAnamnesis.trim() || undefined,
+        hallazgos_examen_fisico: recordHallazgos.trim() || undefined,
+        vital_signs: { temperature: recordVitalTemp ? parseFloat(recordVitalTemp) : undefined,
+          heart_rate: recordVitalFC ? parseInt(recordVitalFC) : undefined,
+          respiratory_rate: recordVitalFR ? parseInt(recordVitalFR) : undefined,
+          blood_pressure: recordVitalPA.trim() || undefined,
+          spo2: recordVitalSpO2 ? parseInt(recordVitalSpO2) : undefined },
+      };
+      if (recordType === 'cirugia' && recordChecklist) {
+        details.pre_surgical_checklist = recordChecklist;
+      }
       await addRecord({
         pet_id: id, record_type: recordType, date: new Date(recordDate).toISOString(),
         veterinarian: recordVet.trim() || null,
-        details: {
-          notes: recordAssessment.trim() || undefined,
-          assessment: recordAssessment.trim() || undefined,
-          plan: recordPlan.trim() || undefined,
-          treatment: recordTreatment.trim() || undefined,
-          weight: recordWeight ? parseFloat(recordWeight) : undefined,
-          motivo_consulta: recordMotivoConsulta.trim() || undefined,
-          anamnesis: recordAnamnesis.trim() || undefined,
-          hallazgos_examen_fisico: recordHallazgos.trim() || undefined,
-          vital_signs: { temperature: recordVitalTemp ? parseFloat(recordVitalTemp) : undefined,
-            heart_rate: recordVitalFC ? parseInt(recordVitalFC) : undefined,
-            respiratory_rate: recordVitalFR ? parseInt(recordVitalFR) : undefined,
-            blood_pressure: recordVitalPA.trim() || undefined,
-            spo2: recordVitalSpO2 ? parseInt(recordVitalSpO2) : undefined },
-        },
+        details,
       });
       setRecordAssessment(''); setRecordPlan(''); setRecordTreatment('');
       setRecordVet(''); setRecordWeight(''); setRecordMotivoConsulta('');
       setRecordAnamnesis(''); setRecordHallazgos(''); setRecordVitalTemp('');
       setRecordVitalFC(''); setRecordVitalFR(''); setRecordVitalPA(''); setRecordVitalSpO2('');
+      setRecordChecklist(null);
       setShowRecordModal(false);
     } catch { setErrorDialog('No se pudo guardar el registro'); } finally { setSaving(false); }
   };
@@ -276,7 +282,7 @@ export default function PetDetailScreen() {
             {/* Pre-Surgical Checklist */}
             {recordType === 'cirugia' && (
               <View style={{ marginTop: SPACING.md }}>
-                <PreSurgicalChecklist onChange={(checklistData) => {}} />
+                <PreSurgicalChecklist onChange={(checklistData) => setRecordChecklist(checklistData)} />
               </View>
             )}
 

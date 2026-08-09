@@ -149,6 +149,30 @@ export default function RecordDetail({ record }: RecordDetailProps) {
           )}
         </View>
       ))}
+
+      {/* Pre-Surgical Checklist */}
+      {d.pre_surgical_checklist && (
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={[styles.sectionHeader, { borderBottomColor: colors.border }]}>
+            <View style={[styles.sectionIcon, { backgroundColor: colors.success + '20' }]}>
+              <DynamicIcon name="clipboard-check-outline" size={16} color={colors.success} />
+            </View>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Checklist Pre-Cirugia</Text>
+          </View>
+          {d.pre_surgical_checklist.items?.map((item: any, i: number) => (
+            <View key={i} style={[styles.checklistItem, { borderBottomColor: colors.border }]}>
+              <DynamicIcon name={item.checked ? 'check-circle' : 'circle-outline'} size={16} color={item.checked ? colors.success : colors.textLight} />
+              <Text style={[styles.checklistLabel, { color: item.checked ? colors.textSecondary : colors.text, textDecorationLine: item.checked ? 'line-through' : 'none' }]}>{item.label}</Text>
+            </View>
+          ))}
+          {d.pre_surgical_checklist.cirujano && (
+            <Text style={[styles.checklistMeta, { color: colors.textSecondary }]}>Cirujano: {d.pre_surgical_checklist.cirujano}</Text>
+          )}
+          {d.pre_surgical_checklist.anestesista && (
+            <Text style={[styles.checklistMeta, { color: colors.textSecondary }]}>Anestesista: {d.pre_surgical_checklist.anestesista}</Text>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -230,5 +254,23 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
+  },
+  checklistItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderBottomWidth: 1,
+  },
+  checklistLabel: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    flex: 1,
+  },
+  checklistMeta: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    fontStyle: 'italic',
   },
 });
