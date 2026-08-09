@@ -679,9 +679,9 @@ const APPOINTMENT_TRANSITIONS = {
   pendiente: ['en_espera', 'cancelada', 'ausente'],
   en_espera: ['en_consulta', 'cancelada'],
   en_consulta: ['completada'],
-  completada: [],
-  cancelada: [],
-  ausente: [],
+  completada: ['programada'],
+  cancelada: ['programada'],
+  ausente: ['programada'],
 };
 
 function isValidTransition(from, to) {

@@ -48,9 +48,9 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   pendiente: ['en_espera', 'cancelada', 'ausente'],
   en_espera: ['en_consulta', 'cancelada'],
   en_consulta: ['completada'],
-  completada: [],
-  cancelada: [],
-  ausente: [],
+  completada: ['programada'],
+  cancelada: ['programada'],
+  ausente: ['programada'],
 };
 
 function formatDate(dateStr: string): string {
