@@ -22,7 +22,7 @@ export default function RecordDetail({ record }: RecordDetailProps) {
   const { colors } = useTheme();
 
   const d = record.details || {};
-  const hasSoapData = d.subjective || d.objective || d.assessment || d.plan;
+  const hasSoapData = d.subjective || d.objective || d.assessment || d.plan || d.treatment;
   const hasLegacyData = d.notes || d.anamnesis || d.hallazgos || d.motivo_consulta;
 
   const buildSoapSections = (): SoapSection[] => {
@@ -62,6 +62,13 @@ export default function RecordDetail({ record }: RecordDetailProps) {
           content: d.plan || '',
           fields: [],
         },
+        ...(d.treatment ? [{
+          label: 'Tratamiento',
+          icon: 'pill',
+          color: colors.primary,
+          content: d.treatment || '',
+          fields: [],
+        }] : []),
       ];
     }
 

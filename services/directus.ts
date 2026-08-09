@@ -98,6 +98,7 @@ export interface Appointment {
   veterinarian: string | null;
   status: 'programada' | 'confirmada' | 'en_espera' | 'en_consulta' | 'completada' | 'pendiente' | 'cancelada' | 'ausente';
   pet_id: string | null;
+  follow_up_of: string | null;
   room: string | null;
   created_at: string;
 }
