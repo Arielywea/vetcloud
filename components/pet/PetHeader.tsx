@@ -89,6 +89,9 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
           {pet.email && (
             <Text style={[styles.ownerDetail, { color: colors.textSecondary }]} numberOfLines={1}>{pet.email}</Text>
           )}
+          {pet.address && (
+            <Text style={[styles.ownerDetail, { color: colors.textSecondary }]} numberOfLines={1}>📍 {pet.address}</Text>
+          )}
           <View style={styles.actionsRow}>
             {pet.phone && (
               <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primaryContainer }]} onPress={onCall}>

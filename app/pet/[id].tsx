@@ -2,9 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, Button, TextInput, Portal, Modal, Dialog, Divider } from 'react-native-paper';
 
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, router } from 'expo-router';
 import { usePet, useClinicalRecords, usePrescriptions } from '../../hooks/useDirectus';
-import { ClinicalRecord, Prescription } from '../../services/directus';
+import { api, ClinicalRecord, Prescription } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
 import { calculateAge } from '../../utils/age';
@@ -43,7 +43,9 @@ export default function PetDetailScreen() {
   const [recordType, setRecordType] = useState<ClinicalRecord['record_type']>('consulta');
   const [recordDate, setRecordDate] = useState(new Date().toISOString().slice(0, 16));
   const [recordVet, setRecordVet] = useState('');
-  const [recordNotes, setRecordNotes] = useState('');
+  const [recordAssessment, setRecordAssessment] = useState('');
+  const [recordPlan, setRecordPlan] = useState('');
+  const [recordTreatment, setRecordTreatment] = useState('');
   const [recordWeight, setRecordWeight] = useState('');
   const [recordMotivoConsulta, setRecordMotivoConsulta] = useState('');
   const [recordAnamnesis, setRecordAnamnesis] = useState('');
@@ -63,6 +65,11 @@ export default function PetDetailScreen() {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [showVitals, setShowVitals] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+  const [followUpDate, setFollowUpDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16));
+  const [followUpNotes, setFollowUpNotes] = useState('');
+  const [followUpLinkedRecord, setFollowUpLinkedRecord] = useState<ClinicalRecord | null>(null);
+  const [savingFollowUp, setSavingFollowUp] = useState(false);
 
   const counts = useMemo(() => ({
     historial: records.length,
@@ -113,14 +120,20 @@ export default function PetDetailScreen() {
   }, [pet]);
 
   const handleAddRecord = async () => {
-    if (!recordNotes.trim()) { setErrorDialog('Las notas son obligatorias'); return; }
+    if (!recordAssessment.trim() && !recordTreatment.trim()) { setErrorDialog('La evaluacion o tratamiento son obligatorios'); return; }
     if (!id) return; setSaving(true);
     try {
       await addRecord({
         pet_id: id, record_type: recordType, date: new Date(recordDate).toISOString(),
         veterinarian: recordVet.trim() || null,
-        details: { notes: recordNotes.trim(), weight: recordWeight ? parseFloat(recordWeight) : undefined,
-          motivo_consulta: recordMotivoConsulta.trim() || undefined, anamnesis: recordAnamnesis.trim() || undefined,
+        details: {
+          notes: recordAssessment.trim() || undefined,
+          assessment: recordAssessment.trim() || undefined,
+          plan: recordPlan.trim() || undefined,
+          treatment: recordTreatment.trim() || undefined,
+          weight: recordWeight ? parseFloat(recordWeight) : undefined,
+          motivo_consulta: recordMotivoConsulta.trim() || undefined,
+          anamnesis: recordAnamnesis.trim() || undefined,
           hallazgos_examen_fisico: recordHallazgos.trim() || undefined,
           vital_signs: { temperature: recordVitalTemp ? parseFloat(recordVitalTemp) : undefined,
             heart_rate: recordVitalFC ? parseInt(recordVitalFC) : undefined,
@@ -129,7 +142,8 @@ export default function PetDetailScreen() {
             spo2: recordVitalSpO2 ? parseInt(recordVitalSpO2) : undefined },
         },
       });
-      setRecordNotes(''); setRecordVet(''); setRecordWeight(''); setRecordMotivoConsulta('');
+      setRecordAssessment(''); setRecordPlan(''); setRecordTreatment('');
+      setRecordVet(''); setRecordWeight(''); setRecordMotivoConsulta('');
       setRecordAnamnesis(''); setRecordHallazgos(''); setRecordVitalTemp('');
       setRecordVitalFC(''); setRecordVitalFR(''); setRecordVitalPA(''); setRecordVitalSpO2('');
       setShowRecordModal(false);
@@ -139,6 +153,33 @@ export default function PetDetailScreen() {
   const openRxModal = (linkedRecordId?: string) => {
     setRxLinkedRecordId(linkedRecordId || null); setRxVet(lastAnamnesis?.veterinarian || user?.name || '');
     setRxBranch(''); setRxFormat('standard'); setRxBody(''); setShowRxModal(true);
+  };
+
+  const openFollowUpModal = (record?: ClinicalRecord) => {
+    setFollowUpLinkedRecord(record || mostRecentRecord);
+    setFollowUpDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16));
+    setFollowUpNotes(record?.details?.treatment || '');
+    setShowFollowUpModal(true);
+  };
+
+  const handleCreateFollowUp = async () => {
+    if (!pet) return;
+    setSavingFollowUp(true);
+    try {
+      await api.appointments.create({
+        patient_name: pet.name,
+        tutor_phone: pet.owner_phone || null,
+        start_time: new Date(followUpDate).toISOString(),
+        appointment_type: 'control',
+        description: followUpNotes.trim() || `Control post-${followUpLinkedRecord?.record_type || 'consulta'}`,
+        pet_id: pet.id,
+        follow_up_of: followUpLinkedRecord?.id || null,
+        veterinarian: user?.name || null,
+      });
+      setShowFollowUpModal(false);
+      setFollowUpNotes('');
+      setFollowUpLinkedRecord(null);
+    } catch { setErrorDialog('No se pudo crear el control'); } finally { setSavingFollowUp(false); }
   };
 
   const handleSaveRx = async () => {
@@ -182,6 +223,7 @@ export default function PetDetailScreen() {
             <Button mode="outlined" compact onPress={() => setShowVitals(true)} style={{ marginRight: 8 }}>Signos</Button>
             <Button mode="outlined" compact onPress={() => setShowPayment(true)} style={{ marginRight: 8 }}>Cobrar</Button>
             <Button mode="outlined" compact onPress={() => openRxModal()} style={{ marginRight: 8 }}>Receta</Button>
+            <Button mode="outlined" compact onPress={() => openFollowUpModal()} style={{ marginRight: 8, borderColor: colors.warning }}>Control</Button>
             <Button mode="contained" compact onPress={() => setShowRecordModal(true)}>Agregar</Button>
           </View>
         </View>
@@ -209,7 +251,7 @@ export default function PetDetailScreen() {
             <Text variant="titleSmall" style={[styles.subTitle, { color: colors.primary }]}>Subjetivo</Text>
             <TextInput label="Motivo de consulta" value={recordMotivoConsulta} onChangeText={setRecordMotivoConsulta} mode="outlined" multiline numberOfLines={2} style={styles.input} />
             <TextInput label="Anamnesis" value={recordAnamnesis} onChangeText={setRecordAnamnesis} mode="outlined" multiline numberOfLines={3} style={styles.input} />
-            <VoiceNotes onTranscription={(text) => setRecordNotes(text)} onSoapParsed={(soapData) => { const parts: string[] = []; if (soapData.subjective) parts.push("S: " + soapData.subjective); if (soapData.objective) parts.push("O: " + soapData.objective); if (soapData.assessment) parts.push("A: " + soapData.assessment); if (soapData.plan) parts.push("P: " + soapData.plan); if (parts.length > 0) setRecordNotes(parts.join('\n\n')); }} />
+            <VoiceNotes onTranscription={(text) => setRecordAssessment(text)} onSoapParsed={(soapData) => { if (soapData.subjective) setRecordAnamnesis(soapData.subjective); if (soapData.objective) setRecordHallazgos(soapData.objective); if (soapData.assessment) setRecordAssessment(soapData.assessment); if (soapData.plan) setRecordPlan(soapData.plan); }} />
 
             {/* SOAP: Objective */}
             <Text variant="titleSmall" style={[styles.subTitle, { color: colors.info }]}>Objetivo</Text>
@@ -221,11 +263,15 @@ export default function PetDetailScreen() {
 
             {/* SOAP: Assessment */}
             <Text variant="titleSmall" style={[styles.subTitle, { color: colors.warning }]}>Evaluacion</Text>
-            <TextInput label="Diagnostico / Evaluacion" value={recordNotes} onChangeText={setRecordNotes} mode="outlined" multiline numberOfLines={3} style={styles.input} />
+            <TextInput label="Diagnostico / Evaluacion" value={recordAssessment} onChangeText={setRecordAssessment} mode="outlined" multiline numberOfLines={3} style={styles.input} />
 
             {/* SOAP: Plan */}
             <Text variant="titleSmall" style={[styles.subTitle, { color: colors.success }]}>Plan</Text>
-            <TextInput label="Notas / Tratamiento" value={recordNotes} onChangeText={setRecordNotes} mode="outlined" multiline numberOfLines={3} style={styles.input} />
+            <TextInput label="Plan / Indicaciones" value={recordPlan} onChangeText={setRecordPlan} mode="outlined" multiline numberOfLines={3} style={styles.input} />
+
+            {/* SOAP: Treatment */}
+            <Text variant="titleSmall" style={[styles.subTitle, { color: colors.primary }]}>Tratamiento</Text>
+            <TextInput label="Tratamiento indicado" value={recordTreatment} onChangeText={setRecordTreatment} mode="outlined" multiline numberOfLines={3} placeholder="Medicamentos, dosis, duracion..." style={styles.input} />
 
             {/* Pre-Surgical Checklist */}
             {recordType === 'cirugia' && (
@@ -373,6 +419,30 @@ export default function PetDetailScreen() {
       {/* PaymentForm */}
       <PaymentForm visible={showPayment} onClose={() => setShowPayment(false)} petId={id} />
 
+      {/* Modal: Crear Control */}
+      <Portal>
+        <Modal visible={showFollowUpModal} onDismiss={() => setShowFollowUpModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
+          <ScrollView>
+            <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Crear Control</Text>
+            {followUpLinkedRecord && (
+              <View style={[styles.followUpInfo, { backgroundColor: colors.primaryContainer, borderColor: colors.border }]}>
+                <Text style={[styles.followUpLabel, { color: colors.textSecondary }]}>Vinculado a:</Text>
+                <Text style={[styles.followUpValue, { color: colors.text }]}>{followUpLinkedRecord.record_type} del {new Date(followUpLinkedRecord.date).toLocaleDateString('es-CL')}</Text>
+                {followUpLinkedRecord.details?.treatment && (
+                  <Text style={[styles.followUpTreatment, { color: colors.textSecondary }]} numberOfLines={2}>Tratamiento: {followUpLinkedRecord.details.treatment}</Text>
+                )}
+              </View>
+            )}
+            <TextInput label="Fecha y hora del control" value={followUpDate} onChangeText={setFollowUpDate} mode="outlined" style={styles.input} />
+            <TextInput label="Notas / Motivo del control" value={followUpNotes} onChangeText={setFollowUpNotes} mode="outlined" multiline numberOfLines={3} style={styles.input} placeholder="Seguimiento de tratamiento, revision post-operatoria..." />
+            <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
+              <Button mode="outlined" onPress={() => setShowFollowUpModal(false)} style={{ flex: 1 }}>Cancelar</Button>
+              <Button mode="contained" onPress={handleCreateFollowUp} style={{ flex: 1 }} loading={savingFollowUp} disabled={savingFollowUp}>Crear Control</Button>
+            </View>
+          </ScrollView>
+        </Modal>
+      </Portal>
+
       {/* Dialogs */}
       <Portal>
         <Dialog visible={!!deleteRecordTarget} onDismiss={() => setDeleteRecordTarget(null)}>
@@ -431,4 +501,8 @@ const styles = StyleSheet.create({
   rxBodyCard: { marginTop: 8, marginBottom: 8, borderRadius: 8, borderWidth: 1, padding: 12 },
   emailHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
   emailPreviewCard: { marginBottom: 12, borderRadius: 8, borderWidth: 1, padding: 12 },
+  followUpInfo: { padding: 12, borderRadius: 8, borderWidth: 1, marginBottom: 16 },
+  followUpLabel: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.bold, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  followUpValue: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, marginBottom: 4 },
+  followUpTreatment: { fontSize: TYPOGRAPHY.sizes.xs, fontStyle: 'italic' },
 });

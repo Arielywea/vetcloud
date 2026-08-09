@@ -661,10 +661,11 @@ app.post('/items/appointments', authMiddleware, async (req, res) => {
     if (!a.patient_name || !String(a.patient_name).trim()) return res.status(400).json({ error: 'El nombre del paciente es obligatorio' });
     if (!a.start_time || isNaN(Date.parse(a.start_time))) return res.status(400).json({ error: 'Fecha de inicio válida es requerida' });
     const result = await pool.query(
-      `INSERT INTO appointments (user_id, patient_name, tutor_phone, start_time, end_time, appointment_type, description, organization_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      `INSERT INTO appointments (user_id, patient_name, tutor_phone, start_time, end_time, appointment_type, description, organization_id, pet_id, follow_up_of, veterinarian)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
       [req.userId, a.patient_name, a.tutor_phone || null, a.start_time, a.end_time || null,
-       a.appointment_type || 'consulta', a.description || null, req.organizationId || null]
+       a.appointment_type || 'consulta', a.description || null, req.organizationId || null,
+       a.pet_id || null, a.follow_up_of || null, a.veterinarian || null]
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
