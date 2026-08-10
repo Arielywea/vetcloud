@@ -53,7 +53,7 @@ function generatePatientFilePdf(pet, records, clinic) {
 
     // ── CARD: PACIENTE ──
     doc.roundedRect(leftX, y, colW, 140, 8).fillAndStroke(white, border);
-    doc.roundedRect(leftX, y, colW, 28, { tl: 8, tr: 8, bl: 0, br: 0 }).fill(navy);
+    doc.roundedRect(leftX, y, colW, 28, 8).fill(navy);
     doc.fill(gold).fontSize(8).font('Helvetica-Bold').text('PACIENTE', leftX + 12, y + 9);
 
     const speciesLabel = pet.species === 'dog' ? 'Canino' : pet.species === 'cat' ? 'Felino' : 'N/D';
@@ -80,7 +80,7 @@ function generatePatientFilePdf(pet, records, clinic) {
 
     // ── CARD: TUTOR ──
     doc.roundedRect(rightX, y, colW, 140, 8).fillAndStroke(white, border);
-    doc.roundedRect(rightX, y, colW, 28, { tl: 8, tr: 8, bl: 0, br: 0 }).fill(navy);
+    doc.roundedRect(rightX, y, colW, 28, 8).fill(navy);
     doc.fill(gold).fontSize(8).font('Helvetica-Bold').text('TUTOR / PROPIETARIO', rightX + 12, y + 9);
 
     doc.fill(darkText).fontSize(13).font('Helvetica-Bold').text(pet.tutor_name || 'N/D', rightX + 12, y + 38, { width: colW - 24 });
@@ -97,11 +97,11 @@ function generatePatientFilePdf(pet, records, clinic) {
     const hasClinicalSummary = pet.allergies || pet.base_diseases?.length || pet.pre_diagnostico || pet.notes;
     if (hasClinicalSummary) {
       if (y > pageH - 140) { doc.addPage(); y = margin; }
-      doc.roundedRect(margin, y, contentW, 10, { tl: 8, tr: 8, bl: 0, br: 0 }).fill(navy);
+      doc.roundedRect(margin, y, contentW, 10, 8).fill(navy);
       doc.fill(gold).fontSize(11).font('Helvetica-Bold').text('Resumen Clinico', margin + 12, y + 12, { width: contentW - 24 });
       y += 30;
 
-      doc.roundedRect(margin, y, contentW, 60, { tl: 0, tr: 0, bl: 8, br: 8 }).fillAndStroke(surfaceBg, border);
+      doc.roundedRect(margin, y, contentW, 60, 8).fillAndStroke(surfaceBg, border);
       let sy = y + 10;
 
       if (pet.allergies) {
@@ -131,7 +131,7 @@ function generatePatientFilePdf(pet, records, clinic) {
     // ── HISTORIAL CLINICO ──
     if (records && records.length > 0) {
       if (y > pageH - 100) { doc.addPage(); y = margin; }
-      doc.roundedRect(margin, y, contentW, 10, { tl: 8, tr: 8, bl: 0, br: 0 }).fill(navy);
+      doc.roundedRect(margin, y, contentW, 10, 8).fill(navy);
       doc.fill(gold).fontSize(11).font('Helvetica-Bold').text('Historial Clinico', margin + 12, y + 12, { width: contentW - 24 });
       y += 30;
 
@@ -146,7 +146,7 @@ function generatePatientFilePdf(pet, records, clinic) {
         const typeLabel = (record.record_type || 'consulta').charAt(0).toUpperCase() + (record.record_type || 'consulta').slice(1);
 
         // Record header bar
-        doc.roundedRect(margin, y, contentW, 24, { tl: 6, tr: 6, bl: 0, br: 0 }).fill(navy);
+        doc.roundedRect(margin, y, contentW, 24, 6).fill(navy);
         doc.fill(white).fontSize(9).font('Helvetica-Bold').text(`${typeLabel}  —  ${dateStr} ${timeStr}`, margin + 12, y + 7, { width: contentW - 24 });
         if (record.veterinarian) {
           doc.fill(gold).fontSize(8).font('Helvetica').text(`Dr. ${record.veterinarian}`, pageW - margin - 12, y + 8, { align: 'right', width: 150 });
@@ -155,7 +155,7 @@ function generatePatientFilePdf(pet, records, clinic) {
 
         // Record body
         const bodyStartY = y;
-        doc.roundedRect(margin, y, contentW, 20, { tl: 0, tr: 0, bl: 6, br: 6 }).fillAndStroke(white, border);
+        doc.roundedRect(margin, y, contentW, 20, 6).fillAndStroke(white, border);
         y += 8;
 
         const sections = [];
