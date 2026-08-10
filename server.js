@@ -457,16 +457,16 @@ app.get('/items/medications', async (req, res) => {
 
 app.post('/items/medications', authMiddleware, async (req, res) => {
   try {
-    const { category, nombre, marca_comercial, presentacion, familia, funcion, dosis_perro, dosis_gato, via_administracion, efectos_adversos, notas } = req.body;
+    const { category, nombre, marca_comercial, presentacion, familia, funcion, dosis_perro, dosis_gato, via_administracion, efectos_adversos, notas, dosis_min_mg_kg, dosis_max_mg_kg, concentracion_mg_ml, frecuencia_horas } = req.body;
     if (!category || !nombre) return res.status(400).json({ error: 'category y nombre son requeridos' });
 
     const orgResult = await pool.query('SELECT organization_id FROM users WHERE id = $1', [req.userId]);
     const organizationId = orgResult.rows[0]?.organization_id || null;
 
     const result = await pool.query(
-      `INSERT INTO medications (organization_id, category, nombre, marca_comercial, presentacion, familia, funcion, dosis_perro, dosis_gato, via_administracion, efectos_adversos, notas)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-      [organizationId, category, nombre, marca_comercial || null, presentacion || null, familia || null, funcion || null, dosis_perro || null, dosis_gato || null, via_administracion || null, efectos_adversos || null, notas || null]
+      `INSERT INTO medications (organization_id, category, nombre, marca_comercial, presentacion, familia, funcion, dosis_perro, dosis_gato, via_administracion, efectos_adversos, notas, dosis_min_mg_kg, dosis_max_mg_kg, concentracion_mg_ml, frecuencia_horas)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *`,
+      [organizationId, category, nombre, marca_comercial || null, presentacion || null, familia || null, funcion || null, dosis_perro || null, dosis_gato || null, via_administracion || null, efectos_adversos || null, notas || null, dosis_min_mg_kg || null, dosis_max_mg_kg || null, concentracion_mg_ml || null, frecuencia_horas || null]
     );
     res.json({ data: result.rows[0] });
   } catch (err) {

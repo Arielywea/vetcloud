@@ -99,6 +99,10 @@ export interface Medication {
   via_administracion: string | null;
   efectos_adversos: string | null;
   notas: string | null;
+  dosis_min_mg_kg: number | null;
+  dosis_max_mg_kg: number | null;
+  concentracion_mg_ml: number | null;
+  frecuencia_horas: number | null;
   created_at: string;
 }
 

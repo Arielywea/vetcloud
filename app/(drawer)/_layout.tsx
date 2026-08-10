@@ -48,7 +48,7 @@ const SCREEN_TITLES: Record<string, string> = {
   '/(drawer)/pacientes': 'Pacientes',
   '/(drawer)/add-paciente': 'Nuevo Paciente',
   '/(drawer)/diseases': 'Enfermedades',
-  '/(drawer)/medications': 'Medicamentos',
+  '/(drawer)/medications': 'Vademécum',
   '/(drawer)/agenda': 'Agenda',
   '/(drawer)/hospitalizacion': 'Hospitalización',
   '/(drawer)/laboratorio': 'Laboratorio',
@@ -57,6 +57,8 @@ const SCREEN_TITLES: Record<string, string> = {
   '/(drawer)/configuracion': 'Configuración',
   '/(drawer)/notes': 'Notas Personales',
   '/(drawer)/reminders': 'Recordatorios',
+  '/(drawer)/fluidoterapia': 'Fluidoterapia',
+  '/(drawer)/dosis': 'Calculadora de Dosis',
 };
 
 export default function DrawerLayout() {
@@ -126,6 +128,8 @@ export default function DrawerLayout() {
               <Stack.Screen name="configuracion" />
               <Stack.Screen name="notes" />
               <Stack.Screen name="reminders" />
+              <Stack.Screen name="fluidoterapia" />
+              <Stack.Screen name="dosis" />
             </Stack>
           </ErrorBoundary>
         </View>
