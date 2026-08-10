@@ -996,7 +996,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
   },
-  progressStep: { alignItems: 'center', width: 100 },
+  progressStep: { alignItems: 'center', width: 80 },
   progressCircle: {
     width: 32,
     height: 32,

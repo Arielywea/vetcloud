@@ -7,6 +7,7 @@ import TopBar from '../../components/layout/TopBar';
 import CommandPalette from '../../components/layout/CommandPalette';
 import VetAssistantWidget from '../../components/VetAssistantWidget';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { SPACING } from '../../constants/tokens';
 
 class ErrorBoundary extends Component<{ children: ReactNode; colors?: { text: string; textSecondary: string; error: string } }, { error: Error | null }> {
@@ -61,11 +62,10 @@ const SCREEN_TITLES: Record<string, string> = {
 export default function DrawerLayout() {
   const { colors, isDark } = useTheme();
   const pathname = usePathname();
-  const { width } = useWindowDimensions();
+  const { isMobile, width } = useResponsive();
   const [cmdOpen, setCmdOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const isMobile = width < 640;
   const isWeb = Platform.OS === 'web';
 
   const openCmd = React.useCallback(() => setCmdOpen(true), []);
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     bottom: 0,
-    width: 260,
+    width: 280,
     zIndex: 100,
     elevation: 100,
     shadowColor: '#000',
@@ -167,6 +167,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    minWidth: 0,
   },
   screenArea: {
     flex: 1,

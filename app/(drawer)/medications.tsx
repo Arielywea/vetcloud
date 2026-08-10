@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: SPACING.xl,
-    maxWidth: 300,
+    maxWidth: '90%',
   },
   addButton: {
     paddingHorizontal: SPACING.xl,

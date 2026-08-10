@@ -5,6 +5,7 @@ import { LogOut, ChevronLeft } from 'lucide-react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
 import { TEXT_ON_PRIMARY, getTextOnPrimary } from '../../constants/colors';
 import BeagleLogo from '../BeagleLogo';
@@ -59,6 +60,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { colors, isDark } = useTheme();
+  const { isMobile } = useResponsive();
 
   const palette = getTextOnPrimary(colors.primary);
   const sidebarBg = colors.primary;
@@ -77,7 +79,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: sidebarBg, borderTopColor: colors.accent, ...SHADOWS.sm }]}>
+    <View style={[styles.container, { backgroundColor: sidebarBg, borderTopColor: colors.accent, ...SHADOWS.sm, width: collapsed ? 64 : 240 }]}>
       {/* Logo */}
       <View style={[styles.logoSection, { borderBottomColor: palette.default + '1A' }]}>
         <View style={styles.logoWrap}>
@@ -204,7 +206,6 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
 
 const styles = StyleSheet.create({
   container: {
-    width: 240,
     flex: 1,
     borderTopWidth: 2,
   },
