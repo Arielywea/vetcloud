@@ -12,6 +12,7 @@ import {
   InventoryItem,
   Prescription,
   Reminder,
+  Medication,
 } from '../services/directus';
 
 // ─────────────────────────────────────────────────────────
@@ -42,6 +43,38 @@ export function useDiseases(species?: 'dog' | 'cat' | 'all') {
   }, [fetchDiseases]);
 
   return { diseases, loading, error, refresh: fetchDiseases };
+}
+
+// ─────────────────────────────────────────────────────────
+// Hook: Medications
+// ─────────────────────────────────────────────────────────
+
+export function useMedications(category?: 'intraoperatorio' | 'receta') {
+  const [medications, setMedications] = useState<Medication[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchMedications = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params: any = {};
+      if (category) params.category = category;
+      const result = await api.medications.list(params);
+      setMedications(result as Medication[]);
+    } catch (err: any) {
+      console.error('Error fetching medications:', err);
+      setError(err.message || 'Error fetching medications');
+    } finally {
+      setLoading(false);
+    }
+  }, [category]);
+
+  useEffect(() => {
+    fetchMedications();
+  }, [fetchMedications]);
+
+  return { medications, loading, error, refresh: fetchMedications };
 }
 
 // ─────────────────────────────────────────────────────────

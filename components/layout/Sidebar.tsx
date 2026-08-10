@@ -23,6 +23,7 @@ const NAV_SECTIONS = [
       { label: 'Inicio', iconName: 'dashboard' as VetCloudIconName, route: '/(drawer)' },
       { label: 'Pacientes', iconName: 'pacientes' as VetCloudIconName, route: '/(drawer)/pacientes' },
       { label: 'Enfermedades', iconName: 'enfermedades' as VetCloudIconName, route: '/(drawer)/diseases' },
+      { label: 'Medicamentos', iconName: 'medicamentos' as VetCloudIconName, route: '/(drawer)/medications' },
     ],
   },
   {

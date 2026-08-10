@@ -412,6 +412,69 @@ app.delete('/items/diseases/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// ─── MEDICATIONS ─────────────────────────────────────────
+app.get('/items/medications', async (req, res) => {
+  try {
+    let query = 'SELECT * FROM medications';
+    const params = [];
+    const conditions = [];
+
+    let orgId = null;
+    const header = req.headers.authorization;
+    if (header && header.startsWith('Bearer ')) {
+      try {
+        const token = header.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
+        orgId = decoded.organizationId || null;
+      } catch {}
+    }
+    if (orgId) {
+      conditions.push(`(organization_id IS NULL OR organization_id = $${params.length + 1})`);
+      params.push(orgId);
+    } else {
+      conditions.push('(organization_id IS NULL)');
+    }
+
+    if (req.query.category) {
+      conditions.push(`category = $${params.length + 1}`);
+      params.push(req.query.category);
+    }
+    if (req.query.search) {
+      conditions.push(`(nombre ILIKE $${params.length + 1} OR marca_comercial ILIKE $${params.length + 1} OR familia ILIKE $${params.length + 1})`);
+      params.push(`%${req.query.search}%`);
+    }
+
+    if (conditions.length) query += ' WHERE ' + conditions.join(' AND ');
+    query += ' ORDER BY nombre ASC';
+
+    const result = await pool.query(query, params);
+    res.json({ data: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/items/medications', authMiddleware, async (req, res) => {
+  try {
+    const { category, nombre, marca_comercial, presentacion, familia, funcion, dosis_perro, dosis_gato, via_administracion, efectos_adversos } = req.body;
+    if (!category || !nombre) return res.status(400).json({ error: 'category y nombre son requeridos' });
+
+    const orgResult = await pool.query('SELECT organization_id FROM users WHERE id = $1', [req.userId]);
+    const organizationId = orgResult.rows[0]?.organization_id || null;
+
+    const result = await pool.query(
+      `INSERT INTO medications (organization_id, category, nombre, marca_comercial, presentacion, familia, funcion, dosis_perro, dosis_gato, via_administracion, efectos_adversos)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+      [organizationId, category, nombre, marca_comercial || null, presentacion || null, familia || null, funcion || null, dosis_perro || null, dosis_gato || null, via_administracion || null, efectos_adversos || null]
+    );
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 // ─── PETS ────────────────────────────────────────────────
 app.get('/items/pets', authMiddleware, async (req, res) => {
   try {
