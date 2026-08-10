@@ -222,6 +222,25 @@ export default function PetDetailScreen() {
   };
 
   const handleSendRxEmail = async (rx: Prescription) => { setEmailTarget(rx); setEmailRecipient(pet?.email || ''); setShowEmailModal(true); };
+
+  const handleDownloadRecipePdf = async (rx: Prescription) => {
+    if (!id) return;
+    try {
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8055';
+      const headers = await authHeaders();
+      const response = await fetch(`${baseUrl}/items/pets/${id}/prescriptions/${rx.id}/pdf`, { headers });
+      if (!response.ok) throw new Error('Error generating PDF');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `receta_${pet?.name || 'paciente'}_${new Date(rx.issued_at).toLocaleDateString('es-CL').replace(/\//g, '-')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch { setErrorDialog('No se pudo generar el PDF de la receta'); }
+  };
   const confirmSendEmail = async () => {
     if (!emailTarget) return; setSendingEmail(true);
     try { await sendEmail(emailTarget.id); setShowEmailModal(false); setEmailTarget(null); }
@@ -255,7 +274,7 @@ export default function PetDetailScreen() {
         </View>
         <ClinicalTabs activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
         {activeTab === 'recetas' ? (
-          rxLoading ? <SkeletonCard style={{ marginTop: SPACING.md }} /> : <PrescriptionList prescriptions={filteredPrescriptions} onView={setSelectedRx} onSendEmail={handleSendRxEmail} />
+          rxLoading ? <SkeletonCard style={{ marginTop: SPACING.md }} /> : <PrescriptionList prescriptions={filteredPrescriptions} onView={setSelectedRx} onSendEmail={handleSendRxEmail} onDownloadPdf={handleDownloadRecipePdf} />
         ) : recordsLoading ? <SkeletonCard style={{ marginTop: SPACING.md }} /> : <RecordTimeline records={filteredRecords} onViewRecord={setSelectedRecord} />}
       </View>
 

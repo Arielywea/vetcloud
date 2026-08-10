@@ -11,9 +11,10 @@ interface PrescriptionListProps {
   prescriptions: Prescription[];
   onView: (rx: Prescription) => void;
   onSendEmail: (rx: Prescription) => void;
+  onDownloadPdf: (rx: Prescription) => void;
 }
 
-export default function PrescriptionList({ prescriptions, onView, onSendEmail }: PrescriptionListProps) {
+export default function PrescriptionList({ prescriptions, onView, onSendEmail, onDownloadPdf }: PrescriptionListProps) {
   const { colors } = useTheme();
 
   if (!prescriptions.length) {
@@ -46,6 +47,9 @@ export default function PrescriptionList({ prescriptions, onView, onSendEmail }:
               <View style={styles.actions}>
                 <Button compact mode="text" onPress={() => onView(rx)}>
                   <DynamicIcon name="eye" size={18} color="#C9A227" />
+                </Button>
+                <Button compact mode="text" onPress={() => onDownloadPdf(rx)}>
+                  <DynamicIcon name="download" size={18} color={colors.primary} />
                 </Button>
                 <Button compact mode="text" onPress={() => onSendEmail(rx)}>
                   <DynamicIcon name="email-outline" size={18} color={colors.info} />
