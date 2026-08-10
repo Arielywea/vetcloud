@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo, Component, ReactNode } from 'rea
 import { View, StyleSheet, Platform, Text, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useResponsive } from '../../hooks/useResponsive';
 
 // Components
 import AgendaToolbar from '../../components/agenda/AgendaToolbar';
@@ -63,7 +64,7 @@ function AgendaContent() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { width: screenWidth } = useWindowDimensions();
+  const { isMobile, isDesktop, width: screenWidth } = useResponsive();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -152,8 +153,6 @@ function AgendaContent() {
   }, []);
 
   const [mobileSidebarVisible, setMobileSidebarVisible] = useState(false);
-  const isMobile = screenWidth < 768;
-  const isDesktop = screenWidth > 1200;
   const sidebarWidth = isDesktop ? 320 : 0;
   const showSidebar = isDesktop;
   const mainContentWidth = showSidebar ? screenWidth - sidebarWidth : screenWidth;

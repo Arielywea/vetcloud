@@ -4,6 +4,7 @@ import { Text } from 'react-native-paper';
 import { Search, Bell, Menu, Command, Plus, Calendar } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import { TEXT_ON_PRIMARY } from '../../constants/colors';
 
@@ -17,8 +18,7 @@ interface TopBarProps {
 export default function TopBar({ onMenuPress, onSearchPress, title, rightContent }: TopBarProps) {
   const router = useRouter();
   const { colors } = useTheme();
-  const { width } = useWindowDimensions();
-  const isMobile = width < 640;
+  const { isMobile } = useResponsive();
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface, borderBottomColor: colors.border }, SHADOWS.xs, isMobile && styles.containerMobile]}>
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     borderWidth: 1,
     gap: SPACING.sm,
-    maxWidth: 480,
+    maxWidth: 600,
   },
   searchPlaceholder: {
     flex: 1,
