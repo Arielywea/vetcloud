@@ -85,6 +85,22 @@ export interface DirectusPet {
   organization_id: number | null;
 }
 
+export interface Medication {
+  id: number;
+  organization_id: number | null;
+  category: 'intraoperatorio' | 'receta';
+  nombre: string;
+  marca_comercial: string | null;
+  presentacion: string | null;
+  familia: string | null;
+  funcion: string | null;
+  dosis_perro: string | null;
+  dosis_gato: string | null;
+  via_administracion: string | null;
+  efectos_adversos: string | null;
+  created_at: string;
+}
+
 export interface Appointment {
   id: string;
   user_id: string;
@@ -278,6 +294,11 @@ export const api = {
     create: (data: any) => apiPost('/items/diseases', data),
     update: (id: string, data: any) => apiPatch(`/items/diseases/${id}`, data),
     delete: (id: string) => apiDelete(`/items/diseases/${id}`),
+  },
+  medications: {
+    list: (params?: { category?: string; search?: string }) =>
+      apiGet('/items/medications', params),
+    create: (data: any) => apiPost('/items/medications', data),
   },
   pets: {
     list: () => apiGet('/items/pets'),

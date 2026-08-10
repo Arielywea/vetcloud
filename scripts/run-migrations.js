@@ -18,6 +18,7 @@ const MIGRATIONS = [
   '007_make_rut_nullable.sql',
   '008_pre_diagnostico_base_diseases.sql',
   '009_treatment_followup.sql',
+  '010_medications.sql',
 ];
 
 async function runMigrations() {

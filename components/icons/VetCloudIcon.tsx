@@ -5,6 +5,7 @@ export type VetCloudIconName =
   | 'dashboard'
   | 'pacientes'
   | 'enfermedades'
+  | 'medicamentos'
   | 'agenda'
   | 'hospitalizacion'
   | 'laboratorio'
@@ -53,6 +54,15 @@ function EnfermedadesIcon({ color }: { color: string }) {
       <Path d="M3.22 13H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
       {/* Branding: metallic accent dot on heart curve */}
       <Circle cx="12" cy="7" r="1.2" fill={color} opacity="0.4" />
+    </>
+  );
+}
+
+function MedicamentosIcon({ color }: { color: string }) {
+  return (
+    <>
+      <Rect x="3" y="3" width="18" height="18" rx="3" stroke={color} strokeWidth="2" fill="none" />
+      <Path d="M12 8v8m-4-4h8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </>
   );
 }
@@ -159,6 +169,7 @@ const ICONS: Record<VetCloudIconName, React.FC<{ color: string }>> = {
   dashboard: DashboardIcon,
   pacientes: PacientesIcon,
   enfermedades: EnfermedadesIcon,
+  medicamentos: MedicamentosIcon,
   agenda: AgendaIcon,
   hospitalizacion: HospitalizacionIcon,
   laboratorio: LaboratorioIcon,
