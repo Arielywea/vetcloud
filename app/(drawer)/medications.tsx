@@ -1,12 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { View, FlatList, StyleSheet, TouchableOpacity, TextInput as RNTextInput } from 'react-native';
 import { Text } from 'react-native-paper';
-import { Search, Syringe, Pill, Clock } from 'lucide-react-native';
+import { Search, Syringe, Pill } from 'lucide-react-native';
 import { useMedications } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
-import VCard from '../../components/ui/Card';
-import VBadge from '../../components/ui/Badge';
 import VEmptyState from '../../components/ui/EmptyState';
 import { SkeletonList } from '../../components/ui/Skeleton';
 import MedicationCard from '../../components/medications/MedicationCard';
@@ -30,7 +28,9 @@ export default function MedicationsScreen() {
     return medications.filter(m =>
       m.nombre.toLowerCase().includes(q) ||
       (m.marca_comercial && m.marca_comercial.toLowerCase().includes(q)) ||
-      (m.familia && m.familia.toLowerCase().includes(q))
+      (m.familia && m.familia.toLowerCase().includes(q)) ||
+      (m.funcion && m.funcion.toLowerCase().includes(q)) ||
+      (m.via_administracion && m.via_administracion.toLowerCase().includes(q))
     );
   }, [medications, searchQuery]);
 
@@ -58,7 +58,7 @@ export default function MedicationsScreen() {
       {/* Tabs */}
       <View style={styles.tabRow}>
         {renderTab('intraoperatorio', 'Intraoperatorios', <Syringe size={16} color={activeTab === 'intraoperatorio' ? '#FFFFFF' : colors.textSecondary} />)}
-        {renderTab('receta', 'Receta', <Pill size={16} color={activeTab === 'receta' ? '#FFFFFF' : colors.textSecondary} />)}
+        {renderTab('receta', 'Ambulatorios', <Pill size={16} color={activeTab === 'receta' ? '#FFFFFF' : colors.textSecondary} />)}
       </View>
 
       {/* Search */}
@@ -95,18 +95,25 @@ export default function MedicationsScreen() {
           />
         )
       ) : (
-        <View style={styles.comingSoon}>
-          <VCard style={styles.comingSoonCard}>
-            <Clock size={48} color={colors.textLight} />
-            <Text style={[styles.comingSoonTitle, { color: colors.text }]}>Proximamente</Text>
-            <Text style={[styles.comingSoonText, { color: colors.textSecondary }]}>
-              El catalogo de receta estara disponible pronto. Mientras tanto, puedes agregar medicamentos de uso clinico ambulatorio directamente desde aqui.
-            </Text>
-            <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.primary }]}>
-              <Text style={styles.addButtonText}>Agregar medicamento</Text>
-            </TouchableOpacity>
-          </VCard>
-        </View>
+        loading ? (
+          <SkeletonList count={5} />
+        ) : (
+          <FlatList
+            data={filteredMedications}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={({ item, index }) => (
+              <MedicationCard medication={item} onPress={() => handlePress(item)} index={index} />
+            )}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <VEmptyState
+                icon="pill"
+                title="Sin medicamentos"
+                description={searchQuery ? 'No se encontraron resultados para tu busqueda' : 'No hay medicamentos ambulatorios registrados'}
+              />
+            }
+          />
+        )
       )}
 
       {/* Detail Modal */}
@@ -162,39 +169,5 @@ const styles = StyleSheet.create({
   listContent: {
     padding: SPACING.xl,
     paddingBottom: SPACING.xl * 2,
-  },
-  comingSoon: {
-    flex: 1,
-    padding: SPACING.xl,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  comingSoonCard: {
-    alignItems: 'center',
-    paddingVertical: SPACING.xl * 2,
-    paddingHorizontal: SPACING.xl,
-  },
-  comingSoonTitle: {
-    fontSize: TYPOGRAPHY.sizes.xl,
-    fontWeight: TYPOGRAPHY.weights.bold,
-    marginTop: SPACING.lg,
-    marginBottom: SPACING.sm,
-  },
-  comingSoonText: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: SPACING.xl,
-    maxWidth: '90%',
-  },
-  addButton: {
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
-    borderRadius: RADIUS.md,
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.semibold,
   },
 });

@@ -98,6 +98,7 @@ export interface Medication {
   dosis_gato: string | null;
   via_administracion: string | null;
   efectos_adversos: string | null;
+  notas: string | null;
   created_at: string;
 }
 

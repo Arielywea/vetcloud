@@ -19,6 +19,7 @@ const MIGRATIONS = [
   '008_pre_diagnostico_base_diseases.sql',
   '009_treatment_followup.sql',
   '010_medications.sql',
+  '011_medication_notes.sql',
 ];
 
 async function runMigrations() {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView, Modal, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
-import { X } from 'lucide-react-native';
+import { X, AlertTriangle } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
 import VBadge from '../ui/Badge';
@@ -19,6 +19,7 @@ export default function MedicationDetail({ medication, visible, onClose }: Medic
   if (!medication) return null;
 
   const familiaColor = FAMILIA_COLORS[medication.familia || ''] || colors.primary;
+  const isReceta = medication.category === 'receta';
 
   const renderSection = (label: string, value: string | null | undefined) => {
     if (!value) return null;
@@ -29,6 +30,13 @@ export default function MedicationDetail({ medication, visible, onClose }: Medic
       </View>
     );
   };
+
+  const renderWarning = (text: string) => (
+    <View style={[styles.warningCard, { backgroundColor: '#FF980015', borderColor: '#FF980040' }]}>
+      <AlertTriangle size={16} color="#FF9800" />
+      <Text style={[styles.warningText, { color: '#E65100' }]}>{text}</Text>
+    </View>
+  );
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -56,6 +64,7 @@ export default function MedicationDetail({ medication, visible, onClose }: Medic
             <View style={styles.badges}>
               <VBadge color={familiaColor}>{medication.familia || 'N/D'}</VBadge>
               <VBadge color={colors.primary}>{medication.presentacion || 'N/D'}</VBadge>
+              {isReceta && <VBadge color="#FF9800">Receta</VBadge>}
             </View>
 
             {/* Funcion */}
@@ -85,6 +94,19 @@ export default function MedicationDetail({ medication, visible, onClose }: Medic
             {/* Sections */}
             {renderSection('Via de administracion', medication.via_administracion)}
             {renderSection('Efectos adversos', medication.efectos_adversos)}
+            
+            {/* Notas / Advertencias */}
+            {medication.notas && (
+              <View style={[styles.notasCard, { backgroundColor: '#1565C010', borderColor: '#1565C030' }]}>
+                <Text style={[styles.notasLabel, { color: '#1565C0' }]}>Notas</Text>
+                <Text style={[styles.notasText, { color: colors.text }]}>{medication.notas}</Text>
+              </View>
+            )}
+
+            {/* SAG Warning for antibiotics */}
+            {medication.notas && medication.notas.toLowerCase().includes('sag') && (
+              renderWarning('Requiere receta electronica SAG (antimicrobianos.sag.gob.cl)')
+            )}
           </ScrollView>
         </View>
       </View>
@@ -189,6 +211,37 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   sectionValue: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    lineHeight: 20,
+  },
+  warningCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    marginBottom: SPACING.lg,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: TYPOGRAPHY.sizes.sm,
+    lineHeight: 20,
+  },
+  notasCard: {
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
+  },
+  notasLabel: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    fontWeight: TYPOGRAPHY.weights.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: SPACING.xs,
+  },
+  notasText: {
     fontSize: TYPOGRAPHY.sizes.sm,
     lineHeight: 20,
   },
