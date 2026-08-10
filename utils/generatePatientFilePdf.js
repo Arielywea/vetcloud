@@ -1,4 +1,5 @@
 const PDFDocument = require('pdfkit');
+const path = require('path');
 
 function generatePatientFilePdf(pet, records, clinic) {
   return new Promise((resolve, reject) => {
@@ -25,17 +26,8 @@ function generatePatientFilePdf(pet, records, clinic) {
     // ── HEADER ──
     doc.rect(0, 0, pageW, 85).fill(navy);
 
-    // Beagle logo
-    const bx = 58, by = 42, bs = 22;
-    doc.ellipse(bx - bs * 0.7, by + bs * 0.1, bs * 0.32, bs * 0.5).fill('#8D6E63');
-    doc.ellipse(bx + bs * 0.7, by + bs * 0.1, bs * 0.32, bs * 0.5).fill('#8D6E63');
-    doc.circle(bx, by, bs * 0.65).fill('#FFFFFF');
-    doc.circle(bx, by - bs * 0.15, bs * 0.35).fill('#5D4037');
-    doc.circle(bx - bs * 0.22, by, bs * 0.1).fill('#FFFFFF');
-    doc.circle(bx - bs * 0.2, by, bs * 0.065).fill('#1A1A1A');
-    doc.circle(bx + bs * 0.22, by, bs * 0.1).fill('#FFFFFF');
-    doc.circle(bx + bs * 0.2, by, bs * 0.065).fill('#1A1A1A');
-    doc.circle(bx, by + bs * 0.22, bs * 0.08).fill('#1A1A1A');
+    // Logo
+    doc.image(path.join(__dirname, '../assets/logo.png'), 30, 12, { width: 40, height: 40 });
 
     doc.fill(white).fontSize(22).font('Helvetica-Bold').text('VetCloud', 100, 22);
     doc.fontSize(10).font('Helvetica').fill(gold).text('Ficha Clinica del Paciente', 100, 48);
@@ -93,39 +85,104 @@ function generatePatientFilePdf(pet, records, clinic) {
 
     y += 155;
 
-    // ── RESUMEN CLINICO ──
-    const hasClinicalSummary = pet.allergies || pet.base_diseases?.length || pet.pre_diagnostico || pet.notes;
-    if (hasClinicalSummary) {
-      if (y > pageH - 140) { doc.addPage(); y = margin; }
+    // ── HISTORIA CLINICA INICIAL ──
+    const hasClinicalData = pet.motivo_consulta || pet.anamnesis || pet.hallazgos_examen_fisico ||
+      pet.habitat || pet.food || pet.water_consumption || pet.urination || pet.lives_with_other_animals ||
+      pet.vaccines || pet.deworming || pet.flea_treatment || pet.last_heat || pet.other_diseases ||
+      (pet.base_diseases && pet.base_diseases.length > 0) || pet.surgeries || pet.medications ||
+      (pet.allergies && pet.allergies.length > 0) || pet.pre_diagnostico || pet.vital_signs || pet.notes;
+    if (hasClinicalData) {
+      if (y > pageH - 80) { doc.addPage(); y = margin; }
       doc.roundedRect(margin, y, contentW, 10, 8).fill(navy);
-      doc.fill(gold).fontSize(11).font('Helvetica-Bold').text('Resumen Clinico', margin + 12, y + 12, { width: contentW - 24 });
+      doc.fill(gold).fontSize(11).font('Helvetica-Bold').text('Historia Clinica Inicial', margin + 12, y + 12, { width: contentW - 24 });
       y += 30;
 
-      doc.roundedRect(margin, y, contentW, 60, 8).fillAndStroke(surfaceBg, border);
-      let sy = y + 10;
+      const drawField = (label, value) => {
+        if (!value) return;
+        if (y > pageH - 50) { doc.addPage(); y = margin; }
+        doc.fill(gold).fontSize(8).font('Helvetica-Bold').text(`${label}:`, margin + 16, y);
+        y += 10;
+        doc.fill(darkText).fontSize(9).font('Helvetica').text(value, margin + 22, y, { width: contentW - 44, lineGap: 2 });
+        y += doc.heightOfString(value, { width: contentW - 44 }) + 6;
+      };
 
-      if (pet.allergies) {
-        doc.fill(darkText).fontSize(9).font('Helvetica-Bold').text('Alergias: ', margin + 12, sy, { continued: true, width: contentW - 24 });
-        doc.font('Helvetica').fill(secondaryText).text(pet.allergies, { width: contentW - 24 });
-        sy += 14;
-      }
-      if (pet.base_diseases?.length) {
-        doc.fill(darkText).fontSize(9).font('Helvetica-Bold').text('Enfermedades base: ', margin + 12, sy, { continued: true, width: contentW - 24 });
-        doc.font('Helvetica').fill(secondaryText).text(pet.base_diseases.join(', '), { width: contentW - 24 });
-        sy += 14;
-      }
-      if (pet.pre_diagnostico) {
-        doc.fill(darkText).fontSize(9).font('Helvetica-Bold').text('Pre-diagnostico: ', margin + 12, sy, { continued: true, width: contentW - 24 });
-        doc.font('Helvetica').fill(secondaryText).text(pet.pre_diagnostico, { width: contentW - 24 });
-        sy += 14;
-      }
-      if (pet.notes) {
-        doc.fill(darkText).fontSize(9).font('Helvetica-Bold').text('Notas: ', margin + 12, sy, { continued: true, width: contentW - 24 });
-        doc.font('Helvetica').fill(secondaryText).text(pet.notes, { width: contentW - 24 });
-        sy += 14;
+      // ── Consulta ──
+      if (pet.motivo_consulta) {
+        doc.fill(secondaryText).fontSize(8).font('Helvetica-Bold').text('CONSULTA', margin + 12, y);
+        y += 10;
+        drawField('Motivo de consulta', pet.motivo_consulta);
       }
 
-      y = sy + 12;
+      // ── Habitat y alimentacion ──
+      const hasHabitat = pet.habitat || pet.food || pet.food_frequency || pet.water_consumption || pet.urination || pet.lives_with_other_animals || pet.entorno || pet.areneros;
+      if (hasHabitat) {
+        if (y > pageH - 60) { doc.addPage(); y = margin; }
+        doc.fill(secondaryText).fontSize(8).font('Helvetica-Bold').text('HABITAT Y ALIMENTACION', margin + 12, y);
+        y += 10;
+        if (pet.habitat) drawField('Habitat', pet.habitat + (pet.habitat_other ? ` · ${pet.habitat_other}` : ''));
+        if (pet.food || pet.food_frequency) {
+          const foodParts = [];
+          if (pet.food) foodParts.push(`Tipo: ${pet.food}`);
+          if (pet.food_frequency) foodParts.push(`Frecuencia: ${pet.food_frequency}`);
+          drawField('Alimentacion', foodParts.join('\n'));
+        }
+        drawField('Consumo de agua', pet.water_consumption);
+        drawField('Miccion', pet.urination);
+        drawField('Vive con otros animales', pet.lives_with_other_animals);
+        if (pet.species === 'cat') {
+          drawField('Entorno', pet.entorno);
+          drawField('Areneros', pet.areneros);
+        }
+      }
+
+      // ── Historial sanitario ──
+      const hasSanitario = pet.vaccines || pet.deworming || pet.flea_treatment || pet.last_heat || pet.other_diseases || (pet.base_diseases && pet.base_diseases.length > 0) || pet.surgeries || pet.medications || (pet.allergies && pet.allergies.length > 0);
+      if (hasSanitario) {
+        if (y > pageH - 60) { doc.addPage(); y = margin; }
+        doc.fill(secondaryText).fontSize(8).font('Helvetica-Bold').text('HISTORIAL SANITARIO', margin + 12, y);
+        y += 10;
+        drawField('Vacunas', pet.vaccines);
+        drawField('Desparasitacion', pet.deworming);
+        drawField('Antipulgas', pet.flea_treatment);
+        drawField('Ultimo celo', pet.last_heat);
+        drawField('Enfermedades previas', pet.other_diseases);
+        if (pet.base_diseases && pet.base_diseases.length > 0) drawField('Enfermedades de base', pet.base_diseases.join(', '));
+        drawField('Cirugias previas', pet.surgeries);
+        drawField('Medicamentos actuales', pet.medications);
+        if (pet.allergies && pet.allergies.length > 0) drawField('Alergias', pet.allergies.join(', '));
+      }
+
+      // ── Anamnesis ──
+      drawField('Anamnesis', pet.anamnesis);
+
+      // ── Pre-diagnostico ──
+      drawField('Pre-diagnostico', pet.pre_diagnostico);
+
+      // ── Constantes fisiologicas ──
+      if (pet.vital_signs) {
+        if (y > pageH - 60) { doc.addPage(); y = margin; }
+        doc.fill(secondaryText).fontSize(8).font('Helvetica-Bold').text('CONSTANTES FISIOLOGICAS', margin + 12, y);
+        y += 10;
+        const vs = pet.vital_signs;
+        const vitals = [];
+        if (vs.temperature != null) vitals.push(`Temp: ${vs.temperature} C`);
+        if (vs.heart_rate != null) vitals.push(`FC: ${vs.heart_rate} lpm`);
+        if (vs.respiratory_rate != null) vitals.push(`FR: ${vs.respiratory_rate} rpm`);
+        if (vs.blood_pressure) vitals.push(`PA: ${vs.blood_pressure}`);
+        if (vs.spo2 != null) vitals.push(`SpO2: ${vs.spo2}%`);
+        if (vitals.length > 0) {
+          doc.fill(darkText).fontSize(9).font('Helvetica').text(vitals.join('   |   '), margin + 16, y, { width: contentW - 32 });
+          y += 16;
+        }
+      }
+
+      // ── Hallazgos examen fisico ──
+      drawField('Hallazgos examen fisico', pet.hallazgos_examen_fisico);
+
+      // ── Notas ──
+      drawField('Notas', pet.notes);
+
+      y += 6;
     }
 
     // ── HISTORIAL CLINICO ──
