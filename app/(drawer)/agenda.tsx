@@ -155,7 +155,6 @@ function AgendaContent() {
   const [mobileSidebarVisible, setMobileSidebarVisible] = useState(false);
   const sidebarWidth = isDesktop ? 320 : 0;
   const showSidebar = isDesktop;
-  const mainContentWidth = showSidebar ? screenWidth - sidebarWidth : screenWidth;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
@@ -176,7 +175,7 @@ function AgendaContent() {
         isMobile={isMobile}
       />
       <View style={styles.contentArea}>
-        <View style={[styles.mainContent, { width: mainContentWidth }]}>
+        <View style={[styles.mainContent, showSidebar && { width: screenWidth - sidebarWidth }]}>
           {viewMode === 'week' && (
             <WeekView
               weekDays={weekDays}
@@ -207,7 +206,7 @@ function AgendaContent() {
               onDragEnd={onDragEnd}
               dragState={dragState}
               loading={loading}
-              columnWidth={mainContentWidth - 44}
+              columnWidth={showSidebar ? screenWidth - sidebarWidth - 44 : screenWidth - 44}
             />
           )}
           {viewMode === 'month' && (

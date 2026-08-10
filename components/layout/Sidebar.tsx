@@ -24,7 +24,7 @@ const NAV_SECTIONS = [
       { label: 'Inicio', iconName: 'dashboard' as VetCloudIconName, route: '/(drawer)' },
       { label: 'Pacientes', iconName: 'pacientes' as VetCloudIconName, route: '/(drawer)/pacientes' },
       { label: 'Enfermedades', iconName: 'enfermedades' as VetCloudIconName, route: '/(drawer)/diseases' },
-      { label: 'Medicamentos', iconName: 'medicamentos' as VetCloudIconName, route: '/(drawer)/medications' },
+      { label: 'Vademécum', iconName: 'medicamentos' as VetCloudIconName, route: '/(drawer)/medications' },
     ],
   },
   {
@@ -34,6 +34,13 @@ const NAV_SECTIONS = [
       { label: 'Hospitalización', iconName: 'hospitalizacion' as VetCloudIconName, route: '/(drawer)/hospitalizacion' },
       { label: 'Laboratorio', iconName: 'laboratorio' as VetCloudIconName, route: '/(drawer)/laboratorio' },
       { label: 'Inventario', iconName: 'inventario' as VetCloudIconName, route: '/(drawer)/inventario' },
+    ],
+  },
+  {
+    title: 'HERRAMIENTAS',
+    items: [
+      { label: 'Fluidoterapia', iconName: 'agenda' as VetCloudIconName, route: '/(drawer)/fluidoterapia' },
+      { label: 'Calculadora dosis', iconName: 'medicamentos' as VetCloudIconName, route: '/(drawer)/dosis' },
     ],
   },
   {

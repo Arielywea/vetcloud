@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, ScrollView, Text, Dimensions, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, useWindowDimensions, TouchableOpacity } from 'react-native';
 import { Plus } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import TimeGrid, { HOUR_HEIGHT, HOURS } from './TimeGrid';
@@ -79,12 +79,12 @@ export default function WeekView({
   currentUserId,
 }: WeekViewProps) {
   const { colors } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
 
   const colWidth = useMemo(() => {
-    const screenW = Dimensions.get('window').width;
-    const availW = screenW - 52;
+    const availW = screenWidth - 52;
     return Math.floor(availW / 7);
-  }, []);
+  }, [screenWidth]);
 
   if (loading) {
     return (
