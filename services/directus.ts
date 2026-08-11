@@ -246,13 +246,30 @@ export interface DirectusLabExam {
 // ─────────────────────────────────────────────────────────
 
 async function apiGet(endpoint: string, params?: Record<string, string>) {
-  const url = new URL(`${API_URL}${endpoint}`);
+  const filterParts: string[] = [];
+  const simpleParams: Record<string, string> = {};
+
   if (params) {
     Object.entries(params).forEach(([k, v]) => {
-      if (v && v !== 'all') url.searchParams.set(k, v);
+      if (v && v !== 'all') {
+        if (k.includes('[')) {
+          filterParts.push(`${k}=${encodeURIComponent(v)}`);
+        } else {
+          simpleParams[k] = v;
+        }
+      }
     });
   }
-  const res = await fetch(url.toString(), { headers: await authHeaders() });
+
+  let urlStr = `${API_URL}${endpoint}`;
+  const searchParams = new URLSearchParams(simpleParams);
+  const qs = searchParams.toString();
+  if (qs) urlStr += `?${qs}`;
+  if (filterParts.length) {
+    urlStr += (qs ? '&' : '?') + filterParts.join('&');
+  }
+
+  const res = await fetch(urlStr, { headers: await authHeaders() });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
   const json = await res.json();
   return json.data;
