@@ -294,16 +294,41 @@ async function apiDelete(endpoint: string) {
 
 export const api = {
   diseases: {
-    list: (params?: { species?: string; search?: string; category?: string; severity?: string }) =>
-      apiGet('/items/diseases', params),
+    list: (params?: { species?: string; search?: string; category?: string; severity?: string }) => {
+      const directusParams: Record<string, string> = {};
+      if (params?.species && params.species !== 'all') {
+        directusParams['filter[species][_eq]'] = params.species;
+      }
+      if (params?.category) {
+        directusParams['filter[category][_eq]'] = params.category;
+      }
+      if (params?.severity) {
+        directusParams['filter[severity][_eq]'] = params.severity;
+      }
+      if (params?.search) {
+        directusParams['filter[name][_contains]'] = params.search;
+      }
+      return apiGet('/items/diseases', directusParams);
+    },
     get: (id: string) => apiGet(`/items/diseases/${id}`),
     create: (data: any) => apiPost('/items/diseases', data),
     update: (id: string, data: any) => apiPatch(`/items/diseases/${id}`, data),
     delete: (id: string) => apiDelete(`/items/diseases/${id}`),
   },
   medications: {
-    list: (params?: { category?: string; especialidad?: string; search?: string }) =>
-      apiGet('/items/medications', params),
+    list: (params?: { category?: string; especialidad?: string; search?: string }) => {
+      const directusParams: Record<string, string> = {};
+      if (params?.especialidad) {
+        directusParams['filter[especialidad][_eq]'] = params.especialidad;
+      }
+      if (params?.category) {
+        directusParams['filter[category][_eq]'] = params.category;
+      }
+      if (params?.search) {
+        directusParams['filter[nombre][_contains]'] = params.search;
+      }
+      return apiGet('/items/medications', directusParams);
+    },
     create: (data: any) => apiPost('/items/medications', data),
   },
   pets: {
