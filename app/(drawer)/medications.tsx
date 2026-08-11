@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { View, FlatList, StyleSheet, TouchableOpacity, TextInput as RNTextInput, ScrollView } from 'react-native';
 import { Text } from 'react-native-paper';
-import { Search } from 'lucide-react-native';
+import { Search, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import * as Icons from 'lucide-react-native';
 import { useMedications } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -27,6 +27,21 @@ export default function MedicationsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
+  const [scrollOffset, setScrollOffset] = useState(0);
+  const [contentWidth, setContentWidth] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const canScrollLeft = scrollOffset > 0;
+  const canScrollRight = scrollOffset < contentWidth - containerWidth - 10;
+
+  const scrollLeft = useCallback(() => {
+    scrollViewRef.current?.scrollTo({ x: Math.max(0, scrollOffset - 200), animated: true });
+  }, [scrollOffset]);
+
+  const scrollRight = useCallback(() => {
+    scrollViewRef.current?.scrollTo({ x: Math.min(contentWidth - containerWidth, scrollOffset + 200), animated: true });
+  }, [scrollOffset, contentWidth, containerWidth]);
 
   const { medications, loading } = useMedications(activeEspecialidad);
 
@@ -71,14 +86,31 @@ export default function MedicationsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Scrollable Specialty Tabs */}
       <View style={styles.tabsContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabScrollContent}
-          style={styles.tabScrollView}
-        >
-          {ESPECIALIDADES.map(renderEspecialidadTab)}
-        </ScrollView>
+        <View style={styles.tabsRow}>
+          {canScrollLeft && (
+            <TouchableOpacity onPress={scrollLeft} style={[styles.scrollArrow, { backgroundColor: colors.surface }]}>
+              <ChevronLeft size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tabScrollContent}
+            style={styles.tabScrollView}
+            onScroll={(e) => setScrollOffset(e.nativeEvent.contentOffset.x)}
+            onContentSizeChange={(w) => setContentWidth(w)}
+            onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
+            scrollEventThrottle={16}
+          >
+            {ESPECIALIDADES.map(renderEspecialidadTab)}
+          </ScrollView>
+          {canScrollRight && (
+            <TouchableOpacity onPress={scrollRight} style={[styles.scrollArrow, { backgroundColor: colors.surface }]}>
+              <ChevronRight size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Search */}
@@ -130,6 +162,24 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     height: 70,
+  },
+  tabsRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  scrollArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: SPACING.xs,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   tabScrollView: {
     flex: 1,

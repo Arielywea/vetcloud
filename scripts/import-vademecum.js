@@ -98,7 +98,16 @@ async function importCsv(csvPath, especialidad) {
       );
 
       if (existing.rows.length > 0) {
-        console.log(`  ↳ ${nombre} (already exists, skipping)`);
+        // Update existing record
+        await pool.query(
+          `UPDATE medications 
+           SET marca_comercial = $2, presentacion = $3, familia = $4, funcion = $5, 
+               dosis_perro = $6, dosis_gato = $7, via_administracion = $8, 
+               efectos_adversos = $9, notas = $10
+           WHERE id = $1`,
+          [existing.rows[0].id, marca_comercial, presentacion, familia, funcion, dosis_perro, dosis_gato, via_administracion, efectos_adversos, notas]
+        );
+        console.log(`  ↳ ${nombre} (updated)`);
         skipped++;
         continue;
       }
