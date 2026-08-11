@@ -103,6 +103,7 @@ export interface Medication {
   dosis_max_mg_kg: number | null;
   concentracion_mg_ml: number | null;
   frecuencia_horas: number | null;
+  especialidad: string | null;
   created_at: string;
 }
 
@@ -301,7 +302,7 @@ export const api = {
     delete: (id: string) => apiDelete(`/items/diseases/${id}`),
   },
   medications: {
-    list: (params?: { category?: string; search?: string }) =>
+    list: (params?: { category?: string; especialidad?: string; search?: string }) =>
       apiGet('/items/medications', params),
     create: (data: any) => apiPost('/items/medications', data),
   },
