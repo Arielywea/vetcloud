@@ -439,6 +439,10 @@ app.get('/items/medications', async (req, res) => {
       conditions.push(`category = $${params.length + 1}`);
       params.push(req.query.category);
     }
+    if (req.query.especialidad) {
+      conditions.push(`especialidad = $${params.length + 1}`);
+      params.push(req.query.especialidad);
+    }
     if (req.query.search) {
       conditions.push(`(nombre ILIKE $${params.length + 1} OR marca_comercial ILIKE $${params.length + 1} OR familia ILIKE $${params.length + 1})`);
       params.push(`%${req.query.search}%`);

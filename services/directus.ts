@@ -246,30 +246,13 @@ export interface DirectusLabExam {
 // ─────────────────────────────────────────────────────────
 
 async function apiGet(endpoint: string, params?: Record<string, string>) {
-  const filterParts: string[] = [];
-  const simpleParams: Record<string, string> = {};
-
+  const url = new URL(`${API_URL}${endpoint}`);
   if (params) {
     Object.entries(params).forEach(([k, v]) => {
-      if (v && v !== 'all') {
-        if (k.includes('[')) {
-          filterParts.push(`${k}=${encodeURIComponent(v)}`);
-        } else {
-          simpleParams[k] = v;
-        }
-      }
+      if (v && v !== 'all') url.searchParams.set(k, v);
     });
   }
-
-  let urlStr = `${API_URL}${endpoint}`;
-  const searchParams = new URLSearchParams(simpleParams);
-  const qs = searchParams.toString();
-  if (qs) urlStr += `?${qs}`;
-  if (filterParts.length) {
-    urlStr += (qs ? '&' : '?') + filterParts.join('&');
-  }
-
-  const res = await fetch(urlStr, { headers: await authHeaders() });
+  const res = await fetch(url.toString(), { headers: await authHeaders() });
   if (!res.ok) throw new Error(`API error: ${res.statusText}`);
   const json = await res.json();
   return json.data;
@@ -314,16 +297,16 @@ export const api = {
     list: (params?: { species?: string; search?: string; category?: string; severity?: string }) => {
       const directusParams: Record<string, string> = {};
       if (params?.species && params.species !== 'all') {
-        directusParams['filter[species][_eq]'] = params.species;
+        directusParams.species = params.species;
       }
       if (params?.category) {
-        directusParams['filter[category][_eq]'] = params.category;
+        directusParams.category = params.category;
       }
       if (params?.severity) {
-        directusParams['filter[severity][_eq]'] = params.severity;
+        directusParams.severity = params.severity;
       }
       if (params?.search) {
-        directusParams['filter[name][_contains]'] = params.search;
+        directusParams.search = params.search;
       }
       return apiGet('/items/diseases', directusParams);
     },
@@ -336,13 +319,13 @@ export const api = {
     list: (params?: { category?: string; especialidad?: string; search?: string }) => {
       const directusParams: Record<string, string> = {};
       if (params?.especialidad) {
-        directusParams['filter[especialidad][_eq]'] = params.especialidad;
+        directusParams.especialidad = params.especialidad;
       }
       if (params?.category) {
-        directusParams['filter[category][_eq]'] = params.category;
+        directusParams.category = params.category;
       }
       if (params?.search) {
-        directusParams['filter[nombre][_contains]'] = params.search;
+        directusParams.search = params.search;
       }
       return apiGet('/items/medications', directusParams);
     },
