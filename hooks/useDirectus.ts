@@ -49,7 +49,7 @@ export function useDiseases(species?: 'dog' | 'cat' | 'all') {
 // Hook: Medications
 // ─────────────────────────────────────────────────────────
 
-export function useMedications(category?: 'intraoperatorio' | 'receta') {
+export function useMedications(especialidad?: string) {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +59,9 @@ export function useMedications(category?: 'intraoperatorio' | 'receta') {
     setError(null);
     try {
       const params: any = {};
-      if (category) params.category = category;
+      if (especialidad && especialidad !== 'todas') {
+        params.especialidad = especialidad;
+      }
       const result = await api.medications.list(params);
       setMedications(result as Medication[]);
     } catch (err: any) {
@@ -68,7 +70,7 @@ export function useMedications(category?: 'intraoperatorio' | 'receta') {
     } finally {
       setLoading(false);
     }
-  }, [category]);
+  }, [especialidad]);
 
   useEffect(() => {
     fetchMedications();

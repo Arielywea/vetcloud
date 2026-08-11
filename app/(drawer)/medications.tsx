@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { View, FlatList, StyleSheet, TouchableOpacity, TextInput as RNTextInput } from 'react-native';
+import { View, FlatList, StyleSheet, TouchableOpacity, TextInput as RNTextInput, ScrollView } from 'react-native';
 import { Text } from 'react-native-paper';
-import { Search, Syringe, Pill } from 'lucide-react-native';
+import { Search } from 'lucide-react-native';
+import * as Icons from 'lucide-react-native';
 import { useMedications } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
@@ -10,17 +11,24 @@ import { SkeletonList } from '../../components/ui/Skeleton';
 import MedicationCard from '../../components/medications/MedicationCard';
 import MedicationDetail from '../../components/medications/MedicationDetail';
 import { Medication } from '../../services/directus';
+import { ESPECIALIDADES } from '../../constants/medications';
 
-type TabType = 'intraoperatorio' | 'receta';
+const getIcon = (iconName: string, size: number, color: string) => {
+  const IconComponent = (Icons as any)[iconName];
+  if (IconComponent) {
+    return <IconComponent size={size} color={color} />;
+  }
+  return <Icons.HelpCircle size={size} color={color} />;
+};
 
 export default function MedicationsScreen() {
   const { colors } = useTheme();
-  const [activeTab, setActiveTab] = useState<TabType>('intraoperatorio');
+  const [activeEspecialidad, setActiveEspecialidad] = useState('todas');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
 
-  const { medications, loading } = useMedications(activeTab);
+  const { medications, loading } = useMedications(activeEspecialidad);
 
   const filteredMedications = useMemo(() => {
     if (!searchQuery.trim()) return medications;
@@ -39,27 +47,37 @@ export default function MedicationsScreen() {
     setDetailVisible(true);
   };
 
-  const renderTab = (tab: TabType, label: string, icon: React.ReactNode) => (
-    <TouchableOpacity
-      key={tab}
-      onPress={() => { setActiveTab(tab); setSearchQuery(''); }}
-      style={[styles.tab, activeTab === tab && { backgroundColor: colors.primary, borderColor: colors.primary }]}
-      activeOpacity={0.7}
-    >
-      {icon}
-      <Text style={[styles.tabText, { color: activeTab === tab ? '#FFFFFF' : colors.textSecondary }]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
+  const renderEspecialidadTab = (esp: typeof ESPECIALIDADES[0]) => {
+    const isActive = activeEspecialidad === esp.key;
+    return (
+      <TouchableOpacity
+        key={esp.key}
+        onPress={() => { setActiveEspecialidad(esp.key); setSearchQuery(''); }}
+        style={[
+          styles.tab,
+          isActive && { backgroundColor: esp.color, borderColor: esp.color }
+        ]}
+        activeOpacity={0.7}
+      >
+        {getIcon(esp.icon, 14, isActive ? '#FFFFFF' : colors.textSecondary)}
+        <Text style={[styles.tabText, { color: isActive ? '#FFFFFF' : colors.textSecondary }]}>
+          {esp.label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Tabs */}
-      <View style={styles.tabRow}>
-        {renderTab('intraoperatorio', 'Intraoperatorios', <Syringe size={16} color={activeTab === 'intraoperatorio' ? '#FFFFFF' : colors.textSecondary} />)}
-        {renderTab('receta', 'Ambulatorios', <Pill size={16} color={activeTab === 'receta' ? '#FFFFFF' : colors.textSecondary} />)}
-      </View>
+      {/* Scrollable Specialty Tabs */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tabScrollContent}
+        style={styles.tabScrollView}
+      >
+        {ESPECIALIDADES.map(renderEspecialidadTab)}
+      </ScrollView>
 
       {/* Search */}
       <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -74,46 +92,24 @@ export default function MedicationsScreen() {
       </View>
 
       {/* Content */}
-      {activeTab === 'intraoperatorio' ? (
-        loading ? (
-          <SkeletonList count={5} />
-        ) : (
-          <FlatList
-            data={filteredMedications}
-            keyExtractor={(item) => String(item.id)}
-            renderItem={({ item, index }) => (
-              <MedicationCard medication={item} onPress={() => handlePress(item)} index={index} />
-            )}
-            contentContainerStyle={styles.listContent}
-            ListEmptyComponent={
-              <VEmptyState
-                icon="pill"
-                title="Sin medicamentos"
-                description={searchQuery ? 'No se encontraron resultados para tu busqueda' : 'No hay medicamentos intraoperatorios registrados'}
-              />
-            }
-          />
-        )
+      {loading ? (
+        <SkeletonList count={5} />
       ) : (
-        loading ? (
-          <SkeletonList count={5} />
-        ) : (
-          <FlatList
-            data={filteredMedications}
-            keyExtractor={(item) => String(item.id)}
-            renderItem={({ item, index }) => (
-              <MedicationCard medication={item} onPress={() => handlePress(item)} index={index} />
-            )}
-            contentContainerStyle={styles.listContent}
-            ListEmptyComponent={
-              <VEmptyState
-                icon="pill"
-                title="Sin medicamentos"
-                description={searchQuery ? 'No se encontraron resultados para tu busqueda' : 'No hay medicamentos ambulatorios registrados'}
-              />
-            }
-          />
-        )
+        <FlatList
+          data={filteredMedications}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={({ item, index }) => (
+            <MedicationCard medication={item} onPress={() => handlePress(item)} index={index} />
+          )}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <VEmptyState
+              icon="pill"
+              title="Sin medicamentos"
+              description={searchQuery ? 'No se encontraron resultados para tu búsqueda' : 'No hay medicamentos en esta especialidad'}
+            />
+          }
+        />
       )}
 
       {/* Detail Modal */}
@@ -130,32 +126,35 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  tabRow: {
-    flexDirection: 'row',
-    paddingHorizontal: SPACING.xl,
+  tabScrollView: {
+    maxHeight: 70,
+  },
+  tabScrollContent: {
+    paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.md,
+    paddingBottom: SPACING.sm,
     gap: SPACING.sm,
   },
   tab: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: SPACING.xs,
-    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderRadius: RADIUS.md,
     borderWidth: 1,
     borderColor: '#DDE3EC',
+    marginRight: SPACING.xs,
   },
   tabText: {
-    fontSize: TYPOGRAPHY.sizes.sm,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: SPACING.xl,
-    marginTop: SPACING.md,
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.sm,
     paddingHorizontal: SPACING.lg,
     borderRadius: RADIUS.md,
     borderWidth: 1,
@@ -167,7 +166,7 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.sizes.base,
   },
   listContent: {
-    padding: SPACING.xl,
+    padding: SPACING.lg,
     paddingBottom: SPACING.xl * 2,
   },
 });

@@ -6,7 +6,7 @@ import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
 import VCard from '../ui/Card';
 import VBadge from '../ui/Badge';
 import { Medication } from '../../services/directus';
-import { FAMILIA_COLORS } from '../../constants/medications';
+import { FAMILIA_COLORS, getEspecialidadByKey } from '../../constants/medications';
 
 interface MedicationCardProps {
   medication: Medication;
@@ -17,6 +17,7 @@ interface MedicationCardProps {
 export default function MedicationCard({ medication, onPress, index = 0 }: MedicationCardProps) {
   const { colors } = useTheme();
   const familiaColor = FAMILIA_COLORS[medication.familia || ''] || colors.primary;
+  const especialidad = medication.especialidad ? getEspecialidadByKey(medication.especialidad) : null;
 
   return (
     <VCard onPress={onPress} entrance style={{ marginBottom: SPACING.md }}>
@@ -24,9 +25,16 @@ export default function MedicationCard({ medication, onPress, index = 0 }: Medic
         <Text style={[styles.nombre, { color: colors.text }]} numberOfLines={1}>
           {medication.nombre}
         </Text>
-        <VBadge color={familiaColor} size="sm">
-          {medication.familia || 'N/D'}
-        </VBadge>
+        <View style={styles.badgesRow}>
+          {especialidad && (
+            <VBadge color={especialidad.color} size="sm">
+              {especialidad.label}
+            </VBadge>
+          )}
+          <VBadge color={familiaColor} size="sm">
+            {medication.familia || 'N/D'}
+          </VBadge>
+        </View>
       </View>
 
       {medication.marca_comercial && (
@@ -92,6 +100,11 @@ const styles = StyleSheet.create({
     fontWeight: TYPOGRAPHY.weights.bold,
     flex: 1,
     marginRight: SPACING.sm,
+  },
+  badgesRow: {
+    flexDirection: 'row',
+    gap: SPACING.xs,
+    flexShrink: 1,
   },
   marca: {
     fontSize: TYPOGRAPHY.sizes.sm,

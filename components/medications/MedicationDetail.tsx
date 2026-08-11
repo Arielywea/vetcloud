@@ -6,7 +6,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
 import VBadge from '../ui/Badge';
 import { Medication } from '../../services/directus';
-import { FAMILIA_COLORS } from '../../constants/medications';
+import { FAMILIA_COLORS, getEspecialidadByKey } from '../../constants/medications';
 
 interface MedicationDetailProps {
   medication: Medication | null;
@@ -62,6 +62,10 @@ export default function MedicationDetail({ medication, visible, onClose }: Medic
           <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
             {/* Badges */}
             <View style={styles.badges}>
+              {medication.especialidad && (() => {
+                const esp = getEspecialidadByKey(medication.especialidad);
+                return esp ? <VBadge color={esp.color}>{esp.label}</VBadge> : null;
+              })()}
               <VBadge color={familiaColor}>{medication.familia || 'N/D'}</VBadge>
               <VBadge color={colors.primary}>{medication.presentacion || 'N/D'}</VBadge>
               {isReceta && <VBadge color="#FF9800">Receta</VBadge>}
