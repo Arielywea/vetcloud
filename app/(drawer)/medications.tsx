@@ -70,14 +70,16 @@ export default function MedicationsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Scrollable Specialty Tabs */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabScrollContent}
-        style={styles.tabScrollView}
-      >
-        {ESPECIALIDADES.map(renderEspecialidadTab)}
-      </ScrollView>
+      <View style={styles.tabsContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabScrollContent}
+          style={styles.tabScrollView}
+        >
+          {ESPECIALIDADES.map(renderEspecialidadTab)}
+        </ScrollView>
+      </View>
 
       {/* Search */}
       <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -126,8 +128,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  tabsContainer: {
+    height: 70,
+  },
   tabScrollView: {
-    maxHeight: 70,
+    flex: 1,
   },
   tabScrollContent: {
     paddingHorizontal: SPACING.lg,
