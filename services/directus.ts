@@ -107,6 +107,22 @@ export interface Medication {
   created_at: string;
 }
 
+export interface Surgery {
+  id: number;
+  organization_id: number | null;
+  nombre_cirugia: string;
+  indicaciones: string | null;
+  tecnica_quirurgica: string | null;
+  material_quirurgico: string | null;
+  tipo_sutura: string | null;
+  complicaciones_frecuentes: string | null;
+  manejo_anestesico_sugerido: string | null;
+  consideraciones_por_raza: string | null;
+  consideraciones_comorbilidades: string | null;
+  fuente: string | null;
+  created_at: string;
+}
+
 export interface Appointment {
   id: string;
   user_id: string;
@@ -330,6 +346,16 @@ export const api = {
       return apiGet('/items/medications', directusParams);
     },
     create: (data: any) => apiPost('/items/medications', data),
+  },
+  surgeries: {
+    list: (params?: { search?: string }) => {
+      const directusParams: Record<string, string> = {};
+      if (params?.search) {
+        directusParams.search = params.search;
+      }
+      return apiGet('/items/surgeries', directusParams);
+    },
+    get: (id: string) => apiGet(`/items/surgeries/${id}`),
   },
   pets: {
     list: () => apiGet('/items/pets'),

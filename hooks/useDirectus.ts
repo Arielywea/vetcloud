@@ -13,6 +13,7 @@ import {
   Prescription,
   Reminder,
   Medication,
+  Surgery,
 } from '../services/directus';
 
 // ─────────────────────────────────────────────────────────
@@ -77,6 +78,38 @@ export function useMedications(especialidad?: string) {
   }, [fetchMedications]);
 
   return { medications, loading, error, refresh: fetchMedications };
+}
+
+// ─────────────────────────────────────────────────────────
+// Hook: Surgeries Library
+// ─────────────────────────────────────────────────────────
+
+export function useSurgeries(search?: string) {
+  const [surgeries, setSurgeries] = useState<Surgery[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSurgeries = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params: any = {};
+      if (search) params.search = search;
+      const result = await api.surgeries.list(params);
+      setSurgeries(result as Surgery[]);
+    } catch (err: any) {
+      console.error('Error fetching surgeries:', err);
+      setError(err.message || 'Error fetching surgeries');
+    } finally {
+      setLoading(false);
+    }
+  }, [search]);
+
+  useEffect(() => {
+    fetchSurgeries();
+  }, [fetchSurgeries]);
+
+  return { surgeries, loading, error, refresh: fetchSurgeries };
 }
 
 // ─────────────────────────────────────────────────────────

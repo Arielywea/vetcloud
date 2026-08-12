@@ -25,6 +25,7 @@ const NAV_SECTIONS = [
       { label: 'Pacientes', iconName: 'pacientes' as VetCloudIconName, route: '/(drawer)/pacientes' },
       { label: 'Enfermedades', iconName: 'enfermedades' as VetCloudIconName, route: '/(drawer)/diseases' },
       { label: 'Vademécum', iconName: 'medicamentos' as VetCloudIconName, route: '/(drawer)/medications' },
+      { label: 'Cirugías', iconName: 'cirugias' as VetCloudIconName, route: '/(drawer)/surgeries' },
     ],
   },
   {

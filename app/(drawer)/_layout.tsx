@@ -49,6 +49,7 @@ const SCREEN_TITLES: Record<string, string> = {
   '/(drawer)/add-paciente': 'Nuevo Paciente',
   '/(drawer)/diseases': 'Enfermedades',
   '/(drawer)/medications': 'Vademécum',
+  '/(drawer)/surgeries': 'Cirugías',
   '/(drawer)/agenda': 'Agenda',
   '/(drawer)/hospitalizacion': 'Hospitalización',
   '/(drawer)/laboratorio': 'Laboratorio',
@@ -120,6 +121,7 @@ export default function DrawerLayout() {
               <Stack.Screen name="diseases" />
               <Stack.Screen name="add-disease" />
               <Stack.Screen name="medications" />
+              <Stack.Screen name="surgeries" />
               <Stack.Screen name="agenda" />
               <Stack.Screen name="hospitalizacion" />
               <Stack.Screen name="laboratorio" />
