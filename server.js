@@ -479,6 +479,40 @@ app.post('/items/medications', authMiddleware, async (req, res) => {
   }
 });
 
+// ─── SURGERIES ──────────────────────────────────────────
+app.get('/items/surgeries', async (req, res) => {
+  try {
+    let query = 'SELECT * FROM surgeries';
+    const params = [];
+    const conditions = [];
+
+    if (req.query.search) {
+      conditions.push(`(nombre_cirugia ILIKE $${params.length + 1} OR indicaciones ILIKE $${params.length + 1} OR material_quirurgico ILIKE $${params.length + 1})`);
+      params.push(`%${req.query.search}%`);
+    }
+
+    if (conditions.length) query += ' WHERE ' + conditions.join(' AND ');
+    query += ' ORDER BY nombre_cirugia ASC';
+
+    const result = await pool.query(query, params);
+    res.json({ data: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.get('/items/surgeries/:id', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM surgeries WHERE id = $1', [req.params.id]);
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 // ─── PETS ────────────────────────────────────────────────
 app.get('/items/pets', authMiddleware, async (req, res) => {
   try {

@@ -6,6 +6,7 @@ export type VetCloudIconName =
   | 'pacientes'
   | 'enfermedades'
   | 'medicamentos'
+  | 'cirugias'
   | 'agenda'
   | 'hospitalizacion'
   | 'laboratorio'
@@ -165,11 +166,21 @@ function RecordatoriosIcon({ color }: { color: string }) {
   );
 }
 
+function CirugiasIcon({ color }: { color: string }) {
+  return (
+    <>
+      <Path d="M14.5 2l6 6-8.5 8.5H6V10.5L14.5 2Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Path d="M4 21h16" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </>
+  );
+}
+
 const ICONS: Record<VetCloudIconName, React.FC<{ color: string }>> = {
   dashboard: DashboardIcon,
   pacientes: PacientesIcon,
   enfermedades: EnfermedadesIcon,
   medicamentos: MedicamentosIcon,
+  cirugias: CirugiasIcon,
   agenda: AgendaIcon,
   hospitalizacion: HospitalizacionIcon,
   laboratorio: LaboratorioIcon,
