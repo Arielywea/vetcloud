@@ -713,6 +713,51 @@ export default function AddPacienteScreen() {
         />
       </View>
 
+      {/* Section E — Examen físico */}
+      <View style={[styles.card, { backgroundColor: colors.surface }]}>
+        <TouchableOpacity onPress={() => setExamenExpanded(!examenExpanded)} style={styles.collapsibleHeader}>
+          <View style={styles.collapsibleTitleRow}>
+            <Stethoscope size={18} color={colors.warning} />
+            <Text style={[styles.cardTitle, { color: colors.warning, marginBottom: 0 }]}>Examen físico</Text>
+          </View>
+          {examenExpanded ? <ChevronUp size={20} color={colors.textSecondary} /> : <ChevronDown size={20} color={colors.textSecondary} />}
+        </TouchableOpacity>
+        {examenExpanded && (
+          <View style={styles.collapsibleContent}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Constantes fisiológicas</Text>
+            <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
+              <TextInput label="Temp (°C)" value={vitalTemp} onChangeText={setVitalTemp} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+              <TextInput label="FC (lpm)" value={vitalFC} onChangeText={setVitalFC} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            </View>
+            <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
+              <TextInput label="FR (rpm)" value={vitalFR} onChangeText={setVitalFR} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+              <TextInput label="PA (mmHg)" value={vitalPA} onChangeText={setVitalPA} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            </View>
+            <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
+              <TextInput label="SpO₂ (%)" value={vitalSpO2} onChangeText={setVitalSpO2} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+              <TextInput label="Mucosas" value={vitalMucosas} onChangeText={setVitalMucosas} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            </View>
+            <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
+              <TextInput label="Hidratación" value={vitalHidratacion} onChangeText={setVitalHidratacion} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+              <TextInput label="Condición corporal" value={vitalCondicionCorporal} onChangeText={setVitalCondicionCorporal} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+            </View>
+
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginTop: 4 }]}>Hallazgos examen físico</Text>
+            <TextInput
+              label="Hallazgos examen físico"
+              value={hallazgosExamenFisico}
+              onChangeText={setHallazgosExamenFisico}
+              mode="outlined"
+              multiline
+              numberOfLines={4}
+              style={[styles.input, { backgroundColor: colors.surface }]}
+              outlineColor={colors.border}
+              activeOutlineColor={colors.primary}
+            />
+          </View>
+        )}
+      </View>
+
       {/* Section D.5 — Pre-diagnóstico */}
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <View style={styles.collapsibleTitleRow}>
@@ -760,51 +805,6 @@ export default function AddPacienteScreen() {
           outlineColor={colors.border}
           activeOutlineColor={colors.primary}
         />
-      </View>
-
-      {/* Section E — Examen físico */}
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <TouchableOpacity onPress={() => setExamenExpanded(!examenExpanded)} style={styles.collapsibleHeader}>
-          <View style={styles.collapsibleTitleRow}>
-            <Stethoscope size={18} color={colors.warning} />
-            <Text style={[styles.cardTitle, { color: colors.warning, marginBottom: 0 }]}>Examen físico</Text>
-          </View>
-          {examenExpanded ? <ChevronUp size={20} color={colors.textSecondary} /> : <ChevronDown size={20} color={colors.textSecondary} />}
-        </TouchableOpacity>
-        {examenExpanded && (
-          <View style={styles.collapsibleContent}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Constantes fisiológicas</Text>
-            <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
-              <TextInput label="Temp (°C)" value={vitalTemp} onChangeText={setVitalTemp} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-              <TextInput label="FC (lpm)" value={vitalFC} onChangeText={setVitalFC} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            </View>
-            <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
-              <TextInput label="FR (rpm)" value={vitalFR} onChangeText={setVitalFR} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-              <TextInput label="PA (mmHg)" value={vitalPA} onChangeText={setVitalPA} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            </View>
-            <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
-              <TextInput label="SpO₂ (%)" value={vitalSpO2} onChangeText={setVitalSpO2} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-              <TextInput label="Mucosas" value={vitalMucosas} onChangeText={setVitalMucosas} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            </View>
-            <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
-              <TextInput label="Hidratación" value={vitalHidratacion} onChangeText={setVitalHidratacion} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-              <TextInput label="Condición corporal" value={vitalCondicionCorporal} onChangeText={setVitalCondicionCorporal} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            </View>
-
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginTop: 4 }]}>Hallazgos examen físico</Text>
-            <TextInput
-              label="Hallazgos examen físico"
-              value={hallazgosExamenFisico}
-              onChangeText={setHallazgosExamenFisico}
-              mode="outlined"
-              multiline
-              numberOfLines={4}
-              style={[styles.input, { backgroundColor: colors.surface }]}
-              outlineColor={colors.border}
-              activeOutlineColor={colors.primary}
-            />
-          </View>
-        )}
       </View>
     </View>
   );
