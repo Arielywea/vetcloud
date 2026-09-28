@@ -164,7 +164,7 @@ async function testPasswordPolicy() {
   const shortRes = await fetch(`${BASE_URL}/auth/password`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ current_password: "REDACTED", new_password: "abc" }),
+    body: JSON.stringify({ current_password: process.env.VETCLOUD_TEST_PASS, new_password: "abc" }),
   });
 
   if (shortRes.status === 400) {
@@ -182,7 +182,7 @@ async function testPasswordPolicy() {
   const weakRes = await fetch(`${BASE_URL}/auth/password`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ current_password: "REDACTED", new_password: "lowercaseonly" }),
+    body: JSON.stringify({ current_password: process.env.VETCLOUD_TEST_PASS, new_password: "lowercaseonly" }),
   });
 
   if (weakRes.status === 400) {
