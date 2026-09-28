@@ -18,7 +18,7 @@ interface PatientRowProps {
 }
 
 export default function PatientRow({ patient, isSelected, onSelect, onClick, onDelete }: PatientRowProps) {
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
   const [showMenu, setShowMenu] = useState(false);
   const active = isActive(patient);
 
@@ -47,7 +47,7 @@ export default function PatientRow({ patient, isSelected, onSelect, onClick, onD
             backgroundColor: isSelected ? colors.primary : 'transparent',
           },
         ]}>
-          {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
+          {isSelected && <Check size={12} color={onPrimaryText.default} strokeWidth={3} />}
         </View>
       </TouchableOpacity>
 

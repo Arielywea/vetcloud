@@ -50,7 +50,7 @@ export default function AgendaToolbar({
   onExport,
   isMobile,
 }: AgendaToolbarProps) {
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
 
   const navigateDate = (direction: -1 | 1) => {
     const newDate = new Date(selectedDate);
@@ -71,7 +71,7 @@ export default function AgendaToolbar({
           onPress={onNewAppointment}
         >
           <Plus size={16} color="#FFF" />
-          <Text style={styles.primaryBtnText}>Nueva Cita</Text>
+          <Text style={[styles.primaryBtnText, { color: onPrimaryText.default }]}>Nueva Cita</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.secondaryBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
@@ -113,13 +113,13 @@ export default function AgendaToolbar({
               ]}
               onPress={() => onViewChange(mode)}
             >
-              <View style={{ color: viewMode === mode ? '#FFF' : colors.textSecondary }}>
+              <View style={{ color: viewMode === mode ? onPrimaryText.default : colors.textSecondary }}>
                 {VIEW_ICONS[mode]}
               </View>
               <Text
                 style={[
                   styles.viewBtnText,
-                  { color: viewMode === mode ? '#FFF' : colors.textSecondary },
+                  { color: viewMode === mode ? onPrimaryText.default : colors.textSecondary },
                 ]}
               >
                 {VIEW_LABELS[mode]}

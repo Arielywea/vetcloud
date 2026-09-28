@@ -275,7 +275,7 @@ function AgendaContent() {
       {isMobile && mobileSidebarVisible && (
         <View style={styles.sidebarOverlay}>
           <View style={styles.sidebarOverlayBg} onTouchEnd={() => setMobileSidebarVisible(false)} />
-          <View style={[styles.mobileSidebar, { backgroundColor: colors.surface }]}>
+          <View style={[styles.mobileSidebar, { backgroundColor: colors.surface, borderLeftColor: colors.border }]}>
             <AgendaSidebar
               selectedDate={selectedDate}
               onDateSelect={(date) => {
@@ -339,7 +339,6 @@ const styles = StyleSheet.create({
     width: 320,
     height: '100%',
     borderLeftWidth: 1,
-    borderLeftColor: '#E5E7EB',
     shadowColor: '#000',
     shadowOffset: { width: -2, height: 0 },
     shadowOpacity: 0.1,

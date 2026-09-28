@@ -22,7 +22,7 @@ const TABS: { key: ClinicalTabType; label: string; icon: string }[] = [
 ];
 
 export default function ClinicalTabs({ activeTab, onTabChange, counts }: ClinicalTabsProps) {
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
 
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.container}>
@@ -42,12 +42,12 @@ export default function ClinicalTabs({ activeTab, onTabChange, counts }: Clinica
             <DynamicIcon
               name={tab.icon as any}
               size={14}
-              color={isActive ? '#FFFFFF' : '#C9A227'}
+              color={isActive ? onPrimaryText.default : colors.textSecondary}
             />
             <Text style={[
               styles.tabText,
               { color: colors.textSecondary },
-              isActive && { color: '#FFFFFF' },
+              isActive && { color: onPrimaryText.default },
             ]}>
               {tab.label}
             </Text>
@@ -60,7 +60,7 @@ export default function ClinicalTabs({ activeTab, onTabChange, counts }: Clinica
                 <Text style={[
                   styles.badgeText,
                   { color: colors.textSecondary },
-                  isActive && { color: '#FFFFFF' },
+                  isActive && { color: onPrimaryText.default },
                 ]}>{count}</Text>
               </View>
             )}

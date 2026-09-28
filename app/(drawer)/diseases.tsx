@@ -4,7 +4,7 @@ import { Text, Modal, Portal } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { Search, Filter, FilterX, Plus, BriefcaseMedical, Dog, Cat, PawPrint, Baby, ChevronDown } from 'lucide-react-native';
 import { useDiseases } from '../../hooks/useDirectus';
-import { SEVERITY_COLORS, SEVERITY_LABELS, TEXT_ON_PRIMARY } from '../../constants/colors';
+import { SEVERITY_COLORS, SEVERITY_LABELS } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { DISEASE_CATEGORIES, SPECIES_INFO } from '../../constants/diseases';
 import { DirectusDisease } from '../../services/directus';
@@ -14,14 +14,13 @@ import VCard from '../../components/ui/Card';
 import VBadge from '../../components/ui/Badge';
 import VEmptyState from '../../components/ui/EmptyState';
 import { SkeletonList } from '../../components/ui/Skeleton';
-import AnimatedIcon from '../../components/icons/AnimatedIcon';
 
 const SPECIES_ICONS: Record<string, typeof Dog> = { dog: Dog, cat: Cat };
 
 export default function DiseasesScreen() {
   const router = useRouter();
   const { diseases, loading } = useDiseases();
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecies, setSelectedSpecies] = useState<'dog' | 'cat' | 'all'>('all');
   const [selectedCategories, setSelectedCategories] = useState<DiseaseCategory[]>([]);
@@ -147,7 +146,7 @@ export default function DiseasesScreen() {
               onPress={() => setSelectedSpecies(sp)}
               style={[styles.speciesChip, { backgroundColor: colors.surface, borderColor: colors.border }, selectedSpecies === sp && { backgroundColor: colors.primary, borderColor: colors.primary }]}
             >
-              <Text style={{ color: selectedSpecies === sp ? TEXT_ON_PRIMARY.light.default : colors.text, fontSize: TYPOGRAPHY.sizes.sm }}>
+              <Text style={{ color: selectedSpecies === sp ? onPrimaryText.default : colors.text, fontSize: TYPOGRAPHY.sizes.sm }}>
                 {sp === 'all' ? 'Todos' : sp === 'dog' ? 'Perros' : 'Gatos'}
               </Text>
             </TouchableOpacity>

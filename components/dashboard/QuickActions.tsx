@@ -17,7 +17,7 @@ const ACTIONS: { label: string; iconName: VetCloudIconName; route: string }[] = 
 
 export default function QuickActions() {
   const router = useRouter();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.xs]}>
@@ -30,7 +30,7 @@ export default function QuickActions() {
       {/* Actions grid */}
       <View style={styles.grid}>
         {ACTIONS.map((action) => {
-          const actionColor = isDark ? colors.accent : colors.primary;
+          const actionColor = colors.primary;
           return (
             <TouchableOpacity
               key={action.label}

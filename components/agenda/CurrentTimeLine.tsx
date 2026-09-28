@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getTextOnPrimary } from '../../constants/colors';
 import { View, StyleSheet, Text } from 'react-native';
 import { TYPOGRAPHY } from '../../constants/tokens';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -39,7 +40,7 @@ export default function CurrentTimeLine({ hourHeight, startHour, nextAppointment
   return (
     <View style={[styles.container, { top: offset }]}>
       <View style={[styles.label, { backgroundColor: colors.error }]}>
-        <Text style={styles.labelText}>{timeStr}</Text>
+        <Text style={[styles.labelText, { color: getTextOnPrimary(colors.error).default }]}>{timeStr}</Text>
       </View>
       <View style={[styles.line, { backgroundColor: colors.error }]} />
       {nextInMinutes !== null && nextInMinutes <= 60 && (

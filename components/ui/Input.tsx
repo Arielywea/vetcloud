@@ -31,7 +31,7 @@ export default function VInput({
     setIsFocused(true);
     Animated.timing(borderAnim, {
       toValue: 1,
-      duration: ANIMATION.normal,
+      duration: ANIMATION.fast,
       useNativeDriver: false,
     }).start();
   };
@@ -50,11 +50,6 @@ export default function VInput({
     outputRange: [colors.border, colors.primary],
   });
 
-  const borderWidth = borderAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 2],
-  });
-
   return (
     <View style={[styles.container, containerStyle]}>
       {label && (
@@ -65,7 +60,7 @@ export default function VInput({
           styles.inputWrapper,
           {
             borderColor,
-            borderWidth,
+            borderWidth: 1.5, // constant: animating width shifts layout on focus
             backgroundColor: colors.surface,
           },
         ]}

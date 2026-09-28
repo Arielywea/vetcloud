@@ -22,7 +22,7 @@ const getIcon = (iconName: string, size: number, color: string) => {
 };
 
 export default function MedicationsScreen() {
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
   const [activeEspecialidad, setActiveEspecialidad] = useState('todas');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
@@ -70,12 +70,13 @@ export default function MedicationsScreen() {
         onPress={() => { setActiveEspecialidad(esp.key); setSearchQuery(''); }}
         style={[
           styles.tab,
+          { borderColor: colors.border },
           isActive && { backgroundColor: esp.color, borderColor: esp.color }
         ]}
         activeOpacity={0.7}
       >
-        {getIcon(esp.icon, 14, isActive ? '#FFFFFF' : colors.textSecondary)}
-        <Text style={[styles.tabText, { color: isActive ? '#FFFFFF' : colors.textSecondary }]}>
+        {getIcon(esp.icon, 14, isActive ? onPrimaryText.default : colors.textSecondary)}
+        <Text style={[styles.tabText, { color: isActive ? onPrimaryText.default : colors.textSecondary }]}>
           {esp.label}
         </Text>
       </TouchableOpacity>
@@ -198,7 +199,6 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.md,
     borderWidth: 1,
-    borderColor: '#DDE3EC',
     marginRight: SPACING.xs,
   },
   tabText: {

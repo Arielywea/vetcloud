@@ -16,7 +16,7 @@ interface PatientPaginationProps {
 export default function PatientPagination({
   currentPage, totalPages, totalItems, itemsPerPage, onPageChange,
 }: PatientPaginationProps) {
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
   const start = (currentPage - 1) * itemsPerPage + 1;
   const end = Math.min(currentPage * itemsPerPage, totalItems);
 
@@ -59,7 +59,7 @@ export default function PatientPagination({
               style={[styles.pageBtn, isActive && { backgroundColor: colors.primary }]}
               activeOpacity={0.7}
             >
-              <Text style={[styles.pageNum, { color: isActive ? '#FFFFFF' : colors.text }]}>{page}</Text>
+              <Text style={[styles.pageNum, { color: isActive ? onPrimaryText.default : colors.text }]}>{page}</Text>
             </TouchableOpacity>
           );
         })}

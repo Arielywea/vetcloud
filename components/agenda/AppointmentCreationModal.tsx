@@ -53,7 +53,7 @@ export default function AppointmentCreationModal({
   onClose,
   onCreated,
 }: AppointmentCreationModalProps) {
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
 
   // Form state
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
@@ -446,7 +446,7 @@ export default function AppointmentCreationModal({
               ) : (
                 <Check size={18} color="#FFF" />
               )}
-              <Text style={styles.primaryBtnText}>
+              <Text style={[styles.primaryBtnText, { color: onPrimaryText.default }]}>
                 {submitting ? 'Creando...' : 'Crear Cita'}
               </Text>
             </TouchableOpacity>

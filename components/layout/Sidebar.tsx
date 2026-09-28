@@ -10,6 +10,7 @@ import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tok
 import { TEXT_ON_PRIMARY, getTextOnPrimary } from '../../constants/colors';
 import BeagleLogo from '../BeagleLogo';
 import VetCloudIcon, { VetCloudIconName } from '../icons/VetCloudIcon';
+import DisplayText from '../ui/DisplayText';
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -67,14 +68,11 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { colors, isDark } = useTheme();
-  const { isMobile } = useResponsive();
+  const { colors, isDark, onChromeText } = useTheme();
 
-  const palette = getTextOnPrimary(colors.primary);
-  const sidebarBg = colors.primary;
-  const textColor = palette.default;
-  const mutedText = palette.subtle;
-  const activeIndicator = colors.accent;
+  // Saber: gold marks on navy. Alter: gold icons, crimson lozenge on black.
+  const activeIcon = isDark ? colors.primary : colors.accent;
+  const activeMark = colors.accent;
 
   const handleNavigate = (route: string) => {
     router.push(route as any);
@@ -83,129 +81,87 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
 
   const isActive = (route: string) => {
     if (route === '/(drawer)') return pathname === '/' || pathname === '/(drawer)';
-    return pathname.startsWith(route);
+    return pathname.startsWith(route.replace('/(drawer)', ''));
+  };
+
+  const renderItem = (item: { label: string; iconName: VetCloudIconName; route: string }) => {
+    const active = isActive(item.route);
+    return (
+      <TouchableOpacity
+        key={item.label}
+        style={[styles.navItem, collapsed && styles.navItemCollapsed, active && { backgroundColor: alpha(colors.onChrome, 0.07) }]}
+        onPress={() => handleNavigate(item.route)}
+        activeOpacity={0.6}
+        accessibilityRole="link"
+        accessibilityState={{ selected: active }}
+        accessibilityLabel={item.label}
+      >
+        {active && <View style={[styles.lozenge, { backgroundColor: activeMark }]} />}
+        <VetCloudIcon name={item.iconName} size={19} color={active ? activeIcon : onChromeText.subtle} />
+        {!collapsed && (
+          <Text
+            style={[styles.navLabel, { color: active ? onChromeText.default : onChromeText.muted, fontWeight: active ? TYPOGRAPHY.weights.semibold : '500' }]}
+            numberOfLines={1}
+          >
+            {item.label}
+          </Text>
+        )}
+      </TouchableOpacity>
+    );
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: sidebarBg, borderTopColor: colors.accent, ...SHADOWS.sm, width: collapsed ? 64 : 240 }]}>
-      {/* Logo */}
-      <View style={[styles.logoSection, { borderBottomColor: palette.default + '1A' }]}>
-        <View style={styles.logoWrap}>
-          <BeagleLogo size={48} variant="light" />
-        </View>
+    <View style={[styles.container, { backgroundColor: colors.chrome, width: collapsed ? 64 : 240 }]}>
+      {/* Crest + wordmark */}
+      <View style={[styles.logoSection, { borderBottomColor: alpha(colors.onChrome, 0.08) }, collapsed && styles.logoSectionCollapsed]}>
+        <BeagleLogo size={collapsed ? 32 : 36} />
         {!collapsed && (
-          <View style={styles.logoText}>
-            <Text style={[styles.logoVet, { color: textColor }]}>Vet</Text>
-            <Text style={[styles.logoCloud, { color: colors.accent }]}>Cloud</Text>
-          </View>
+          <DisplayText style={[styles.wordmark, { color: onChromeText.default }]}>
+            Vet<Text style={{ color: isDark ? colors.primary : colors.accent }}>Cloud</Text>
+          </DisplayText>
         )}
-        {onToggle && (
-          <TouchableOpacity onPress={onToggle} style={styles.toggleBtn}>
-            <ChevronLeft size={18} color={mutedText} />
+        {onToggle && !collapsed && (
+          <TouchableOpacity onPress={onToggle} style={styles.toggleBtn} accessibilityLabel="Contraer menú">
+            <ChevronLeft size={18} color={onChromeText.subtle} />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Navigation */}
       <ScrollView style={styles.navScroll} showsVerticalScrollIndicator={false}>
         {NAV_SECTIONS.map((section) => (
           <View key={section.title} style={styles.section}>
             {!collapsed && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}><View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: alpha(colors.accent, 0.5) }} /><Text style={[styles.sectionTitle, { color: mutedText }]}>{section.title}</Text></View>
+              <Text style={[styles.sectionTitle, { color: onChromeText.faint }]}>{section.title}</Text>
             )}
-            {section.items.map((item) => {
-              const active = isActive(item.route);
-              return (
-                <TouchableOpacity
-                  key={item.label}
-                  style={[
-                    styles.navItem,
-                    active && {
-                      backgroundColor: alpha(colors.accent, 0.12),
-                      borderLeftColor: activeIndicator,
-                    },
-                    !active && { borderLeftColor: 'transparent' },
-                  ]}
-                  onPress={() => handleNavigate(item.route)}
-                  activeOpacity={0.7}
-                >
-                  <VetCloudIcon name={item.iconName} size={20} color={active ? activeIndicator : mutedText} />
-                  {!collapsed && (
-                    <Text
-                      style={[
-                        styles.navLabel,
-                        {
-                      color: active ? textColor : palette.muted,
-                      fontWeight: active ? TYPOGRAPHY.weights.semibold : TYPOGRAPHY.weights.regular,
-                    },
-                  ]}
-                >
-                  {item.label}
-                </Text>
-              )}
-            </TouchableOpacity>
-          );
-        })}
+            {section.items.map(renderItem)}
           </View>
         ))}
       </ScrollView>
 
-      {/* Bottom section */}
-      <View style={[styles.bottomSection, { borderTopColor: alpha(colors.accent, 0.19) }]}>
-        {BOTTOM_ITEMS.map((item) => {
-          const active = isActive(item.route);
-          return (
-            <TouchableOpacity
-              key={item.label}
-              style={[
-                styles.navItem,
-                active && {
-                  backgroundColor: alpha(palette.default, 0.08),
-                  borderLeftColor: activeIndicator,
-                },
-                !active && { borderLeftColor: 'transparent' },
-              ]}
-              onPress={() => handleNavigate(item.route)}
-              activeOpacity={0.7}
-            >
-              <VetCloudIcon name={item.iconName} size={20} color={active ? activeIndicator : mutedText} />
-              {!collapsed && (
-                <Text
-                  style={[
-                    styles.navLabel,
-                    {
-                      color: active ? textColor : palette.muted,
-                      fontWeight: active ? TYPOGRAPHY.weights.semibold : TYPOGRAPHY.weights.regular,
-                    },
-                  ]}
-                >
-                  {item.label}
-                </Text>
-              )}
-            </TouchableOpacity>
-          );
-        })}
+      <View style={[styles.bottomSection, { borderTopColor: alpha(colors.onChrome, 0.08) }]}>
+        {BOTTOM_ITEMS.map(renderItem)}
 
-        {/* User + Logout */}
-        <View style={[styles.userSection, { borderTopColor: alpha(colors.accent, 0.19) }]}>
-          <View style={[styles.avatar, { backgroundColor: alpha(palette.default, 0.15) }]}>
-            <Text style={[styles.avatarText, { color: textColor }]}>
+        <View style={[styles.userSection, collapsed && styles.userSectionCollapsed]}>
+          <View style={[styles.avatar, { borderColor: alpha(activeIcon, 0.55) }]}>
+            <Text style={[styles.avatarText, { color: onChromeText.default }]}>
               {user?.name?.charAt(0)?.toUpperCase() || 'U'}
             </Text>
           </View>
           {!collapsed && (
             <View style={styles.userInfo}>
-              <Text style={[styles.userName, { color: textColor }]} numberOfLines={1}>
+              <Text style={[styles.userName, { color: onChromeText.default }]} numberOfLines={1}>
                 {user?.name || 'Usuario'}
               </Text>
-              <Text style={[styles.userRole, { color: mutedText }]}>
+              <Text style={[styles.userRole, { color: onChromeText.subtle }]}>
                 {user?.role === 'admin' ? 'Administrador' : 'Usuario'}
               </Text>
             </View>
           )}
-          <TouchableOpacity onPress={logout} style={styles.logoutBtn}>
-            <LogOut size={18} color={colors.error} />
-          </TouchableOpacity>
+          {!collapsed && (
+            <TouchableOpacity onPress={logout} style={styles.logoutBtn} accessibilityLabel="Cerrar sesión">
+              <LogOut size={17} color={onChromeText.subtle} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>
@@ -215,64 +171,67 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    borderTopWidth: 2,
   },
   logoSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.xl + 4,
+    paddingHorizontal: SPACING.lg,
+    height: 72,
     borderBottomWidth: 1,
-    gap: SPACING.md,
+    gap: SPACING.sm + 2,
   },
-  logoWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: RADIUS.md,
-    alignItems: 'center',
+  logoSectionCollapsed: {
     justifyContent: 'center',
+    paddingHorizontal: 0,
   },
-  logoText: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+  wordmark: {
     flex: 1,
-  },
-  logoVet: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: TYPOGRAPHY.weights.bold,
-  },
-  logoCloud: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: TYPOGRAPHY.weights.bold,
+    fontSize: 20,
+    fontWeight: '600',
+    letterSpacing: 0.4,
   },
   toggleBtn: {
     padding: SPACING.xs,
   },
   navScroll: {
     flex: 1,
-    paddingTop: SPACING.lg,
+    paddingTop: SPACING.md,
   },
   section: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.md,
   },
   sectionTitle: {
-    fontSize: TYPOGRAPHY.sizes.xs,
+    fontSize: 10.5,
     fontWeight: TYPOGRAPHY.weights.semibold,
     paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.sm + 2,
-    letterSpacing: 1.2,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.xs + 2,
+    letterSpacing: 1.1,
     textTransform: 'uppercase',
   },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
-    gap: SPACING.md + 2,
-    borderLeftWidth: 3,
-    marginLeft: 0,
+    marginHorizontal: SPACING.sm + 2,
+    paddingHorizontal: SPACING.md - 2,
+    paddingVertical: SPACING.sm + 1,
+    borderRadius: RADIUS.md,
+    gap: SPACING.md,
+  },
+  navItemCollapsed: {
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+  },
+  // Heraldic lozenge marking the current section
+  lozenge: {
+    position: 'absolute',
+    left: -7,
+    width: 6,
+    height: 6,
+    transform: [{ rotate: '45deg' }],
   },
   navLabel: {
+    flex: 1,
     fontSize: TYPOGRAPHY.sizes.md,
   },
   bottomSection: {
@@ -282,22 +241,25 @@ const styles = StyleSheet.create({
   userSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.lg,
-    borderTopWidth: 1,
-    marginTop: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md + 2,
     gap: SPACING.md,
   },
+  userSectionCollapsed: {
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+  },
   avatar: {
-    width: 36,
-    height: 36,
+    width: 32,
+    height: 32,
     borderRadius: RADIUS.full,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: TYPOGRAPHY.sizes.md,
-    fontWeight: TYPOGRAPHY.weights.bold,
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   userInfo: {
     flex: 1,

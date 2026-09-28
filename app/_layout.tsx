@@ -10,6 +10,9 @@ import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { ToastProvider } from '../components/ui/VToast';
 import { APP_COLORS } from '../constants/colors';
 import LoginScreen from './auth/login';
+import { installWebFonts } from '../utils/webFonts';
+
+installWebFonts();
 
 class RootErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -24,11 +27,11 @@ class RootErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0B1120', padding: 24 }}>
-          <Text style={{ color: '#F87171', fontSize: 20, fontWeight: 'bold', marginBottom: 12 }}>Algo salió mal</Text>
-          <Text style={{ color: '#94A3B8', fontSize: 14, textAlign: 'center' }}>{this.state.error}</Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0A0A0F', padding: 24 }}>
+          <Text style={{ color: '#F0707A', fontSize: 20, fontWeight: 'bold', marginBottom: 12 }}>Algo salió mal</Text>
+          <Text style={{ color: '#ABA5B3', fontSize: 14, textAlign: 'center' }}>{this.state.error}</Text>
           <Text
-            style={{ color: '#60A5FA', fontSize: 14, marginTop: 20 }}
+            style={{ color: '#D9B45B', fontSize: 14, marginTop: 20 }}
             onPress={() => this.setState({ hasError: false, error: '' })}
           >
             Reintentar
@@ -42,7 +45,7 @@ class RootErrorBoundary extends React.Component<
 
 function AppContent() {
   const { isAuthenticated, loading } = useAuth();
-  const { colors, isDark } = useTheme();
+  const { colors, onChromeText } = useTheme();
 
   if (loading) {
     return (
@@ -68,8 +71,9 @@ function AppContent() {
         name="disease/[id]"
         options={{
           headerShown: true,
-          headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: isDark ? colors.text : colors.surface,
+          headerStyle: { backgroundColor: colors.chrome },
+          headerTintColor: onChromeText.default,
+          headerShadowVisible: false,
           headerTitle: 'Detalle de Enfermedad',
         }}
       />
@@ -77,8 +81,9 @@ function AppContent() {
         name="pet/[id]"
         options={{
           headerShown: true,
-          headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: isDark ? colors.text : colors.surface,
+          headerStyle: { backgroundColor: colors.chrome },
+          headerTintColor: onChromeText.default,
+          headerShadowVisible: false,
           headerTitle: 'Ficha Clínica',
         }}
       />
@@ -115,13 +120,17 @@ function ThemedPaperProvider({ children }: { children: React.ReactNode }) {
     colors: {
       ...(isDark ? MD3DarkTheme.colors : MD3LightTheme.colors),
       primary: colors.primary,
-      primaryContainer: colors.primaryContainer,
       secondary: colors.accent,
+      onSecondary: isDark ? '#FFFFFF' : '#0A1733',
       background: colors.background,
       surface: colors.surface,
       surfaceVariant: colors.surfaceVariant,
       error: colors.error,
-      onPrimary: isDark ? '#000000' : '#FFFFFF',
+      onPrimary: colors.onPrimary,
+      primaryContainer: colors.primaryContainer,
+      onPrimaryContainer: colors.text,
+      onSurfaceVariant: colors.textSecondary,
+      outlineVariant: colors.border,
       onBackground: colors.text,
       onSurface: colors.text,
       outline: colors.border,

@@ -13,13 +13,14 @@ import PatientFilters, { SpeciesFilter } from '../../components/pacientes/Patien
 import PatientTable from '../../components/pacientes/PatientTable';
 import PatientSidePanel from '../../components/pacientes/PatientSidePanel';
 import { DirectusPet } from '../../services/directus';
+import DisplayText from '../../components/ui/DisplayText';
 
 const ITEMS_PER_PAGE = 10;
 
 export default function PacientesScreen() {
   const router = useRouter();
   const { pets, loading, removePet } = usePets();
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [species, setSpecies] = useState<SpeciesFilter>('all');
@@ -140,7 +141,7 @@ export default function PacientesScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <View style={styles.headerTextWrap}>
-          <Text style={[styles.title, { color: colors.text }]}>Pacientes</Text>
+          <DisplayText style={[styles.title, { color: colors.text }]}>Pacientes</DisplayText>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             {loading ? '' : `${filteredPatients.length} paciente${filteredPatients.length !== 1 ? 's' : ''}`}
           </Text>
@@ -149,10 +150,10 @@ export default function PacientesScreen() {
           mode="contained"
           onPress={() => router.push('/(drawer)/add-paciente')}
           style={[styles.newButton, { backgroundColor: colors.primary }]}
-          labelStyle={styles.newButtonText}
+          labelStyle={[styles.newButtonText, { color: onPrimaryText.default }]}
           contentStyle={styles.newButtonContent}
         >
-          <Plus size={16} color="#FFFFFF" />
+          <Plus size={16} color={onPrimaryText.default} />
           Nuevo Paciente
         </Button>
       </View>

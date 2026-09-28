@@ -46,7 +46,7 @@ export default function AgendaSidebar({
   appointmentTypes,
   statuses,
 }: AgendaSidebarProps) {
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
   const year = selectedDate.getFullYear();
   const month = selectedDate.getMonth();
   const today = new Date();
@@ -106,7 +106,7 @@ export default function AgendaSidebar({
                   style={[
                     styles.dayText,
                     {
-                      color: isSelected ? '#FFF' : isToday ? colors.primary : colors.text,
+                      color: isSelected ? onPrimaryText.default : isToday ? colors.primary : colors.text,
                       fontWeight: isToday || isSelected ? '700' : '400',
                     },
                   ]}

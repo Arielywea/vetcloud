@@ -9,6 +9,7 @@ import VCard from '../../components/ui/Card';
 import VStatCard from '../../components/ui/StatCard';
 import VRefreshControl from '../../components/ui/VRefreshControl';
 import { api } from '../../services/directus';
+import DisplayText from '../../components/ui/DisplayText';
 
 interface DashboardStats {
   totalPets: number;
@@ -82,7 +83,7 @@ export default function ReportesScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} refreshControl={<VRefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Reportes</Text>
+        <DisplayText style={[styles.title, { color: colors.text }]}>Reportes</DisplayText>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           Resumen y estadísticas de la clínica
         </Text>

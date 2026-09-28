@@ -9,6 +9,7 @@ import VEmptyState from '../../components/ui/EmptyState';
 import VBadge from '../../components/ui/Badge';
 import VRefreshControl from '../../components/ui/VRefreshControl';
 import { api, DirectusLabExam } from '../../services/directus';
+import DisplayText from '../../components/ui/DisplayText';
 
 export default function LaboratorioScreen() {
   const { colors } = useTheme();
@@ -53,7 +54,7 @@ export default function LaboratorioScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} refreshControl={<VRefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Laboratorio</Text>
+        <DisplayText style={[styles.title, { color: colors.text }]}>Laboratorio</DisplayText>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           Exámenes y resultados de laboratorio
         </Text>

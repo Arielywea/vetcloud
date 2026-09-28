@@ -21,7 +21,7 @@ export default function RecentRecord({ record, onView, onGenerateRx }: RecentRec
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Ultima Consulta</Text>
-        <Button compact mode="text" onPress={onView} labelStyle={{ color: '#C9A227' }}>
+        <Button compact mode="text" onPress={onView} labelStyle={{ color: colors.primary }}>
           Ver todo
         </Button>
       </View>
@@ -70,10 +70,10 @@ export default function RecentRecord({ record, onView, onGenerateRx }: RecentRec
       </View>
 
       <View style={styles.actions}>
-        <Button compact mode="outlined" onPress={onView} style={styles.actionBtn} labelStyle={styles.actionLabel}>
+        <Button compact mode="outlined" onPress={onView} style={[styles.actionBtn, { borderColor: colors.border }]} labelStyle={[styles.actionLabel, { color: colors.primary }]}>
           Detalle
         </Button>
-        <Button compact mode="outlined" onPress={onGenerateRx} style={styles.actionBtn} labelStyle={styles.actionLabel}>
+        <Button compact mode="outlined" onPress={onGenerateRx} style={[styles.actionBtn, { borderColor: colors.border }]} labelStyle={[styles.actionLabel, { color: colors.primary }]}>
           Generar Receta
         </Button>
       </View>
@@ -146,6 +146,5 @@ const styles = StyleSheet.create({
   },
   actionLabel: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    color: '#C9A227',
   },
 });

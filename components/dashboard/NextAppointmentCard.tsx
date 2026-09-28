@@ -5,7 +5,6 @@ import { Calendar, CalendarDays, PawPrint } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
-import { TEXT_ON_PRIMARY } from '../../constants/colors';
 
 interface NextAppointmentCardProps {
   petName?: string;
@@ -28,7 +27,7 @@ export default function NextAppointmentCard({
   onViewDetails,
   onStartConsult,
 }: NextAppointmentCardProps) {
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
   const router = useRouter();
 
   if (!hasAppointment) {
@@ -46,7 +45,7 @@ export default function NextAppointmentCard({
             onPress={() => router.push('/(drawer)/agenda')}
             activeOpacity={0.7}
           >
-            <Text style={[styles.btnPrimaryText, { color: TEXT_ON_PRIMARY.light.default }]}>
+            <Text style={[styles.btnPrimaryText, { color: onPrimaryText.default }]}>
               Programar cita
             </Text>
           </TouchableOpacity>
@@ -92,7 +91,7 @@ export default function NextAppointmentCard({
           onPress={onStartConsult}
           activeOpacity={0.7}
         >
-          <Text style={[styles.btnPrimaryText, { color: TEXT_ON_PRIMARY.light.default }]}>
+          <Text style={[styles.btnPrimaryText, { color: onPrimaryText.default }]}>
             Iniciar consulta
           </Text>
         </TouchableOpacity>

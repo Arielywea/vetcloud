@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useResponsive } from '../../hooks/useResponsive';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
-import { TEXT_ON_PRIMARY } from '../../constants/colors';
+import DisplayText from '../ui/DisplayText';
 
 interface TopBarProps {
   onMenuPress?: () => void;
@@ -17,7 +17,7 @@ interface TopBarProps {
 
 export default function TopBar({ onMenuPress, onSearchPress, title, rightContent }: TopBarProps) {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, onAccentText } = useTheme();
   const { isMobile } = useResponsive();
 
   return (
@@ -30,7 +30,7 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
           </TouchableOpacity>
         )}
         {title && (
-          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{title}</Text>
+          <DisplayText style={[styles.title, { color: colors.text }]} numberOfLines={1}>{title}</DisplayText>
         )}
       </View>
 
@@ -55,14 +55,19 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
       {/* Right: notifications + calendar + new patient */}
       <View style={styles.right}>
         {rightContent}
-        <TouchableOpacity style={[styles.iconBtn, isMobile && styles.iconBtnMobile]}>
+        <TouchableOpacity
+          style={[styles.iconBtn, isMobile && styles.iconBtnMobile]}
+          onPress={() => router.push('/(drawer)/reminders')}
+          accessibilityLabel="Recordatorios"
+        >
           <Bell size={20} color={colors.textSecondary} />
-          <View style={[styles.badge, { backgroundColor: colors.error }]}>
-            <Text style={styles.badgeText}>3</Text>
-          </View>
         </TouchableOpacity>
         {!isMobile && (
-          <TouchableOpacity style={[styles.iconBtn, isMobile && styles.iconBtnMobile]}>
+          <TouchableOpacity
+            style={[styles.iconBtn, isMobile && styles.iconBtnMobile]}
+            onPress={() => router.push('/(drawer)/agenda')}
+            accessibilityLabel="Agenda"
+          >
             <Calendar size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         )}
@@ -72,8 +77,8 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
             onPress={() => router.push('/(drawer)/add-paciente')}
             activeOpacity={0.7}
           >
-            <Plus size={18} color={TEXT_ON_PRIMARY.light.default} />
-            <Text style={[styles.newPatientText, { color: colors.primaryDark }]}>
+            <Plus size={18} color={onAccentText.default} />
+            <Text style={[styles.newPatientText, { color: onAccentText.default }]}>
               Nuevo Paciente
             </Text>
           </TouchableOpacity>

@@ -1,75 +1,69 @@
 // ─────────────────────────────────────────────────────────
-// Light Theme — VetCloud Premium SaaS
-// Navy + Gold + Cool White
+// Light — "Saber": royal navy, antique gold, ivory vellum.
+// Taken from the crest in assets/logo.png. Warm ivory surfaces
+// instead of cool SaaS gray; gold is reserved for marks and
+// primary actions, never small text (3.4:1 on surface).
 // ─────────────────────────────────────────────────────────
 export const APP_COLORS = {
-  primary: '#0B1D3A',
-  primaryLight: '#1E3A5F',
-  primaryDark: '#06132B',
-  primaryContainer: '#E8F0FE',
-  accent: '#C9A227',
-  success: '#10B981',
-  background: '#F7F8FB',
-  surface: '#FFFFFF',
-  surfaceVariant: '#EEF1F6',
-  text: '#1A2332',
-  textSecondary: '#5A6B80',
-  textLight: '#8896A8',
-  error: '#EF4444',
-  warning: '#E8930A',
-  info: '#3B82F6',
-  border: '#DDE3EC',
-  disabled: '#CBD5E1',
-  cardShadow: '#0F172A',
+  primary: '#12264D',        // interactive: links, selection, focus (14.6:1 on surface)
+  primaryLight: '#2A4478',
+  primaryDark: '#0A1733',
+  primaryContainer: '#E4E8F1',
+  onPrimary: '#FFFFFF',
+  chrome: '#0B1D3A',         // sidebar, headers, hero — the crest's field
+  chromeSoft: '#18305E',
+  onChrome: '#F3EFE4',
+  accent: '#A8842A',         // antique gold: marks, active indicators, primary buttons
+  success: '#2E7D5B',
+  background: '#F5F2EA',
+  surface: '#FFFDF8',
+  surfaceVariant: '#EEE9DD',
+  text: '#141C33',
+  textSecondary: '#4E586F',
+  textLight: '#646B80',
+  error: '#B42318',
+  warning: '#B25E09',
+  info: '#2F5EA8',
+  border: '#DDD5C4',
+  disabled: '#C9C2B2',
+  cardShadow: '#1B1606',
 };
 
 // ─────────────────────────────────────────────────────────
-// Dark Theme — VetCloud Premium SaaS Dark
-// Deep navy + gold accent on dark surfaces
+// Dark — "Alter": black armor, crimson veins, pale gold eyes.
+// Near-black surfaces with a violet undertone; gold carries
+// interaction (9.4:1), crimson only marks and active states.
 // ─────────────────────────────────────────────────────────
-export const APP_COLORS_DARK = {
-  primary: '#4A90D9',
-  primaryLight: '#6BA5E7',
-  primaryDark: '#0E3A73',
-  primaryContainer: '#0F1D32',
-  accent: '#D4AF37',
-  success: '#34D399',
-  background: '#0B1120',
-  surface: '#111827',
-  surfaceVariant: '#1E293B',
-  text: '#F1F5F9',
-  textSecondary: '#94A3B8',
-  textLight: '#475569',
-  error: '#F87171',
-  warning: '#FBBF24',
-  info: '#60A5FA',
-  border: '#1E293B',
-  disabled: '#334155',
-      cardShadow: '#0F172A',
+export const APP_COLORS_DARK: AppColors = {
+  primary: '#D9B45B',
+  primaryLight: '#E8CB86',
+  primaryDark: '#A8842A',
+  primaryContainer: '#2A1016',
+  onPrimary: '#0A0A0F',
+  chrome: '#07070B',
+  chromeSoft: '#1C0A10',
+  onChrome: '#ECE6D8',
+  accent: '#B8323F',
+  success: '#5FB98A',
+  background: '#0A0A0F',
+  surface: '#12121A',
+  surfaceVariant: '#1A1A24',
+  text: '#ECE6D8',
+  textSecondary: '#ABA5B3',
+  textLight: '#8C8797',
+  error: '#F0707A',
+  warning: '#E3A94F',
+  info: '#8FA8DB',
+  border: '#2B2A36',
+  disabled: '#3A3946',
+  cardShadow: '#000000',
 };
 
 export type AppColors = typeof APP_COLORS;
 
-// ─────────────────────────────────────────────────────────
-// Anime Palettes — each with light + dark variants
-// ─────────────────────────────────────────────────────────
-export const PALETTES: Record<string, { light: AppColors; dark: AppColors; label: string }> = {
-  artoria_alter: {
-    label: 'Artoria Alter',
-    light: {
-      primary: '#6D1220', primaryLight: '#9B1B30', primaryDark: '#4A0D15', primaryContainer: '#F5E0E4',
-      accent: '#B8941F', success: '#43A047', background: '#F0EDE8', surface: '#FFFFFF', surfaceVariant: '#E8E4DE',
-      text: '#1A1B2E', textSecondary: '#5A5E70', textLight: '#8B90A0',
-      error: '#C62828', warning: '#E65100', info: '#5C6BC0', border: '#D0CCC5', disabled: '#B0AAA0', cardShadow: '#000000',
-    },
-    dark: {
-      primary: '#9B1B30', primaryLight: '#C42847', primaryDark: '#6D1220', primaryContainer: '#2A0F1A',
-      accent: '#C9A227', success: '#66BB6A', background: '#0B0C14', surface: '#12131F', surfaceVariant: '#1A1B2E',
-      text: '#C5CAD6', textSecondary: '#9BA1B0', textLight: '#6B7186',
-      error: '#EF5350', warning: '#FFB74D', info: '#7986CB', border: '#252638', disabled: '#3A3B4E', cardShadow: '#000000',
-    },
-  },
-};
+// Saber/Alter are now the light/dark themes themselves. Kept as an empty
+// registry so a stored color_palette from older versions falls back cleanly.
+export const PALETTES: Record<string, { light: AppColors; dark: AppColors; label: string }> = {};
 
 export type PaletteKey = keyof typeof PALETTES;
 

@@ -11,6 +11,7 @@ import VEmptyState from '../../components/ui/EmptyState';
 import VBadge from '../../components/ui/Badge';
 import VRefreshControl from '../../components/ui/VRefreshControl';
 import { SkeletonList } from '../../components/ui/Skeleton';
+import DisplayText from '../../components/ui/DisplayText';
 
 const STATUS_LABELS: Record<string, string> = {
   todos: 'Todos',
@@ -51,7 +52,7 @@ export default function HospitalizacionScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} refreshControl={<VRefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Hospitalización</Text>
+        <DisplayText style={[styles.title, { color: colors.text }]}>Hospitalización</DisplayText>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           {loading ? '' : `${filtered.length} paciente${filtered.length !== 1 ? 's' : ''}`}
         </Text>

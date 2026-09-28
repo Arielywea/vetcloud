@@ -17,7 +17,7 @@ export default function EmptyState({
   actionLabel = 'Nueva Cita',
   onAction,
 }: EmptyStateProps) {
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
@@ -33,7 +33,7 @@ export default function EmptyState({
           activeOpacity={0.7}
         >
           <Plus size={16} color="#FFF" />
-          <Text style={styles.buttonText}>{actionLabel}</Text>
+          <Text style={[styles.buttonText, { color: onPrimaryText.default }]}>{actionLabel}</Text>
         </TouchableOpacity>
       )}
     </View>

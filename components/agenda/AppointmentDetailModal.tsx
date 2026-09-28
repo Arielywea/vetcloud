@@ -72,7 +72,7 @@ export default function AppointmentDetailModal({
   onRegisterPatient,
   onStatusChange,
 }: AppointmentDetailModalProps) {
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
 
   useEffect(() => { setStatusDropdownOpen(false); }, [appointment?.id]);
@@ -251,7 +251,7 @@ export default function AppointmentDetailModal({
                 onPress={onGoToPatient}
               >
                 <FolderOpen size={18} color="#FFF" />
-                <Text style={styles.primaryBtnText}>Ver ficha clínica</Text>
+                <Text style={[styles.primaryBtnText, { color: onPrimaryText.default }]}>Ver ficha clínica</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -259,7 +259,7 @@ export default function AppointmentDetailModal({
                 onPress={onRegisterPatient}
               >
                 <UserPlus size={18} color="#FFF" />
-                <Text style={styles.primaryBtnText}>Registrar paciente</Text>
+                <Text style={[styles.primaryBtnText, { color: onPrimaryText.default }]}>Registrar paciente</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity style={[styles.secondaryBtn, { borderColor: colors.border }]} onPress={onClose}>

@@ -30,7 +30,7 @@ export default function PrescriptionList({ prescriptions, onView, onSendEmail, o
   return (
     <View style={styles.container}>
       {prescriptions.map(rx => (
-        <Card key={rx.id} style={[styles.card, { backgroundColor: colors.background }]}>
+        <Card key={rx.id} style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }]}>
           <Card.Content>
             <View style={styles.row}>
               <View style={styles.info}>
@@ -82,8 +82,7 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: RADIUS.md,
-    borderLeftWidth: 3,
-    borderLeftColor: '#C9A227',
+    borderWidth: 1,
   },
   row: {
     flexDirection: 'row',

@@ -10,6 +10,7 @@ import { ChevronLeft, MapPin } from 'lucide-react-native';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import InfoPills from './InfoPills';
 import PawShieldIcon from '../icons/PawShieldIcon';
+import DisplayText from '../ui/DisplayText';
 
 interface PetHeaderProps {
   pet: DirectusPet;
@@ -24,7 +25,8 @@ const SEX_LABELS: Record<string, string> = {
 };
 
 export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const crestGold = isDark ? colors.primary : colors.accent;
   const router = useRouter();
   const age = calculateAge(pet.birth_date);
 
@@ -44,18 +46,18 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
       <View style={styles.headerRow}>
         {/* Left: Photo */}
         <View style={styles.photoSection}>
-          <View style={[styles.photo, { backgroundColor: colors.primary, borderWidth: 2, borderColor: '#C9A227' }]}>
+          <View style={[styles.photo, { backgroundColor: colors.chrome, borderWidth: 1.5, borderColor: crestGold }]}>
             {pet.photo ? (
               <Image source={{ uri: pet.photo }} style={styles.photoImage} />
             ) : (
-              <PawShieldIcon size={48} color="#FFFFFF" accentColor="#C9A227" />
+              <PawShieldIcon size={48} color={colors.chromeSoft} accentColor={crestGold} />
             )}
           </View>
         </View>
 
         {/* Center: Pet info */}
         <View style={styles.infoSection}>
-          <Text style={[styles.petName, { color: colors.text }]} numberOfLines={1}>{pet.name}</Text>
+          <DisplayText style={[styles.petName, { color: colors.text }]} numberOfLines={1}>{pet.name}</DisplayText>
           <Text style={[styles.petBreed, { color: colors.textSecondary }]}>
             {pet.breed || 'Sin raza'}  ·  {age}
           </Text>
@@ -73,8 +75,8 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
               </View>
             )}
             <View style={styles.statusBadge}>
-              <View style={[styles.statusDot, { backgroundColor: '#10B981' }]} />
-              <Text style={[styles.statusText, { color: '#10B981' }]}>Activo</Text>
+              <View style={[styles.statusDot, { backgroundColor: colors.success }]} />
+              <Text style={[styles.statusText, { color: colors.success }]}>Activo</Text>
             </View>
           </View>
         </View>

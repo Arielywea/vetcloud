@@ -4,7 +4,7 @@ import { Text, Modal, Portal } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { Search, Stethoscope, Dog, Cat } from 'lucide-react-native';
 import { useDiseases } from '../../hooks/useDirectus';
-import { SEVERITY_COLORS, SEVERITY_LABELS, TEXT_ON_PRIMARY } from '../../constants/colors';
+import { SEVERITY_COLORS, SEVERITY_LABELS } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { DirectusDisease } from '../../services/directus';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/tokens';
@@ -15,7 +15,7 @@ import VEmptyState from '../../components/ui/EmptyState';
 export default function SearchScreen() {
   const router = useRouter();
   const { diseases, loading } = useDiseases();
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState<'name' | 'symptoms'>('name');
   const [selectedSpecies, setSelectedSpecies] = useState<'dog' | 'cat' | 'all'>('all');
@@ -63,12 +63,12 @@ export default function SearchScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.modeRow}>
         <TouchableOpacity onPress={() => setMode('name')} style={[styles.modeBtn, { backgroundColor: colors.surface, borderColor: colors.border }, mode === 'name' && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-          <Search size={14} color={mode === 'name' ? TEXT_ON_PRIMARY.light.default : colors.textSecondary} />
-          <Text style={{ color: mode === 'name' ? TEXT_ON_PRIMARY.light.default : colors.text, fontSize: TYPOGRAPHY.sizes.sm }}>Por nombre</Text>
+          <Search size={14} color={mode === 'name' ? onPrimaryText.default : colors.textSecondary} />
+          <Text style={{ color: mode === 'name' ? onPrimaryText.default : colors.text, fontSize: TYPOGRAPHY.sizes.sm }}>Por nombre</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setMode('symptoms')} style={[styles.modeBtn, { backgroundColor: colors.surface, borderColor: colors.border }, mode === 'symptoms' && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-          <Stethoscope size={14} color={mode === 'symptoms' ? TEXT_ON_PRIMARY.light.default : colors.textSecondary} />
-          <Text style={{ color: mode === 'symptoms' ? TEXT_ON_PRIMARY.light.default : colors.text, fontSize: TYPOGRAPHY.sizes.sm }}>Por síntomas</Text>
+          <Stethoscope size={14} color={mode === 'symptoms' ? onPrimaryText.default : colors.textSecondary} />
+          <Text style={{ color: mode === 'symptoms' ? onPrimaryText.default : colors.text, fontSize: TYPOGRAPHY.sizes.sm }}>Por síntomas</Text>
         </TouchableOpacity>
       </View>
 
@@ -86,7 +86,7 @@ export default function SearchScreen() {
       <View style={styles.speciesRow}>
         {(['all', 'dog', 'cat'] as const).map(sp => (
           <TouchableOpacity key={sp} onPress={() => setSelectedSpecies(sp)} style={[styles.speciesChip, { backgroundColor: colors.surface, borderColor: colors.border }, selectedSpecies === sp && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-            <Text style={{ color: selectedSpecies === sp ? TEXT_ON_PRIMARY.light.default : colors.text, fontSize: TYPOGRAPHY.sizes.sm }}>
+            <Text style={{ color: selectedSpecies === sp ? onPrimaryText.default : colors.text, fontSize: TYPOGRAPHY.sizes.sm }}>
               {sp === 'all' ? 'Todos' : sp === 'dog' ? 'Perros' : 'Gatos'}
             </Text>
           </TouchableOpacity>

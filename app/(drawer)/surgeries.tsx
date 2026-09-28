@@ -8,6 +8,7 @@ import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
 import VEmptyState from '../../components/ui/EmptyState';
 import { SkeletonList } from '../../components/ui/Skeleton';
 import { Surgery } from '../../services/directus';
+import DisplayText from '../../components/ui/DisplayText';
 
 export default function SurgeriesScreen() {
   const { colors } = useTheme();
@@ -31,7 +32,7 @@ export default function SurgeriesScreen() {
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <Scissors size={20} color={colors.primary} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Biblioteca de Cirugías</Text>
+          <DisplayText style={[styles.headerTitle, { color: colors.text }]}>Biblioteca de Cirugías</DisplayText>
         </View>
         <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
           {surgeries.length} procedimientos quirúrgicos
@@ -106,7 +107,7 @@ function SurgeryCard({ surgery, index, colors }: { surgery: Surgery; index: numb
       )}
 
       {expanded && (
-        <View style={styles.cardDetails}>
+        <View style={[styles.cardDetails, { borderTopColor: colors.border }]}>
           {surgery.tecnica_quirurgica && (
             <DetailSection title="Técnica Quirúrgica" content={surgery.tecnica_quirurgica} colors={colors} />
           )}
@@ -129,7 +130,7 @@ function SurgeryCard({ surgery, index, colors }: { surgery: Surgery; index: numb
             <DetailSection title="Comorbilidades" content={surgery.consideraciones_comorbilidades} colors={colors} />
           )}
           {surgery.fuente && (
-            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: SPACING.md, paddingTop: SPACING.sm, borderTopWidth: 1, borderTopColor: colors.border }}>
               <BookOpen size={13} color={colors.textLight} style={{ marginTop: 2 }} />
               <Text style={[styles.fuente, { color: colors.textLight, flex: 1 }]}>{surgery.fuente}</Text>
             </View>
@@ -229,7 +230,6 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
     paddingTop: SPACING.md,
     borderTopWidth: 1,
-    borderTopColor: '#E8ECF2',
   },
   detailSection: {
     marginBottom: SPACING.md,
@@ -248,9 +248,5 @@ const styles = StyleSheet.create({
   fuente: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontStyle: 'italic',
-    marginTop: SPACING.md,
-    paddingTop: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: '#E8ECF2',
   },
 });

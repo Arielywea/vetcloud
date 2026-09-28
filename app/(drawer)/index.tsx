@@ -2,14 +2,15 @@ import React, { useMemo, useEffect, useRef } from 'react';
 import { View, ScrollView, StyleSheet, Pressable, Image, ImageStyle, useWindowDimensions, Animated, Easing } from 'react-native';
 import { Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Calendar, CheckCircle, User, Sparkles, CalendarDays, ChevronRight, Users } from 'lucide-react-native';
+import { Calendar, CheckCircle, User, CalendarDays, ChevronRight, Users } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { usePets, useAppointments, useClinicalRecords, useInventory } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, ANIMATION } from '../../constants/tokens';
-import { TEXT_ON_PRIMARY } from '../../constants/colors';
 import VetCloudIcon from '../../components/icons/VetCloudIcon';
+import CrestStar from '../../components/icons/CrestStar';
+import DisplayText from '../../components/ui/DisplayText';
 import NextAppointmentCard from '../../components/dashboard/NextAppointmentCard';
 import PatientList from '../../components/dashboard/PatientList';
 import StatsChart from '../../components/dashboard/StatsChart';
@@ -50,17 +51,6 @@ function getGreeting(): string {
   return 'Buenas noches';
 }
 
-// Animated number display — renders Animated.Value as integer text
-function AnimatedText({ value, style }: { value: Animated.Value; style?: any }) {
-  const [display, setDisplay] = React.useState('0');
-  React.useEffect(() => {
-    const id = value.addListener(({ value: v }) => {
-      setDisplay(String(Math.round(v)));
-    });
-    return () => value.removeListener(id);
-  }, [value]);
-  return <Text style={style}>{display}</Text>;
-}
 
 function BannerIllustration({ isMobile }: { isMobile: boolean }) {
   return (
@@ -75,8 +65,8 @@ function BannerIllustration({ isMobile }: { isMobile: boolean }) {
 export default function DashboardScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { colors, isDark } = useTheme();
-  const iconTint = isDark ? colors.accent : colors.primary;
+  const { colors, isDark, onChromeText } = useTheme();
+  const iconTint = colors.primary;
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
   const { pets, loading: loadingPets } = usePets();
@@ -87,75 +77,27 @@ export default function DashboardScreen() {
   const isLoading = loadingPets || loadingAppointments || loadingRecords || loadingInventory;
 
   // ─── Entrance Animations ──────────────────────────────
-  const heroOpacity = useRef(new Animated.Value(0)).current;
-  const heroY = useRef(new Animated.Value(16)).current;
+  const contentOpacity = useRef(new Animated.Value(0)).current;
+  const heroOpacity = contentOpacity;
+  const heroY = useRef(new Animated.Value(0)).current;
   const statCardAnims = useRef(
     Array.from({ length: 4 }, () => ({
-      opacity: new Animated.Value(0),
-      translateY: new Animated.Value(16),
+      opacity: contentOpacity,
+      translateY: new Animated.Value(0),
     }))
   ).current;
-  const row3Opacity = useRef(new Animated.Value(0)).current;
-  const row3Y = useRef(new Animated.Value(16)).current;
-  const row4Opacity = useRef(new Animated.Value(0)).current;
-  const row4Y = useRef(new Animated.Value(16)).current;
+  const row3Opacity = contentOpacity;
+  const row3Y = useRef(new Animated.Value(0)).current;
+  const row4Opacity = contentOpacity;
+  const row4Y = useRef(new Animated.Value(0)).current;
 
-  // Count-up values for stat cards
-  const petCountVal = useRef(new Animated.Value(0)).current;
-  const aptCountVal = useRef(new Animated.Value(0)).current;
-  const recordCountVal = useRef(new Animated.Value(0)).current;
-  const alertCountVal = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (isLoading) return;
-
-    // Hero entrance
-    Animated.parallel([
-      Animated.timing(heroOpacity, { toValue: 1, duration: ANIMATION.slower, useNativeDriver: true }),
-      Animated.timing(heroY, { toValue: 0, duration: ANIMATION.slower, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-    ]).start();
-
-    // Stat cards stagger
-    const statAnims = statCardAnims.map((anim, i) =>
-      Animated.sequence([
-        Animated.delay(150 + i * 80),
-        Animated.parallel([
-          Animated.timing(anim.opacity, { toValue: 1, duration: ANIMATION.slower, useNativeDriver: true }),
-          Animated.timing(anim.translateY, { toValue: 0, duration: ANIMATION.slower, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        ]),
-      ])
-    );
-
-    // Count-up animations (JS driver needed for numbers)
-    const countDuration = 600;
-    const countDelay = 200;
-    const countAnims = Animated.parallel([
-      Animated.sequence([Animated.delay(countDelay), Animated.timing(petCountVal, { toValue: pets.length, duration: countDuration, easing: Easing.out(Easing.cubic), useNativeDriver: false })]),
-      Animated.sequence([Animated.delay(countDelay + 80), Animated.timing(aptCountVal, { toValue: appointments.length, duration: countDuration, easing: Easing.out(Easing.cubic), useNativeDriver: false })]),
-      Animated.sequence([Animated.delay(countDelay + 160), Animated.timing(recordCountVal, { toValue: clinicalRecords.length, duration: countDuration, easing: Easing.out(Easing.cubic), useNativeDriver: false })]),
-      Animated.sequence([Animated.delay(countDelay + 240), Animated.timing(alertCountVal, { toValue: lowStockItems.length, duration: countDuration, easing: Easing.out(Easing.cubic), useNativeDriver: false })]),
-    ]);
-
-    // Row 3 & 4 entrance
-    const rowAnims = Animated.parallel([
-      Animated.sequence([
-        Animated.delay(500),
-        Animated.parallel([
-          Animated.timing(row3Opacity, { toValue: 1, duration: ANIMATION.slower, useNativeDriver: true }),
-          Animated.timing(row3Y, { toValue: 0, duration: ANIMATION.slower, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        ]),
-      ]),
-      Animated.sequence([
-        Animated.delay(650),
-        Animated.parallel([
-          Animated.timing(row4Opacity, { toValue: 1, duration: ANIMATION.slower, useNativeDriver: true }),
-          Animated.timing(row4Y, { toValue: 0, duration: ANIMATION.slower, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        ]),
-      ]),
-    ]);
-
-    Animated.parallel([...statAnims, countAnims, rowAnims]).start();
-  }, [isLoading, pets.length, appointments.length, clinicalRecords.length, lowStockItems.length]);
+    // One quiet fade when data arrives. This screen opens many times a day,
+    // so no staggered choreography and no count-up numbers.
+    Animated.timing(contentOpacity, { toValue: 1, duration: 180, easing: Easing.bezier(0.23, 1, 0.32, 1), useNativeDriver: true }).start();
+  }, [isLoading]);
 
   const todayStr = new Date().toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -327,36 +269,36 @@ export default function DashboardScreen() {
       {/* Row 1: Hero + Próxima Cita */}
       <Animated.View style={[styles.topRow, isMobile && styles.topRowMobile, { opacity: heroOpacity, transform: [{ translateY: heroY }] }]}>
         <LinearGradient
-          colors={[colors.primaryDark, colors.primary, colors.primaryLight]}
+          colors={[colors.chrome, colors.chromeSoft]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.hero, isMobile && styles.heroMobile]}
         >
           <View style={styles.heroContent}>
             <View style={styles.heroGreetingRow}>
-              <Sparkles size={14} color={TEXT_ON_PRIMARY.light.muted} />
-              <Text style={[styles.heroGreeting, { color: TEXT_ON_PRIMARY.light.muted }]}>{getGreeting()}</Text>
+              <CrestStar size={12} color={isDark ? colors.primary : colors.accent} />
+              <Text style={[styles.heroGreeting, { color: onChromeText.muted }]}>{getGreeting()}</Text>
             </View>
-            <Text style={[styles.heroName, { color: TEXT_ON_PRIMARY.light.default }, isMobile && styles.heroNameMobile]}>
+            <DisplayText style={[styles.heroName, { color: onChromeText.default }, isMobile && styles.heroNameMobile]}>
               Hola, {user?.name?.split(' ')[0] || 'Usuario'}
-            </Text>
+            </DisplayText>
             <View style={styles.heroStatsRow}>
               <View style={styles.heroStatBadge}>
-                <CalendarDays size={12} color={TEXT_ON_PRIMARY.light.default} />
-                <Text style={[styles.heroStatText, { color: TEXT_ON_PRIMARY.light.default }]}>{todayAppointments.length} citas hoy</Text>
+                <CalendarDays size={12} color={onChromeText.default} />
+                <Text style={[styles.heroStatText, { color: onChromeText.default }]}>{todayAppointments.length} citas hoy</Text>
               </View>
               <View style={styles.heroStatBadge}>
-                <Users size={12} color={TEXT_ON_PRIMARY.light.default} />
-                <Text style={[styles.heroStatText, { color: TEXT_ON_PRIMARY.light.default }]}>{pets.length} pacientes</Text>
+                <Users size={12} color={onChromeText.default} />
+                <Text style={[styles.heroStatText, { color: onChromeText.default }]}>{pets.length} pacientes</Text>
               </View>
             </View>
             <Pressable
               onPress={() => router.push('/(drawer)/agenda')}
               style={[styles.heroButton, { backgroundColor: 'rgba(255,255,255,0.15)', borderColor: 'rgba(255,255,255,0.25)' }, isMobile && styles.heroButtonMobile]}
             >
-              <CalendarDays size={14} color={TEXT_ON_PRIMARY.light.default} />
-              <Text style={[styles.heroButtonText, { color: TEXT_ON_PRIMARY.light.default }]}>Ver agenda del día</Text>
-              <ChevronRight size={14} color={TEXT_ON_PRIMARY.light.muted} />
+              <CalendarDays size={14} color={onChromeText.default} />
+              <Text style={[styles.heroButtonText, { color: onChromeText.default }]}>Ver agenda del día</Text>
+              <ChevronRight size={14} color={onChromeText.muted} />
             </Pressable>
           </View>
           <BannerIllustration isMobile={isMobile} />
@@ -366,18 +308,16 @@ export default function DashboardScreen() {
 
       {/* Row 2: Stats Cards */}
       <View style={[styles.statsRow, isMobile && styles.statsRowMobile]}>
-        {[{ icon: 'pacientes' as const, color: iconTint, bg: colors.primaryContainer, value: pets.length, label: 'Pacientes', anim: statCardAnims[0], countVal: petCountVal },
-          { icon: 'agenda' as const, color: iconTint, bg: colors.primaryContainer, value: todayAppointments.length, label: 'Citas Hoy', anim: statCardAnims[1], countVal: aptCountVal },
-          { icon: 'fichas' as const, color: iconTint, bg: colors.primaryContainer, value: clinicalRecords.length, label: 'Fichas Clínicas', anim: statCardAnims[2], countVal: recordCountVal },
-          { icon: 'inventario' as const, color: lowStockItems.length ? colors.warning : iconTint, bg: lowStockItems.length ? colors.warning + '18' : colors.primaryContainer, value: lowStockItems.length, label: 'Alertas Stock', anim: statCardAnims[3], countVal: alertCountVal }
+        {[{ icon: 'pacientes' as const, color: iconTint, bg: colors.primaryContainer, value: pets.length, label: 'Pacientes', anim: statCardAnims[0] },
+          { icon: 'agenda' as const, color: iconTint, bg: colors.primaryContainer, value: todayAppointments.length, label: 'Citas Hoy', anim: statCardAnims[1] },
+          { icon: 'fichas' as const, color: iconTint, bg: colors.primaryContainer, value: clinicalRecords.length, label: 'Fichas Clínicas', anim: statCardAnims[2] },
+          { icon: 'inventario' as const, color: lowStockItems.length ? colors.warning : iconTint, bg: lowStockItems.length ? colors.warning + '18' : colors.primaryContainer, value: lowStockItems.length, label: 'Alertas Stock', anim: statCardAnims[3] }
         ].map((stat, i) => (
           <Animated.View key={i} style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs, isMobile && styles.statCardMobile, { opacity: stat.anim.opacity, transform: [{ translateY: stat.anim.translateY }] }]}>
             <View style={[styles.statIcon, { backgroundColor: stat.bg }]}>
               <VetCloudIcon name={stat.icon} size={24} color={stat.color} />
             </View>
-            <Animated.View>
-              <AnimatedText value={stat.countVal} style={[styles.statValue, { color: colors.text }]} />
-            </Animated.View>
+            <Text {...({ dataSet: { numeric: "tabular" } } as any)} style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{stat.label}</Text>
           </Animated.View>
         ))}
@@ -460,7 +400,7 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: TYPOGRAPHY.weights.regular,
   },
-  heroName: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.bold },
+  heroName: { fontSize: 28, fontWeight: '600' },
   heroNameMobile: { fontSize: TYPOGRAPHY.sizes.xl },
   heroStatsRow: {
     flexDirection: 'row',

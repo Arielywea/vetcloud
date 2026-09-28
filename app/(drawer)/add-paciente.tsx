@@ -11,6 +11,7 @@ import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tok
 import { TEXT_ON_PRIMARY } from '../../constants/colors';
 import VoiceNotes from '../../components/VoiceNotes';
 import { DOG_BREEDS, CAT_BREEDS, filterBreeds } from '../../constants/breeds';
+import DisplayText from '../../components/ui/DisplayText';
 
 const TEMPERAMENT_OPTIONS = ['Dócil', 'Inquieto', 'Agresivo', 'Nervioso'];
 const HABITAT_OPTIONS = ['Casa', 'Depto', 'Finca', 'Exteriores'];
@@ -29,7 +30,7 @@ export default function AddPacienteScreen() {
   const router = useRouter();
   const { prefillName } = useLocalSearchParams<{ prefillName?: string }>();
   const { addPet } = usePets();
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
 
@@ -280,9 +281,9 @@ export default function AddPacienteScreen() {
                 },
               ]}>
                 {isCompleted ? (
-                  <Check size={14} color={TEXT_ON_PRIMARY.light.default} strokeWidth={3} />
+                  <Check size={14} color={onPrimaryText.default} strokeWidth={3} />
                 ) : (
-                  <Text style={[styles.progressNumber, { color: isCurrent ? TEXT_ON_PRIMARY.light.default : colors.textSecondary }]}>
+                  <Text style={[styles.progressNumber, { color: isCurrent ? onPrimaryText.default : colors.textSecondary }]}>
                     {step}
                   </Text>
                 )}
@@ -343,9 +344,9 @@ export default function AddPacienteScreen() {
                 mode={species === 'dog' ? 'contained' : 'outlined'}
                 onPress={() => setSpecies('dog')}
                 style={[styles.speciesPill, species === 'dog' && { backgroundColor: colors.primary }]}
-                labelStyle={[styles.speciesPillLabel, species === 'dog' ? { color: TEXT_ON_PRIMARY.light.default } : { color: colors.primary }]}
+                labelStyle={[styles.speciesPillLabel, species === 'dog' ? { color: onPrimaryText.default } : { color: colors.primary }]}
                 icon={({ size }) => (
-                  <Dog size={size} color={species === 'dog' ? TEXT_ON_PRIMARY.light.default : colors.primary} />
+                  <Dog size={size} color={species === 'dog' ? onPrimaryText.default : colors.primary} />
                 )}
               >
                 Perro
@@ -354,9 +355,9 @@ export default function AddPacienteScreen() {
                 mode={species === 'cat' ? 'contained' : 'outlined'}
                 onPress={() => setSpecies('cat')}
                 style={[styles.speciesPill, species === 'cat' && { backgroundColor: colors.primary }]}
-                labelStyle={[styles.speciesPillLabel, species === 'cat' ? { color: TEXT_ON_PRIMARY.light.default } : { color: colors.primary }]}
+                labelStyle={[styles.speciesPillLabel, species === 'cat' ? { color: onPrimaryText.default } : { color: colors.primary }]}
                 icon={({ size }) => (
-                  <Cat size={size} color={species === 'cat' ? TEXT_ON_PRIMARY.light.default : colors.primary} />
+                  <Cat size={size} color={species === 'cat' ? onPrimaryText.default : colors.primary} />
                 )}
               >
                 Gato
@@ -415,8 +416,8 @@ export default function AddPacienteScreen() {
                 mode={sex === 'macho' ? 'contained' : 'outlined'}
                 onPress={() => { setSex('macho'); if (!REPRODUCTIVE_MACHO.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
                 style={[styles.sexPill, sex === 'macho' && { backgroundColor: colors.primary }]}
-                labelStyle={sex === 'macho' ? { color: TEXT_ON_PRIMARY.light.default } : { color: colors.primary }}
-                icon={({ size }) => <Mars size={size} color={sex === 'macho' ? TEXT_ON_PRIMARY.light.default : colors.primary} />}
+                labelStyle={sex === 'macho' ? { color: onPrimaryText.default } : { color: colors.primary }}
+                icon={({ size }) => <Mars size={size} color={sex === 'macho' ? onPrimaryText.default : colors.primary} />}
               >
                 Macho
               </Button>
@@ -424,8 +425,8 @@ export default function AddPacienteScreen() {
                 mode={sex === 'hembra' ? 'contained' : 'outlined'}
                 onPress={() => { setSex('hembra'); if (!REPRODUCTIVE_HEMBRA.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
                 style={[styles.sexPill, sex === 'hembra' && { backgroundColor: colors.primary }]}
-                labelStyle={sex === 'hembra' ? { color: TEXT_ON_PRIMARY.light.default } : { color: colors.primary }}
-                icon={({ size }) => <Venus size={size} color={sex === 'hembra' ? TEXT_ON_PRIMARY.light.default : colors.primary} />}
+                labelStyle={sex === 'hembra' ? { color: onPrimaryText.default } : { color: colors.primary }}
+                icon={({ size }) => <Venus size={size} color={sex === 'hembra' ? onPrimaryText.default : colors.primary} />}
               >
                 Hembra
               </Button>
@@ -920,7 +921,7 @@ export default function AddPacienteScreen() {
         </View>
         <View style={[styles.headerRow, isMobile && styles.headerRowMobile]}>
           <View style={styles.headerLeft}>
-            <Text style={[styles.title, { color: colors.text }, isMobile && styles.titleMobile]}>Nuevo Paciente</Text>
+            <DisplayText style={[styles.title, { color: colors.text }, isMobile && styles.titleMobile]}>Nuevo Paciente</DisplayText>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Completa la información para registrar un nuevo paciente en el sistema.
             </Text>
@@ -954,13 +955,13 @@ export default function AddPacienteScreen() {
           mode="contained"
           onPress={currentStep === 4 ? handleSave : handleNext}
           style={[styles.navBtnPrimary, { backgroundColor: colors.primary }]}
-          labelStyle={{ color: TEXT_ON_PRIMARY.light.default }}
+          labelStyle={{ color: onPrimaryText.default }}
           loading={saving}
           disabled={saving}
           contentStyle={currentStep === 4 ? undefined : { flexDirection: 'row-reverse' }}
           icon={saving ? undefined : ({ size }) => currentStep === 4
-            ? <Check size={size} color={TEXT_ON_PRIMARY.light.default} />
-            : <ChevronRight size={size} color={TEXT_ON_PRIMARY.light.default} />}
+            ? <Check size={size} color={onPrimaryText.default} />
+            : <ChevronRight size={size} color={onPrimaryText.default} />}
         >
           {currentStep === 4 ? 'Guardar paciente' : 'Siguiente'}
         </Button>

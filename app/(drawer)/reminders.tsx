@@ -7,7 +7,6 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { usePets } from '../../hooks/useDirectus';
 import { Reminder } from '../../services/directus';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
-import { TEXT_ON_PRIMARY } from '../../constants/colors';
 import VCard from '../../components/ui/Card';
 import VButton from '../../components/ui/Button';
 import VBadge from '../../components/ui/Badge';
@@ -18,7 +17,7 @@ import { SkeletonList } from '../../components/ui/Skeleton';
 const TYPE_ICONS: Record<string, typeof Syringe> = { vacuna: Syringe, desparasitacion: Bug, cita: CalendarClock, post_operatorio: BriefcaseMedical, control: ClipboardCheck };
 
 export default function RemindersScreen() {
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
   const { reminders, loading, addReminder, autoGenerate, updateReminder, removeReminder, sendPending, refresh } = useReminders();
   const { pets } = usePets();
   const [filter, setFilter] = useState<'all' | 'pending' | 'sent' | 'cancelled'>('all');
@@ -152,7 +151,7 @@ export default function RemindersScreen() {
             <View style={styles.typeRow}>
               {(['vacuna', 'desparasitacion', 'cita', 'post_operatorio', 'control'] as const).map((t) => (
                 <TouchableOpacity key={t} onPress={() => setFormType(t)} style={[styles.typeBtn, { backgroundColor: colors.surface, borderColor: colors.border }, formType === t && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
-                  <Text style={{ color: formType === t ? TEXT_ON_PRIMARY.light.default : colors.text, fontSize: TYPOGRAPHY.sizes.xs }}>{t.replace('_', ' ')}</Text>
+                  <Text style={{ color: formType === t ? onPrimaryText.default : colors.text, fontSize: TYPOGRAPHY.sizes.xs }}>{t.replace('_', ' ')}</Text>
                 </TouchableOpacity>
               ))}
             </View>

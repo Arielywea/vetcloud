@@ -3,6 +3,7 @@ import { View, StyleSheet, ViewStyle } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, TYPOGRAPHY } from '../../constants/tokens';
+import DisplayText from './DisplayText';
 
 interface VSectionHeaderProps {
   title: string;
@@ -20,7 +21,7 @@ export default function VSectionHeader({ title, subtitle, action, icon, style }:
       <View style={styles.left}>
         {icon && <View style={styles.icon}>{icon}</View>}
         <View>
-          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+          <DisplayText style={[styles.title, { color: colors.text }]}>{title}</DisplayText>
           {subtitle && (
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
           )}

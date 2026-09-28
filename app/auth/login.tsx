@@ -5,14 +5,14 @@ import { User, Lock, AlertCircle, LogIn, Eye, EyeOff, Mail, Building, UserPlus, 
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
-import { TEXT_ON_PRIMARY } from '../../constants/colors';
+import DisplayText from '../../components/ui/DisplayText';
 import BeagleLogo from '../../components/BeagleLogo';
 import VInput from '../../components/ui/Input';
 import VButton from '../../components/ui/Button';
 
 export default function LoginScreen() {
   const { login, register } = useAuth();
-  const { colors } = useTheme();
+  const { colors, isDark, onChromeText, onAccentText } = useTheme();
   const [view, setView] = useState<'login' | 'register'>('login');
 
   // Login state
@@ -70,21 +70,19 @@ export default function LoginScreen() {
         style={[styles.container, { backgroundColor: colors.background }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={[styles.header, { backgroundColor: colors.primary }]}>
-          <View style={[styles.logoCircle, { backgroundColor: alpha('#FFFFFF', 0.1) }]}>
-            <BeagleLogo size={48} variant="light" />
-          </View>
-          <Text style={styles.logoTitle}>Crear Cuenta</Text>
-          <Text style={styles.logoSubtitle}>Registrate para probar VetCloud</Text>
+        <View style={[styles.header, { backgroundColor: colors.chrome }]}>
+          <BeagleLogo size={64} />
+          <DisplayText style={[styles.logoTitle, { color: onChromeText.default }]}>Crear cuenta</DisplayText>
+          <Text style={[styles.logoSubtitle, { color: onChromeText.muted }]}>Regístrate para probar VetCloud</Text>
         </View>
 
         <ScrollView style={styles.formSection} contentContainerStyle={styles.formContent}>
           <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.lg]}>
             <VInput label="Usuario *" placeholder="mi.usuario" value={regUsername} onChangeText={setRegUsername} leftIcon={<User size={18} color={colors.primary} />} autoCapitalize="none" />
-            <VInput label="Correo electronico *" placeholder="correo@ejemplo.com" value={regEmail} onChangeText={setRegEmail} leftIcon={<Mail size={18} color={colors.primary} />} keyboardType="email-address" autoCapitalize="none" />
-            <VInput label="Contrasena *" placeholder="Minimo 6 caracteres" value={regPassword} onChangeText={setRegPassword} secureTextEntry={!showPassword} leftIcon={<Lock size={18} color={colors.primary} />}
+            <VInput label="Correo electrónico *" placeholder="correo@ejemplo.com" value={regEmail} onChangeText={setRegEmail} leftIcon={<Mail size={18} color={colors.primary} />} keyboardType="email-address" autoCapitalize="none" />
+            <VInput label="Contraseña *" placeholder="Mínimo 6 caracteres" value={regPassword} onChangeText={setRegPassword} secureTextEntry={!showPassword} leftIcon={<Lock size={18} color={colors.primary} />}
               rightIcon={<View style={{ padding: 4 }}>{showPassword ? <EyeOff size={18} color={colors.textSecondary} onPress={() => setShowPassword(false)} /> : <Eye size={18} color={colors.textSecondary} onPress={() => setShowPassword(true)} />}</View>} />
-            <VInput label="Nombre de la clinica (opcional)" placeholder="Mi Clinica Veterinaria" value={regOrgName} onChangeText={setRegOrgName} leftIcon={<Building size={18} color={colors.primary} />} />
+            <VInput label="Nombre de la clínica (opcional)" placeholder="Mi Clínica Veterinaria" value={regOrgName} onChangeText={setRegOrgName} leftIcon={<Building size={18} color={colors.primary} />} />
 
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Tipo de negocio</Text>
             <View style={styles.orgTypeRow}>
@@ -94,7 +92,7 @@ export default function LoginScreen() {
               </TouchableOpacity>
               <TouchableOpacity style={[styles.orgTypeBtn, { borderColor: regOrgType === 'clinic' ? colors.primary : colors.border, backgroundColor: regOrgType === 'clinic' ? colors.primaryContainer : 'transparent' }]} onPress={() => setRegOrgType('clinic')}>
                 <Building size={20} color={regOrgType === 'clinic' ? colors.primary : colors.textSecondary} />
-                <Text style={[styles.orgTypeLabel, { color: regOrgType === 'clinic' ? colors.primary : colors.textSecondary }]}>Clinica</Text>
+                <Text style={[styles.orgTypeLabel, { color: regOrgType === 'clinic' ? colors.primary : colors.textSecondary }]}>Clínica</Text>
               </TouchableOpacity>
             </View>
 
@@ -105,7 +103,7 @@ export default function LoginScreen() {
               </View>
             ) : null}
 
-            <VButton onPress={handleRegister} loading={loading} disabled={loading} fullWidth icon={<UserPlus size={18} color={TEXT_ON_PRIMARY.light.default} />}>
+            <VButton onPress={handleRegister} loading={loading} disabled={loading} fullWidth icon={<UserPlus size={18} color={onAccentText.default} />}>
               Crear Cuenta
             </VButton>
           </View>
@@ -115,7 +113,7 @@ export default function LoginScreen() {
             <Text style={[styles.backText, { color: colors.primary }]}>Volver al login</Text>
           </TouchableOpacity>
 
-          <Text style={[styles.footer, { color: colors.textLight }]}>VetCloud (c) 2026</Text>
+          <Text style={[styles.footer, { color: colors.textLight }]}>© 2026 VetCloud</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     );
@@ -127,21 +125,25 @@ export default function LoginScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={[styles.header, { backgroundColor: colors.primary }]}>
-        <View style={[styles.logoCircle, { backgroundColor: alpha('#FFFFFF', 0.1) }]}>
-          <BeagleLogo size={64} variant="light" />
+      <View style={[styles.header, { backgroundColor: colors.chrome }]}>
+        <BeagleLogo size={88} />
+        <DisplayText style={[styles.logoTitle, { color: onChromeText.default }]}>
+          Vet<Text style={{ color: isDark ? colors.primary : colors.accent }}>Cloud</Text>
+        </DisplayText>
+        <View style={styles.taglineRow}>
+          <View style={[styles.rule, { backgroundColor: alpha(colors.onChrome, 0.25) }]} />
+          <Text style={[styles.logoSubtitle, { color: onChromeText.muted }]}>Gestión clínica veterinaria</Text>
+          <View style={[styles.rule, { backgroundColor: alpha(colors.onChrome, 0.25) }]} />
         </View>
-        <Text style={styles.logoTitle}>VetCloud</Text>
-        <Text style={styles.logoSubtitle}>Sistema de Gestion Veterinaria</Text>
       </View>
 
       <View style={styles.formSection}>
         <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.lg]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Iniciar Sesion</Text>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Iniciar sesión</Text>
           <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>Ingresa tus credenciales para acceder</Text>
 
           <VInput label="Usuario o correo" placeholder="usuario o correo@ejemplo.com" value={identifier} onChangeText={setIdentifier} leftIcon={<User size={18} color={colors.primary} />} autoCapitalize="none" keyboardType="email-address" />
-          <VInput label="Contrasena" placeholder="Ingresa tu contrasena" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} leftIcon={<Lock size={18} color={colors.primary} />}
+          <VInput label="Contraseña" placeholder="Ingresa tu contraseña" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} leftIcon={<Lock size={18} color={colors.primary} />}
             rightIcon={<View style={{ padding: 4 }}>{showPassword ? <EyeOff size={18} color={colors.textSecondary} onPress={() => setShowPassword(false)} /> : <Eye size={18} color={colors.textSecondary} onPress={() => setShowPassword(true)} />}</View>} />
 
           {error ? (
@@ -151,18 +153,18 @@ export default function LoginScreen() {
             </View>
           ) : null}
 
-          <VButton onPress={handleLogin} loading={loading} disabled={loading} fullWidth icon={<LogIn size={18} color={TEXT_ON_PRIMARY.light.default} />}>
+          <VButton onPress={handleLogin} loading={loading} disabled={loading} fullWidth icon={<LogIn size={18} color={onAccentText.default} />}>
             Ingresar
           </VButton>
         </View>
 
         <TouchableOpacity onPress={() => switchView('register')} style={styles.registerLink}>
           <Text style={[styles.registerText, { color: colors.primary }]}>
-            No tenes cuenta? <Text style={{ fontWeight: TYPOGRAPHY.weights.bold }}>Crear cuenta de prueba</Text>
+            ¿No tienes cuenta? <Text style={{ fontWeight: TYPOGRAPHY.weights.bold }}>Crear cuenta de prueba</Text>
           </Text>
         </TouchableOpacity>
 
-        <Text style={[styles.footer, { color: colors.textLight }]}>VetCloud (c) 2026</Text>
+        <Text style={[styles.footer, { color: colors.textLight }]}>© 2026 VetCloud</Text>
       </View>
     </KeyboardAvoidingView>
   );
@@ -171,13 +173,14 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    paddingTop: 80,
-    paddingBottom: 60,
+    paddingTop: 56,
+    paddingBottom: 88,
     paddingHorizontal: SPACING.xl,
     alignItems: 'center',
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
+    gap: SPACING.sm,
   },
+  taglineRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  rule: { width: 28, height: 1 },
   logoCircle: {
     width: 96,
     height: 96,
@@ -186,12 +189,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: SPACING.lg,
   },
-  logoTitle: { fontSize: TYPOGRAPHY.sizes['4xl'], fontWeight: TYPOGRAPHY.weights.bold, color: TEXT_ON_PRIMARY.light.default },
-  logoSubtitle: { fontSize: TYPOGRAPHY.sizes.md, color: TEXT_ON_PRIMARY.light.muted, marginTop: SPACING.xs },
-  formSection: { flex: 1, justifyContent: 'center', paddingHorizontal: SPACING.xl },
+  logoTitle: { fontSize: 36, fontWeight: '600', letterSpacing: 0.6, marginTop: SPACING.xs },
+  logoSubtitle: { fontSize: TYPOGRAPHY.sizes.sm, letterSpacing: 0.3 },
+  formSection: { flex: 1, paddingHorizontal: SPACING.lg, marginTop: -56, width: '100%', maxWidth: 440, alignSelf: 'center' },
   formContent: { paddingTop: SPACING.xl, paddingBottom: SPACING['2xl'] },
   card: {
-    borderRadius: RADIUS.xl,
+    borderRadius: 14,
     padding: SPACING['2xl'],
   },
   cardTitle: {

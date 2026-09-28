@@ -17,7 +17,7 @@ interface PatientSidePanelProps {
 }
 
 export default function PatientSidePanel({ patient, visible, onClose }: PatientSidePanelProps) {
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
   const router = useRouter();
   const { width: screenWidth } = useWindowDimensions();
   const panelWidth = Math.min(360, screenWidth * 0.85);
@@ -163,8 +163,8 @@ export default function PatientSidePanel({ patient, visible, onClose }: PatientS
             }}
             activeOpacity={0.8}
           >
-            <Text style={styles.viewFullText}>Ver ficha completa</Text>
-            <ChevronRight size={16} color="#FFFFFF" />
+            <Text style={[styles.viewFullText, { color: onPrimaryText.default }]}>Ver ficha completa</Text>
+            <ChevronRight size={16} color={onPrimaryText.default} />
           </TouchableOpacity>
         </View>
       </Animated.View>

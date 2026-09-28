@@ -13,7 +13,7 @@ interface DayHeaderProps {
 }
 
 export default function DayHeader({ dayName, dayNumber, isToday, isSelected, appointmentCount, width }: DayHeaderProps) {
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
 
   return (
     <View style={[styles.container, { width }]}>
@@ -29,7 +29,7 @@ export default function DayHeader({ dayName, dayNumber, isToday, isSelected, app
           style={[
             styles.dayNumber,
             {
-              color: isSelected ? '#FFF' : isToday ? colors.primary : colors.text,
+              color: isSelected ? onPrimaryText.default : isToday ? colors.primary : colors.text,
               fontWeight: isToday || isSelected ? '700' : '600',
             },
           ]}

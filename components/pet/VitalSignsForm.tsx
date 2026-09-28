@@ -7,6 +7,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import VInput from '../../components/ui/Input';
 import VButton from '../../components/ui/Button';
+import DisplayText from '../ui/DisplayText';
 
 interface VitalSignsProps {
   petId: string;
@@ -30,7 +31,7 @@ interface VitalRecord {
 }
 
 export default function VitalSignsForm({ petId, visible, onClose }: VitalSignsProps) {
-  const { colors } = useTheme();
+  const { colors, onChromeText } = useTheme();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [history, setHistory] = useState<VitalRecord[]>([]);
@@ -96,8 +97,8 @@ export default function VitalSignsForm({ petId, visible, onClose }: VitalSignsPr
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { backgroundColor: colors.primary, borderBottomColor: colors.border }]}>
-          <Text style={styles.headerTitle}>Signos Vitales</Text>
+        <View style={[styles.header, { backgroundColor: colors.chrome, borderBottomColor: colors.border }]}>
+          <DisplayText style={[styles.headerTitle, { color: onChromeText.default }]}>Signos Vitales</DisplayText>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
             <X size={22} color="#fff" />
           </TouchableOpacity>

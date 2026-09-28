@@ -186,7 +186,7 @@ export default function RecordDetail({ record }: RecordDetailProps) {
                     {fileUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                       <Image source={{ uri: fileUrl }} style={styles.fileThumb} />
                     ) : (
-                      <View style={[styles.fileThumb, styles.fileThumbPdf, { backgroundColor: colors.errorContainer }]}>
+                      <View style={[styles.fileThumb, styles.fileThumbPdf, { backgroundColor: colors.error + '1A' }]}>
                         <DynamicIcon name="file-pdf-box" size={24} color={colors.error} />
                       </View>
                     )}

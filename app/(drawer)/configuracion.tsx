@@ -4,38 +4,22 @@ import { Text } from 'react-native-paper';
 import { User, Palette, Bell, Shield, Check, AlertCircle, Lock, Eye, EyeOff, Sun, Moon } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
-import { PALETTES, APP_COLORS, APP_COLORS_DARK } from '../../constants/colors';
 import { apiAuthChangePassword } from '../../services/auth';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
 import VCard from '../../components/ui/Card';
 import VInput from '../../components/ui/Input';
 import VButton from '../../components/ui/Button';
-
-const PALETTE_OPTIONS = [
-  { key: null, label: 'Predeterminada' },
-  ...Object.keys(PALETTES).map((k) => ({ key: k, label: PALETTES[k].label })),
-];
-
-function PaletteSwatch({ colors }: { colors: typeof APP_COLORS }) {
-  const swatches = [colors.primary, colors.accent, colors.info, colors.success];
-  return (
-    <View style={styles.swatchRow}>
-      {swatches.map((c, i) => (
-        <View key={i} style={[styles.swatch, { backgroundColor: c }]} />
-      ))}
-    </View>
-  );
-}
+import DisplayText from '../../components/ui/DisplayText';
 
 export default function ConfiguracionScreen() {
   const { user, updateProfile } = useAuth();
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [selectedPalette, setSelectedPalette] = useState<string | null>(user?.color_palette || null);
+  const [selectedPalette, setSelectedPalette] = useState<string | null>(null) // palettes merged into light/dark themes;
   const [modeDark, setModeDark] = useState(user?.theme_preference === 'dark');
 
   const [notiEmail, setNotiEmail] = useState(user?.notification_email_reminders ?? true);
@@ -113,7 +97,7 @@ export default function ConfiguracionScreen() {
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Configuración</Text>
+        <DisplayText style={[styles.title, { color: colors.text }]}>Configuración</DisplayText>
       </View>
 
       {/* Datos Personales */}
@@ -141,8 +125,8 @@ export default function ConfiguracionScreen() {
               onPress={() => setModeDark(false)}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Sun size={15} color={!modeDark ? '#FFF' : colors.textSecondary} />
-                <Text style={[styles.modeBtnText, { color: !modeDark ? '#FFF' : colors.textSecondary }]}>Claro</Text>
+                <Sun size={15} color={!modeDark ? onPrimaryText.default : colors.textSecondary} />
+                <Text style={[styles.modeBtnText, { color: !modeDark ? onPrimaryText.default : colors.textSecondary }]}>Claro</Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity
@@ -150,42 +134,15 @@ export default function ConfiguracionScreen() {
               onPress={() => setModeDark(true)}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Moon size={15} color={modeDark ? '#FFF' : colors.textSecondary} />
-                <Text style={[styles.modeBtnText, { color: modeDark ? '#FFF' : colors.textSecondary }]}>Oscuro</Text>
+                <Moon size={15} color={modeDark ? onPrimaryText.default : colors.textSecondary} />
+                <Text style={[styles.modeBtnText, { color: modeDark ? onPrimaryText.default : colors.textSecondary }]}>Oscuro</Text>
               </View>
             </TouchableOpacity>
           </View>
 
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Paleta</Text>
-          <View style={styles.paletteGrid}>
-            {PALETTE_OPTIONS.map((opt, idx) => {
-              const isActive = selectedPalette === opt.key;
-              const paletteColors = opt.key && PALETTES[opt.key]
-                ? (modeDark ? PALETTES[opt.key].dark : PALETTES[opt.key].light)
-                : (modeDark ? APP_COLORS_DARK : APP_COLORS);
-              return (
-                <TouchableOpacity
-                  key={opt.key || 'default'}
-                  style={[
-                    styles.paletteCard,
-                    { backgroundColor: paletteColors.surface, borderColor: isActive ? colors.primary : paletteColors.border },
-                    isActive && { borderWidth: 2 },
-                  ]}
-                  onPress={() => setSelectedPalette(opt.key)}
-                >
-                  {isActive && (
-                    <View style={[styles.paletteCheck, { backgroundColor: colors.primary }]}>
-                      <Check size={14} color="#FFF" />
-                    </View>
-                  )}
-                  <PaletteSwatch colors={paletteColors} />
-                  <Text style={[styles.paletteLabel, { color: paletteColors.text }]}>Opción {idx + 1}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <Text style={[styles.modeHint, { color: colors.textLight }]}>
+            {modeDark ? 'Alter: armadura negra, carmesí y oro pálido.' : 'Saber: azul real, oro antiguo y marfil.'}
+          </Text>
       </VCard>
 
       {/* Notificaciones */}
@@ -285,16 +242,10 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
   cardTitle: { fontWeight: TYPOGRAPHY.weights.bold, fontSize: TYPOGRAPHY.sizes.lg },
   sectionLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-  divider: { height: 1, marginVertical: 12 },
   modeRow: { flexDirection: 'row', gap: 10 },
   modeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 8, borderWidth: 1 },
+  modeHint: { fontSize: TYPOGRAPHY.sizes.xs, marginTop: SPACING.sm },
   modeBtnText: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.semibold },
-  paletteGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  paletteCard: { width: '30%', borderRadius: 10, borderWidth: 1, padding: 10, alignItems: 'center', position: 'relative' },
-  paletteCheck: { position: 'absolute', top: 6, right: 6, borderRadius: 10, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
-  swatchRow: { flexDirection: 'row', gap: 4, marginBottom: 6 },
-  swatch: { width: 16, height: 16, borderRadius: 8 },
-  paletteLabel: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.semibold, textAlign: 'center' },
   notiRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1 },
   notiLabel: { fontSize: TYPOGRAPHY.sizes.base },
   passwordField: { position: 'relative' },

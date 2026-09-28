@@ -60,7 +60,9 @@ export const TYPOGRAPHY = {
   },
 } as const;
 
-// Shadows (neumorphism — maximum depth)
+// Shadows — soft, warm-ink, low opacity. Elevation is declared once
+// (shadow OR border), never a hard drop shadow under a bordered card.
+const INK = '#1B1606';
 export const SHADOWS = {
   none: {
     shadowColor: 'transparent',
@@ -70,48 +72,48 @@ export const SHADOWS = {
     elevation: 0,
   },
   xs: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowColor: INK,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   sm: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowColor: INK,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   md: {
-    shadowColor: '#0F172A',
+    shadowColor: INK,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
   },
   lg: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.30,
-    shadowRadius: 20,
+    shadowColor: INK,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.10,
+    shadowRadius: 28,
     elevation: 8,
   },
   xl: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.35,
-    shadowRadius: 28,
+    shadowColor: INK,
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.14,
+    shadowRadius: 40,
     elevation: 12,
   },
 } as const;
 
 // Animation durations (ms)
 export const ANIMATION = {
-  fast: 150,
-  normal: 200,
-  slow: 250,
-  slower: 350,
+  fast: 120,
+  normal: 180,
+  slow: 220,
+  slower: 250,
 } as const;
 
 // Z-index layers

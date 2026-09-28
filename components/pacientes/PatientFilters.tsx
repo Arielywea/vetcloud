@@ -41,7 +41,7 @@ export default function PatientFilters({
   ownerFilter, onOwnerFilterChange,
   statusFilter, onStatusFilterChange,
 }: PatientFiltersProps) {
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [showSpeciesDropdown, setShowSpeciesDropdown] = useState(false);
   const [showBreedDropdown, setShowBreedDropdown] = useState(false);
@@ -182,7 +182,7 @@ export default function PatientFilters({
               >
                 <Text style={[
                   styles.statusOptionText,
-                  { color: statusFilter === opt.key ? '#FFFFFF' : colors.text },
+                  { color: statusFilter === opt.key ? onPrimaryText.default : colors.text },
                 ]}>
                   {opt.label}
                 </Text>

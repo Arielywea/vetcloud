@@ -91,7 +91,7 @@ export default function RecordTimeline({ records, onViewRecord }: RecordTimeline
                     </View>
                   </View>
                   {onViewRecord && (
-                    <Button compact mode="text" onPress={() => onViewRecord(record)} labelStyle={{ color: '#C9A227' }}>
+                    <Button compact mode="text" onPress={() => onViewRecord(record)} labelStyle={{ color: colors.primary }}>
                       Ver modulo
                     </Button>
                   )}
