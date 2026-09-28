@@ -9,7 +9,7 @@ import { Pool } from 'pg';
 import { ALL_DISEASES } from '../data';
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || '$DATABASE_URL',
+  connectionString: process.env.DATABASE_URL,
 });
 
 function formatKeySigns(raw: any[]): string[] {
@@ -94,6 +94,8 @@ async function seed() {
   }
 
   // Clear existing diseases for clean re-seed
+  // Destructive: TRUNCATE ... CASCADE also empties medical_records, personal_notes and favorites
+  if (process.env.ALLOW_DESTRUCTIVE !== '1') { console.error('Refusing to TRUNCATE diseases without ALLOW_DESTRUCTIVE=1'); process.exit(1); }
   await pool.query('TRUNCATE TABLE diseases CASCADE');
   console.log('✓ Cleared existing diseases');
 

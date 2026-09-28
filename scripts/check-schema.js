@@ -34,6 +34,10 @@ for (const m of server.matchAll(/UPDATE (\w+) SET ([^`'$]*?)(?:WHERE|RETURNING|\
 for (const m of server.matchAll(/const allowed = \[([^\]]+)\][\s\S]*?UPDATE (\w+) SET/g)) {
   add(m[2], splitCols(m[1]), 'allowed[]');
 }
+// Request keys that server.js maps to a differently named column (aliasMap)
+const ALIASES = { diseases: ['references'] };
+for (const [table, keys] of Object.entries(ALIASES)) keys.forEach((k) => expected[table] && expected[table].delete(k));
+
 const petCols = server.match(/const PET_COLUMNS = \[([^\]]+)\]/);
 if (petCols) add('pets', splitCols(petCols[1]), 'PET_COLUMNS');
 

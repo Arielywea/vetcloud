@@ -8,19 +8,49 @@
     }
   },
   "rewrites": [
-    { "source": "/auth/(.*)", "destination": "/api" },
-    { "source": "/debug/(.*)", "destination": "/api" },
-    { "source": "/items/(.*)", "destination": "/api" },
-    { "source": "/appointments/(.*)", "destination": "/api" },
-    { "source": "/vital-measurements(.*)", "destination": "/api" },
-    { "source": "/payments(.*)", "destination": "/api" },
-    { "source": "/reports/(.*)", "destination": "/api" },
-    { "source": "/stats/(.*)", "destination": "/api" },
-    { "source": "/search(.*)", "destination": "/api" },
-    { "source": "/admin", "destination": "/api" },
-    { "source": "/admin/(.*)", "destination": "/api" },
-    { "source": "/files", "destination": "/api" },
-    { "source": "/assistant", "destination": "/api" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/auth/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/items/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/appointments/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/vital-measurements(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/payments(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/reports/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/stats/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/search(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/files",
+      "destination": "/api"
+    },
+    {
+      "source": "/assistant",
+      "destination": "/api"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }

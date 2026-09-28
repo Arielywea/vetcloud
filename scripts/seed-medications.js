@@ -1,9 +1,12 @@
 const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
+try { require('dotenv').config(); } catch (e) {}
+if (!process.env.DATABASE_URL) { console.error('DATABASE_URL no definido (usa .env)'); process.exit(1); }
+
 
 const pool = new Pool({
-  connectionString: '$DATABASE_URL',
+  connectionString: process.env.DATABASE_URL,
 });
 
 function parseCsvLine(line) {

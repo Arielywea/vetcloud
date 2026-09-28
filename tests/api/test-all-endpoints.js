@@ -1,4 +1,4 @@
-const BASE = 'https://vetcloud.vercel.app';
+const BASE = process.env.VETCLOUD_BASE_URL || 'http://localhost:8081';
 let token = null;
 let petId = null;
 let appointmentId = null;
@@ -43,11 +43,11 @@ async function run() {
   // ── Auth ──
   console.log('\x1b[1mAuth\x1b[0m');
   await test('POST /auth/login (valid)', 200, async () => {
-    const r = await req('POST', '/auth/login', { rut: 'RUT_REDACTED_A', password: 'REDACTED' }, false);
+    const r = await req('POST', '/auth/login', { identifier: process.env.VETCLOUD_TEST_USER, password: process.env.VETCLOUD_TEST_PASS }, false);
     token = r.json?.data?.token || r.json?.token;
     return r;
   });
-  await test('POST /auth/login (invalid)', 401, () => req('POST', '/auth/login', { rut: 'RUT_REDACTED_A', password: 'wrong' }, false));
+  await test('POST /auth/login (invalid)', 401, () => req('POST', '/auth/login', { identifier: process.env.VETCLOUD_TEST_USER, password: 'wrong' }, false));
   await test('GET /auth/me', 200, () => req('GET', '/auth/me'));
 
   // ── Pets ──

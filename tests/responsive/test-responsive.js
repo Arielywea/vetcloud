@@ -3,9 +3,9 @@ const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 
-const BASE_URL = 'https://vetcloud.vercel.app';
-const RUT = 'RUT_REDACTED_A';
-const PASSWORD = 'REDACTED';
+const BASE_URL = process.env.VETCLOUD_BASE_URL || 'http://localhost:8081';
+const RUT = process.env.VETCLOUD_TEST_USER;
+const PASSWORD = process.env.VETCLOUD_TEST_PASS;
 
 const SCREENSHOTS_DIR = path.join(__dirname, 'screenshots');
 if (!fs.existsSync(SCREENSHOTS_DIR)) fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });

@@ -1,8 +1,11 @@
 const { Client } = require('../node_modules/pg');
+try { require('dotenv').config(); } catch (e) {}
+if (!process.env.DATABASE_URL) { console.error('DATABASE_URL no definido (usa .env)'); process.exit(1); }
+
 
 async function main() {
   const c = new Client({
-    connectionString: '$DATABASE_URL'
+    connectionString: process.env.DATABASE_URL
   });
   await c.connect();
   console.log('Connected to Neon DB');

@@ -28,7 +28,7 @@ async function login(rut, password) {
 async function testSqlInjection() {
   console.log(`\n${YELLOW}[1] SQL Injection Test${RESET}`);
 
-  const token = await login("RUT_REDACTED_A", "REDACTED");
+  const token = await login(process.env.VETCLOUD_TEST_USER, process.env.VETCLOUD_TEST_PASS);
   if (!token) { log("FAIL", "Could not authenticate"); return; }
   log("PASS", "Logged in as user A");
 
@@ -92,7 +92,7 @@ async function testSqlInjection() {
 async function testUserScoping() {
   console.log(`\n${YELLOW}[2] User Scoping Test${RESET}`);
 
-  const tokenA = await login("RUT_REDACTED_A", "REDACTED");
+  const tokenA = await login(process.env.VETCLOUD_TEST_USER, process.env.VETCLOUD_TEST_PASS);
   if (!tokenA) { log("FAIL", "Could not authenticate user A"); return; }
   log("PASS", "Logged in as user A");
 
@@ -106,7 +106,7 @@ async function testUserScoping() {
   const petIdA = petsA[0].id;
   log("PASS", `User A has pet ${petIdA}`);
 
-  const tokenB = await login("RUT_REDACTED_B", "REDACTED");
+  const tokenB = await login(process.env.VETCLOUD_TEST_USER_B, process.env.VETCLOUD_TEST_PASS_B);
   if (!tokenB) { log("WARN", "Could not authenticate user B (account may not exist) — skipping cross-access test"); return; }
   log("PASS", "Logged in as user B");
 
@@ -134,7 +134,7 @@ async function testRateLimiting() {
     const res = await fetch(`${BASE_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rut: "RUT_REDACTED_A", password: `wrong_password_${i}` }),
+      body: JSON.stringify({ identifier: process.env.VETCLOUD_TEST_USER, password: `wrong_password_${i}` }),
     });
 
     if (res.status === 429) {
@@ -157,7 +157,7 @@ async function testRateLimiting() {
 async function testPasswordPolicy() {
   console.log(`\n${YELLOW}[4] Password Policy Test${RESET}`);
 
-  const token = await login("RUT_REDACTED_A", "REDACTED");
+  const token = await login(process.env.VETCLOUD_TEST_USER, process.env.VETCLOUD_TEST_PASS);
   if (!token) { log("FAIL", "Could not authenticate"); return; }
   log("PASS", "Logged in");
 
@@ -227,7 +227,7 @@ async function testAdminAuth() {
 async function testUuidValidation() {
   console.log(`\n${YELLOW}[6] UUID Validation Test${RESET}`);
 
-  const token = await login("RUT_REDACTED_A", "REDACTED");
+  const token = await login(process.env.VETCLOUD_TEST_USER, process.env.VETCLOUD_TEST_PASS);
   if (!token) { log("FAIL", "Could not authenticate"); return; }
   log("PASS", "Logged in");
 
@@ -274,7 +274,7 @@ async function testUuidValidation() {
 async function testXssInEmail() {
   console.log(`\n${YELLOW}[7] XSS in Email / Escape Test${RESET}`);
 
-  const token = await login("RUT_REDACTED_A", "REDACTED");
+  const token = await login(process.env.VETCLOUD_TEST_USER, process.env.VETCLOUD_TEST_PASS);
   if (!token) { log("FAIL", "Could not authenticate"); return; }
   log("PASS", "Logged in");
 
