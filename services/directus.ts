@@ -41,8 +41,8 @@ export interface DirectusPet {
   name: string;
   species: 'dog' | 'cat';
   breed: string;
-  birth_date: string;
-  weight: number;
+  birth_date: string | null;
+  weight: number | null;
   color: string;
   photo: string | null;
   allergies: string[];
@@ -261,6 +261,23 @@ export interface DirectusLabExam {
 }
 // ─────────────────────────────────────────────────────────
 
+// Turns a failed response into a readable Error using the server's { error } message
+async function apiError(res: Response): Promise<Error> {
+  let message = '';
+  try {
+    const text = await res.text();
+    try { message = JSON.parse(text)?.error || ''; } catch { message = text.startsWith('<') ? '' : text; }
+  } catch { /* ignore */ }
+  if (!message) {
+    if (res.status === 401) message = 'Tu sesión expiró. Vuelve a iniciar sesión.';
+    else if (res.status >= 500) message = 'Error del servidor. Intenta de nuevo en unos segundos.';
+    else message = `Error ${res.status}`;
+  }
+  const err = new Error(message) as Error & { status?: number };
+  err.status = res.status;
+  return err;
+}
+
 async function apiGet(endpoint: string, params?: Record<string, string>) {
   const url = new URL(`${API_URL}${endpoint}`);
   if (params) {
@@ -269,7 +286,7 @@ async function apiGet(endpoint: string, params?: Record<string, string>) {
     });
   }
   const res = await fetch(url.toString(), { headers: await authHeaders() });
-  if (!res.ok) throw new Error(`API error: ${res.statusText}`);
+  if (!res.ok) throw await apiError(res);
   const json = await res.json();
   return json.data;
 }
@@ -280,10 +297,7 @@ async function apiPost(endpoint: string, body: any) {
     headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
     body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`API error: ${text}`);
-  }
+  if (!res.ok) throw await apiError(res);
   const json = await res.json();
   return json.data;
 }
@@ -294,14 +308,14 @@ async function apiPatch(endpoint: string, body: any) {
     headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`API error: ${res.statusText}`);
+  if (!res.ok) throw await apiError(res);
   const json = await res.json();
   return json.data;
 }
 
 async function apiDelete(endpoint: string) {
   const res = await fetch(`${API_URL}${endpoint}`, { method: 'DELETE', headers: await authHeaders() });
-  if (!res.ok) throw new Error(`API error: ${res.statusText}`);
+  if (!res.ok) throw await apiError(res);
 }
 
 // ─────────────────────────────────────────────────────────

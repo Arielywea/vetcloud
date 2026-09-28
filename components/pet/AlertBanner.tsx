@@ -49,7 +49,7 @@ export default function AlertBanner({ pet }: AlertBannerProps) {
   }
 
   // Weight alert (underweight/overweight based on species)
-  if (pet.weight > 0) {
+  if (pet.weight && pet.weight > 0) {
     const isDog = pet.species === 'dog';
     const minHealthy = isDog ? 2 : 0.5;
     const maxHealthy = isDog ? 80 : 12;

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Modal, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import { DollarSign, CreditCard, X, Banknote, ArrowRightLeft, Smartphone } from 'lucide-react-native';
-import { directus } from '../../services/directus';
+import { api } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import VInput from '../../components/ui/Input';
@@ -36,7 +36,7 @@ export default function PaymentForm({ visible, onClose, onPaid, appointmentId, p
     if (!amount || isNaN(parseFloat(amount))) return;
     setSaving(true);
     try {
-      await directus.payments.create({
+      await api.payments.create({
         appointment_id: appointmentId || undefined,
         pet_id: petId || undefined,
         amount: parseFloat(amount),
@@ -78,7 +78,7 @@ export default function PaymentForm({ visible, onClose, onPaid, appointmentId, p
           <VInput label="Descripcion (opcional)" placeholder="Consulta, vacuna, etc." value={description} onChangeText={setDescription} />
 
           <View style={styles.actions}>
-            <VButton onPress={onClose} variant="outlined" style={{ flex: 1 }}>Cancelar</VButton>
+            <VButton onPress={onClose} variant="secondary" style={{ flex: 1 }}>Cancelar</VButton>
             <VButton onPress={handleSave} loading={saving} disabled={saving} style={{ flex: 1 }}>Cobrar</VButton>
           </View>
         </View>

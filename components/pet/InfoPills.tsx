@@ -20,7 +20,7 @@ export default function InfoPills({ pet }: InfoPillsProps) {
     { icon: 'shape', label: 'Raza', value: pet.breed || 'N/D' },
     ...(pet.sex ? [{ icon: pet.sex === 'macho' ? 'gender-male' : 'gender-female', label: 'Sexo', value: pet.sex === 'macho' ? 'Macho' : 'Hembra' }] : []),
     { icon: 'palette', label: 'Color', value: pet.color || 'N/D' },
-    ...(pet.weight > 0 ? [{ icon: 'weight', label: 'Peso', value: `${pet.weight} kg` }] : []),
+    ...((pet.weight ?? 0) > 0 ? [{ icon: 'weight', label: 'Peso', value: `${pet.weight} kg` }] : []),
     { icon: 'calendar', label: 'Edad', value: calculateAge(pet.birth_date) },
     ...(pet.id_number ? [{ icon: 'barcode', label: 'Microchip', value: pet.id_number }] : []),
   ];

@@ -10,6 +10,8 @@ const jwt = require('jsonwebtoken');
 try { require('dotenv').config(); } catch (e) { /* dotenv optional */ }
 
 const app = express();
+// Behind Vercel's proxy: use X-Forwarded-For so req.ip is the real client (rate limits per user, not global)
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 8055;
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -59,17 +61,75 @@ function isValidUUID(str) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 }
 
-const rateLimitStore = new Map();
-function rateLimit(key, maxAttempts, windowMs) {
-  const now = Date.now();
-  const record = rateLimitStore.get(key) || { count: 0, resetAt: now + windowMs };
-  if (now > record.resetAt) {
-    record.count = 0;
-    record.resetAt = now + windowMs;
+// Logs the real cause of a 500 so it shows up in Vercel's function logs
+function logError(req, err) {
+  console.error(`[${req.method} ${req.path}]`, err && (err.stack || err.message || err), err && err.detail ? `detail: ${err.detail}` : '');
+}
+
+// Stored in Postgres so the limit is shared across Vercel serverless instances
+async function rateLimit(key, maxAttempts, windowMs) {
+  try {
+    const result = await pool.query(
+      `INSERT INTO rate_limits (key, count, reset_at)
+       VALUES ($1, 1, NOW() + ($2 || ' milliseconds')::interval)
+       ON CONFLICT (key) DO UPDATE SET
+         count = CASE WHEN rate_limits.reset_at < NOW() THEN 1 ELSE rate_limits.count + 1 END,
+         reset_at = CASE WHEN rate_limits.reset_at < NOW() THEN NOW() + ($2 || ' milliseconds')::interval ELSE rate_limits.reset_at END
+       RETURNING count`,
+      [key, String(windowMs)]
+    );
+    return result.rows[0].count <= maxAttempts;
+  } catch (err) {
+    console.error('[rateLimit]', err.message);
+    return true; // never lock users out because the limiter itself failed
   }
-  record.count++;
-  rateLimitStore.set(key, record);
-  return record.count <= maxAttempts;
+}
+
+// Accepts DD/MM/AAAA or AAAA-MM-DD; returns ISO date, null for empty, or undefined if invalid
+function parseDateInput(value) {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
+  const str = String(value).trim();
+  let y, m, d;
+  let match = str.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if (match) { d = +match[1]; m = +match[2]; y = +match[3]; }
+  else if ((match = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) { y = +match[1]; m = +match[2]; d = +match[3]; }
+  else return undefined;
+  const date = new Date(Date.UTC(y, m - 1, d));
+  if (date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) return undefined;
+  if (date > new Date() || y < 1980) return undefined;
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+// Columns a client may set on pets (create + update). JSON columns are stringified.
+const PET_COLUMNS = ['name','species','breed','birth_date','weight','color','photo','allergies','notes','tutor_name','phone','email','address','clinic_location','id_number','sex','temperament','habitat','habitat_other','food','food_frequency','water_consumption','urination','lives_with_other_animals','vaccines','deworming','flea_treatment','last_heat','surgeries','other_diseases','medications','reproductive_status','anamnesis','vital_signs','hallazgos_examen_fisico','motivo_consulta','entorno','areneros','status','receive_reminders','last_visit','pre_diagnostico','base_diseases'];
+const PET_JSON_COLUMNS = ['allergies','temperament','vital_signs','base_diseases'];
+
+// Validates and normalizes a pet payload. Returns { values } or { error }.
+function normalizePet(body, { partial }) {
+  const safe = sanitizeColumns(PET_COLUMNS, body);
+  if (!partial || safe.name !== undefined) {
+    if (!safe.name || !String(safe.name).trim()) return { error: 'El nombre es obligatorio' };
+    safe.name = String(safe.name).trim();
+  }
+  if (safe.species !== undefined && !['dog', 'cat'].includes(safe.species)) return { error: 'La especie debe ser dog o cat' };
+  if (safe.birth_date !== undefined) {
+    const parsed = parseDateInput(safe.birth_date);
+    if (parsed === undefined) return { error: 'Fecha de nacimiento inválida (usa DD/MM/AAAA)' };
+    safe.birth_date = parsed;
+  }
+  if (safe.weight !== undefined) {
+    if (safe.weight === null || safe.weight === '') safe.weight = null;
+    else {
+      const w = parseFloat(String(safe.weight).replace(',', '.'));
+      if (!isFinite(w) || w < 0 || w > 200) return { error: 'Peso inválido' };
+      safe.weight = w;
+    }
+  }
+  for (const [key, val] of Object.entries(safe)) {
+    if (typeof val === 'string' && val.trim() === '' && key !== 'name') safe[key] = null;
+    if (PET_JSON_COLUMNS.includes(key) && val !== null && val !== undefined) safe[key] = JSON.stringify(val);
+  }
+  return { values: safe };
 }
 
 function escapeHtml(str) {
@@ -99,7 +159,7 @@ function authMiddleware(req, res, next) {
 app.post('/auth/login', async (req, res) => {
   try {
     const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
-    if (!rateLimit(`login:${clientIp}`, 5, 60000)) {
+    if (!await rateLimit(`login:${clientIp}`, 5, 60000)) {
       return res.status(429).json({ error: 'Demasiados intentos. Intente en 1 minuto.' });
     }
     const { identifier, password, rut } = req.body;
@@ -134,6 +194,7 @@ app.post('/auth/login', async (req, res) => {
       },
     });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -141,7 +202,7 @@ app.post('/auth/login', async (req, res) => {
 app.post('/auth/register', async (req, res) => {
   try {
     const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
-    if (!rateLimit(`register:${clientIp}`, 3, 300000)) {
+    if (!await rateLimit(`register:${clientIp}`, 3, 300000)) {
       return res.status(429).json({ error: 'Demasiados registros. Intente en 5 minutos.' });
     }
     const { username, email, password, org_name, org_type } = req.body;
@@ -228,13 +289,14 @@ app.get('/auth/me', authMiddleware, async (req, res) => {
     if (user.smtp_password) user.smtp_password = '••••••••';
     res.json({ data: user });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
 app.patch('/auth/profile', authMiddleware, async (req, res) => {
   try {
-    const { name, email, clinic_name, veterinarian_name, clinic_phone, clinic_address, smtp_email, smtp_password, theme_preference, color_palette, notification_email_reminders, notification_upcoming_appointments, notification_push } = req.body;
+    const { name, email, clinic_name, veterinarian_name, clinic_phone, clinic_address, smtp_email, theme_preference, color_palette, notification_email_reminders, notification_upcoming_appointments, notification_push } = req.body;
     const fields = [];
     const values = [];
     let idx = 1;
@@ -245,7 +307,6 @@ app.patch('/auth/profile', authMiddleware, async (req, res) => {
     if (clinic_phone !== undefined) { fields.push(`clinic_phone = $${idx}`); values.push(clinic_phone); idx++; }
     if (clinic_address !== undefined) { fields.push(`clinic_address = $${idx}`); values.push(clinic_address); idx++; }
     if (smtp_email !== undefined) { fields.push(`smtp_email = $${idx}`); values.push(smtp_email); idx++; }
-    if (smtp_password !== undefined && smtp_password !== '••••••••') { fields.push(`smtp_password = $${idx}`); values.push(smtp_password); idx++; }
     if (theme_preference !== undefined) { fields.push(`theme_preference = $${idx}`); values.push(theme_preference); idx++; }
     if (color_palette !== undefined) { fields.push(`color_palette = $${idx}`); values.push(color_palette); idx++; }
     if (notification_email_reminders !== undefined) { fields.push(`notification_email_reminders = $${idx}`); values.push(notification_email_reminders); idx++; }
@@ -262,6 +323,7 @@ app.patch('/auth/profile', authMiddleware, async (req, res) => {
     if (user.smtp_password) user.smtp_password = '••••••••';
     res.json({ data: user });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -286,6 +348,7 @@ app.patch('/auth/password', authMiddleware, async (req, res) => {
     await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, req.userId]);
     res.json({ data: { success: true } });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -353,6 +416,7 @@ app.get('/items/diseases/:id', async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -371,6 +435,7 @@ app.post('/items/diseases', authMiddleware, async (req, res) => {
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -399,6 +464,7 @@ app.patch('/items/diseases/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -408,6 +474,7 @@ app.delete('/items/diseases/:id', authMiddleware, async (req, res) => {
     await pool.query('DELETE FROM diseases WHERE id = $1', [req.params.id]);
     res.json({ data: null });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -519,6 +586,7 @@ app.get('/items/pets', authMiddleware, async (req, res) => {
     const result = await pool.query('SELECT * FROM pets WHERE user_id = $1 ORDER BY name', [req.userId]);
     res.json({ data: result.rows });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -529,49 +597,46 @@ app.get('/items/pets/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
 app.post('/items/pets', authMiddleware, async (req, res) => {
   try {
-    const p = req.body;
-    if (!p.name || !String(p.name).trim()) return res.status(400).json({ error: 'El nombre es obligatorio' });
-    if (p.species && !['dog', 'cat'].includes(p.species)) return res.status(400).json({ error: 'La especie debe ser dog o cat' });
+    const { values: pet, error } = normalizePet(req.body || {}, { partial: false });
+    if (error) return res.status(400).json({ error });
+    if (!pet.species) return res.status(400).json({ error: 'La especie debe ser dog o cat' });
+    delete pet.last_visit;
+    pet.reproductive_status = pet.reproductive_status || 'intacto';
+    pet.status = pet.status || 'alive';
+    pet.allergies = pet.allergies || '[]';
+    pet.temperament = pet.temperament || '[]';
+    pet.user_id = req.userId;
+    pet.organization_id = req.organizationId || null;
+    const cols = Object.keys(pet);
     const result = await pool.query(
-       `INSERT INTO pets (name, species, breed, birth_date, weight, color, photo, allergies, notes, tutor_name, phone, email, address, clinic_location, reproductive_status, status, anamnesis, user_id, organization_id,
-        id_number, sex, temperament, habitat, habitat_other, food, food_frequency, water_consumption, urination, lives_with_other_animals, vaccines, deworming, flea_treatment, last_heat, surgeries, other_diseases, medications)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36) RETURNING *`,
-       [p.name, p.species, p.breed, p.birth_date, p.weight, p.color, p.photo,
-        JSON.stringify(p.allergies || []), p.notes,
-        p.tutor_name || null, p.phone || null, p.email || null, p.address || null, p.clinic_location || null,
-        p.reproductive_status || 'intacto', p.status || 'alive', p.anamnesis || null,
-        req.userId, req.organizationId || null,
-        p.id_number || null, p.sex || null, JSON.stringify(p.temperament || []),
-        p.habitat || null, p.habitat_other || null,
-        p.food || null, p.food_frequency || null, p.water_consumption || null, p.urination || null,
-        p.lives_with_other_animals || null,
-        p.vaccines || null, p.deworming || null, p.flea_treatment || null, p.last_heat || null,
-        p.surgeries || null, p.other_diseases || null, p.medications || null]
+      `INSERT INTO pets (${cols.join(', ')}) VALUES (${cols.map((_, i) => '$' + (i + 1)).join(', ')}) RETURNING *`,
+      cols.map(c => pet[c])
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
 app.patch('/items/pets/:id', authMiddleware, async (req, res) => {
   try {
-    const p = req.body;
-    const allowed = ['name','species','breed','birth_date','weight','color','photo','allergies','notes','tutor_name','phone','email','address','clinic_location','id_number','sex','temperament','habitat','habitat_other','food','food_frequency','water_consumption','urination','lives_with_other_animals','vaccines','deworming','flea_treatment','last_heat','surgeries','other_diseases','medications','reproductive_status','anamnesis','vital_signs','hallazgos_examen_fisico','motivo_consulta','entorno','areneros','status','receive_reminders','last_visit','pre_diagnostico','base_diseases'];
-    const safe = sanitizeColumns(allowed, p);
+    if (!isValidUUID(req.params.id)) return res.status(404).json({ error: 'Not found' });
+    const { values: safe, error } = normalizePet(req.body || {}, { partial: true });
+    if (error) return res.status(400).json({ error });
     const fields = [];
     const values = [];
     let idx = 1;
     for (const [key, val] of Object.entries(safe)) {
-      const valStr = typeof val === 'object' ? JSON.stringify(val) : val;
       fields.push(`${key} = $${idx}`);
-      values.push(valStr);
+      values.push(val);
       idx++;
     }
     fields.push(`updated_at = NOW()`);
@@ -583,6 +648,7 @@ app.patch('/items/pets/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -593,6 +659,7 @@ app.delete('/items/pets/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: null });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -610,6 +677,7 @@ app.get('/items/medical_records', authMiddleware, async (req, res) => {
     const result = await pool.query(query, params);
     res.json({ data: result.rows });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -627,6 +695,7 @@ app.post('/items/medical_records', authMiddleware, async (req, res) => {
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -637,6 +706,7 @@ app.get('/items/personal_notes', authMiddleware, async (req, res) => {
     const result = await pool.query('SELECT * FROM personal_notes WHERE user_id = $1 ORDER BY updated_at DESC', [req.userId]);
     res.json({ data: result.rows });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -651,6 +721,7 @@ app.post('/items/personal_notes', authMiddleware, async (req, res) => {
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -678,6 +749,7 @@ app.patch('/items/personal_notes/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -688,6 +760,7 @@ app.delete('/items/personal_notes/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: null });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -698,6 +771,7 @@ app.get('/items/favorites', authMiddleware, async (req, res) => {
     const result = await pool.query('SELECT * FROM favorites WHERE user_id = $1 ORDER BY added_at DESC', [req.userId]);
     res.json({ data: result.rows });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -711,6 +785,7 @@ app.post('/items/favorites', authMiddleware, async (req, res) => {
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -721,6 +796,7 @@ app.delete('/items/favorites/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: null });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -742,6 +818,7 @@ app.get('/items/appointments', authMiddleware, async (req, res) => {
     const result = await pool.query(query, params);
     res.json({ data: result.rows });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -752,6 +829,7 @@ app.get('/items/appointments/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -770,6 +848,7 @@ app.post('/items/appointments', authMiddleware, async (req, res) => {
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -847,6 +926,7 @@ app.patch('/items/appointments/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -857,6 +937,7 @@ app.delete('/items/appointments/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: null });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -878,6 +959,7 @@ app.get('/items/clinical_records', authMiddleware, async (req, res) => {
     const result = await pool.query(query, params);
     res.json({ data: result.rows });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -897,13 +979,14 @@ app.post('/items/clinical_records', authMiddleware, async (req, res) => {
       [r.pet_id, req.userId, r.record_type || 'consulta', r.date || new Date().toISOString(),
        r.veterinarian || null, JSON.stringify(r.details || {}), req.organizationId || null]
     );
-    // Auto-update pet's last_visit
+    // Auto-update pet's last_visit (non-fatal: the record is already saved)
     await pool.query(
       'UPDATE pets SET last_visit = GREATEST(COALESCE(last_visit, $1), $1) WHERE id = $2',
       [r.date || new Date().toISOString(), r.pet_id]
-    );
+    ).catch(err => logError(req, err));
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -935,10 +1018,11 @@ app.patch('/items/clinical_records/:id', authMiddleware, async (req, res) => {
       await pool.query(
         'UPDATE pets SET last_visit = GREATEST(COALESCE(last_visit, $1), $1) WHERE id = $2',
         [r.date, record.pet_id]
-      );
+      ).catch(err => logError(req, err));
     }
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -949,6 +1033,7 @@ app.delete('/items/clinical_records/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: null });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -959,6 +1044,7 @@ app.get('/items/inventory', authMiddleware, async (req, res) => {
     const result = await pool.query('SELECT * FROM inventory WHERE user_id = $1 ORDER BY name', [req.userId]);
     res.json({ data: result.rows });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -971,6 +1057,7 @@ app.get('/items/inventory/low-stock', authMiddleware, async (req, res) => {
     );
     res.json({ data: result.rows });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -986,6 +1073,7 @@ app.post('/items/inventory', authMiddleware, async (req, res) => {
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1013,6 +1101,7 @@ app.patch('/items/inventory/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1023,6 +1112,7 @@ app.delete('/items/inventory/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: null });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1040,6 +1130,7 @@ app.get('/items/prescriptions', authMiddleware, async (req, res) => {
     const result = await pool.query(query, params);
     res.json({ data: result.rows });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1053,6 +1144,7 @@ app.get('/items/prescriptions/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1072,6 +1164,7 @@ app.post('/items/prescriptions', authMiddleware, async (req, res) => {
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1099,6 +1192,7 @@ app.patch('/items/prescriptions/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1109,6 +1203,7 @@ app.delete('/items/prescriptions/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: null });
   } catch (err) {
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1116,7 +1211,7 @@ app.delete('/items/prescriptions/:id', authMiddleware, async (req, res) => {
 // ─── PRESCRIPTION EMAIL ───────────────────────────────
 app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
   try {
-    if (!rateLimit(`email:${req.userId}`, 10, 3600000)) {
+    if (!await rateLimit(`email:${req.userId}`, 10, 3600000)) {
       return res.status(429).json({ error: 'Límite de emails alcanzado (máx 10 por hora)' });
     }
     const result = await pool.query(
@@ -1484,7 +1579,7 @@ app.delete('/items/reminders/:id', authMiddleware, async (req, res) => {
 
 app.post('/items/reminders/send-pending', authMiddleware, async (req, res) => {
   try {
-    if (!rateLimit(`email:${req.userId}`, 10, 3600000)) {
+    if (!await rateLimit(`email:${req.userId}`, 10, 3600000)) {
       return res.status(429).json({ error: 'Límite de emails alcanzado (máx 10 por hora)' });
     }
     const result = await pool.query(

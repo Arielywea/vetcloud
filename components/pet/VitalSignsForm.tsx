@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Modal, TouchableOpacity } from 'react-native';
 import { Text, ActivityIndicator } from 'react-native-paper';
 import { Thermometer, Heart, Wind, Droplets, Activity, Plus, X } from 'lucide-react-native';
-import { directus } from '../../services/directus';
+import { api } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import VInput from '../../components/ui/Input';
@@ -51,8 +51,8 @@ export default function VitalSignsForm({ petId, visible, onClose }: VitalSignsPr
   const loadHistory = async () => {
     setLoading(true);
     try {
-      const res = await directus.vitals.list(petId);
-      setHistory(res.data || []);
+      const res = await api.vitals.list(petId);
+      setHistory(res || []);
     } catch { /* */ }
     setLoading(false);
   };
@@ -69,7 +69,7 @@ export default function VitalSignsForm({ petId, visible, onClose }: VitalSignsPr
       if (spo2) data.spo2 = parseInt(spo2);
       if (notes) data.notes = notes;
 
-      await directus.vitals.create(data);
+      await api.vitals.create(data);
       setShowForm(false);
       setWeight(''); setTemperature(''); setHeartRate(''); setRespRate(''); setBp(''); setSpo2(''); setNotes('');
       await loadHistory();
@@ -144,7 +144,7 @@ export default function VitalSignsForm({ petId, visible, onClose }: VitalSignsPr
                 </View>
                 <VInput label="Notas" placeholder="Observaciones..." value={notes} onChangeText={setNotes} multiline />
                 <View style={styles.formActions}>
-                  <VButton onPress={() => setShowForm(false)} variant="outlined" style={{ flex: 1 }}>Cancelar</VButton>
+                  <VButton onPress={() => setShowForm(false)} variant="secondary" style={{ flex: 1 }}>Cancelar</VButton>
                   <VButton onPress={handleSave} loading={saving} disabled={saving} style={{ flex: 1 }}>Guardar</VButton>
                 </View>
               </View>

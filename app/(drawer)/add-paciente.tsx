@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Alert, useWindowDimensions } from 'react-native';
 import { Text, TextInput, Button, Menu, Dialog, Portal } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Check, UserRound, Camera, Dog, Cat, Mars, Venus, Stethoscope, ShieldCheck, ChevronUp, ChevronDown, CheckSquare, Square, CircleDot, Circle, FileEdit, ImagePlus, ClipboardCheck } from 'lucide-react-native';
+import { Check, ChevronLeft, ChevronRight, UserRound, Camera, Dog, Cat, Mars, Venus, Stethoscope, ShieldCheck, ChevronUp, ChevronDown, CheckSquare, Square, CircleDot, Circle, FileEdit, ImagePlus, ClipboardCheck } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { usePets } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -144,6 +144,23 @@ export default function AddPacienteScreen() {
       setErrorMsg('El nombre es obligatorio');
       return;
     }
+    let isoDate: string | null = null;
+    if (birthDate.trim()) {
+      const m = birthDate.trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+      const d = m ? new Date(+m[3], +m[2] - 1, +m[1]) : null;
+      if (!m || !d || d.getDate() !== +m[1] || d.getMonth() !== +m[2] - 1 || d > new Date()) {
+        setErrorMsg('La fecha de nacimiento debe tener el formato DD/MM/AAAA y no puede ser futura.');
+        setCurrentStep(2);
+        return;
+      }
+      isoDate = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+    }
+    const parsedWeight = weight.trim() ? parseFloat(weight.replace(',', '.')) : null;
+    if (parsedWeight !== null && (!isFinite(parsedWeight) || parsedWeight < 0)) {
+      setErrorMsg('El peso debe ser un número (ej: 12,5).');
+      setCurrentStep(2);
+      return;
+    }
     setSaving(true);
     setErrorMsg(null);
     try {
@@ -156,22 +173,12 @@ export default function AddPacienteScreen() {
         }
       }
 
-      let isoDate = null;
-      if (birthDate.trim()) {
-        const parts = birthDate.split('/');
-        if (parts.length === 3) {
-          isoDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-        } else {
-          isoDate = birthDate.trim();
-        }
-      }
-
       await addPet({
         name: name.trim(),
         species,
         breed: breed.trim(),
         birth_date: isoDate,
-        weight: parseFloat(weight) || 0,
+        weight: parsedWeight,
         color: color.trim(),
         photo: photoUrl,
         allergies: [],
@@ -904,8 +911,9 @@ export default function AddPacienteScreen() {
       {/* Header + Progress Bar */}
       <View style={[styles.header, isMobile && styles.headerMobile]}>
         <View style={styles.breadcrumb}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={[styles.breadcrumbLink, { color: colors.primary }]}>← Pacientes</Text>
+          <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+            <ChevronLeft size={14} color={colors.primary} />
+            <Text style={[styles.breadcrumbLink, { color: colors.primary }]}>Pacientes</Text>
           </TouchableOpacity>
           <Text style={[styles.breadcrumbSeparator, { color: colors.textSecondary }]}>›</Text>
           <Text style={[styles.breadcrumbCurrent, { color: colors.text }]}>Nuevo Paciente</Text>
@@ -938,8 +946,9 @@ export default function AddPacienteScreen() {
           onPress={currentStep === 1 ? () => router.back() : handlePrev}
           style={[styles.navBtn, { borderColor: colors.border }]}
           labelStyle={{ color: colors.text }}
+          icon={currentStep === 1 ? undefined : ({ size }) => <ChevronLeft size={size} color={colors.text} />}
         >
-          {currentStep === 1 ? 'Cancelar' : '← Volver'}
+          {currentStep === 1 ? 'Cancelar' : 'Volver'}
         </Button>
         <Button
           mode="contained"
@@ -948,8 +957,12 @@ export default function AddPacienteScreen() {
           labelStyle={{ color: TEXT_ON_PRIMARY.light.default }}
           loading={saving}
           disabled={saving}
+          contentStyle={currentStep === 4 ? undefined : { flexDirection: 'row-reverse' }}
+          icon={saving ? undefined : ({ size }) => currentStep === 4
+            ? <Check size={size} color={TEXT_ON_PRIMARY.light.default} />
+            : <ChevronRight size={size} color={TEXT_ON_PRIMARY.light.default} />}
         >
-          {currentStep === 4 ? '✓ Guardar Paciente' : 'Siguiente →'}
+          {currentStep === 4 ? 'Guardar paciente' : 'Siguiente'}
         </Button>
       </View>
 

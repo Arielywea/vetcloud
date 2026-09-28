@@ -1,4 +1,4 @@
-export function calculateAge(birthDate: string): string {
+export function calculateAge(birthDate: string | null | undefined): string {
   if (!birthDate) return 'N/D';
   try {
     let birth: Date;

@@ -178,7 +178,7 @@ export function usePets() {
     fetchPets();
   }, [fetchPets]);
 
-  const addPet = async (pet: Omit<DirectusPet, 'id' | 'created_at' | 'updated_at'>) => {
+  const addPet = async (pet: Omit<DirectusPet, 'id' | 'created_at' | 'updated_at' | 'last_visit' | 'organization_id'>) => {
     const result = await api.pets.create(pet);
     await fetchPets();
     return result;

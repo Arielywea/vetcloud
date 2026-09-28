@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import { usePets } from '../../hooks/useDirectus';
-import { directus } from '../../services/directus';
+import { api } from '../../services/directus';
 
 interface CommandPaletteProps {
   visible: boolean;
@@ -63,8 +63,8 @@ export default function CommandPalette({ visible, onClose }: CommandPaletteProps
     if (!visible || !query.trim() || query.trim().length < 2) { setRemoteResults({ pets: [], owners: [] }); return; }
     const timer = setTimeout(async () => {
       try {
-        const res = await directus.search(query.trim());
-        setRemoteResults(res.data || { pets: [], owners: [] });
+        const res = await api.search(query.trim());
+        setRemoteResults(res || { pets: [], owners: [] });
       } catch { setRemoteResults({ pets: [], owners: [] }); }
     }, 400);
     return () => clearTimeout(timer);

@@ -155,7 +155,7 @@ export default function PetDetailScreen() {
       });
       resetForm();
       setShowRecordModal(false);
-    } catch { setErrorDialog('No se pudo guardar el registro'); } finally { setSaving(false); }
+    } catch (e: any) { setErrorDialog(e?.message || 'No se pudo guardar el registro'); } finally { setSaving(false); }
   };
 
   const resetForm = () => {
@@ -218,7 +218,7 @@ export default function PetDetailScreen() {
         prescription_body: rxBody.trim(), format: rxFormat, status: 'active', issued_at: new Date().toISOString(),
       });
       setShowRxModal(false);
-    } catch { setErrorDialog('No se pudo guardar la receta'); } finally { setSaving(false); }
+    } catch (e: any) { setErrorDialog(e?.message || 'No se pudo guardar la receta'); } finally { setSaving(false); }
   };
 
   const handleSendRxEmail = async (rx: Prescription) => { setEmailTarget(rx); setEmailRecipient(pet?.email || ''); setShowEmailModal(true); };

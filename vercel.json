@@ -15,6 +15,7 @@
     { "source": "/vital-measurements(.*)", "destination": "/api" },
     { "source": "/payments(.*)", "destination": "/api" },
     { "source": "/reports/(.*)", "destination": "/api" },
+    { "source": "/stats/(.*)", "destination": "/api" },
     { "source": "/search(.*)", "destination": "/api" },
     { "source": "/admin", "destination": "/api" },
     { "source": "/admin/(.*)", "destination": "/api" },
