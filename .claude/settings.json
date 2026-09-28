@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const f=((JSON.parse(d).tool_input)||{}).file_path||'';if(/(^|[\\\\/])(\\.env|backup\\.sql)$/.test(f)){console.error('Bloqueado: '+f+' tiene credenciales o datos reales');process.exit(2)}})\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const f=((JSON.parse(d).tool_input)||{}).file_path||'';if(!/\\.tsx?$/.test(f))return;const n=require('path').basename(f);let out='';try{require('child_process').execSync('npx tsc --noEmit -p .',{stdio:'pipe'})}catch(e){out=String(e.stdout)}const errs=out.split(/\\r?\\n/).filter(l=>l.includes(n)&&l.includes('error TS'));if(errs.length){console.error('Errores de tipos en '+n+':\\n'+errs.slice(0,15).join('\\n'));process.exit(2)}})\"",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}
