@@ -1,17 +1,26 @@
 import React from 'react';
-import { MCI_TO_LUCIDE } from '../../constants/iconMap';
+import Svg, { Path } from 'react-native-svg';
 import {
   Home, Menu, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, X, Check, Plus, Pencil, Trash2, Eye, EyeOff,
   Search, Filter, FilterX, Download, Send, Save, Bell, BellOff, Settings, Command, MoreVertical, LogOut,
   ArrowRight, AlertCircle, HelpCircle, User, UserCircle, UserPlus, UserRound, Baby, Phone, Mail,
   Stethoscope, Syringe, Scissors, Pill, Shield, ShieldCheck, Heart, HeartPulse, Bug, Microscope, Dna,
-  Bone, Brain, Tooth, Activity, Wind, Droplet, Apple, Utensils, Droplets, Bandage, Skull, Hospital,
+  Bone, Brain, Activity, Wind, Droplet, Apple, Utensils, Droplets, Bandage, Skull, Hospital,
   Briefcase, FlaskConical, Calendar, CalendarHeart, CalendarCheck, Clock, ClipboardCheck, ClipboardList,
   History, House, PawPrint, Palette, Camera, Weight, Barcode, Hexagon, Package, Inbox, FileText,
-  StickyNote, FileEdit, SearchCode, Dog, Cat, Male, Female, Sun, Moon, Bot, Wand2, Play, Pause,
+  StickyNote, FileEdit, SearchCode, Dog, Cat, Mars, Venus, Sun, Moon, Bot, Wand2, Play, Pause,
   Square, Mic, MicOff, TrendingUp, Sparkles, Lock, KeyRound, Tractor, Building2, AlertTriangle,
   XCircle, CheckCircle, Circle
 } from 'lucide-react-native';
+
+// lucide has no tooth glyph; drawn to match its 24px / 2px stroke style
+function ToothIcon({ size = 16, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M7.5 3C5 3 3.5 5 3.5 7.5c0 2 .8 3.4 1.5 5 .6 1.4.9 3 1.3 5.2.3 1.8.9 3.3 2 3.3 1.3 0 1.6-1.6 2-3.5.3-1.4.8-2.5 1.7-2.5s1.4 1.1 1.7 2.5c.4 1.9.7 3.5 2 3.5 1.1 0 1.7-1.5 2-3.3.4-2.2.7-3.8 1.3-5.2.7-1.6 1.5-3 1.5-5C20.5 5 19 3 16.5 3c-1.9 0-2.9 1-4.5 1s-2.6-1-4.5-1z" />
+    </Svg>
+  );
+}
 
 const LUCIDE_MAP: Record<string, any> = {
   'home': Home, 'menu': Menu, 'chevron-left': ChevronLeft, 'chevron-right': ChevronRight,
@@ -28,7 +37,7 @@ const LUCIDE_MAP: Record<string, any> = {
   'email-outline': Mail, 'stethoscope': Stethoscope, 'needle': Syringe, 'syringe': Syringe,
   'scissors-cutting': Scissors, 'pill': Pill, 'shield': Shield, 'shield-check': ShieldCheck,
   'shield-check-outline': ShieldCheck, 'heart': Heart, 'heart-pulse': HeartPulse, 'bug': Bug,
-  'microscope': Microscope, 'dna': Dna, 'bone': Bone, 'brain': Brain, 'tooth': Tooth,
+  'microscope': Microscope, 'dna': Dna, 'bone': Bone, 'brain': Brain, 'tooth': ToothIcon,
   'stomach': Activity, 'lungs': Wind, 'kidney': Droplet, 'nutrition': Apple, 'food': Utensils,
   'cup-water': Droplets, 'water-opacity': Droplets, 'bandage': Bandage, 'baby-carriage': Baby,
   'skull': Skull, 'hospital-box': Hospital, 'hospital-box-outline': Hospital,
@@ -41,7 +50,7 @@ const LUCIDE_MAP: Record<string, any> = {
   'shape': Hexagon, 'package': Package, 'package-variant': Package, 'inbox': Inbox,
   'inbox-outline': Inbox, 'file-document-outline': FileText, 'note-text-outline': StickyNote,
   'notebook-edit-outline': FileEdit, 'text-search': SearchCode, 'dog': Dog, 'cat': Cat,
-  'gender-male': Male, 'gender-female': Female, 'white-balance-sunny': Sun,
+  'gender-male': Mars, 'gender-female': Venus, 'white-balance-sunny': Sun,
   'moon-waning-crescent': Moon, 'robot': Bot, 'robot-happy': Bot, 'creation': Wand2,
   'play': Play, 'pause': Pause, 'stop': Square, 'microphone': Mic, 'microphone-off': MicOff,
   'chart-line-variant': TrendingUp, 'sparkles': Sparkles, 'lock': Lock, 'lock-outline': Lock,

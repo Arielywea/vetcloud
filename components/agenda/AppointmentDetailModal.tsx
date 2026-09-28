@@ -3,6 +3,7 @@ import { View, StyleSheet, Text, Modal, TouchableOpacity, Image } from 'react-na
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import { APPOINTMENT_TYPE_COLORS, APPOINTMENT_STATUS_COLORS } from '../../constants/colors';
+import SpeciesIcon from '../ui/SpeciesIcon';
 import { X, Calendar, Stethoscope, Flag, User, Phone, FileText, AlertTriangle, FolderOpen, UserPlus, ChevronDown, Check } from 'lucide-react-native';
 
 const TYPE_LABELS: Record<string, string> = {
@@ -63,11 +64,6 @@ function formatTime(dateStr: string): string {
   return d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
 }
 
-const SPECIES_EMOJI: Record<string, string> = {
-  dog: '🐕',
-  cat: '🐈',
-};
-
 export default function AppointmentDetailModal({
   visible,
   appointment,
@@ -85,7 +81,6 @@ export default function AppointmentDetailModal({
 
   const color = APPOINTMENT_TYPE_COLORS[appointment.appointment_type] || APPOINTMENT_TYPE_COLORS.consulta;
   const status = APPOINTMENT_STATUS_COLORS[appointment.status] || APPOINTMENT_STATUS_COLORS.programada;
-  const speciesEmoji = SPECIES_EMOJI[appointment.petSpecies || ''] || '';
   const isRegistered = !!appointment.pet_id;
   const validStatuses = VALID_TRANSITIONS[appointment.status] || [];
   const canChangeStatus = validStatuses.length > 0 && onStatusChange;
@@ -101,18 +96,18 @@ export default function AppointmentDetailModal({
                 <Image source={{ uri: appointment.petPhoto }} style={styles.avatar} />
               ) : (
                 <View style={[styles.avatarPlaceholder, { backgroundColor: color + '20' }]}>
-                  <Text style={styles.avatarEmoji}>{speciesEmoji || '🐾'}</Text>
+                  <SpeciesIcon species={appointment.petSpecies} size={22} color={color} />
                 </View>
               )}
               <View>
                 <Text style={[styles.patientName, { color: colors.text }]} numberOfLines={1}>{appointment.patient_name}</Text>
                 {appointment.petBreed ? (
                   <Text style={[styles.breed, { color: colors.textSecondary }]}>
-                    {speciesEmoji} {appointment.petBreed}
+                    {appointment.petBreed}
                   </Text>
                 ) : appointment.petSpecies ? (
                   <Text style={[styles.breed, { color: colors.textSecondary }]}>
-                    {speciesEmoji} {appointment.petSpecies === 'dog' ? 'Perro' : 'Gato'}
+                    {appointment.petSpecies === 'dog' ? 'Perro' : 'Gato'}
                   </Text>
                 ) : null}
               </View>

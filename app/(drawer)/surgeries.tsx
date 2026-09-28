@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, FlatList, StyleSheet, TouchableOpacity, TextInput as RNTextInput } from 'react-native';
 import { Text } from 'react-native-paper';
-import { Search, Scissors, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { Search, Scissors, ChevronDown, ChevronUp, BookOpen } from 'lucide-react-native';
 import { useSurgeries } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
@@ -129,9 +129,10 @@ function SurgeryCard({ surgery, index, colors }: { surgery: Surgery; index: numb
             <DetailSection title="Comorbilidades" content={surgery.consideraciones_comorbilidades} colors={colors} />
           )}
           {surgery.fuente && (
-            <Text style={[styles.fuente, { color: colors.textLight }]}>
-              📚 {surgery.fuente}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+              <BookOpen size={13} color={colors.textLight} style={{ marginTop: 2 }} />
+              <Text style={[styles.fuente, { color: colors.textLight, flex: 1 }]}>{surgery.fuente}</Text>
+            </View>
           )}
         </View>
       )}

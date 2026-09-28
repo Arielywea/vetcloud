@@ -10,6 +10,7 @@ import {
   X, Calendar, Clock, Stethoscope, User, FileText, Search,
   ChevronDown, Check, AlertCircle,
 } from 'lucide-react-native';
+import SpeciesIcon from '../ui/SpeciesIcon';
 import { api } from '../../services/directus';
 
 const APPOINTMENT_TYPES = [
@@ -21,11 +22,6 @@ const APPOINTMENT_TYPES = [
   { key: 'examenes', label: 'Exámenes', color: APPOINTMENT_TYPE_COLORS.examenes },
   { key: 'hospitalizacion', label: 'Hospitalización', color: APPOINTMENT_TYPE_COLORS.hospitalizacion },
 ];
-
-const SPECIES_EMOJI: Record<string, string> = {
-  dog: '🐕',
-  cat: '🐈',
-};
 
 interface AppointmentCreationModalProps {
   visible: boolean;
@@ -231,9 +227,7 @@ export default function AppointmentCreationModal({
                     />
                   ) : (
                     <View style={[styles.petAvatarPlaceholder, { backgroundColor: colors.primary + '20' }]}>
-                      <Text style={styles.petAvatarEmoji}>
-                        {SPECIES_EMOJI[pets.find((p) => p.id === selectedPetId)?.species || ''] || '🐾'}
-                      </Text>
+                      <SpeciesIcon species={pets.find((p) => p.id === selectedPetId)?.species} size={16} color={colors.primary} />
                     </View>
                   )}
                   <Text style={[styles.selectedPetName, { color: colors.text }]}>{patientName}</Text>
@@ -256,7 +250,7 @@ export default function AppointmentCreationModal({
                         <Image source={{ uri: pet.photo }} style={styles.dropdownAvatar} />
                       ) : (
                         <View style={[styles.dropdownAvatarPlaceholder, { backgroundColor: colors.primary + '20' }]}>
-                          <Text style={styles.dropdownAvatarEmoji}>{SPECIES_EMOJI[pet.species || ''] || '🐾'}</Text>
+                          <SpeciesIcon species={pet.species} size={14} color={colors.primary} />
                         </View>
                       )}
                       <View style={styles.dropdownInfo}>

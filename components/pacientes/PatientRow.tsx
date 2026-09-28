@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
-import { MoreVertical, Eye, Pencil, Trash2 } from 'lucide-react-native';
+import { MoreVertical, Eye, Pencil, Trash2, Check } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 import { TEXT_ON_PRIMARY } from '../../constants/colors';
@@ -47,7 +47,7 @@ export default function PatientRow({ patient, isSelected, onSelect, onClick, onD
             backgroundColor: isSelected ? colors.primary : 'transparent',
           },
         ]}>
-          {isSelected && <Text style={styles.checkmark}>✓</Text>}
+          {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
         </View>
       </TouchableOpacity>
 

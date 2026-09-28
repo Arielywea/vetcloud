@@ -75,7 +75,8 @@ function BannerIllustration({ isMobile }: { isMobile: boolean }) {
 export default function DashboardScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const iconTint = isDark ? colors.accent : colors.primary;
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
   const { pets, loading: loadingPets } = usePets();
@@ -365,10 +366,10 @@ export default function DashboardScreen() {
 
       {/* Row 2: Stats Cards */}
       <View style={[styles.statsRow, isMobile && styles.statsRowMobile]}>
-        {[{ icon: 'pacientes' as const, color: colors.primary, bg: colors.primaryContainer, value: pets.length, label: 'Pacientes', anim: statCardAnims[0], countVal: petCountVal },
-          { icon: 'agenda' as const, color: colors.info, bg: colors.info + '18', value: todayAppointments.length, label: 'Citas Hoy', anim: statCardAnims[1], countVal: aptCountVal },
-          { icon: 'laboratorio' as const, color: colors.success, bg: colors.success + '18', value: clinicalRecords.length, label: 'Fichas Clínicas', anim: statCardAnims[2], countVal: recordCountVal },
-          { icon: 'inventario' as const, color: colors.warning, bg: colors.warning + '18', value: lowStockItems.length, label: 'Alertas Stock', anim: statCardAnims[3], countVal: alertCountVal }
+        {[{ icon: 'pacientes' as const, color: iconTint, bg: colors.primaryContainer, value: pets.length, label: 'Pacientes', anim: statCardAnims[0], countVal: petCountVal },
+          { icon: 'agenda' as const, color: iconTint, bg: colors.primaryContainer, value: todayAppointments.length, label: 'Citas Hoy', anim: statCardAnims[1], countVal: aptCountVal },
+          { icon: 'fichas' as const, color: iconTint, bg: colors.primaryContainer, value: clinicalRecords.length, label: 'Fichas Clínicas', anim: statCardAnims[2], countVal: recordCountVal },
+          { icon: 'inventario' as const, color: lowStockItems.length ? colors.warning : iconTint, bg: lowStockItems.length ? colors.warning + '18' : colors.primaryContainer, value: lowStockItems.length, label: 'Alertas Stock', anim: statCardAnims[3], countVal: alertCountVal }
         ].map((stat, i) => (
           <Animated.View key={i} style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs, isMobile && styles.statCardMobile, { opacity: stat.anim.opacity, transform: [{ translateY: stat.anim.translateY }] }]}>
             <View style={[styles.statIcon, { backgroundColor: stat.bg }]}>

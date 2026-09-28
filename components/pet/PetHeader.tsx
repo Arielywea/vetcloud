@@ -5,6 +5,8 @@ import DynamicIcon from '../ui/DynamicIcon';
 import { DirectusPet } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { calculateAge } from '../../utils/age';
+import { useRouter } from 'expo-router';
+import { ChevronLeft, MapPin } from 'lucide-react-native';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import InfoPills from './InfoPills';
 import PawShieldIcon from '../icons/PawShieldIcon';
@@ -23,14 +25,16 @@ const SEX_LABELS: Record<string, string> = {
 
 export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderProps) {
   const { colors } = useTheme();
+  const router = useRouter();
   const age = calculateAge(pet.birth_date);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       {/* Breadcrumb */}
       <View style={styles.breadcrumb}>
-        <TouchableOpacity onPress={() => { /* navigated via router in parent */ }}>
-          <Text style={[styles.breadcrumbLink, { color: colors.primary }]}>← Pacientes</Text>
+        <TouchableOpacity onPress={() => router.push('/(drawer)/pacientes' as any)} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+          <ChevronLeft size={14} color={colors.primary} />
+          <Text style={[styles.breadcrumbLink, { color: colors.primary }]}>Pacientes</Text>
         </TouchableOpacity>
         <Text style={[styles.breadcrumbSeparator, { color: colors.textSecondary }]}>›</Text>
         <Text style={[styles.breadcrumbCurrent, { color: colors.text }]}>{pet.name}</Text>
@@ -90,7 +94,10 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
             <Text style={[styles.ownerDetail, { color: colors.textSecondary }]} numberOfLines={1}>{pet.email}</Text>
           )}
           {pet.address && (
-            <Text style={[styles.ownerDetail, { color: colors.textSecondary }]} numberOfLines={1}>📍 {pet.address}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <MapPin size={12} color={colors.textSecondary} />
+              <Text style={[styles.ownerDetail, { color: colors.textSecondary, flexShrink: 1 }]} numberOfLines={1}>{pet.address}</Text>
+            </View>
           )}
           <View style={styles.actionsRow}>
             {pet.phone && (

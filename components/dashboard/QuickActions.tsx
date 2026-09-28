@@ -6,18 +6,18 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import VetCloudIcon, { VetCloudIconName } from '../icons/VetCloudIcon';
 
-const ACTIONS = [
-  { label: 'Nueva Consulta', iconName: 'agenda' as VetCloudIconName, route: '/(drawer)/agenda', colorKey: 'info' as const },
-  { label: 'Nueva Cita', iconName: 'agenda' as VetCloudIconName, route: '/(drawer)/agenda', colorKey: 'success' as const },
-  { label: 'Nuevo Paciente', iconName: 'pacientes' as VetCloudIconName, route: '/(drawer)/add-paciente', colorKey: 'primary' as const },
-  { label: 'Inventario', iconName: 'inventario' as VetCloudIconName, route: '/(drawer)/inventario', colorKey: 'warning' as const },
-  { label: 'Exám. Laboratorio', iconName: 'laboratorio' as VetCloudIconName, route: '/(drawer)/laboratorio', colorKey: 'error' as const },
-  { label: 'Reportes', iconName: 'reportes' as VetCloudIconName, route: '/(drawer)/reportes', colorKey: 'primary' as const },
+const ACTIONS: { label: string; iconName: VetCloudIconName; route: string }[] = [
+  { label: 'Nueva Consulta', iconName: 'consulta', route: '/(drawer)/agenda' },
+  { label: 'Nueva Cita', iconName: 'agenda', route: '/(drawer)/agenda' },
+  { label: 'Nuevo Paciente', iconName: 'pacientes', route: '/(drawer)/add-paciente' },
+  { label: 'Inventario', iconName: 'inventario', route: '/(drawer)/inventario' },
+  { label: 'Exám. Laboratorio', iconName: 'laboratorio', route: '/(drawer)/laboratorio' },
+  { label: 'Reportes', iconName: 'reportes', route: '/(drawer)/reportes' },
 ];
 
 export default function QuickActions() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   return (
     <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.xs]}>
@@ -30,7 +30,7 @@ export default function QuickActions() {
       {/* Actions grid */}
       <View style={styles.grid}>
         {ACTIONS.map((action) => {
-          const actionColor = colors[action.colorKey];
+          const actionColor = isDark ? colors.accent : colors.primary;
           return (
             <TouchableOpacity
               key={action.label}
@@ -38,7 +38,7 @@ export default function QuickActions() {
               onPress={() => router.push(action.route as any)}
               activeOpacity={0.7}
             >
-              <View style={[styles.actionIcon, { backgroundColor: actionColor + '18' }]}>
+              <View style={[styles.actionIcon, { backgroundColor: colors.primaryContainer }]}>
                 <VetCloudIcon name={action.iconName} size={20} color={actionColor} />
               </View>
               <Text style={[styles.actionLabel, { color: colors.text }]} numberOfLines={1}>

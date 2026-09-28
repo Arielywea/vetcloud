@@ -5,6 +5,7 @@ import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 import { APPOINTMENT_TYPE_COLORS, APPOINTMENT_STATUS_COLORS } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { formatTimeRange } from '../../utils/format';
+import SpeciesIcon from '../ui/SpeciesIcon';
 
 export interface AppointmentCardData {
   id: string;
@@ -37,11 +38,6 @@ interface AppointmentCardProps {
   isDragging?: boolean;
   compact?: boolean;
 }
-
-const SPECIES_EMOJI: Record<string, string> = {
-  dog: '🐕',
-  cat: '🐈',
-};
 
 const STATUS_TRANSITIONS: Record<string, string> = {
   programada: 'en_espera',
@@ -99,7 +95,6 @@ export default function AppointmentCard({
   const { colors } = useTheme();
   const color = APPOINTMENT_TYPE_COLORS[appointment.appointment_type] || APPOINTMENT_TYPE_COLORS.consulta;
   const status = APPOINTMENT_STATUS_COLORS[appointment.status] || APPOINTMENT_STATUS_COLORS.programada;
-  const speciesEmoji = SPECIES_EMOJI[appointment.petSpecies || ''] || '';
 
   const translateY = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(0)).current;
@@ -177,7 +172,7 @@ export default function AppointmentCard({
         <Image source={{ uri: appointment.petPhoto }} style={styles.photo} />
       ) : !compact ? (
         <View style={[styles.photoPlaceholder, { backgroundColor: color + '20' }]}>
-          <Text style={styles.photoEmoji}>{speciesEmoji || '🐾'}</Text>
+          <SpeciesIcon species={appointment.petSpecies} size={16} color={color} />
         </View>
       ) : null}
 
@@ -200,15 +195,15 @@ export default function AppointmentCard({
           <>
             {appointment.petBreed ? (
               <Text style={[styles.detail, { color: colors.textLight }]} numberOfLines={1}>
-                {speciesEmoji} {appointment.petBreed}
+                {appointment.petBreed}
               </Text>
             ) : appointment.petSpecies ? (
               <Text style={[styles.detail, { color: colors.textLight }]} numberOfLines={1}>
-                {speciesEmoji} {appointment.petSpecies === 'dog' ? 'Perro' : 'Gato'}
+                {appointment.petSpecies === 'dog' ? 'Perro' : 'Gato'}
               </Text>
             ) : null}
             {appointment.tutorName && height > 65 ? (
-              <Text style={[styles.tutor, { color: colors.textLight }]} numberOfLines={1}>👤 {appointment.tutorName}</Text>
+              <Text style={[styles.tutor, { color: colors.textLight }]} numberOfLines={1}>{appointment.tutorName}</Text>
             ) : null}
           </>
         )}

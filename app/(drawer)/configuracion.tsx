@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Switch } from 'react-native';
 import { Text } from 'react-native-paper';
-import { User, Palette, Bell, Shield, Check, AlertCircle, Lock, Eye, EyeOff } from 'lucide-react-native';
+import { User, Palette, Bell, Shield, Check, AlertCircle, Lock, Eye, EyeOff, Sun, Moon } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { PALETTES, APP_COLORS, APP_COLORS_DARK } from '../../constants/colors';
@@ -140,13 +140,19 @@ export default function ConfiguracionScreen() {
               style={[styles.modeBtn, !modeDark && { backgroundColor: colors.primary }, { borderColor: colors.border }]}
               onPress={() => setModeDark(false)}
             >
-              <Text style={[styles.modeBtnText, { color: !modeDark ? '#FFF' : colors.textSecondary }]}>☀ Claro</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Sun size={15} color={!modeDark ? '#FFF' : colors.textSecondary} />
+                <Text style={[styles.modeBtnText, { color: !modeDark ? '#FFF' : colors.textSecondary }]}>Claro</Text>
+              </View>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.modeBtn, modeDark && { backgroundColor: colors.primary }, { borderColor: colors.border }]}
               onPress={() => setModeDark(true)}
             >
-              <Text style={[styles.modeBtnText, { color: modeDark ? '#FFF' : colors.textSecondary }]}>🌙 Oscuro</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Moon size={15} color={modeDark ? '#FFF' : colors.textSecondary} />
+                <Text style={[styles.modeBtnText, { color: modeDark ? '#FFF' : colors.textSecondary }]}>Oscuro</Text>
+              </View>
             </TouchableOpacity>
           </View>
 

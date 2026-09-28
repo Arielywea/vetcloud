@@ -40,8 +40,8 @@ const NAV_SECTIONS = [
   {
     title: 'HERRAMIENTAS',
     items: [
-      { label: 'Fluidoterapia', iconName: 'agenda' as VetCloudIconName, route: '/(drawer)/fluidoterapia' },
-      { label: 'Calculadora dosis', iconName: 'medicamentos' as VetCloudIconName, route: '/(drawer)/dosis' },
+      { label: 'Fluidoterapia', iconName: 'fluidoterapia' as VetCloudIconName, route: '/(drawer)/fluidoterapia' },
+      { label: 'Calculadora dosis', iconName: 'dosis' as VetCloudIconName, route: '/(drawer)/dosis' },
     ],
   },
   {
