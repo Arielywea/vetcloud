@@ -1,6 +1,8 @@
 const PDFDocument = require('pdfkit');
 const path = require('path');
 
+const TZ = 'America/Santiago';
+
 function generatePatientFilePdf(pet, records, clinic) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'letter', margin: 50, bufferPages: true });
@@ -10,7 +12,7 @@ function generatePatientFilePdf(pet, records, clinic) {
     doc.on('error', reject);
 
     const navy = '#0B1D3A';
-    const gold = '#C9A227';
+    const gold = '#A8842A';
     const darkText = '#1A2332';
     const secondaryText = '#5A6B80';
     const lightText = '#8896A8';
@@ -29,13 +31,16 @@ function generatePatientFilePdf(pet, records, clinic) {
     // Logo
     doc.image(path.join(__dirname, '../assets/logo.png'), 30, 12, { width: 40, height: 40 });
 
-    doc.fill(white).fontSize(22).font('Helvetica-Bold').text('VetCloud', 100, 22);
-    doc.fontSize(10).font('Helvetica').fill(gold).text('Ficha Clinica del Paciente', 100, 48);
+    doc.fill(white).fontSize(20).font('Helvetica-Bold').text(clinic?.clinic_name || 'VetCloud', 84, 20, { width: pageW / 2 - 40, lineBreak: false, ellipsis: true });
+    doc.fontSize(10).font('Helvetica').fill(gold).text('Ficha clínica del paciente', 84, 46);
+    const halfX = pageW / 2;
+    const rightW = pageW / 2 - margin;
+    let hy = 22;
     if (clinic?.veterinarian_name) {
-      doc.fill(white).fontSize(10).font('Helvetica').text(clinic.veterinarian_name, pageW - margin, 22, { align: 'right', width: contentW });
+      doc.fill(white).fontSize(10).font('Helvetica-Bold').text(clinic.veterinarian_name, halfX, hy, { align: 'right', width: rightW }); hy += 14;
     }
-    if (clinic?.clinic_name) {
-      doc.fill(lightText).fontSize(8).font('Helvetica').text(clinic.clinic_name, pageW - margin, 38, { align: 'right', width: contentW });
+    for (const line of [clinic?.clinic_address, clinic?.clinic_phone].filter(Boolean)) {
+      doc.fill(lightText).fontSize(8).font('Helvetica').text(line, halfX, hy, { align: 'right', width: rightW }); hy += 11;
     }
 
     let y = 105;
@@ -57,7 +62,7 @@ function generatePatientFilePdf(pet, records, clinic) {
         const months = Math.floor((Date.now() - bd.getTime()) / (30.44 * 24 * 60 * 60 * 1000));
         const yrs = Math.floor(months / 12);
         const mos = months % 12;
-        age = yrs > 0 ? `${yrs} anio${yrs !== 1 ? 's' : ''}, ${mos} mes${mos !== 1 ? 'es' : ''}` : `${mos} mes${mos !== 1 ? 'es' : ''}`;
+        age = yrs > 0 ? `${yrs} año${yrs !== 1 ? 's' : ''}, ${mos} mes${mos !== 1 ? 'es' : ''}` : `${mos} mes${mos !== 1 ? 'es' : ''}`;
       }
     }
 
@@ -94,7 +99,7 @@ function generatePatientFilePdf(pet, records, clinic) {
     if (hasClinicalData) {
       if (y > pageH - 80) { doc.addPage(); y = margin; }
       doc.roundedRect(margin, y, contentW, 10, 8).fill(navy);
-      doc.fill(gold).fontSize(11).font('Helvetica-Bold').text('Historia Clinica Inicial', margin + 12, y + 12, { width: contentW - 24 });
+      doc.fill(gold).fontSize(11).font('Helvetica-Bold').text('Historia clínica inicial', margin + 12, y + 12, { width: contentW - 24 });
       y += 30;
 
       const drawField = (label, value) => {
@@ -117,17 +122,17 @@ function generatePatientFilePdf(pet, records, clinic) {
       const hasHabitat = pet.habitat || pet.food || pet.food_frequency || pet.water_consumption || pet.urination || pet.lives_with_other_animals || pet.entorno || pet.areneros;
       if (hasHabitat) {
         if (y > pageH - 60) { doc.addPage(); y = margin; }
-        doc.fill(secondaryText).fontSize(8).font('Helvetica-Bold').text('HABITAT Y ALIMENTACION', margin + 12, y);
+        doc.fill(secondaryText).fontSize(8).font('Helvetica-Bold').text('HÁBITAT Y ALIMENTACIÓN', margin + 12, y);
         y += 10;
-        if (pet.habitat) drawField('Habitat', pet.habitat + (pet.habitat_other ? ` · ${pet.habitat_other}` : ''));
+        if (pet.habitat) drawField('Hábitat', pet.habitat + (pet.habitat_other ? ` · ${pet.habitat_other}` : ''));
         if (pet.food || pet.food_frequency) {
           const foodParts = [];
           if (pet.food) foodParts.push(`Tipo: ${pet.food}`);
           if (pet.food_frequency) foodParts.push(`Frecuencia: ${pet.food_frequency}`);
-          drawField('Alimentacion', foodParts.join('\n'));
+          drawField('Alimentación', foodParts.join('\n'));
         }
         drawField('Consumo de agua', pet.water_consumption);
-        drawField('Miccion', pet.urination);
+        drawField('Micción', pet.urination);
         drawField('Vive con otros animales', pet.lives_with_other_animals);
         if (pet.species === 'cat') {
           drawField('Entorno', pet.entorno);
@@ -142,12 +147,12 @@ function generatePatientFilePdf(pet, records, clinic) {
         doc.fill(secondaryText).fontSize(8).font('Helvetica-Bold').text('HISTORIAL SANITARIO', margin + 12, y);
         y += 10;
         drawField('Vacunas', pet.vaccines);
-        drawField('Desparasitacion', pet.deworming);
+        drawField('Desparasitación', pet.deworming);
         drawField('Antipulgas', pet.flea_treatment);
-        drawField('Ultimo celo', pet.last_heat);
+        drawField('Último celo', pet.last_heat);
         drawField('Enfermedades previas', pet.other_diseases);
         if (pet.base_diseases && pet.base_diseases.length > 0) drawField('Enfermedades de base', pet.base_diseases.join(', '));
-        drawField('Cirugias previas', pet.surgeries);
+        drawField('Cirugías previas', pet.surgeries);
         drawField('Medicamentos actuales', pet.medications);
         if (pet.allergies && pet.allergies.length > 0) drawField('Alergias', pet.allergies.join(', '));
       }
@@ -156,16 +161,16 @@ function generatePatientFilePdf(pet, records, clinic) {
       drawField('Anamnesis', pet.anamnesis);
 
       // ── Pre-diagnostico ──
-      drawField('Pre-diagnostico', pet.pre_diagnostico);
+      drawField('Prediagnóstico', pet.pre_diagnostico);
 
       // ── Constantes fisiologicas ──
       if (pet.vital_signs) {
         if (y > pageH - 60) { doc.addPage(); y = margin; }
-        doc.fill(secondaryText).fontSize(8).font('Helvetica-Bold').text('CONSTANTES FISIOLOGICAS', margin + 12, y);
+        doc.fill(secondaryText).fontSize(8).font('Helvetica-Bold').text('CONSTANTES FISIOLÓGICAS', margin + 12, y);
         y += 10;
         const vs = pet.vital_signs;
         const vitals = [];
-        if (vs.temperature != null) vitals.push(`Temp: ${vs.temperature} C`);
+        if (vs.temperature != null) vitals.push(`Temp.: ${vs.temperature} °C`);
         if (vs.heart_rate != null) vitals.push(`FC: ${vs.heart_rate} lpm`);
         if (vs.respiratory_rate != null) vitals.push(`FR: ${vs.respiratory_rate} rpm`);
         if (vs.blood_pressure) vitals.push(`PA: ${vs.blood_pressure}`);
@@ -177,7 +182,7 @@ function generatePatientFilePdf(pet, records, clinic) {
       }
 
       // ── Hallazgos examen fisico ──
-      drawField('Hallazgos examen fisico', pet.hallazgos_examen_fisico);
+      drawField('Hallazgos del examen físico', pet.hallazgos_examen_fisico);
 
       // ── Notas ──
       drawField('Notas', pet.notes);
@@ -189,7 +194,7 @@ function generatePatientFilePdf(pet, records, clinic) {
     if (records && records.length > 0) {
       if (y > pageH - 100) { doc.addPage(); y = margin; }
       doc.roundedRect(margin, y, contentW, 10, 8).fill(navy);
-      doc.fill(gold).fontSize(11).font('Helvetica-Bold').text('Historial Clinico', margin + 12, y + 12, { width: contentW - 24 });
+      doc.fill(gold).fontSize(11).font('Helvetica-Bold').text('Historial clínico', margin + 12, y + 12, { width: contentW - 24 });
       y += 30;
 
       const sortedRecords = [...records].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -198,45 +203,47 @@ function generatePatientFilePdf(pet, records, clinic) {
         if (y > pageH - 140) { doc.addPage(); y = margin; }
 
         const d = record.details || {};
-        const dateStr = new Date(record.date).toLocaleDateString('es-CL');
-        const timeStr = new Date(record.date).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+        const dateStr = new Date(record.date).toLocaleDateString('es-CL', { timeZone: TZ });
+        const timeStr = new Date(record.date).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
         const typeLabel = (record.record_type || 'consulta').charAt(0).toUpperCase() + (record.record_type || 'consulta').slice(1);
 
         // Record header bar
         doc.roundedRect(margin, y, contentW, 24, 6).fill(navy);
         doc.fill(white).fontSize(9).font('Helvetica-Bold').text(`${typeLabel}  —  ${dateStr} ${timeStr}`, margin + 12, y + 7, { width: contentW - 24 });
         if (record.veterinarian) {
-          doc.fill(gold).fontSize(8).font('Helvetica').text(`Dr. ${record.veterinarian}`, pageW - margin - 12, y + 8, { align: 'right', width: 150 });
+          doc.fill(gold).fontSize(8).font('Helvetica').text(record.veterinarian, pageW - margin - 162, y + 8, { align: 'right', width: 150 });
         }
         y += 26;
 
         // Record body
         const bodyStartY = y;
-        doc.roundedRect(margin, y, contentW, 20, 6).fillAndStroke(white, border);
         y += 8;
 
         const sections = [];
-        if (d.motivo_consulta || d.anamnesis) sections.push({ label: 'Subjetivo', content: [d.motivo_consulta, d.anamnesis].filter(Boolean).join('\n') });
-        if (d.hallazgos_examen_fisico) sections.push({ label: 'Objetivo', content: d.hallazgos_examen_fisico });
-        if (d.vital_signs) {
-          const vs = d.vital_signs;
+        if (d.subjective || d.motivo_consulta || d.anamnesis) sections.push({ label: 'Subjetivo', content: [d.subjective, d.motivo_consulta, d.anamnesis].filter(Boolean).join('\n') });
+        if (d.objective || d.hallazgos_examen_fisico || d.hallazgos) sections.push({ label: 'Objetivo', content: [d.objective, d.hallazgos_examen_fisico || d.hallazgos].filter(Boolean).join('\n') });
+        {
+          // Current keys first; older records used temp/fc/fr/pa
+          const vs = d.vital_signs || {};
           const vitals = [];
-          if (vs.temperature) vitals.push(`Temp: ${vs.temperature}C`);
-          if (vs.heart_rate) vitals.push(`FC: ${vs.heart_rate} lpm`);
-          if (vs.respiratory_rate) vitals.push(`FR: ${vs.respiratory_rate} rpm`);
-          if (vs.blood_pressure) vitals.push(`PA: ${vs.blood_pressure}`);
-          if (vs.spo2) vitals.push(`SpO2: ${vs.spo2}%`);
+          const temp = vs.temperature ?? vs.temp, fc = vs.heart_rate ?? vs.fc, fr = vs.respiratory_rate ?? vs.fr, pa = vs.blood_pressure ?? vs.pa;
+          if (d.weight != null) vitals.push(`Peso: ${d.weight} kg`);
+          if (temp != null) vitals.push(`Temp.: ${temp} °C`);
+          if (fc != null) vitals.push(`FC: ${fc} lpm`);
+          if (fr != null) vitals.push(`FR: ${fr} rpm`);
+          if (pa) vitals.push(`PA: ${pa}`);
+          if (vs.spo2 != null) vitals.push(`SpO2: ${vs.spo2}%`);
           if (vitals.length > 0) sections.push({ label: 'Constantes', content: vitals.join('  |  ') });
         }
-        if (d.assessment || d.notes) sections.push({ label: 'Evaluacion', content: d.assessment || d.notes });
+        if (d.assessment || d.notes) sections.push({ label: 'Evaluación', content: d.assessment || d.notes });
         if (d.plan) sections.push({ label: 'Plan', content: d.plan });
         if (d.treatment) sections.push({ label: 'Tratamiento', content: d.treatment });
 
         // Cirugia fields
         if (d.procedimiento) sections.push({ label: 'Procedimiento', content: d.procedimiento });
-        if (d.descripcion) sections.push({ label: 'Descripcion', content: d.descripcion });
+        if (d.descripcion) sections.push({ label: 'Descripción', content: d.descripcion });
         if (d.postoperatorio) sections.push({ label: 'Postoperatorio', content: d.postoperatorio });
-        if (d.files?.length > 0) sections.push({ label: 'Archivos adjuntos', content: `${d.files.length} archivo(s) adjunto(s) — disponible(s) en la historia clinica digital` });
+        if (d.files?.length > 0) sections.push({ label: 'Archivos adjuntos', content: `${d.files.length} archivo(s) adjunto(s) — disponible(s) en la ficha digital` });
 
         for (const sec of sections) {
           if (y > pageH - 80) { doc.addPage(); y = margin; }
@@ -247,7 +254,7 @@ function generatePatientFilePdf(pet, records, clinic) {
         }
 
         if (y === bodyStartY + 8) {
-          doc.fill(lightText).fontSize(8).font('Helvetica').text('Sin datos clinicos registrados', margin + 14, y);
+          doc.fill(lightText).fontSize(8).font('Helvetica').text('Sin datos clínicos registrados', margin + 14, y);
           y += 12;
         }
 
@@ -257,7 +264,7 @@ function generatePatientFilePdf(pet, records, clinic) {
       }
     } else {
       if (y > pageH - 80) { doc.addPage(); y = margin; }
-      doc.fill(lightText).fontSize(9).font('Helvetica').text('No hay registros clinicos disponibles.', margin, y, { width: contentW, align: 'center' });
+      doc.fill(lightText).fontSize(9).font('Helvetica').text('No hay registros clínicos.', margin, y, { width: contentW, align: 'center' });
       y += 20;
     }
 
@@ -265,9 +272,11 @@ function generatePatientFilePdf(pet, records, clinic) {
     const pageCount = doc.bufferedPageRange().count;
     for (let i = 0; i < pageCount; i++) {
       doc.switchToPage(i);
+      // Footer sits inside the bottom margin: drop it so pdfkit doesn't add blank pages
+      doc.page.margins.bottom = 0;
       doc.rect(0, pageH - 35, pageW, 35).fill(navy);
       doc.fill(lightText).fontSize(7).font('Helvetica')
-        .text(`Ficha clinica generada por VetCloud  —  Pagina ${i + 1} de ${pageCount}`, margin, pageH - 22, { width: contentW, align: 'center' });
+        .text(`Ficha clínica generada por VetCloud  —  Página ${i + 1} de ${pageCount}`, margin, pageH - 22, { width: contentW, align: 'center' });
     }
 
     doc.end();

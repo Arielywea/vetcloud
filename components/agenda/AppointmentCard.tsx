@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Image, Animated } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, StyleSheet, Text, TouchableOpacity, Image, Animated, Platform } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 import { APPOINTMENT_TYPE_COLORS, APPOINTMENT_STATUS_COLORS } from '../../constants/colors';
@@ -110,15 +110,29 @@ export default function AppointmentCard({
     }
   };
 
+  // Web: right-click opens the menu on the draggable path too (the gesture path never called it)
+  const cardRef = useRef<any>(null);
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !onContextMenu) return;
+    const node = cardRef.current;
+    if (!node || typeof node.addEventListener !== 'function') return;
+    const handler = (e: MouseEvent) => {
+      e.preventDefault();
+      onContextMenu(appointment, e.clientX, e.clientY);
+    };
+    node.addEventListener('contextmenu', handler);
+    return () => node.removeEventListener('contextmenu', handler);
+  }, [onContextMenu, appointment]);
+
+  // Snappy settle for drag lift/return (default springs take >500 ms)
+  const SPRING = { damping: 20, stiffness: 300, useNativeDriver: true } as const;
+
   const longPress = Gesture.LongPress()
     .minDuration(500)
     .onStart((e) => {
       isDragActive.current = true;
       onDragStart?.(appointment.id, appointment, e.absoluteX, e.absoluteY);
-      Animated.spring(scale, {
-        toValue: 1.05,
-        useNativeDriver: true,
-      }).start();
+      Animated.spring(scale, { toValue: 1.03, ...SPRING }).start();
     });
 
   const pan = Gesture.Pan()
@@ -136,9 +150,9 @@ export default function AppointmentCard({
         wasDragGesture.current = true;
         setTimeout(() => { wasDragGesture.current = false; }, 300);
         Animated.parallel([
-          Animated.spring(translateX, { toValue: 0, useNativeDriver: true }),
-          Animated.spring(translateY, { toValue: 0, useNativeDriver: true }),
-          Animated.spring(scale, { toValue: 1, useNativeDriver: true }),
+          Animated.spring(translateX, { toValue: 0, ...SPRING }),
+          Animated.spring(translateY, { toValue: 0, ...SPRING }),
+          Animated.spring(scale, { toValue: 1, ...SPRING }),
         ]).start();
         onDragEnd?.();
       }
@@ -149,9 +163,9 @@ export default function AppointmentCard({
         wasDragGesture.current = true;
         setTimeout(() => { wasDragGesture.current = false; }, 300);
         Animated.parallel([
-          Animated.spring(translateX, { toValue: 0, useNativeDriver: true }),
-          Animated.spring(translateY, { toValue: 0, useNativeDriver: true }),
-          Animated.spring(scale, { toValue: 1, useNativeDriver: true }),
+          Animated.spring(translateX, { toValue: 0, ...SPRING }),
+          Animated.spring(translateY, { toValue: 0, ...SPRING }),
+          Animated.spring(scale, { toValue: 1, ...SPRING }),
         ]).start();
       }
     });
@@ -215,6 +229,10 @@ export default function AppointmentCard({
     return (
       <GestureDetector gesture={composed}>
         <Animated.View
+          ref={cardRef}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel={`${appointment.patient_name}, ${formatTimeRange(appointment.start_time, appointment.end_time)}, ${status.label}`}
           style={[
             styles.card,
             {

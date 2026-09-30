@@ -1,19 +1,26 @@
-import React, { useMemo, useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useRef, useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, Pressable, Image, ImageStyle, useWindowDimensions, Animated, Easing } from 'react-native';
 import { Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Calendar, CheckCircle, User, CalendarDays, ChevronRight, Users } from 'lucide-react-native';
+import { Calendar, CheckCircle, User, CalendarDays, ChevronRight, Users, AlertTriangle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
-import { usePets, useAppointments, useClinicalRecords, useInventory } from '../../hooks/useDirectus';
+import { usePets, useAppointments, useClinicalRecords, useInventory, useRefreshOn } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, ANIMATION } from '../../constants/tokens';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, ANIMATION, alpha } from '../../constants/tokens';
 import VetCloudIcon from '../../components/icons/VetCloudIcon';
 import CrestStar from '../../components/icons/CrestStar';
 import DisplayText from '../../components/ui/DisplayText';
 import NextAppointmentCard from '../../components/dashboard/NextAppointmentCard';
 import PatientList from '../../components/dashboard/PatientList';
-import StatsChart from '../../components/dashboard/StatsChart';
+import StatsChart, { WeeklyDay, WeeklySummary } from '../../components/dashboard/StatsChart';
+import { api } from '../../services/directus';
+import { isSameLocalDay } from '../../utils/date';
+
+const APPOINTMENT_TYPE_LABELS: Record<string, string> = {
+  consulta: 'Consulta', vacuna: 'Vacuna', examenes: 'Exámenes', cirugia: 'Cirugía',
+  hospitalizacion: 'Hospitalización', control: 'Control', terreno: 'Terreno',
+};
 import QuickActions from '../../components/dashboard/QuickActions';
 import InventoryBar from '../../components/dashboard/InventoryBar';
 import ActivityFeed from '../../components/dashboard/ActivityFeed';
@@ -69,12 +76,32 @@ export default function DashboardScreen() {
   const iconTint = colors.primary;
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
-  const { pets, loading: loadingPets } = usePets();
-  const { appointments, loading: loadingAppointments } = useAppointments();
-  const { records: clinicalRecords, loading: loadingRecords } = useClinicalRecords();
-  const { items: inventoryItems, lowStockItems, loading: loadingInventory } = useInventory();
+  const { pets, loading: loadingPets, error: petsError, refresh: refreshPets } = usePets();
+  const { appointments, loading: loadingAppointments, error: appointmentsError, refresh: refreshAppointments } = useAppointments();
+  const { records: clinicalRecords, loading: loadingRecords, error: recordsError, refresh: refreshRecords } = useClinicalRecords();
+  const { items: inventoryItems, lowStockItems, loading: loadingInventory, error: inventoryError, refresh: refreshInventory } = useInventory();
 
   const isLoading = loadingPets || loadingAppointments || loadingRecords || loadingInventory;
+  const loadErrors = [petsError, appointmentsError, recordsError, inventoryError].filter(Boolean);
+
+  // Server-side stats (local-time days, real week-over-week trend, active hospitalizations)
+  const [weekly, setWeekly] = useState<{ days: WeeklyDay[]; summary: WeeklySummary | null }>({ days: [], summary: null });
+  const [activeHospitalizations, setActiveHospitalizations] = useState(0);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
+  const loadStats = useCallback(() => {
+    Promise.all([api.stats.weekly(), api.stats.dashboard()])
+      .then(([w, d]: any[]) => {
+        if (!mountedRef.current) return;
+        setWeekly({ days: w?.days || [], summary: w?.summary || null });
+        setActiveHospitalizations(d?.activeHospitalizations || 0);
+      })
+      .catch(() => { /* the cards show "—"; the error banner covers the main data */ })
+      .finally(() => { if (mountedRef.current) setStatsLoading(false); });
+  }, []);
+  useEffect(() => { loadStats(); }, [loadStats]);
+  useRefreshOn(['appointments', 'clinical_records', 'pets', 'hospitalizations'], loadStats);
 
   // ─── Entrance Animations ──────────────────────────────
   const contentOpacity = useRef(new Animated.Value(0)).current;
@@ -101,95 +128,69 @@ export default function DashboardScreen() {
 
   const todayStr = new Date().toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
 
-  const todayAppointments = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return appointments.filter(a => a.start_time?.slice(0, 10) === today);
-  }, [appointments]);
+  // "Today" in local time (toISOString is UTC: after ~20:00 in Chile it was already tomorrow)
+  const todayAppointments = useMemo(
+    () => appointments.filter(a => a.start_time && isSameLocalDay(a.start_time) && !['cancelada', 'ausente'].includes(a.status as string)),
+    [appointments],
+  );
 
+  // Next appointment = the earliest one today that hasn't finished yet
   const nextAppointment = useMemo(() => {
-    if (todayAppointments.length > 0) {
-      const apt = todayAppointments[0];
-      const matchedPet = pets.find(p => p.name === apt.patient_name);
-      return {
-        hasAppointment: true,
-        petName: apt.patient_name || 'Sin nombre',
-        petBreed: matchedPet?.breed || '',
-        petAge: matchedPet?.birth_date ? calculateAge(matchedPet.birth_date) : '',
-        time: apt.start_time ? new Date(apt.start_time).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : '--:--',
-        type: apt.appointment_type || 'Consulta general',
-      };
-    }
-    return { hasAppointment: false, petName: '', petBreed: '', petAge: '', time: '', type: '' };
+    const cutoff = Date.now() - 30 * 60 * 1000;
+    const upcoming = todayAppointments
+      .filter(a => !['completada'].includes(a.status as string) && new Date(a.start_time).getTime() >= cutoff)
+      .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+    const apt = upcoming[0];
+    if (!apt) return { hasAppointment: false, petName: '', petBreed: '', petAge: '', time: '', type: '', petId: null as string | null };
+    const matchedPet = apt.pet_id ? pets.find(p => p.id === apt.pet_id) : null;
+    return {
+      hasAppointment: true,
+      petName: apt.patient_name || 'Sin nombre',
+      petBreed: matchedPet?.breed || '',
+      petAge: matchedPet?.birth_date ? calculateAge(matchedPet.birth_date) : '',
+      time: new Date(apt.start_time).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+      type: APPOINTMENT_TYPE_LABELS[apt.appointment_type as string] || 'Consulta',
+      petId: (apt.pet_id as string) || null,
+    };
   }, [todayAppointments, pets]);
 
+  // Latest record per pet computed once (the old sort re-filtered all records inside the comparator)
+  const lastRecordByPet = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const r of clinicalRecords) {
+      const prev = map.get(r.pet_id);
+      if (!prev || new Date(r.date) > new Date(prev)) map.set(r.pet_id, r.date);
+    }
+    return map;
+  }, [clinicalRecords]);
+
   const recentPatients = useMemo(() => {
+    const activity = (p: typeof pets[number]) => new Date(lastRecordByPet.get(p.id) || p.created_at || 0).getTime();
     return [...pets]
-      .sort((a, b) => {
-        const aLastRecord = clinicalRecords
-          .filter(r => r.pet_id === a.id)
-          .sort((x, y) => new Date(y.date).getTime() - new Date(x.date).getTime())[0];
-        const bLastRecord = clinicalRecords
-          .filter(r => r.pet_id === b.id)
-          .sort((x, y) => new Date(y.date).getTime() - new Date(x.date).getTime())[0];
-        const aDate = aLastRecord?.date || a.created_at || '';
-        const bDate = bLastRecord?.date || b.created_at || '';
-        return new Date(bDate).getTime() - new Date(aDate).getTime();
-      })
+      .sort((a, b) => activity(b) - activity(a))
       .slice(0, 4)
       .map(p => {
-        const lastRecord = clinicalRecords
-          .filter(r => r.pet_id === p.id)
-          .sort((x, y) => new Date(y.date).getTime() - new Date(x.date).getTime())[0];
+        const last = lastRecordByPet.get(p.id);
         return {
           id: p.id,
           name: p.name,
-          species: p.species === 'dog' ? 'Canino' : p.species === 'cat' ? 'Felino' : (p.species || 'Canino'),
+          species: p.species === 'dog' ? 'Canino' : p.species === 'cat' ? 'Felino' : 'Otro',
           breed: p.breed || 'Mestizo',
-          lastVisit: lastRecord?.date
-            ? new Date(lastRecord.date).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
+          lastVisit: last
+            ? new Date(last).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
             : 'Sin visitas',
         };
       });
-  }, [pets, clinicalRecords]);
+  }, [pets, lastRecordByPet]);
 
-  const statsData = useMemo(() => {
-    const thisMonth = new Date().toISOString().slice(0, 7);
-    const lastMonthDate = new Date();
-    lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
-    const lastMonth = lastMonthDate.toISOString().slice(0, 7);
-
-    const thisMonthRecords = clinicalRecords.filter(r => r.date?.startsWith(thisMonth));
-    const lastMonthRecords = clinicalRecords.filter(r => r.date?.startsWith(lastMonth));
-
-    const thisMonthConsultas = thisMonthRecords.filter(r => r.record_type === 'consulta').length;
-    const lastMonthConsultas = lastMonthRecords.filter(r => r.record_type === 'consulta').length;
-    const consultasChange = lastMonthConsultas > 0
-      ? Math.round(((thisMonthConsultas - lastMonthConsultas) / lastMonthConsultas) * 100)
-      : 0;
-
-    const thisMonthPets = pets.filter(p => p.created_at?.startsWith(thisMonth)).length;
-    const lastMonthPets = pets.filter(p => p.created_at?.startsWith(lastMonth)).length;
-    const pacientesChange = lastMonthPets > 0
-      ? Math.round(((thisMonthPets - lastMonthPets) / lastMonthPets) * 100)
-      : 0;
-
-    const thisMonthVacunas = thisMonthRecords.filter(r => r.record_type === 'vacuna').length;
-    const lastMonthVacunas = lastMonthRecords.filter(r => r.record_type === 'vacuna').length;
-    const vacunasChange = lastMonthVacunas > 0
-      ? Math.round(((thisMonthVacunas - lastMonthVacunas) / lastMonthVacunas) * 100)
-      : 0;
-
-    return {
-      totalConsultas: thisMonthConsultas,
-      consultasChange,
-      pacientesNuevos: thisMonthPets,
-      pacientesChange,
-      vacunas: thisMonthVacunas,
-      vacunasChange,
-      hospitalizaciones: 0,
-      hospitalizacionesChange: 0,
-    };
-  }, [clinicalRecords, pets]);
+  const newPetsThisMonth = useMemo(() => {
+    const now = new Date();
+    return pets.filter(p => {
+      if (!p.created_at) return false;
+      const d = new Date(p.created_at);
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    }).length;
+  }, [pets]);
 
   const groupedInventory = useMemo(() => {
     const CATEGORY_MAP: Record<string, { label: string; iconName: string }> = {
@@ -217,7 +218,7 @@ export default function DashboardScreen() {
   const activityItems = useMemo(() => {
     const items: Array<{ id: string; icon: React.ReactNode; iconColor: string; iconBg: string; text: string; time: string; sortDate: string }> = [];
 
-    clinicalRecords.slice(0, 3).forEach(record => {
+    [...clinicalRecords].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 3).forEach(record => {
       const pet = pets.find(p => p.id === record.pet_id);
       const typeLabel = record.record_type.charAt(0).toUpperCase() + record.record_type.slice(1);
       items.push({
@@ -231,7 +232,8 @@ export default function DashboardScreen() {
       });
     });
 
-    appointments.slice(0, 2).forEach(apt => {
+    // Most recently scheduled appointments (the unsorted list gave the two oldest)
+    [...appointments].sort((a, b) => new Date(b.created_at || b.start_time).getTime() - new Date(a.created_at || a.start_time).getTime()).slice(0, 2).forEach(apt => {
       items.push({
         id: `apt-${apt.id}`,
         icon: <Calendar size={14} color={colors.info} />,
@@ -266,6 +268,22 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+      {loadErrors.length > 0 && !isLoading && (
+        <View accessibilityRole="alert" style={[styles.errorBanner, { backgroundColor: alpha(colors.error, 0.08), borderColor: alpha(colors.error, 0.3) }]}>
+          <AlertTriangle size={16} color={colors.error} />
+          <Text style={{ color: colors.text, flex: 1 }}>
+            Parte de la información no se pudo cargar ({loadErrors[0]}). Las cifras pueden estar incompletas.
+          </Text>
+          <Pressable
+            onPress={() => { refreshPets(); refreshAppointments(); refreshRecords(); refreshInventory(); }}
+            accessibilityRole="button"
+            style={[styles.retryBtn, { borderColor: colors.border }]}
+          >
+            <Text style={{ color: colors.primary, fontWeight: '600' }}>Reintentar</Text>
+          </Pressable>
+        </View>
+      )}
+
       {/* Row 1: Hero + Próxima Cita */}
       <Animated.View style={[styles.topRow, isMobile && styles.topRowMobile, { opacity: heroOpacity, transform: [{ translateY: heroY }] }]}>
         <LinearGradient
@@ -303,7 +321,11 @@ export default function DashboardScreen() {
           </View>
           <BannerIllustration isMobile={isMobile} />
         </LinearGradient>
-        <NextAppointmentCard {...nextAppointment} />
+        <NextAppointmentCard
+          {...nextAppointment}
+          onViewDetails={() => router.push('/(drawer)/agenda')}
+          onStartConsult={() => nextAppointment.petId ? router.push(`/pet/${nextAppointment.petId}` as any) : router.push('/(drawer)/agenda')}
+        />
       </Animated.View>
 
       {/* Row 2: Stats Cards */}
@@ -326,18 +348,19 @@ export default function DashboardScreen() {
       {/* Row 3: Pacientes + Estadísticas + Acciones */}
       <Animated.View style={[styles.threeColRow, isMobile && styles.threeColRowMobile, { opacity: row3Opacity, transform: [{ translateY: row3Y }] }]}>
         <View style={[styles.colLeft, isMobile && styles.colMobile]}>
-          <PatientList patients={recentPatients} />
+          <PatientList
+            patients={recentPatients}
+            onViewAll={() => router.push('/(drawer)/pacientes')}
+            onPatientPress={(id: string) => router.push(`/pet/${id}` as any)}
+          />
         </View>
         <View style={[styles.colCenter, isMobile && styles.colMobile]}>
           <StatsChart
-            totalConsultas={statsData.totalConsultas}
-            consultasChange={statsData.consultasChange}
-            pacientesNuevos={statsData.pacientesNuevos}
-            pacientesChange={statsData.pacientesChange}
-            vacunas={statsData.vacunas}
-            vacunasChange={statsData.vacunasChange}
-            hospitalizaciones={statsData.hospitalizaciones}
-            hospitalizacionesChange={statsData.hospitalizacionesChange}
+            days={weekly.days}
+            summary={weekly.summary}
+            pacientesNuevos={newPetsThisMonth}
+            hospitalizados={activeHospitalizations}
+            loading={statsLoading}
           />
         </View>
         <View style={[styles.colRight, isMobile && styles.colMobile]}>
@@ -361,6 +384,8 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingBottom: SPACING['4xl'] },
+  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginHorizontal: SPACING.xl, marginTop: SPACING.lg, padding: SPACING.md, borderRadius: 10, borderWidth: 1 },
+  retryBtn: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs + 2, borderRadius: RADIUS.md, borderWidth: 1 },
 
   topRow: {
     flexDirection: 'row',

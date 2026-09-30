@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, Component, ReactNode } from 'react';
-import { View, StyleSheet, Platform, Text, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, Platform, Text, useWindowDimensions, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useResponsive } from '../../hooks/useResponsive';
@@ -15,6 +15,10 @@ import ContextMenu from '../../components/agenda/ContextMenu';
 
 import AppointmentDetailModal, { AppointmentDetail } from '../../components/agenda/AppointmentDetailModal';
 import AppointmentCreationModal from '../../components/agenda/AppointmentCreationModal';
+import AppointmentEditSheet, { EditMode } from '../../components/agenda/AppointmentEditSheet';
+import PaymentForm from '../../components/pet/PaymentForm';
+import { exportAgenda, printAgenda } from '../../components/agenda/agendaExport';
+import { useToast } from '../../components/ui/VToast';
 
 // Hooks
 import useAgendaData from '../../components/agenda/useAgendaData';
@@ -33,8 +37,8 @@ type ViewMode = 'week' | 'day' | 'month';
 
 function getWeekDays(date: Date): Date[] {
   const start = new Date(date);
-  const day = start.getDay();
-  start.setDate(start.getDate() - day + 1);
+  // Monday-based week; on Sundays (getDay() === 0) the old formula jumped to the next week
+  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
   const days: Date[] = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(start);
@@ -75,11 +79,16 @@ function AgendaContent() {
   const [detailModal, setDetailModal] = useState({ visible: false, appointment: null as AppointmentDetail | null });
   const [creationModal, setCreationModal] = useState({ visible: false, initialDate: new Date(), initialHour: 9 });
 
-  const { appointments, loading, summary, refetch } = useAgendaData({
+  const { appointments, allAppointments, loading, error: loadError, summary, veterinarians, refetch } = useAgendaData({
     selectedDate,
     searchQuery,
     filters,
   });
+  const toast = useToast();
+  const [editor, setEditor] = useState<{ visible: boolean; mode: EditMode; appointment: any }>({ visible: false, mode: 'edit', appointment: null });
+  const [payment, setPayment] = useState<{ visible: boolean; appointment: any }>({ visible: false, appointment: null });
+  // Measured width of the calendar area (screen width minus app sidebar and agenda sidebar)
+  const [mainWidth, setMainWidth] = useState<number | undefined>(undefined);
 
   const { nextAppointment, delayedAppointments, totalGridHeight } = useAgendaLayout({
     appointments,
@@ -90,7 +99,10 @@ function AgendaContent() {
     setDetailModal({ visible: true, appointment: apt });
   }, []);
 
-  const quickActions = useQuickActions({ onRefresh: refetch });
+  const quickActions = useQuickActions({
+    onOpenEditor: (appointment, mode) => setEditor({ visible: true, mode, appointment }),
+    onOpenPayment: (appointment) => setPayment({ visible: true, appointment }),
+  });
 
   const { dragState, onDragStart, onDragMove, onDragEnd } = useDragDrop({
     onMove: async (id, newStart, newEnd) => {
@@ -99,13 +111,28 @@ function AgendaContent() {
           start_time: newStart.toISOString(),
           end_time: newEnd.toISOString(),
         });
-        refetch();
-      } catch (err) {
-        console.error('Failed to move appointment:', err);
-        refetch();
+        toast.success('Cita reprogramada');
+      } catch (err: any) {
+        toast.error(err?.message || 'No se pudo mover la cita');
       }
+      // A successful move refreshes through the data-change bus; a failed one never left the data
     },
   });
+
+  const handlePrint = useCallback(() => {
+    if (!printAgenda(allAppointments, viewMode, selectedDate)) {
+      toast.error('No se pudo abrir la vista de impresión (revisa el bloqueador de ventanas emergentes)');
+    }
+  }, [allAppointments, viewMode, selectedDate, toast]);
+
+  const handleExport = useCallback(async () => {
+    try {
+      const n = await exportAgenda(allAppointments, viewMode, selectedDate);
+      toast.success(`${n} cita${n === 1 ? '' : 's'} exportada${n === 1 ? '' : 's'}`);
+    } catch (e: any) {
+      toast.error(e?.message || 'No se pudo exportar la agenda');
+    }
+  }, [allAppointments, viewMode, selectedDate, toast]);
 
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate]);
 
@@ -142,11 +169,11 @@ function AgendaContent() {
         ? { ...prev, appointment: { ...prev.appointment, status: newStatus } }
         : prev
       );
-      refetch();
     } catch (err: any) {
-      console.error('Failed to change status:', err?.message || err);
+      // e.g. "Transición inválida: completada -> en_espera" from the server
+      toast.error(err?.message || 'No se pudo cambiar el estado');
     }
-  }, [refetch]);
+  }, [refetch, toast]);
 
   const handleSlotPress = useCallback((date: Date, hour: number) => {
     setCreationModal({ visible: true, initialDate: date, initialHour: hour });
@@ -170,12 +197,21 @@ function AgendaContent() {
         }}
         onNewPatient={() => router.push('/(drawer)/add-paciente')}
         onFilterPress={isMobile ? () => setMobileSidebarVisible(true) : undefined}
-        onPrint={() => {}}
-        onExport={() => {}}
+        onPrint={handlePrint}
+        onExport={handleExport}
         isMobile={isMobile}
       />
+      {loadError ? (
+        <View accessibilityRole="alert" style={[styles.errorBanner, { backgroundColor: colors.error + '14', borderColor: colors.error + '55' }]}>
+          <Text style={{ color: colors.text, flex: 1 }}>No se pudo cargar la agenda: {loadError}</Text>
+          <Text onPress={() => refetch()} accessibilityRole="button" style={{ color: colors.primary, fontWeight: '600' }}>Reintentar</Text>
+        </View>
+      ) : null}
       <View style={styles.contentArea}>
-        <View style={[styles.mainContent, showSidebar && { width: screenWidth - sidebarWidth }]}>
+        <View
+          style={[styles.mainContent, showSidebar && { flex: 1 }]}
+          onLayout={(e) => setMainWidth(e.nativeEvent.layout.width)}
+        >
           {viewMode === 'week' && (
             <WeekView
               weekDays={weekDays}
@@ -191,6 +227,7 @@ function AgendaContent() {
               onDragEnd={onDragEnd}
               dragState={dragState}
               loading={loading}
+              availableWidth={mainWidth}
             />
           )}
           {viewMode === 'day' && (
@@ -206,7 +243,7 @@ function AgendaContent() {
               onDragEnd={onDragEnd}
               dragState={dragState}
               loading={loading}
-              columnWidth={showSidebar ? screenWidth - sidebarWidth - 44 : screenWidth - 44}
+              columnWidth={Math.max(200, (mainWidth ?? (showSidebar ? screenWidth - sidebarWidth : screenWidth)) - 44)}
             />
           )}
           {viewMode === 'month' && (
@@ -226,7 +263,7 @@ function AgendaContent() {
               onDateSelect={setSelectedDate}
               filters={filters}
               onFilterChange={setFilters}
-              veterinarians={[]}
+              veterinarians={veterinarians}
               appointmentTypes={['consulta', 'vacuna', 'cirugia', 'control', 'terreno', 'examenes', 'hospitalizacion']}
               statuses={['programada', 'confirmada', 'en_espera', 'en_consulta', 'completada', 'cancelada', 'ausente']}
             />
@@ -238,6 +275,22 @@ function AgendaContent() {
           </View>
         )}
       </View>
+      <AppointmentEditSheet
+        visible={editor.visible}
+        mode={editor.mode}
+        appointment={editor.appointment}
+        onClose={() => setEditor(prev => ({ ...prev, visible: false }))}
+        onSaved={() => {
+          toast.success(editor.mode === 'followup' ? 'Control agendado' : editor.mode === 'reschedule' ? 'Cita reprogramada' : 'Cita actualizada');
+        }}
+      />
+      <PaymentForm
+        visible={payment.visible}
+        onClose={() => setPayment({ visible: false, appointment: null })}
+        onPaid={() => toast.success('Cobro registrado')}
+        appointmentId={payment.appointment?.id}
+        petId={payment.appointment?.pet_id || undefined}
+      />
       <ContextMenu
         visible={contextMenu.visible}
         x={contextMenu.x}
@@ -274,7 +327,7 @@ function AgendaContent() {
       {/* Mobile Sidebar Overlay */}
       {isMobile && mobileSidebarVisible && (
         <View style={styles.sidebarOverlay}>
-          <View style={styles.sidebarOverlayBg} onTouchEnd={() => setMobileSidebarVisible(false)} />
+          <Pressable style={styles.sidebarOverlayBg} onPress={() => setMobileSidebarVisible(false)} accessibilityLabel="Cerrar filtros" />
           <View style={[styles.mobileSidebar, { backgroundColor: colors.surface, borderLeftColor: colors.border }]}>
             <AgendaSidebar
               selectedDate={selectedDate}
@@ -284,7 +337,7 @@ function AgendaContent() {
               }}
               filters={filters}
               onFilterChange={setFilters}
-              veterinarians={[]}
+              veterinarians={veterinarians}
               appointmentTypes={['consulta', 'vacuna', 'cirugia', 'control', 'terreno', 'examenes', 'hospitalizacion']}
               statuses={['programada', 'confirmada', 'en_espera', 'en_consulta', 'completada', 'cancelada', 'ausente']}
             />
@@ -318,6 +371,16 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 16,
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
   },
   sidebar: {
     borderLeftWidth: 1,

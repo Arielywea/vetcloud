@@ -1,101 +1,108 @@
-import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { api } from '../../services/directus';
+import { useConfirm } from '../ui/ConfirmDialog';
+import { useToast } from '../ui/VToast';
+import type { EditMode } from './AppointmentEditSheet';
 
 interface QuickAppointment {
   id: string;
   patient_name: string;
   pet_id?: string | null;
+  appointment_type?: string | null;
+  status?: string | null;
 }
 
 interface UseQuickActionsOptions {
-  onRefresh?: () => void;
+  /** Opens the edit/reschedule/follow-up sheet */
+  onOpenEditor?: (appointment: any, mode: EditMode) => void;
+  /** Opens the payment form for the appointment */
+  onOpenPayment?: (appointment: any) => void;
 }
 
-interface UseQuickActionsReturn {
-  openChart: (appointment: QuickAppointment) => void;
-  registerConsultation: (appointment: QuickAppointment) => void;
-  hospitalize: (appointment: QuickAppointment) => void;
-  scheduleFollowup: (appointment: QuickAppointment) => void;
-  charge: (appointment: QuickAppointment) => void;
-  edit: (appointment: QuickAppointment) => void;
-  reschedule: (appointment: QuickAppointment) => void;
-  cancel: (appointment: QuickAppointment) => void;
-  remove: (appointment: QuickAppointment) => void;
-}
-
-export default function useQuickActions({ onRefresh }: UseQuickActionsOptions = {}): UseQuickActionsReturn {
+// Real actions for the agenda context menu (they used to be Alert.alert stubs,
+// which do nothing on the web and never called the API).
+export default function useQuickActions({ onOpenEditor, onOpenPayment }: UseQuickActionsOptions = {}) {
   const router = useRouter();
+  const { confirm, notify } = useConfirm();
+  const toast = useToast();
 
-  const openChart = (appointment: QuickAppointment) => {
-    if (appointment.pet_id) {
-      router.push(`/pet/${appointment.pet_id}`);
-    } else {
-      Alert.alert('Sin expediente', 'Esta cita no tiene paciente asociado');
+  const needsPatient = async (appointment: QuickAppointment) => {
+    if (appointment.pet_id) return false;
+    const register = await confirm({
+      title: 'Cita sin paciente registrado',
+      message: `${appointment.patient_name} no tiene ficha. ¿Quieres registrarlo ahora?`,
+      confirmLabel: 'Registrar paciente',
+    });
+    if (register) router.push({ pathname: '/(drawer)/add-paciente', params: { prefillName: appointment.patient_name } } as any);
+    return true;
+  };
+
+  const openChart = async (appointment: QuickAppointment) => {
+    if (await needsPatient(appointment)) return;
+    router.push(`/pet/${appointment.pet_id}` as any);
+  };
+
+  const registerConsultation = openChart;
+
+  const hospitalize = async (appointment: QuickAppointment) => {
+    if (await needsPatient(appointment)) return;
+    const ok = await confirm({ title: 'Hospitalizar', message: `¿Internar a ${appointment.patient_name}?`, confirmLabel: 'Internar' });
+    if (!ok) return;
+    try {
+      await api.hospitalizations.create({
+        pet_id: appointment.pet_id,
+        reason: `Ingreso desde la agenda (${appointment.appointment_type || 'consulta'})`,
+        status: 'internado',
+      });
+      toast.success(`${appointment.patient_name} quedó internado`);
+    } catch (e: any) {
+      toast.error(e?.message || 'No se pudo hospitalizar');
     }
   };
 
-  const registerConsultation = (appointment: QuickAppointment) => {
-    if (appointment.pet_id) {
-      router.push(`/pet/${appointment.pet_id}`);
-    } else {
-      Alert.alert('Sin paciente', 'Primero asocia un paciente a esta cita');
-    }
-  };
-
-  const hospitalize = (appointment: QuickAppointment) => {
-    Alert.alert('Hospitalizar', `¿Hospitalizar a ${appointment.patient_name}?`, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Hospitalizar', onPress: () => onRefresh?.() },
-    ]);
-  };
-
-  const scheduleFollowup = (appointment: QuickAppointment) => {
-    Alert.alert('Agendar control', `Programar control para ${appointment.patient_name}`);
-  };
+  const scheduleFollowup = (appointment: QuickAppointment) => onOpenEditor?.(appointment, 'followup');
+  const edit = (appointment: QuickAppointment) => onOpenEditor?.(appointment, 'edit');
+  const reschedule = (appointment: QuickAppointment) => onOpenEditor?.(appointment, 'reschedule');
 
   const charge = (appointment: QuickAppointment) => {
-    Alert.alert('Cobrar', `Cobrar cita de ${appointment.patient_name}`);
+    if (onOpenPayment) onOpenPayment(appointment);
+    else notify('Cobrar', 'El formulario de cobro no está disponible aquí.');
   };
 
-  const edit = (appointment: QuickAppointment) => {
-    Alert.alert('Editar', `Editar cita de ${appointment.patient_name}`);
+  const cancel = async (appointment: QuickAppointment) => {
+    const ok = await confirm({
+      title: 'Cancelar cita',
+      message: `¿Cancelar la cita de ${appointment.patient_name}? Podrás reprogramarla después.`,
+      confirmLabel: 'Cancelar cita',
+      cancelLabel: 'Volver',
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await api.appointments.update(appointment.id, { status: 'cancelada' });
+      toast.success('Cita cancelada');
+    } catch (e: any) {
+      // e.g. "Transición inválida: completada -> cancelada"
+      toast.error(e?.message || 'No se pudo cancelar la cita');
+    }
   };
 
-  const reschedule = (appointment: QuickAppointment) => {
-    Alert.alert('Reprogramar', `Reprogramar cita de ${appointment.patient_name}`);
+  const remove = async (appointment: QuickAppointment) => {
+    const ok = await confirm({
+      title: 'Eliminar cita',
+      message: `Se eliminará definitivamente la cita de ${appointment.patient_name}. Esta acción no se puede deshacer.`,
+      confirmLabel: 'Eliminar',
+      cancelLabel: 'Volver',
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await api.appointments.delete(appointment.id);
+      toast.success('Cita eliminada');
+    } catch (e: any) {
+      toast.error(e?.message || 'No se pudo eliminar la cita');
+    }
   };
 
-  const cancel = (appointment: QuickAppointment) => {
-    Alert.alert(
-      'Cancelar cita',
-      `¿Cancelar la cita de ${appointment.patient_name}?`,
-      [
-        { text: 'No', style: 'cancel' },
-        { text: 'Sí, cancelar', style: 'destructive', onPress: () => onRefresh?.() },
-      ]
-    );
-  };
-
-  const remove = (appointment: QuickAppointment) => {
-    Alert.alert(
-      'Eliminar cita',
-      `¿Eliminar permanentemente la cita de ${appointment.patient_name}?`,
-      [
-        { text: 'No', style: 'cancel' },
-        { text: 'Eliminar', style: 'destructive', onPress: () => onRefresh?.() },
-      ]
-    );
-  };
-
-  return {
-    openChart,
-    registerConsultation,
-    hospitalize,
-    scheduleFollowup,
-    charge,
-    edit,
-    reschedule,
-    cancel,
-    remove,
-  };
+  return { openChart, registerConsultation, hospitalize, scheduleFollowup, charge, edit, reschedule, cancel, remove };
 }

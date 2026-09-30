@@ -5,15 +5,22 @@ import { Bot, X, Calendar, Syringe, HelpCircle, Send } from 'lucide-react-native
 import { useAssistant } from '../hooks/useDirectus';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../hooks/useAuth';
+import { useToast } from './ui/VToast';
+import { api } from '../services/directus';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../constants/tokens';
 
 export default function VetAssistantWidget() {
-  const { messages, loading, sendMessage, clearMessages } = useAssistant();
+  const { messages, loading, sendMessage } = useAssistant();
   const [visible, setVisible] = useState(false);
   const [inputText, setInputText] = useState('');
+  // Drafts already saved (message index), so a second tap doesn't duplicate the prescription
+  const [savedRx, setSavedRx] = useState<Record<number, 'saving' | 'saved'>>({});
   const scrollRef = useRef<ScrollView>(null);
   const router = useRouter();
-  const { colors, onPrimaryText } = useTheme();
+  const { user } = useAuth();
+  const toast = useToast();
+  const { colors, onPrimaryText, onAccentText } = useTheme();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -27,14 +34,36 @@ export default function VetAssistantWidget() {
     setInputText('');
   };
 
-  const handleAction = (action: string, payload?: any) => {
+  const saveRx = async (msgIdx: number, payload: { petId?: string; petName?: string; body?: string }) => {
+    if (savedRx[msgIdx]) return;
+    if (!payload?.petId || !payload.body) {
+      toast.error('Indica el paciente: "receta para Rocky: …"');
+      return;
+    }
+    setSavedRx((s) => ({ ...s, [msgIdx]: 'saving' }));
+    try {
+      await api.prescriptions.create({
+        pet_id: payload.petId,
+        prescription_body: payload.body,
+        veterinarian_name: user?.veterinarian_name || null,
+      });
+      setSavedRx((s) => ({ ...s, [msgIdx]: 'saved' }));
+      toast.success(`Receta guardada en la ficha de ${payload.petName || 'el paciente'}`);
+    } catch (e: any) {
+      setSavedRx((s) => { const { [msgIdx]: _, ...rest } = s; return rest; });
+      toast.error(e?.message || 'No se pudo guardar la receta');
+    }
+  };
+
+  const handleAction = (action: string, payload: any, msgIdx: number) => {
     switch (action) {
-      case 'view_history': router.push(`/pet/${payload.petId}`); break;
-      case 'view_disease': router.push(`/disease/${payload.diseaseId}`); break;
-      case 'create_rx': router.push(`/pet/${payload.petId}`); break;
-      case 'create_appointment': router.push('/(drawer)/agenda'); break;
-      case 'create_reminder': router.push('/(drawer)/reminders'); break;
-      case 'create_note': router.push('/(drawer)/notes'); break;
+      case 'save_rx': saveRx(msgIdx, payload); break;
+      case 'view_history': setVisible(false); router.push(`/pet/${payload.petId}`); break;
+      case 'view_disease': setVisible(false); router.push(`/disease/${payload.diseaseId}`); break;
+      case 'create_rx': setVisible(false); router.push(`/pet/${payload.petId}`); break;
+      case 'create_appointment': setVisible(false); router.push('/(drawer)/agenda'); break;
+      case 'create_reminder': setVisible(false); router.push('/(drawer)/reminders'); break;
+      case 'create_note': setVisible(false); router.push('/(drawer)/notes'); break;
       case 'quick_query': sendMessage(payload.query); break;
       case 'list_drugs': sendMessage('dosis amoxicilina'); break;
     }
@@ -42,16 +71,16 @@ export default function VetAssistantWidget() {
 
   return (
     <>
-      <Pressable style={[styles.fab, { backgroundColor: colors.accent, ...SHADOWS.lg }]} onPress={() => setVisible(true)}>
-        <Bot size={28} color="#fff" />
+      <Pressable style={[styles.fab, { backgroundColor: colors.accent, ...SHADOWS.lg }]} onPress={() => setVisible(true)} accessibilityRole="button" accessibilityLabel="Abrir asistente">
+        <Bot size={28} color={onAccentText.default} />
       </Pressable>
 
       <Portal>
         <Modal visible={visible} onDismiss={() => setVisible(false)} contentContainerStyle={[styles.panel, { backgroundColor: colors.surface }]}>
           <View style={[styles.header, { backgroundColor: colors.primary }]}>
             <Bot size={22} color={colors.accent} />
-            <Text style={[styles.headerTitle, { color: colors.surface }]}>Asistente VetCloud</Text>
-            <TouchableOpacity onPress={() => setVisible(false)}><X size={20} color="#fff" /></TouchableOpacity>
+            <Text style={[styles.headerTitle, { color: onPrimaryText.default }]}>Asistente VetCloud</Text>
+            <TouchableOpacity onPress={() => setVisible(false)} accessibilityRole="button" accessibilityLabel="Cerrar asistente" hitSlop={10}><X size={20} color={onPrimaryText.default} /></TouchableOpacity>
           </View>
 
           <ScrollView ref={scrollRef} style={[styles.messagesContainer, { backgroundColor: colors.background }]} contentContainerStyle={styles.messagesContent}>
@@ -84,11 +113,22 @@ export default function VetAssistantWidget() {
                   <Text style={{ fontSize: TYPOGRAPHY.sizes.md, lineHeight: 21, color: msg.sender === 'user' ? onPrimaryText.default : colors.text }}>{msg.text}</Text>
                   {msg.actions && msg.actions.length > 0 && (
                     <View style={styles.actionsContainer}>
-                      {msg.actions.map((act: any, aIdx: number) => (
-                        <TouchableOpacity key={aIdx} style={[styles.actionBtn, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '30' }]} onPress={() => handleAction(act.action, act.payload)}>
-                          <Text style={[styles.actionBtnText, { color: colors.accent }]}>{act.label}</Text>
-                        </TouchableOpacity>
-                      ))}
+                      {msg.actions.map((act: any, aIdx: number) => {
+                        const rxState = act.action === 'save_rx' ? savedRx[idx] : undefined;
+                        const label = rxState === 'saved' ? 'Receta guardada' : rxState === 'saving' ? 'Guardando…' : act.label;
+                        return (
+                          <TouchableOpacity
+                            key={aIdx}
+                            disabled={!!rxState}
+                            accessibilityRole="button"
+                            accessibilityState={{ disabled: !!rxState }}
+                            style={[styles.actionBtn, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '30', opacity: rxState ? 0.6 : 1 }]}
+                            onPress={() => handleAction(act.action, act.payload, idx)}
+                          >
+                            <Text style={[styles.actionBtnText, { color: colors.text }]}>{label}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
                     </View>
                   )}
                 </View>
@@ -114,7 +154,7 @@ export default function VetAssistantWidget() {
               style={[styles.input, { color: colors.text, borderColor: colors.border }]}
               onSubmitEditing={handleSend}
             />
-            <TouchableOpacity onPress={handleSend} disabled={!inputText.trim() || loading}>
+            <TouchableOpacity onPress={handleSend} disabled={!inputText.trim() || loading} accessibilityRole="button" accessibilityLabel="Enviar consulta" hitSlop={10}>
               <Send size={20} color={inputText.trim() ? colors.accent : colors.textLight} />
             </TouchableOpacity>
           </View>

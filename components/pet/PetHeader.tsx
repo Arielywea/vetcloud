@@ -103,16 +103,16 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
           )}
           <View style={styles.actionsRow}>
             {pet.phone && (
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primaryContainer }]} onPress={onCall}>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primaryContainer }]} onPress={onCall} accessibilityRole="button" accessibilityLabel={`Llamar a ${pet.tutor_name || 'el tutor'}`}>
                 <DynamicIcon name="phone" size={18} color={colors.primary} />
               </TouchableOpacity>
             )}
             {pet.email && (
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primaryContainer }]} onPress={onEmail}>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primaryContainer }]} onPress={onEmail} accessibilityRole="button" accessibilityLabel={`Escribir a ${pet.email}`}>
                 <DynamicIcon name="email-outline" size={18} color={colors.primary} />
               </TouchableOpacity>
             )}
-            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primaryContainer }]} onPress={onEdit}>
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primaryContainer }]} onPress={onEdit} accessibilityRole="button" accessibilityLabel={`Editar a ${pet.name}`}>
               <DynamicIcon name="pencil" size={18} color={colors.primary} />
             </TouchableOpacity>
           </View>

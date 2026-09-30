@@ -10,10 +10,12 @@ import VCard from '../../components/ui/Card';
 import VButton from '../../components/ui/Button';
 import VEmptyState from '../../components/ui/EmptyState';
 import VRefreshControl from '../../components/ui/VRefreshControl';
+import { useToast } from '../../components/ui/VToast';
 
 export default function NotesScreen() {
   const { notes, loading, addNote, updateNote, refresh } = useNotes();
   const { colors } = useTheme();
+  const toast = useToast();
   const [showModal, setShowModal] = useState(false);
   const [editingNote, setEditingNote] = useState<DirectusNote | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -27,7 +29,7 @@ export default function NotesScreen() {
   const resetForm = () => { setTitle(''); setContent(''); setTags(''); setEditingNote(null); };
 
   const handleSave = async () => {
-    if (!title.trim() || !content.trim()) return;
+    if (!title.trim() || !content.trim()) { toast.error('La nota necesita título y contenido'); return; }
     const tagList = tags.split(',').map(t => t.trim()).filter(Boolean);
     try {
       if (editingNote) {
@@ -36,8 +38,9 @@ export default function NotesScreen() {
         await addNote({ title: title.trim(), content: content.trim(), tags: tagList, disease_id: null, pet_id: null });
       }
       resetForm(); setShowModal(false);
+      toast.success(editingNote ? 'Nota actualizada' : 'Nota creada');
     } catch (error: any) {
-      console.error('Error:', error);
+      toast.error(error?.message || 'No se pudo guardar la nota');
     }
   };
 
@@ -47,7 +50,13 @@ export default function NotesScreen() {
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
-    try { await api.notes.delete(deleteTarget.id); setRefreshKey(k => k + 1); refresh(); } catch (error: any) { console.error('Error:', error); } finally { setDeleteTarget(null); }
+    try {
+      await api.notes.delete(deleteTarget.id);
+      setRefreshKey(k => k + 1);
+      toast.success('Nota eliminada');
+    } catch (error: any) {
+      toast.error(error?.message || 'No se pudo eliminar la nota');
+    } finally { setDeleteTarget(null); }
   };
 
   const renderNote = ({ item }: { item: DirectusNote }) => {

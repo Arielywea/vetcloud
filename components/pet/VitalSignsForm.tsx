@@ -57,7 +57,9 @@ export default function VitalSignsForm({ petId, visible, onClose }: VitalSignsPr
     try {
       const res = await api.vitals.list(petId);
       setHistory(res || []);
-    } catch { /* */ }
+    } catch (e: any) {
+      toast.error(e?.message || 'No se pudo cargar el historial de signos vitales');
+    }
     setLoading(false);
   };
 

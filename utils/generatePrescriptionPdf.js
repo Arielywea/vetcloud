@@ -8,37 +8,33 @@ function generatePrescriptionPdf(prescription, pet, clinic) {
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    const primaryColor = '#FF8F00';
-    const darkText = '#1a1a1a';
-    const secondaryText = '#555555';
+    // Saber palette (constants/colors.ts): royal blue, antique gold, ivory
+    const primaryColor = '#12264D';
+    const accentColor = '#A8842A';
+    const darkText = '#141C33';
+    const secondaryText = '#4E586F';
+    const borderColor = '#DDD5C4';
+    const panelColor = '#F5F2EA';
 
-    // ── HEADER ──
-    doc.rect(0, 0, doc.page.width, 80).fill(primaryColor);
+    // ── HEADER: the clinic's identity (falls back to VetCloud) ──
+    const pageW = doc.page.width;
+    doc.rect(0, 0, pageW, 84).fill('#0B1D3A');
+    doc.rect(0, 84, pageW, 2).fill(accentColor);
 
-    // Draw beagle (simplified)
-    const bx = 58, by = 40, bs = 22;
-    // Ears
-    doc.ellipse(bx - bs * 0.7, by + bs * 0.1, bs * 0.32, bs * 0.5).fill('#8D6E63');
-    doc.ellipse(bx + bs * 0.7, by + bs * 0.1, bs * 0.32, bs * 0.5).fill('#8D6E63');
-    // Face
-    doc.circle(bx, by, bs * 0.65).fill('#FFFFFF');
-    // Cap marking
-    doc.circle(bx, by - bs * 0.15, bs * 0.35).fill('#5D4037');
-    // Eyes
-    doc.circle(bx - bs * 0.22, by, bs * 0.1).fill('#FFFFFF');
-    doc.circle(bx - bs * 0.2, by, bs * 0.065).fill('#1A1A1A');
-    doc.circle(bx + bs * 0.22, by, bs * 0.1).fill('#FFFFFF');
-    doc.circle(bx + bs * 0.2, by, bs * 0.065).fill('#1A1A1A');
-    // Nose
-    doc.circle(bx, by + bs * 0.22, bs * 0.08).fill('#1A1A1A');
+    const clinicTitle = clinic?.clinic_name || 'VetCloud';
+    doc.fill('#FFFFFF').fontSize(20).font('Helvetica-Bold').text(clinicTitle, 50, 18, { width: pageW / 2 });
+    const contact = [clinic?.clinic_address, clinic?.clinic_phone].filter(Boolean).join('  ·  ');
+    doc.fill('#D9D4C6').fontSize(9).font('Helvetica').text(contact || 'Receta veterinaria', 50, 46, { width: pageW / 2 });
+    if (contact) doc.text('Receta veterinaria', 50, 60, { width: pageW / 2 });
 
-    doc.fill('#ffffff').fontSize(22).font('Helvetica-Bold').text('VetCloud', 100, 20);
-    doc.fontSize(10).font('Helvetica').text('Receta Veterinaria', 100, 48);
     if (clinic?.veterinarian_name) {
-      doc.fontSize(10).text(clinic.veterinarian_name, doc.page.width - 50, 20, { align: 'right', width: doc.page.width - 100 });
+      doc.fill('#FFFFFF').fontSize(10).font('Helvetica-Bold')
+        .text(clinic.veterinarian_name, pageW / 2, 24, { align: 'right', width: pageW / 2 - 50 });
+      doc.fill('#D9D4C6').fontSize(8).font('Helvetica')
+        .text('Médico veterinario', pageW / 2, 40, { align: 'right', width: pageW / 2 - 50 });
     }
 
-    let y = 100;
+    let y = 104;
 
     // ── INFO TABLE ──
     const colW = (doc.page.width - 120) / 2;
@@ -46,8 +42,8 @@ function generatePrescriptionPdf(prescription, pet, clinic) {
     const rightX = 50 + colW + 20;
 
     // Left column — Patient
-    doc.roundedRect(leftX, y, colW, 120, 4).fillAndStroke('#FFF8E1', '#e0e0e0');
-    doc.fill(primaryColor).fontSize(8).font('Helvetica-Bold').text('PACIENTE', leftX + 10, y + 8);
+    doc.roundedRect(leftX, y, colW, 120, 4).fillAndStroke(panelColor, borderColor);
+    doc.fill(accentColor).fontSize(8).font('Helvetica-Bold').text('PACIENTE', leftX + 10, y + 8);
     doc.fill(darkText).fontSize(12).font('Helvetica-Bold').text(pet.name || '', leftX + 10, y + 22, { width: colW - 20 });
     const speciesLabel = pet.species === 'dog' ? 'Canino' : pet.species === 'cat' ? 'Felino' : 'N/D';
     const sexLabel = pet.sex === 'macho' ? 'Macho' : pet.sex === 'hembra' ? 'Hembra' : 'N/D';
@@ -69,8 +65,8 @@ function generatePrescriptionPdf(prescription, pet, clinic) {
       .text(`ID: ${pet.id}`, leftX + 10, y + 96, { width: colW - 20 });
 
     // Right column — Owner
-    doc.roundedRect(rightX, y, colW, 120, 4).fillAndStroke('#F3E5F5', '#e0e0e0');
-    doc.fill('#6741D9').fontSize(8).font('Helvetica-Bold').text('PROPIETARIO', rightX + 10, y + 8);
+    doc.roundedRect(rightX, y, colW, 120, 4).fillAndStroke(panelColor, borderColor);
+    doc.fill(accentColor).fontSize(8).font('Helvetica-Bold').text('PROPIETARIO', rightX + 10, y + 8);
     doc.fill(darkText).fontSize(12).font('Helvetica-Bold').text(pet.tutor_name || 'N/D', rightX + 10, y + 22, { width: colW - 20 });
     doc.fill(secondaryText).fontSize(9).font('Helvetica')
       .text(pet.tutor_email || '', rightX + 10, y + 40, { width: colW - 20 })
@@ -80,16 +76,17 @@ function generatePrescriptionPdf(prescription, pet, clinic) {
     y += 135;
 
     // ── METADATA BAR ──
-    doc.roundedRect(50, y, doc.page.width - 100, 24, 4).fill('#f5f5f5');
+    doc.roundedRect(50, y, doc.page.width - 100, 24, 4).fill(panelColor);
     doc.fill(secondaryText).fontSize(8).font('Helvetica');
-    const issuedDate = new Date(prescription.issued_at).toLocaleDateString('es-CL');
-    doc.text(`Sucursal: ${prescription.clinic_branch || clinic?.clinic_name || 'N/D'}`, 60, y + 7, { width: colW - 30 })
-      .text(`Prescriptor: ${prescription.veterinarian_name || clinic?.veterinarian_name || 'N/D'}`, 60 + colW, y + 7, { width: colW - 30 })
-      .text(`Fecha: ${issuedDate}`, 60 + colW * 2 - 40, y + 7, { width: colW - 10, align: 'right' });
+    const issuedDate = new Date(prescription.issued_at).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' });
+    const metaW = (doc.page.width - 120) / 3;
+    doc.text(`Sucursal: ${prescription.clinic_branch || clinic?.clinic_name || 'N/D'}`, 60, y + 7, { width: metaW, lineBreak: false, ellipsis: true })
+      .text(`Prescriptor: ${prescription.veterinarian_name || clinic?.veterinarian_name || 'N/D'}`, 60 + metaW, y + 7, { width: metaW, lineBreak: false, ellipsis: true })
+      .text(`Fecha: ${issuedDate}`, 60 + metaW * 2, y + 7, { width: metaW, align: 'right', lineBreak: false });
     y += 36;
 
     // ── PRESCRIPTION BODY ──
-    doc.roundedRect(50, y, doc.page.width - 100, doc.page.height - y - 100, 4).fillAndStroke('#FAFAFA', '#e0e0e0');
+    doc.roundedRect(50, y, doc.page.width - 100, doc.page.height - y - 100, 4).fillAndStroke('#FFFFFF', borderColor);
     doc.fill(primaryColor).fontSize(11).font('Helvetica-Bold').text('Receta', 65, y + 10);
     doc.fill(darkText).fontSize(10).font('Helvetica')
       .text(prescription.prescription_body || '', 65, y + 28, {
@@ -98,10 +95,12 @@ function generatePrescriptionPdf(prescription, pet, clinic) {
       });
 
     // ── FOOTER ──
+    // Footer sits inside the bottom margin: drop it so pdfkit doesn't add blank pages
+    doc.page.margins.bottom = 0;
     const footerY = doc.page.height - 60;
     if (clinic?.vet_email) {
-      doc.fill('#FF8F00').fontSize(9).font('Helvetica-Bold')
-        .text(`Para consultas, responda a este correo: ${clinic.vet_email}`, 50, footerY, { align: 'center', width: doc.page.width - 100 });
+      doc.fill(primaryColor).fontSize(9).font('Helvetica-Bold')
+        .text(`Consultas: ${clinic.vet_email}`, 50, footerY, { align: 'center', width: doc.page.width - 100 });
     }
     doc.fill('#999999').fontSize(8).font('Helvetica')
       .text('Documento electrónico generado por VetCloud', 50, footerY + 14, { align: 'center', width: doc.page.width - 100 });

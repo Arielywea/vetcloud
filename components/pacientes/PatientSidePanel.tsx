@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, useWindowDimensions, TouchableWithoutFeedback } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, useWindowDimensions, TouchableWithoutFeedback, Linking } from 'react-native';
 import { Text, Divider } from 'react-native-paper';
 import { X, Phone, Mail, ChevronRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -132,13 +132,13 @@ export default function PatientSidePanel({ patient, visible, onClose }: PatientS
                 <Text style={[styles.ownerName, { color: colors.text }]}>{patient.tutor_name}</Text>
               )}
               {patient.phone && (
-                <TouchableOpacity style={styles.contactRow} activeOpacity={0.7}>
+                <TouchableOpacity style={styles.contactRow} activeOpacity={0.7} onPress={() => Linking.openURL(`tel:${String(patient.phone).replace(/[^\d+]/g, '')}`)} accessibilityRole="link" accessibilityLabel={`Llamar al ${patient.phone}`}>
                   <Phone size={16} color={colors.primary} />
                   <Text style={[styles.contactText, { color: colors.text }]}>{patient.phone}</Text>
                 </TouchableOpacity>
               )}
               {patient.email && (
-                <TouchableOpacity style={styles.contactRow} activeOpacity={0.7}>
+                <TouchableOpacity style={styles.contactRow} activeOpacity={0.7} onPress={() => Linking.openURL(`mailto:${patient.email}`)} accessibilityRole="link" accessibilityLabel={`Escribir a ${patient.email}`}>
                   <Mail size={16} color={colors.primary} />
                   <Text style={[styles.contactText, { color: colors.text }]} numberOfLines={1}>{patient.email}</Text>
                 </TouchableOpacity>

@@ -4,7 +4,7 @@ import { Text } from 'react-native-paper';
 import { MoreVertical, Eye, Pencil, Trash2, Check } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
-import { TEXT_ON_PRIMARY } from '../../constants/colors';
+import { useRouter } from 'expo-router';
 import { DirectusPet } from '../../services/directus';
 import { isActive } from '../../utils/patientFilters';
 import VAvatar from '../ui/Avatar';
@@ -19,6 +19,7 @@ interface PatientRowProps {
 
 export default function PatientRow({ patient, isSelected, onSelect, onClick, onDelete }: PatientRowProps) {
   const { colors, onPrimaryText } = useTheme();
+  const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
   const active = isActive(patient);
 
@@ -91,7 +92,7 @@ export default function PatientRow({ patient, isSelected, onSelect, onClick, onD
       </View>
 
       <View style={styles.actionsCell}>
-        <TouchableOpacity onPress={() => setShowMenu(!showMenu)} style={styles.menuBtn} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => setShowMenu(!showMenu)} style={styles.menuBtn} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={`Acciones para ${patient.name}`} hitSlop={8}>
           <MoreVertical size={18} color={colors.textSecondary} />
         </TouchableOpacity>
 
@@ -99,11 +100,11 @@ export default function PatientRow({ patient, isSelected, onSelect, onClick, onD
           <>
             <TouchableOpacity style={styles.menuOverlay} onPress={() => setShowMenu(false)} activeOpacity={1} />
             <View style={[styles.menuDropdown, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); onClick(); }} activeOpacity={0.7}>
+              <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); router.push(`/pet/${patient.id}` as any); }} activeOpacity={0.7}>
                 <Eye size={16} color={colors.textSecondary} />
                 <Text style={[styles.menuItemText, { color: colors.text }]}>Ver ficha</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); onClick(); }} activeOpacity={0.7}>
+              <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); router.push({ pathname: '/(drawer)/add-paciente', params: { id: patient.id } } as any); }} activeOpacity={0.7}>
                 <Pencil size={16} color={colors.textSecondary} />
                 <Text style={[styles.menuItemText, { color: colors.text }]}>Editar</Text>
               </TouchableOpacity>
@@ -130,7 +131,6 @@ const styles = StyleSheet.create({
   },
   checkbox: { width: 40, alignItems: 'center', justifyContent: 'center' },
   checkboxBox: { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  checkmark: { color: TEXT_ON_PRIMARY.light.default, fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.bold },
   patientCell: { flex: 2, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, minWidth: 160 },
   patientName: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.semibold },
   cell: { flex: 1, minWidth: 90, paddingHorizontal: SPACING.xs },

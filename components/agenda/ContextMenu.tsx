@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, StyleSheet, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
 import {
   FileText, Stethoscope, Building2, Calendar, CreditCard,
-  Pencil, CalendarClock, XCircle, Trash2, Eye
+  Pencil, CalendarClock, XCircle, Trash2, Eye, LucideIcon,
 } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
@@ -10,8 +10,8 @@ import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 export interface ContextMenuAction {
   key: string;
   label: string;
-  icon: React.ReactNode;
-  color?: string;
+  /** Icon component; colored by the menu (a color on a wrapper View isn't inherited in RN) */
+  icon?: LucideIcon;
   destructive?: boolean;
 }
 
@@ -19,91 +19,71 @@ interface ContextMenuProps {
   visible: boolean;
   x: number;
   y: number;
-  actions: ContextMenuAction[];
+  actions?: ContextMenuAction[];
   onAction: (key: string) => void;
   onClose: () => void;
 }
 
 const DEFAULT_ACTIONS: ContextMenuAction[] = [
-  { key: 'detail', label: 'Ver detalle', icon: <Eye size={14} /> },
-  { key: 'divider0', label: '', icon: null },
-  { key: 'open_chart', label: 'Abrir Ficha Clínica', icon: <FileText size={14} /> },
-  { key: 'register', label: 'Registrar Consulta', icon: <Stethoscope size={14} /> },
-  { key: 'hospitalize', label: 'Hospitalizar', icon: <Building2 size={14} /> },
-  { key: 'followup', label: 'Agendar Control', icon: <Calendar size={14} /> },
-  { key: 'charge', label: 'Cobrar', icon: <CreditCard size={14} /> },
-  { key: 'divider1', label: '', icon: null },
-  { key: 'edit', label: 'Editar', icon: <Pencil size={14} /> },
-  { key: 'reschedule', label: 'Reprogramar', icon: <CalendarClock size={14} /> },
-  { key: 'cancel', label: 'Cancelar Cita', icon: <XCircle size={14} />, destructive: true },
-  { key: 'delete', label: 'Eliminar', icon: <Trash2 size={14} />, destructive: true },
+  { key: 'detail', label: 'Ver detalle', icon: Eye },
+  { key: 'divider0', label: '' },
+  { key: 'open_chart', label: 'Abrir ficha clínica', icon: FileText },
+  { key: 'register', label: 'Registrar consulta', icon: Stethoscope },
+  { key: 'hospitalize', label: 'Hospitalizar', icon: Building2 },
+  { key: 'followup', label: 'Agendar control', icon: Calendar },
+  { key: 'charge', label: 'Cobrar', icon: CreditCard },
+  { key: 'divider1', label: '' },
+  { key: 'edit', label: 'Editar', icon: Pencil },
+  { key: 'reschedule', label: 'Reprogramar', icon: CalendarClock },
+  { key: 'cancel', label: 'Cancelar cita', icon: XCircle, destructive: true },
+  { key: 'delete', label: 'Eliminar', icon: Trash2, destructive: true },
 ];
+
+const ITEM_HEIGHT = 36;
+const MENU_WIDTH = 220;
 
 export default function ContextMenu({ visible, x, y, actions = DEFAULT_ACTIONS, onAction, onClose }: ContextMenuProps) {
   const { colors } = useTheme();
-  const menuRef = useRef<View>(null);
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
   useEffect(() => {
-    if (visible) {
-      const handler = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') onClose();
-      };
-      document?.addEventListener?.('keydown', handler);
-      return () => document?.removeEventListener?.('keydown', handler);
-    }
+    if (!visible || typeof document === 'undefined') return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
   }, [visible, onClose]);
 
   if (!visible) return null;
 
-  const screenWidth = Dimensions.get('window').width;
-  const screenHeight = Dimensions.get('window').height;
-  const menuWidth = 220;
-  const menuHeight = actions.length * 36;
-
-  let posX = x;
-  let posY = y;
-  if (posX + menuWidth > screenWidth) posX = screenWidth - menuWidth - 8;
-  if (posY + menuHeight > screenHeight) posY = screenHeight - menuHeight - 8;
+  // Keep the menu on screen
+  const menuHeight = actions.length * ITEM_HEIGHT;
+  const posX = Math.max(8, Math.min(x, screenWidth - MENU_WIDTH - 8));
+  const posY = Math.max(8, Math.min(y, screenHeight - menuHeight - 8));
 
   return (
     <>
-      <TouchableOpacity style={styles.overlay} onPress={onClose} activeOpacity={1} />
+      <TouchableOpacity style={styles.overlay} onPress={onClose} activeOpacity={1} accessibilityLabel="Cerrar menú" />
       <View
-        ref={menuRef}
-        style={[
-          styles.menu,
-          {
-            left: posX,
-            top: posY,
-            backgroundColor: colors.surface,
-            ...SHADOWS.lg,
-          },
-        ]}
+        accessibilityRole="menu"
+        style={[styles.menu, { left: posX, top: posY, backgroundColor: colors.surface, borderColor: colors.border }, SHADOWS.lg]}
       >
         {actions.map((action) => {
           if (action.key.startsWith('divider')) {
             return <View key={action.key} style={[styles.divider, { backgroundColor: colors.border }]} />;
           }
+          const Icon = action.icon;
+          const color = action.destructive ? colors.error : colors.text;
           return (
             <TouchableOpacity
               key={action.key}
               style={styles.item}
               onPress={() => onAction(action.key)}
               activeOpacity={0.6}
+              accessibilityRole="menuitem"
+              accessibilityLabel={action.label}
             >
-              <View style={styles.itemContent}>
-                <View style={{ color: action.destructive ? colors.error : colors.textSecondary }}>
-                  {action.icon}
-                </View>
-                <Text
-                  style={[
-                    styles.itemLabel,
-                    { color: action.destructive ? colors.error : colors.text },
-                  ]}
-                >
-                  {action.label}
-                </Text>
-              </View>
+              {Icon ? <Icon size={15} color={action.destructive ? colors.error : colors.textSecondary} /> : null}
+              <Text style={[styles.itemLabel, { color }]}>{action.label}</Text>
             </TouchableOpacity>
           );
         })}
@@ -113,34 +93,9 @@ export default function ContextMenu({ visible, x, y, actions = DEFAULT_ACTIONS, 
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 999,
-  },
-  menu: {
-    position: 'absolute',
-    zIndex: 1000,
-    width: 220,
-    borderRadius: RADIUS.md,
-    padding: SPACING.xs,
-  },
-  divider: {
-    height: 1,
-    marginVertical: SPACING.xs,
-    marginHorizontal: SPACING.sm,
-  },
-  item: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs + 2,
-    borderRadius: RADIUS.sm,
-  },
-  itemContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
-  itemLabel: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
+  overlay: { ...StyleSheet.absoluteFillObject, zIndex: 999 },
+  menu: { position: 'absolute', zIndex: 1000, width: MENU_WIDTH, borderRadius: RADIUS.md, borderWidth: 1, padding: SPACING.xs },
+  divider: { height: 1, marginVertical: SPACING.xs, marginHorizontal: SPACING.sm },
+  item: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingHorizontal: SPACING.sm, minHeight: ITEM_HEIGHT, borderRadius: RADIUS.sm },
+  itemLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.medium },
 });

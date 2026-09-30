@@ -9,6 +9,7 @@ import VCard from '../../components/ui/Card';
 import VStatCard from '../../components/ui/StatCard';
 import VRefreshControl from '../../components/ui/VRefreshControl';
 import { api } from '../../services/directus';
+import { useRefreshOn } from '../../hooks/useDirectus';
 import DisplayText from '../../components/ui/DisplayText';
 
 interface DashboardStats {
@@ -35,12 +36,9 @@ export default function ReportesScreen() {
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
   const [recordTypes, setRecordTypes] = useState<RecordTypeData[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       const [stats, weekly, records] = await Promise.all([
         api.stats.dashboard(),
@@ -48,19 +46,23 @@ export default function ReportesScreen() {
         api.stats.recordTypes(),
       ]);
       setDashboardStats(stats);
-      setWeeklyData(weekly);
-      setRecordTypes(records);
-    } catch (error) {
-      console.error('Error loading stats:', error);
+      setWeeklyData(weekly?.days || []);
+      setRecordTypes(records || []);
+      setLoadError(null);
+    } catch (error: any) {
+      setLoadError(error?.message || 'No se pudieron cargar las estadísticas');
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+  useRefreshOn(['appointments', 'clinical_records', 'pets', 'inventory'], loadData);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try { await loadData(); } finally { setRefreshing(false); }
-  }, []);
+  }, [loadData]);
 
   if (loading) {
     return (
@@ -89,6 +91,13 @@ export default function ReportesScreen() {
           Resumen y estadísticas de la clínica
         </Text>
       </View>
+
+      {loadError && (
+        <View accessibilityRole="alert" style={[styles.errorBanner, { borderColor: colors.error, backgroundColor: colors.surface }]}>
+          <Text style={{ color: colors.text, flex: 1 }}>{loadError}</Text>
+          <Text onPress={handleRefresh} accessibilityRole="button" style={{ color: colors.primary, fontWeight: TYPOGRAPHY.weights.semibold }}>Reintentar</Text>
+        </View>
+      )}
 
       <View style={styles.statsGrid}>
         {stats.map(stat => (
@@ -148,6 +157,7 @@ export default function ReportesScreen() {
 }
 
 const styles = StyleSheet.create({
+  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1, marginBottom: SPACING.lg },
   container: { flex: 1 },
   loadingContainer: { alignItems: 'center', justifyContent: 'center' },
   content: { padding: SPACING.xl, paddingBottom: SPACING['4xl'] },

@@ -1,5 +1,5 @@
 import { API_URL } from '../config';
-import { authHeaders } from './auth';
+import { authHeaders, notifyUnauthorized } from './auth';
 
 // ─────────────────────────────────────────────────────────
 // Schema Types
@@ -249,6 +249,7 @@ export interface DirectusLabExam {
   user_id: string;
   pet_id: string;
   exam_name: string;
+  exam_type: string | null;
   pet_name: string;
   species: string;
   breed: string;
@@ -262,6 +263,25 @@ export interface DirectusLabExam {
 }
 // ─────────────────────────────────────────────────────────
 
+// ─── Change notifications ────────────────────────────────
+// Every successful write to /items/<collection> is announced so that screens
+// still mounted in the drawer (lists, dashboard, agenda) refetch instead of going stale.
+type DataChangeListener = (collection: string) => void;
+const dataChangeListeners = new Set<DataChangeListener>();
+
+export function onDataChange(listener: DataChangeListener): () => void {
+  dataChangeListeners.add(listener);
+  return () => { dataChangeListeners.delete(listener); };
+}
+
+function emitDataChange(endpoint: string) {
+  const collection = endpoint.match(/^\/items\/([^/?]+)/)?.[1];
+  if (!collection) return;
+  dataChangeListeners.forEach((listener) => {
+    try { listener(collection); } catch { /* a broken listener must not break the write */ }
+  });
+}
+
 // Turns a failed response into a readable Error using the server's { error } message
 async function apiError(res: Response): Promise<Error> {
   let message = '';
@@ -269,6 +289,7 @@ async function apiError(res: Response): Promise<Error> {
     const text = await res.text();
     try { message = JSON.parse(text)?.error || ''; } catch { message = text.startsWith('<') ? '' : text; }
   } catch { /* ignore */ }
+  if (res.status === 401) notifyUnauthorized();
   if (!message) {
     if (res.status === 401) message = 'Tu sesión expiró. Vuelve a iniciar sesión.';
     else if (res.status >= 500) message = 'Error del servidor. Intenta de nuevo en unos segundos.';
@@ -300,6 +321,7 @@ async function apiPost(endpoint: string, body: any) {
   });
   if (!res.ok) throw await apiError(res);
   const json = await res.json();
+  emitDataChange(endpoint);
   return json.data;
 }
 
@@ -311,12 +333,14 @@ async function apiPatch(endpoint: string, body: any) {
   });
   if (!res.ok) throw await apiError(res);
   const json = await res.json();
+  emitDataChange(endpoint);
   return json.data;
 }
 
 async function apiDelete(endpoint: string) {
   const res = await fetch(`${API_URL}${endpoint}`, { method: 'DELETE', headers: await authHeaders() });
   if (!res.ok) throw await apiError(res);
+  emitDataChange(endpoint);
 }
 
 // ─────────────────────────────────────────────────────────
@@ -434,7 +458,7 @@ export const api = {
     create: (data: any) => apiPost('/items/prescriptions', data),
     update: (id: string, data: any) => apiPatch(`/items/prescriptions/${id}`, data),
     delete: (id: string) => apiDelete(`/items/prescriptions/${id}`),
-    sendEmail: (id: string) => apiPost(`/items/prescriptions/${id}/email`, {}),
+    sendEmail: (id: string, to?: string) => apiPost(`/items/prescriptions/${id}/email`, to ? { to } : {}),
   },
   reminders: {
     list: (params?: { status?: string; type?: string; upcoming?: string }) =>

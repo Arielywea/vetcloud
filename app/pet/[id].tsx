@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Platform, Alert } from 'react-native';
+import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Platform, Linking } from 'react-native';
 import { Text, Button, TextInput, Portal, Modal, Dialog, Divider } from 'react-native-paper';
 
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { usePet, useClinicalRecords, usePrescriptions } from '../../hooks/useDirectus';
 import { ClinicalRecord, Prescription } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -25,13 +25,16 @@ import VitalSignsForm from '../../components/pet/VitalSignsForm';
 import PaymentForm from '../../components/pet/PaymentForm';
 import VoiceNotes from '../../components/VoiceNotes';
 import DynamicIcon from '../../components/ui/DynamicIcon';
+import { useToast } from '../../components/ui/VToast';
 import { authHeaders } from '../../services/auth';
 import { uploadPetPhoto } from '../../services/cloudinary';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function PetDetailScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const { user } = useAuth();
+  const toast = useToast();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { pet, loading } = usePet(id || null);
   const { records, loading: recordsLoading, addRecord, removeRecord } = useClinicalRecords(id || undefined);
@@ -187,9 +190,9 @@ export default function PetDetailScreen() {
   const handleUploadFile = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') { Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galeria para subir archivos.'); return; }
+      if (status !== 'granted') { setErrorDialog('Necesitamos acceso a tu galería para subir archivos.'); return; }
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images, // the uploader recompresses as JPEG: images only
         allowsEditing: false,
         quality: 0.8,
       });
@@ -197,7 +200,7 @@ export default function PetDetailScreen() {
       setUploadingFile(true);
       const url = await uploadPetPhoto(result.assets[0].uri);
       setRecordFiles(prev => [...prev, url]);
-    } catch { Alert.alert('Error', 'No se pudo subir el archivo'); }
+    } catch (e: any) { setErrorDialog(e?.message || 'No se pudo subir el archivo'); }
     finally { setUploadingFile(false); }
   };
 
@@ -207,7 +210,7 @@ export default function PetDetailScreen() {
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8055';
       const headers = await authHeaders();
       const response = await fetch(`${baseUrl}/items/pets/${id}/file-pdf`, { headers });
-      if (!response.ok) throw new Error('Error generating PDF');
+      if (!response.ok) throw new Error('No se pudo generar el PDF');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -241,7 +244,7 @@ export default function PetDetailScreen() {
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8055';
       const headers = await authHeaders();
       const response = await fetch(`${baseUrl}/items/pets/${id}/prescriptions/${rx.id}/pdf`, { headers });
-      if (!response.ok) throw new Error('Error generating PDF');
+      if (!response.ok) throw new Error('No se pudo generar el PDF');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -254,8 +257,11 @@ export default function PetDetailScreen() {
     } catch { setErrorDialog('No se pudo generar el PDF de la receta'); }
   };
   const confirmSendEmail = async () => {
-    if (!emailTarget) return; setSendingEmail(true);
-    try { await sendEmail(emailTarget.id); setShowEmailModal(false); setEmailTarget(null); }
+    if (!emailTarget) return;
+    const to = emailRecipient.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) { setErrorDialog('Ingresa un correo válido para el destinatario'); return; }
+    setSendingEmail(true);
+    try { await sendEmail(emailTarget.id, to); setShowEmailModal(false); setEmailTarget(null); toast.success(`Receta enviada a ${to}`); }
     catch (error: any) { setErrorDialog(error.message || 'No se pudo enviar el correo'); } finally { setSendingEmail(false); }
   };
   const confirmDeleteRecord = async () => {
@@ -268,7 +274,12 @@ export default function PetDetailScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <PetHeader pet={pet} onEdit={() => {}} onCall={() => {}} onEmail={() => {}} />
+      <PetHeader
+        pet={pet}
+        onEdit={() => router.push({ pathname: '/(drawer)/add-paciente', params: { id: pet.id } } as any)}
+        onCall={pet.phone ? () => Linking.openURL(`tel:${String(pet.phone).replace(/[^\d+]/g, '')}`) : undefined}
+        onEmail={pet.email ? () => Linking.openURL(`mailto:${pet.email}`) : undefined}
+      />
       <AlertBanner pet={pet} />
       <ClinicalHistory pet={pet} fieldCount={clinicalFieldCount} />
       {mostRecentRecord && <RecentRecord record={mostRecentRecord} onView={() => setSelectedRecord(mostRecentRecord)} onGenerateRx={() => openRxModal(mostRecentRecord.id)} />}

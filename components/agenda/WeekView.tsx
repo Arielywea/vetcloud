@@ -42,6 +42,8 @@ interface WeekViewProps {
   dragState?: { isDragging: boolean; appointmentId: string | null; currentTargetDay?: number; currentSnapY?: number };
   loading?: boolean;
   currentUserId?: string;
+  /** Measured width of the container (the app sidebar and agenda sidebar take space too) */
+  availableWidth?: number;
 }
 
 function getApptsForDay(appts: EnrichedAppointment[], date: Date): EnrichedAppointment[] {
@@ -77,14 +79,15 @@ export default function WeekView({
   dragState,
   loading,
   currentUserId,
+  availableWidth,
 }: WeekViewProps) {
   const { colors } = useTheme();
   const { width: screenWidth } = useWindowDimensions();
 
   const colWidth = useMemo(() => {
-    const availW = screenWidth - 52;
-    return Math.floor(availW / 7);
-  }, [screenWidth]);
+    const availW = (availableWidth ?? screenWidth) - 52; // 52 = time column
+    return Math.max(56, Math.floor(availW / 7));
+  }, [availableWidth, screenWidth]);
 
   if (loading) {
     return (

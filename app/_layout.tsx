@@ -8,6 +8,7 @@ import React from 'react';
 import { AuthProvider, useAuth } from '../hooks/useAuth';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { ToastProvider } from '../components/ui/VToast';
+import { ConfirmProvider } from '../components/ui/ConfirmDialog';
 import { APP_COLORS } from '../constants/colors';
 import LoginScreen from './auth/login';
 import { installWebFonts } from '../utils/webFonts';
@@ -99,10 +100,12 @@ export default function RootLayout() {
           <ThemeProvider>
             <ThemedPaperProvider>
               <ToastProvider>
-                <RootErrorBoundary>
-                  <AppContent />
-                </RootErrorBoundary>
-                <StatusBar style="auto" />
+                <ConfirmProvider>
+                  <RootErrorBoundary>
+                    <AppContent />
+                  </RootErrorBoundary>
+                  <ThemedStatusBar />
+                </ConfirmProvider>
               </ToastProvider>
             </ThemedPaperProvider>
           </ThemeProvider>
@@ -110,6 +113,12 @@ export default function RootLayout() {
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );
+}
+
+// Follows the app theme (Saber/Alter), not the OS setting
+function ThemedStatusBar() {
+  const { isDark } = useTheme();
+  return <StatusBar style={isDark ? 'light' : 'dark'} />;
 }
 
 function ThemedPaperProvider({ children }: { children: React.ReactNode }) {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Alert, useWindowDimensions } from 'react-native';
 import { Text, TextInput, Button, Menu, Dialog, Portal } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -12,6 +12,10 @@ import { TEXT_ON_PRIMARY } from '../../constants/colors';
 import VoiceNotes from '../../components/VoiceNotes';
 import { DOG_BREEDS, CAT_BREEDS, filterBreeds } from '../../constants/breeds';
 import DisplayText from '../../components/ui/DisplayText';
+import { useToast } from '../../components/ui/VToast';
+import { parseNumberInRange } from '../../utils/parseNumber';
+import { parseVitals } from '../../utils/vitals';
+import { api } from '../../services/directus';
 
 const TEMPERAMENT_OPTIONS = ['Dócil', 'Inquieto', 'Agresivo', 'Nervioso'];
 const HABITAT_OPTIONS = ['Casa', 'Depto', 'Finca', 'Exteriores'];
@@ -28,9 +32,12 @@ const STEP_LABELS = ['Propietario', 'Información básica', 'Información médic
 
 export default function AddPacienteScreen() {
   const router = useRouter();
-  const { prefillName } = useLocalSearchParams<{ prefillName?: string }>();
-  const { addPet } = usePets();
+  const { prefillName, id: editId } = useLocalSearchParams<{ prefillName?: string; id?: string }>();
+  const isEdit = !!editId;
+  const { addPet, updatePet } = usePets();
   const { colors, onPrimaryText } = useTheme();
+  const toast = useToast();
+  const [loadingPet, setLoadingPet] = useState(isEdit);
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
 
@@ -55,6 +62,7 @@ export default function AddPacienteScreen() {
   const [weight, setWeight] = useState('');
   const [color, setColor] = useState('');
   const [reproductiveStatus, setReproductiveStatus] = useState('intacto');
+  const [originalPhoto, setOriginalPhoto] = useState<string | null>(null);
   const [statusMenuVisible, setStatusMenuVisible] = useState(false);
   const [petStatus] = useState<'alive' | 'deceased'>('alive');
 
@@ -115,6 +123,54 @@ export default function AddPacienteScreen() {
   // Hallazgos examen físico
   const [hallazgosExamenFisico, setHallazgosExamenFisico] = useState('');
 
+  // Edit mode: load the patient and fill every step of the wizard
+  useEffect(() => {
+    if (!editId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const p: any = await api.pets.get(editId);
+        if (cancelled || !p) return;
+        const str = (v: any) => (v === null || v === undefined ? '' : String(v));
+        setPhoto(p.photo || null);
+        setOriginalPhoto(p.photo || null);
+        setName(str(p.name)); setSpecies(p.species === 'cat' ? 'cat' : 'dog'); setSex(p.sex || null);
+        // Keep an unset status unset: saving must not write a value nobody chose
+        setBreed(str(p.breed)); setColor(str(p.color)); setReproductiveStatus(p.reproductive_status || '');
+        if (p.birth_date) {
+          const [y, m, d] = String(p.birth_date).slice(0, 10).split('-');
+          setBirthDate(`${d}/${m}/${y}`);
+        }
+        setWeight(p.weight != null ? String(Number(p.weight)).replace('.', ',') : '');
+        setIdNumber(str(p.id_number)); setTutorRut(str(p.tutor_rut));
+        setTemperament(Array.isArray(p.temperament) ? p.temperament : []);
+        setTutorName(str(p.tutor_name)); setPhone(str(p.phone)); setEmail(str(p.email)); setAddress(str(p.address));
+        setMotivoConsulta(str(p.motivo_consulta)); setAnamnesis(str(p.anamnesis));
+        setHabitat(str(p.habitat)); setEntorno(str(p.entorno)); setAreneros(str(p.areneros));
+        setFood(str(p.food)); setFoodFrequency(str(p.food_frequency)); setWaterConsumption(str(p.water_consumption));
+        setUrination(str(p.urination)); setLivesWithOtherAnimals(str(p.lives_with_other_animals));
+        setVaccines(str(p.vaccines)); setDeworming(str(p.deworming)); setFleaTreatment(str(p.flea_treatment));
+        setLastHeat(str(p.last_heat)); setSurgeries(str(p.surgeries)); setOtherDiseases(str(p.other_diseases));
+        setMedications(str(p.medications)); setPreDiagnostico(str(p.pre_diagnostico));
+        setHallazgosExamenFisico(str(p.hallazgos_examen_fisico));
+        const base: string[] = Array.isArray(p.base_diseases) ? p.base_diseases : [];
+        setBaseDiseases(base.filter((d) => BASE_DISEASE_OPTIONS.includes(d)));
+        setBaseDiseasesOther(base.filter((d) => !BASE_DISEASE_OPTIONS.includes(d)).join(', '));
+        const vs = p.vital_signs || {};
+        const num = (v: any) => (v === null || v === undefined ? '' : String(v).replace('.', ','));
+        setVitalTemp(num(vs.temperature)); setVitalFC(num(vs.heart_rate)); setVitalFR(num(vs.respiratory_rate));
+        setVitalPA(str(vs.blood_pressure)); setVitalSpO2(num(vs.spo2)); setVitalMucosas(str(vs.mucous_membranes));
+        setVitalHidratacion(str(vs.hydration)); setVitalCondicionCorporal(str(vs.body_condition));
+      } catch (e: any) {
+        setErrorMsg(e?.message || 'No se pudo cargar el paciente');
+      } finally {
+        if (!cancelled) setLoadingPet(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId]);
+
   const breedSuggestions = useMemo(() => {
     const breeds = species === 'dog' ? DOG_BREEDS : CAT_BREEDS;
     return filterBreeds(breeds, breed);
@@ -157,25 +213,39 @@ export default function AddPacienteScreen() {
       }
       isoDate = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
     }
-    const parsedWeight = weight.trim() ? parseFloat(weight.replace(',', '.')) : null;
-    if (parsedWeight !== null && (!isFinite(parsedWeight) || parsedWeight < 0)) {
-      setErrorMsg('El peso debe ser un número (ej: 12,5).');
+    const parsedWeight = parseNumberInRange(weight, 0.05, 150);
+    if (parsedWeight !== null && Number.isNaN(parsedWeight)) {
+      setErrorMsg('El peso debe estar entre 0,05 y 150 kg (ej: 12,5).');
       setCurrentStep(2);
+      return;
+    }
+    const { values: vitals, error: vitalsError } = parseVitals({
+      temperature: vitalTemp, heart_rate: vitalFC, respiratory_rate: vitalFR, spo2: vitalSpO2,
+    });
+    if (vitalsError) {
+      setErrorMsg(vitalsError);
+      setCurrentStep(3);
       return;
     }
     setSaving(true);
     setErrorMsg(null);
     try {
-      let photoUrl = null;
-      if (photo) {
+      // Keep an already-uploaded photo; only local picks need uploading
+      let photoUrl: string | null = photo && /^https?:\/\//.test(photo) ? photo : null;
+      if (photo && !photoUrl) {
         try {
           photoUrl = await uploadPetPhoto(photo);
         } catch (e: any) {
-          console.warn('Photo upload failed, saving without photo:', e.message);
+          // When editing, a failed upload keeps the previous photo instead of erasing it
+          photoUrl = isEdit ? originalPhoto : null;
+          toast.error(isEdit
+            ? 'No se pudo subir la foto nueva; se mantuvo la anterior.'
+            : 'No se pudo subir la foto; el paciente se guardó sin ella.');
         }
       }
+      const hasVitals = Object.keys(vitals).length > 0 || vitalPA.trim() || vitalMucosas.trim() || vitalHidratacion.trim() || vitalCondicionCorporal.trim();
 
-      await addPet({
+      const payload: any = {
         name: name.trim(),
         species,
         breed: breed.trim(),
@@ -185,7 +255,7 @@ export default function AddPacienteScreen() {
         photo: photoUrl,
         allergies: [],
         notes: '',
-        reproductive_status: reproductiveStatus,
+        reproductive_status: reproductiveStatus || null,
         status: petStatus,
         motivo_consulta: motivoConsulta.trim() || null,
         anamnesis: anamnesis.trim() || null,
@@ -216,21 +286,29 @@ export default function AddPacienteScreen() {
         medications: medications.trim() || null,
         hallazgos_examen_fisico: hallazgosExamenFisico.trim() || null,
         pre_diagnostico: preDiagnostico.trim() || null,
-        base_diseases: [...baseDiseases, ...(baseDiseasesOther.trim() ? [baseDiseasesOther.trim()] : [])],
-        vital_signs: (vitalTemp || vitalFC || vitalFR || vitalPA || vitalSpO2 || vitalMucosas || vitalHidratacion || vitalCondicionCorporal) ? {
-          temperature: vitalTemp ? parseFloat(vitalTemp) : undefined,
-          heart_rate: vitalFC ? parseInt(vitalFC) : undefined,
-          respiratory_rate: vitalFR ? parseInt(vitalFR) : undefined,
+        // "Other" is typed comma-separated; store one entry per disease so edits round-trip
+        base_diseases: [...baseDiseases, ...baseDiseasesOther.split(',').map((s) => s.trim()).filter(Boolean)],
+        vital_signs: hasVitals ? {
+          ...vitals,
           blood_pressure: vitalPA.trim() || undefined,
-          spo2: vitalSpO2 ? parseInt(vitalSpO2) : undefined,
           mucous_membranes: vitalMucosas.trim() || undefined,
           hydration: vitalHidratacion.trim() || undefined,
           body_condition: vitalCondicionCorporal.trim() || undefined,
         } : null,
-      });
-      router.back();
+      };
+      if (isEdit) {
+        // Fields the wizard doesn't edit must not be wiped
+        delete payload.allergies; delete payload.notes; delete payload.status; delete payload.clinic_location; delete payload.habitat_other;
+        await updatePet(editId as string, payload);
+        toast.success('Paciente actualizado');
+        router.replace(`/pet/${editId}` as any);
+      } else {
+        const created: any = await addPet(payload);
+        toast.success('Paciente registrado');
+        if (created?.id) router.replace(`/pet/${created.id}` as any);
+        else router.back();
+      }
     } catch (error: any) {
-      console.error('Save patient error:', error);
       setErrorMsg(error.message || 'No se pudo guardar el paciente');
     } finally {
       setSaving(false);
@@ -245,11 +323,11 @@ export default function AddPacienteScreen() {
 
   const handleNext = () => {
     if (currentStep === 1 && !tutorName.trim()) {
-      Alert.alert('Campo requerido', 'El nombre del propietario es obligatorio');
+      setErrorMsg('El nombre del propietario es obligatorio');
       return;
     }
     if (currentStep === 2 && !name.trim()) {
-      Alert.alert('Campo requerido', 'El nombre del paciente es obligatorio');
+      setErrorMsg('El nombre del paciente es obligatorio');
       return;
     }
     if (currentStep < 4) setCurrentStep(currentStep + 1);
@@ -272,9 +350,18 @@ export default function AddPacienteScreen() {
         const isCurrent = step === currentStep;
         const isLast = idx === STEP_LABELS.length - 1;
 
+        // Going back is always allowed; when editing, any step can be opened directly
+        const canJump = step !== currentStep && (isEdit || step < currentStep);
         return (
           <React.Fragment key={step}>
-            <View style={styles.progressStep}>
+            <TouchableOpacity
+              style={styles.progressStep}
+              disabled={!canJump}
+              onPress={() => setCurrentStep(step)}
+              accessibilityRole="button"
+              accessibilityLabel={`Paso ${step}: ${label}`}
+              accessibilityState={{ selected: isCurrent, disabled: !canJump }}
+            >
               <View style={[
                 styles.progressCircle,
                 {
@@ -297,7 +384,7 @@ export default function AddPacienteScreen() {
               ]}>
                 {label}
               </Text>
-            </View>
+            </TouchableOpacity>
             {!isLast && (
               <View style={[
                 styles.progressLine,
@@ -921,13 +1008,17 @@ export default function AddPacienteScreen() {
             <Text style={[styles.breadcrumbLink, { color: colors.primary }]}>Pacientes</Text>
           </TouchableOpacity>
           <Text style={[styles.breadcrumbSeparator, { color: colors.textSecondary }]}>›</Text>
-          <Text style={[styles.breadcrumbCurrent, { color: colors.text }]}>Nuevo Paciente</Text>
+          <Text style={[styles.breadcrumbCurrent, { color: colors.text }]}>{isEdit ? 'Editar paciente' : 'Nuevo paciente'}</Text>
         </View>
         <View style={[styles.headerRow, isMobile && styles.headerRowMobile]}>
           <View style={styles.headerLeft}>
-            <DisplayText style={[styles.title, { color: colors.text }, isMobile && styles.titleMobile]}>Nuevo Paciente</DisplayText>
+            <DisplayText style={[styles.title, { color: colors.text }, isMobile && styles.titleMobile]}>
+              {isEdit ? (name ? `Editar a ${name}` : 'Editar paciente') : 'Nuevo paciente'}
+            </DisplayText>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Completa la información para registrar un nuevo paciente en el sistema.
+              {isEdit
+                ? (loadingPet ? 'Cargando datos del paciente…' : 'Puedes saltar entre pasos; los cambios se guardan al final.')
+                : 'Completa la información para registrar un nuevo paciente en el sistema.'}
             </Text>
           </View>
           <View style={[styles.headerRight, isMobile && styles.headerRightMobile]}>
@@ -967,7 +1058,7 @@ export default function AddPacienteScreen() {
             ? <Check size={size} color={onPrimaryText.default} />
             : <ChevronRight size={size} color={onPrimaryText.default} />}
         >
-          {currentStep === 4 ? 'Guardar paciente' : 'Siguiente'}
+          {currentStep === 4 ? (isEdit ? 'Guardar cambios' : 'Guardar paciente') : 'Siguiente'}
         </Button>
       </View>
 

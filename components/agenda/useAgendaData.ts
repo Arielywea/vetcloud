@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Appointment, api } from '../../services/directus';
 import { toLocalDateKey } from '../../utils/date';
+import { useRefreshOn } from '../../hooks/useDirectus';
 
 interface EnrichedAppointment extends Appointment {
   petPhoto: string | null;
@@ -28,30 +29,18 @@ export default function useAgendaData({ selectedDate, searchQuery, filters }: Us
   const [rawAppointments, setRawAppointments] = useState<Appointment[]>([]);
   const [pets, setPets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (silent: boolean = false) => {
+    if (!silent) setLoading(true);
+    setError(null);
     try {
-      let appts: Appointment[] = [];
-      let petsList: any[] = [];
-      try {
-        const apptsRes = await api.appointments.list({ sort: 'start_time' });
-        appts = Array.isArray(apptsRes) ? apptsRes : apptsRes?.data || [];
-      } catch (e) {
-        console.error('Failed to fetch appointments:', e);
-      }
-      try {
-        const petsRes = await api.pets.list();
-        petsList = Array.isArray(petsRes) ? petsRes : petsRes?.data || [];
-      } catch (e) {
-        console.error('Failed to fetch pets:', e);
-      }
-      setRawAppointments(appts);
-      setPets(petsList);
-    } catch (err) {
-      console.error('Failed to fetch agenda data:', err);
-      setRawAppointments([]);
-      setPets([]);
+      // Both are needed; a failure must be visible, not look like an empty agenda
+      const [appts, petsList] = await Promise.all([api.appointments.list(), api.pets.list()]);
+      setRawAppointments(Array.isArray(appts) ? appts : []);
+      setPets(Array.isArray(petsList) ? petsList : []);
+    } catch (err: any) {
+      setError(err?.message || 'No se pudo cargar la agenda');
     } finally {
       setLoading(false);
     }
@@ -60,36 +49,18 @@ export default function useAgendaData({ selectedDate, searchQuery, filters }: Us
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+  useRefreshOn(['appointments', 'pets'], fetchData);
 
-  const petMap = useMemo(() => {
-    const map = new Map<string, any>();
-    pets.forEach((pet: any) => {
-      map.set(pet.id, pet);
-      if (pet.name) map.set(pet.name.toLowerCase(), pet);
-    });
-    return map;
-  }, [pets]);
+  const petMap = useMemo(() => new Map<string, any>(pets.map((pet: any) => [pet.id, pet])), [pets]);
 
+  // Only an explicit pet_id links an appointment to a chart. Name matching
+  // ("Max" ~ "Maximus", two "Luna") opened the wrong patient's record.
   const enriched = useMemo((): EnrichedAppointment[] => {
     return rawAppointments.map((appt) => {
-      let pet = null;
-      if (appt.pet_id) {
-        pet = petMap.get(appt.pet_id);
-      }
-      if (!pet && appt.patient_name) {
-        const nameKey = appt.patient_name.toLowerCase().trim();
-        pet = petMap.get(nameKey);
-        if (!pet) {
-          const allPets = Array.from(petMap.values());
-          pet = allPets.find((p: any) => {
-            const petName = (p.name || '').toLowerCase().trim();
-            return petName && (petName.includes(nameKey) || nameKey.includes(petName));
-          }) || null;
-        }
-      }
+      const pet = appt.pet_id ? petMap.get(appt.pet_id) || null : null;
       return {
         ...appt,
-        pet_id: pet?.id || appt.pet_id,
+        pet_id: appt.pet_id,
         petPhoto: pet?.photo || null,
         petSpecies: pet?.species || '',
         petBreed: pet?.breed || '',
@@ -191,5 +162,11 @@ export default function useAgendaData({ selectedDate, searchQuery, filters }: Us
     };
   }, [enriched, dateKey]);
 
-  return { appointments, loading, summary, refetch: fetchData };
+  // Distinct veterinarians for the sidebar filter (was always an empty list)
+  const veterinarians = useMemo(
+    () => Array.from(new Set(rawAppointments.map((a: any) => (a.veterinarian || '').trim()).filter(Boolean))).sort(),
+    [rawAppointments],
+  );
+
+  return { appointments, allAppointments: enriched, loading, error, summary, veterinarians, refetch: fetchData };
 }

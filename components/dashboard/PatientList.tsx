@@ -19,9 +19,10 @@ interface Patient {
 interface PatientListProps {
   patients?: Patient[];
   onViewAll?: () => void;
+  onPatientPress?: (id: string) => void;
 }
 
-export default function PatientList({ patients = [], onViewAll }: PatientListProps) {
+export default function PatientList({ patients = [], onViewAll, onPatientPress }: PatientListProps) {
   const router = useRouter();
   const { colors } = useTheme();
 
@@ -41,8 +42,8 @@ export default function PatientList({ patients = [], onViewAll }: PatientListPro
           <VetCloudIcon name="pacientes" size={18} color={colors.accent} />
           <Text style={[styles.headerTitle, { color: colors.text }]}>Pacientes Recientes</Text>
         </View>
-        <TouchableOpacity onPress={onViewAll} activeOpacity={0.7}>
-          <Text style={[styles.viewAll, { color: colors.primary }]}>Ver todos →</Text>
+        <TouchableOpacity onPress={onViewAll} activeOpacity={0.7} accessibilityRole="link" hitSlop={8}>
+          <Text style={[styles.viewAll, { color: colors.primary }]}>Ver todos</Text>
         </TouchableOpacity>
       </View>
 
@@ -52,8 +53,13 @@ export default function PatientList({ patients = [], onViewAll }: PatientListPro
         </View>
       ) : (
         patients.map((patient, idx) => (
-          <View
+          <TouchableOpacity
             key={patient.id}
+            onPress={() => onPatientPress?.(patient.id)}
+            disabled={!onPatientPress}
+            activeOpacity={0.7}
+            accessibilityRole="link"
+            accessibilityLabel={`Abrir ficha de ${patient.name}`}
             style={[
               styles.patientRow,
               idx < patients.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
@@ -68,8 +74,8 @@ export default function PatientList({ patients = [], onViewAll }: PatientListPro
                 {patient.species} · {patient.breed}
               </Text>
             </View>
-            <Text style={[styles.patientDate, { color: colors.textLight }]} numberOfLines={1}>{patient.lastVisit}</Text>
-          </View>
+            <Text style={[styles.patientDate, { color: colors.textSecondary }]} numberOfLines={1}>{patient.lastVisit}</Text>
+          </TouchableOpacity>
         ))
       )}
     </View>

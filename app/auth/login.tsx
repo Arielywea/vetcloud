@@ -9,6 +9,7 @@ import DisplayText from '../../components/ui/DisplayText';
 import BeagleLogo from '../../components/BeagleLogo';
 import VInput from '../../components/ui/Input';
 import VButton from '../../components/ui/Button';
+import { passwordPolicyError, PASSWORD_HINT } from '../../utils/password';
 
 export default function LoginScreen() {
   const { login, register } = useAuth();
@@ -42,8 +43,9 @@ export default function LoginScreen() {
       return;
     }
     if (regUsername.trim().length < 3) { setError('El usuario debe tener al menos 3 caracteres'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail.trim())) { setError('Formato de correo invalido'); return; }
-    if (regPassword.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail.trim())) { setError('Formato de correo inválido'); return; }
+    const policyError = passwordPolicyError(regPassword);
+    if (policyError) { setError(policyError); return; }
 
     setLoading(true); setError('');
     try {
@@ -80,7 +82,7 @@ export default function LoginScreen() {
           <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.lg]}>
             <VInput label="Usuario *" placeholder="mi.usuario" value={regUsername} onChangeText={setRegUsername} leftIcon={<User size={18} color={colors.primary} />} autoCapitalize="none" />
             <VInput label="Correo electrónico *" placeholder="correo@ejemplo.com" value={regEmail} onChangeText={setRegEmail} leftIcon={<Mail size={18} color={colors.primary} />} keyboardType="email-address" autoCapitalize="none" />
-            <VInput label="Contraseña *" placeholder="Mínimo 6 caracteres" value={regPassword} onChangeText={setRegPassword} secureTextEntry={!showPassword} leftIcon={<Lock size={18} color={colors.primary} />}
+            <VInput label="Contraseña *" hint={PASSWORD_HINT} value={regPassword} onChangeText={setRegPassword} secureTextEntry={!showPassword} leftIcon={<Lock size={18} color={colors.primary} />}
               rightIcon={<View style={{ padding: 4 }}>{showPassword ? <EyeOff size={18} color={colors.textSecondary} onPress={() => setShowPassword(false)} /> : <Eye size={18} color={colors.textSecondary} onPress={() => setShowPassword(true)} />}</View>} />
             <VInput label="Nombre de la clínica (opcional)" placeholder="Mi Clínica Veterinaria" value={regOrgName} onChangeText={setRegOrgName} leftIcon={<Building size={18} color={colors.primary} />} />
 

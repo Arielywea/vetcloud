@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   api,
+  onDataChange,
   DirectusDisease,
   DirectusPet,
   DirectusMedicalRecord,
@@ -17,6 +18,22 @@ import {
 } from '../services/directus';
 
 // ─────────────────────────────────────────────────────────
+// Refetch (silently) when another screen writes to one of these collections
+// ─────────────────────────────────────────────────────────
+
+export function useRefreshOn(collections: string[], refresh: (silent: boolean) => unknown) {
+  const refreshRef = useRef(refresh);
+  refreshRef.current = refresh;
+  const key = collections.join(',');
+  useEffect(() => {
+    const watched = key.split(',');
+    return onDataChange((collection) => {
+      if (watched.includes(collection)) refreshRef.current(true);
+    });
+  }, [key]);
+}
+
+// ─────────────────────────────────────────────────────────
 // Hook: Diseases
 // ─────────────────────────────────────────────────────────
 
@@ -25,8 +42,8 @@ export function useDiseases(species?: 'dog' | 'cat' | 'all') {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchDiseases = useCallback(async () => {
-    setLoading(true);
+  const fetchDiseases = useCallback(async (silent: boolean = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const result = await api.diseases.list({ species });
@@ -42,6 +59,7 @@ export function useDiseases(species?: 'dog' | 'cat' | 'all') {
   useEffect(() => {
     fetchDiseases();
   }, [fetchDiseases]);
+  useRefreshOn(['diseases'], fetchDiseases);
 
   return { diseases, loading, error, refresh: fetchDiseases };
 }
@@ -55,8 +73,8 @@ export function useMedications(especialidad?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchMedications = useCallback(async () => {
-    setLoading(true);
+  const fetchMedications = useCallback(async (silent: boolean = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const params: any = {};
@@ -76,6 +94,7 @@ export function useMedications(especialidad?: string) {
   useEffect(() => {
     fetchMedications();
   }, [fetchMedications]);
+  useRefreshOn(['medications'], fetchMedications);
 
   return { medications, loading, error, refresh: fetchMedications };
 }
@@ -89,8 +108,8 @@ export function useSurgeries(search?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSurgeries = useCallback(async () => {
-    setLoading(true);
+  const fetchSurgeries = useCallback(async (silent: boolean = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const params: any = {};
@@ -121,9 +140,9 @@ export function useDisease(id: string | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchDisease = useCallback(async () => {
+  const fetchDisease = useCallback(async (silent: boolean = false) => {
     if (!id) { setLoading(false); return; }
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const result = await api.diseases.get(id);
       setDisease(result);
@@ -137,6 +156,7 @@ export function useDisease(id: string | null) {
   useEffect(() => {
     fetchDisease();
   }, [fetchDisease]);
+  useRefreshOn(['diseases'], fetchDisease);
 
   const updateDisease = async (data: Partial<DirectusDisease>) => {
     if (!id) return;
@@ -162,8 +182,8 @@ export function usePets() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPets = useCallback(async () => {
-    setLoading(true);
+  const fetchPets = useCallback(async (silent: boolean = false) => {
+    if (!silent) setLoading(true);
     try {
       const result = await api.pets.list();
       setPets(result as DirectusPet[]);
@@ -177,22 +197,20 @@ export function usePets() {
   useEffect(() => {
     fetchPets();
   }, [fetchPets]);
+  useRefreshOn(['pets', 'clinical_records'], fetchPets);
 
   const addPet = async (pet: Omit<DirectusPet, 'id' | 'created_at' | 'updated_at' | 'last_visit' | 'organization_id'>) => {
     const result = await api.pets.create(pet);
-    await fetchPets();
     return result;
   };
 
   const updatePet = async (id: string, data: Partial<DirectusPet>) => {
     const result = await api.pets.update(id, data);
-    await fetchPets();
     return result;
   };
 
   const removePet = async (id: string) => {
     await api.pets.delete(id);
-    await fetchPets();
   };
 
   return { pets, loading, error, addPet, updatePet, removePet, refresh: fetchPets };
@@ -207,9 +225,9 @@ export function usePet(id: string | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPet = useCallback(async () => {
+  const fetchPet = useCallback(async (silent: boolean = false) => {
     if (!id) { setLoading(false); return; }
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const result = await api.pets.get(id);
       setPet(result);
@@ -223,6 +241,7 @@ export function usePet(id: string | null) {
   useEffect(() => {
     fetchPet();
   }, [fetchPet]);
+  useRefreshOn(['pets'], fetchPet);
 
   const updatePet = async (data: Partial<DirectusPet>) => {
     if (!id) return;
@@ -243,8 +262,8 @@ export function useMedicalRecords(petId?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRecords = useCallback(async () => {
-    setLoading(true);
+  const fetchRecords = useCallback(async (silent: boolean = false) => {
+    if (!silent) setLoading(true);
     try {
       const result = await api.medicalRecords.list(petId);
       setRecords(result as DirectusMedicalRecord[]);
@@ -258,10 +277,10 @@ export function useMedicalRecords(petId?: string) {
   useEffect(() => {
     fetchRecords();
   }, [fetchRecords]);
+  useRefreshOn(['medical_records'], fetchRecords);
 
   const addRecord = async (record: Omit<DirectusMedicalRecord, 'id' | 'created_at'>) => {
     const result = await api.medicalRecords.create(record);
-    await fetchRecords();
     return result;
   };
 
@@ -277,8 +296,8 @@ export function useNotes() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchNotes = useCallback(async () => {
-    setLoading(true);
+  const fetchNotes = useCallback(async (silent: boolean = false) => {
+    if (!silent) setLoading(true);
     try {
       const result = await api.notes.list();
       setNotes(result as DirectusNote[]);
@@ -292,22 +311,20 @@ export function useNotes() {
   useEffect(() => {
     fetchNotes();
   }, [fetchNotes]);
+  useRefreshOn(['personal_notes'], fetchNotes);
 
   const addNote = async (note: Omit<DirectusNote, 'id' | 'created_at' | 'updated_at'>) => {
     const result = await api.notes.create(note);
-    await fetchNotes();
     return result;
   };
 
   const updateNote = async (id: string, data: Partial<DirectusNote>) => {
     const result = await api.notes.update(id, data);
-    await fetchNotes();
     return result;
   };
 
   const removeNote = async (id: string) => {
     await api.notes.delete(id);
-    await fetchNotes();
   };
 
   return { notes, loading, error, addNote, updateNote, removeNote, refresh: fetchNotes };
@@ -321,8 +338,8 @@ export function useFavorites() {
   const [favorites, setFavorites] = useState<DirectusFavorite[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchFavorites = useCallback(async () => {
-    setLoading(true);
+  const fetchFavorites = useCallback(async (silent: boolean = false) => {
+    if (!silent) setLoading(true);
     try {
       const result = await api.favorites.list();
       setFavorites(result as DirectusFavorite[]);
@@ -336,6 +353,7 @@ export function useFavorites() {
   useEffect(() => {
     fetchFavorites();
   }, [fetchFavorites]);
+  useRefreshOn(['favorites'], fetchFavorites);
 
   const favoriteIds = new Set(favorites.map(f => {
     const id = typeof f.disease_id === 'string' ? f.disease_id : f.disease_id?.id;
@@ -360,7 +378,6 @@ export function useFavorites() {
         added_at: new Date().toISOString(),
       });
     }
-    await fetchFavorites();
   };
 
   return { favorites, favoriteIds, isFavorite, toggleFavorite, loading, refresh: fetchFavorites };
@@ -375,8 +392,8 @@ export function useAppointments(startDate?: string, endDate?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAppointments = useCallback(async () => {
-    setLoading(true);
+  const fetchAppointments = useCallback(async (silent: boolean = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const params: { start?: string; end?: string } = {};
@@ -394,22 +411,20 @@ export function useAppointments(startDate?: string, endDate?: string) {
   useEffect(() => {
     fetchAppointments();
   }, [fetchAppointments]);
+  useRefreshOn(['appointments'], fetchAppointments);
 
   const addAppointment = async (appt: Omit<Appointment, 'id' | 'user_id' | 'created_at'>) => {
     const result = await api.appointments.create(appt);
-    await fetchAppointments();
     return result;
   };
 
   const updateAppointment = async (id: string, data: Partial<Appointment>) => {
     const result = await api.appointments.update(id, data);
-    await fetchAppointments();
     return result;
   };
 
   const removeAppointment = async (id: string) => {
     await api.appointments.delete(id);
-    await fetchAppointments();
   };
 
   return { appointments, loading, error, addAppointment, updateAppointment, removeAppointment, refresh: fetchAppointments };
@@ -424,8 +439,8 @@ export function useClinicalRecords(petId?: string, recordType?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRecords = useCallback(async () => {
-    setLoading(true);
+  const fetchRecords = useCallback(async (silent: boolean = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const result = await api.clinicalRecords.list(petId, recordType);
@@ -440,22 +455,20 @@ export function useClinicalRecords(petId?: string, recordType?: string) {
   useEffect(() => {
     fetchRecords();
   }, [fetchRecords]);
+  useRefreshOn(['clinical_records'], fetchRecords);
 
   const addRecord = async (record: Omit<ClinicalRecord, 'id' | 'user_id' | 'created_at'>) => {
     const result = await api.clinicalRecords.create(record);
-    await fetchRecords();
     return result;
   };
 
   const updateRecord = async (id: string, data: Partial<ClinicalRecord>) => {
     const result = await api.clinicalRecords.update(id, data);
-    await fetchRecords();
     return result;
   };
 
   const removeRecord = async (id: string) => {
     await api.clinicalRecords.delete(id);
-    await fetchRecords();
   };
 
   return { records, loading, error, addRecord, updateRecord, removeRecord, refresh: fetchRecords };
@@ -470,8 +483,8 @@ export function useHospitalizations(status?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchHospitalizations = useCallback(async () => {
-    setLoading(true);
+  const fetchHospitalizations = useCallback(async (silent: boolean = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const params: { status?: string } = {};
@@ -488,16 +501,15 @@ export function useHospitalizations(status?: string) {
   useEffect(() => {
     fetchHospitalizations();
   }, [fetchHospitalizations]);
+  useRefreshOn(['hospitalizations'], fetchHospitalizations);
 
   const addHospitalization = async (data: Omit<Hospitalization, 'id' | 'created_at' | 'pet_name' | 'species' | 'breed'>) => {
     const result = await api.hospitalizations.create(data);
-    await fetchHospitalizations();
     return result;
   };
 
   const updateHospitalization = async (id: string, data: Partial<Hospitalization>) => {
     const result = await api.hospitalizations.update(id, data);
-    await fetchHospitalizations();
     return result;
   };
 
@@ -506,13 +518,11 @@ export function useHospitalizations(status?: string) {
       status: 'discharged',
       discharge_date: new Date().toISOString(),
     });
-    await fetchHospitalizations();
     return result;
   };
 
   const removeHospitalization = async (id: string) => {
     await api.hospitalizations.delete(id);
-    await fetchHospitalizations();
   };
 
   return { hospitalizations, loading, error, addHospitalization, updateHospitalization, discharge, removeHospitalization, refresh: fetchHospitalizations };
@@ -527,8 +537,8 @@ export function useInventory() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchItems = useCallback(async () => {
-    setLoading(true);
+  const fetchItems = useCallback(async (silent: boolean = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const result = await api.inventory.list();
@@ -543,24 +553,22 @@ export function useInventory() {
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
+  useRefreshOn(['inventory'], fetchItems);
 
   const lowStockItems = items.filter(i => i.current_stock <= i.min_stock);
 
   const addItem = async (item: Omit<InventoryItem, 'id' | 'user_id' | 'created_at'>) => {
     const result = await api.inventory.create(item);
-    await fetchItems();
     return result;
   };
 
   const updateItem = async (id: string, data: Partial<InventoryItem>) => {
     const result = await api.inventory.update(id, data);
-    await fetchItems();
     return result;
   };
 
   const removeItem = async (id: string) => {
     await api.inventory.delete(id);
-    await fetchItems();
   };
 
   return { items, lowStockItems, loading, error, addItem, updateItem, removeItem, refresh: fetchItems };
@@ -575,8 +583,8 @@ export function usePrescriptions(petId?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPrescriptions = useCallback(async () => {
-    setLoading(true);
+  const fetchPrescriptions = useCallback(async (silent: boolean = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const result = await api.prescriptions.list(petId);
@@ -591,26 +599,24 @@ export function usePrescriptions(petId?: string) {
   useEffect(() => {
     fetchPrescriptions();
   }, [fetchPrescriptions]);
+  useRefreshOn(['prescriptions'], fetchPrescriptions);
 
   const addPrescription = async (data: Omit<Prescription, 'id' | 'created_at'>) => {
     const result = await api.prescriptions.create(data);
-    await fetchPrescriptions();
     return result;
   };
 
   const updatePrescription = async (id: string, data: Partial<Prescription>) => {
     const result = await api.prescriptions.update(id, data);
-    await fetchPrescriptions();
     return result;
   };
 
   const removePrescription = async (id: string) => {
     await api.prescriptions.delete(id);
-    await fetchPrescriptions();
   };
 
-  const sendEmail = async (id: string) => {
-    return await api.prescriptions.sendEmail(id);
+  const sendEmail = async (id: string, to?: string) => {
+    return await api.prescriptions.sendEmail(id, to);
   };
 
   return { prescriptions, loading, error, addPrescription, updatePrescription, removePrescription, sendEmail, refresh: fetchPrescriptions };
@@ -625,8 +631,8 @@ export function useReminders(params?: { status?: string; type?: string; upcoming
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchReminders = useCallback(async () => {
-    setLoading(true);
+  const fetchReminders = useCallback(async (silent: boolean = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const result = await api.reminders.list(params);
@@ -640,33 +646,29 @@ export function useReminders(params?: { status?: string; type?: string; upcoming
   }, [params?.status, params?.type, params?.upcoming]);
 
   useEffect(() => { fetchReminders(); }, [fetchReminders]);
+  useRefreshOn(['reminders'], fetchReminders);
 
   const addReminder = async (data: any) => {
     const result = await api.reminders.create(data);
-    await fetchReminders();
     return result;
   };
 
   const autoGenerate = async (petId: string) => {
     const result = await api.reminders.autoGenerate(petId);
-    await fetchReminders();
     return result;
   };
 
   const updateReminder = async (id: string, data: any) => {
     const result = await api.reminders.update(id, data);
-    await fetchReminders();
     return result;
   };
 
   const removeReminder = async (id: string) => {
     await api.reminders.delete(id);
-    await fetchReminders();
   };
 
   const sendPending = async () => {
     const result = await api.reminders.sendPending();
-    await fetchReminders();
     return result;
   };
 

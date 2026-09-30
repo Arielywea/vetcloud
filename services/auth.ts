@@ -3,6 +3,16 @@ import { API_URL } from '../config';
 
 let storedToken: string | null = null;
 
+// Set by AuthProvider: any 401 from the API logs the user out instead of
+// leaving every screen showing empty lists with an expired token.
+let unauthorizedHandler: (() => void) | null = null;
+export function setUnauthorizedHandler(fn: (() => void) | null) {
+  unauthorizedHandler = fn;
+}
+export function notifyUnauthorized() {
+  unauthorizedHandler?.();
+}
+
 export async function getToken(): Promise<string | null> {
   if (storedToken) return storedToken;
   storedToken = await AsyncStorage.getItem('vetcloud_token');
@@ -53,8 +63,12 @@ export async function apiAuthMe() {
   const res = await fetch(`${API_URL}/auth/me`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || 'Sesión expirada');
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(json.error || 'Sesión expirada') as Error & { status?: number };
+    err.status = res.status;
+    throw err;
+  }
   return json.data;
 }
 
@@ -71,8 +85,10 @@ export async function apiAuthUpdateProfile(data: Record<string, any>) {
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(data),
   });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || 'Error al actualizar perfil');
+  // Vercel timeouts return HTML: don't surface "Unexpected token <"
+  const json = await res.json().catch(() => ({}));
+  if (res.status === 401) notifyUnauthorized();
+  if (!res.ok) throw new Error(json.error || 'No se pudo actualizar el perfil');
   return json.data;
 }
 
@@ -84,7 +100,8 @@ export async function apiAuthChangePassword(current_password: string, new_passwo
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ current_password, new_password }),
   });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || 'Error al cambiar contraseña');
+  const json = await res.json().catch(() => ({}));
+  if (res.status === 401) notifyUnauthorized();
+  if (!res.ok) throw new Error(json.error || 'No se pudo cambiar la contraseña');
   return json.data;
 }

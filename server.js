@@ -172,7 +172,8 @@ function normalizePet(body, { partial }) {
     if (safe.weight === null || safe.weight === '') safe.weight = null;
     else {
       const w = parseFloat(String(safe.weight).replace(',', '.'));
-      if (!isFinite(w) || w < 0 || w > 200) return { error: 'Peso inválido' };
+      // Same range as the patient form and /vital-measurements
+      if (!isFinite(w) || w < 0.05 || w > 150) return { error: 'El peso debe estar entre 0,05 y 150 kg' };
       safe.weight = w;
     }
   }
@@ -198,6 +199,16 @@ const REMINDER_TYPES = ['vacuna', 'desparasitacion', 'control', 'post_operatorio
 
 function isEmail(value) {
   return typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+// Same rules as utils/password.ts on the client — keep both in sync
+function passwordPolicyError(password) {
+  if (typeof password !== 'string' || password.length < 8) return 'La contraseña debe tener al menos 8 caracteres';
+  if (password.length > 128) return 'La contraseña no puede superar 128 caracteres';
+  if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+    return 'La contraseña debe tener mayúsculas, minúsculas y números';
+  }
+  return null;
 }
 
 // Every foreign key taken from a request body must belong to the caller.
@@ -318,9 +329,8 @@ app.post('/auth/register', async (req, res) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({ error: 'Formato de correo invalido' });
     }
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
-    }
+    const policyError = passwordPolicyError(password);
+    if (policyError) return res.status(400).json({ error: policyError });
 
     // Check uniqueness
     const existingUser = await pool.query('SELECT id FROM users WHERE username = $1 OR email = $2', [username, email]);
@@ -374,7 +384,7 @@ app.post('/auth/register', async (req, res) => {
     if (err.code === '23505') {
       return res.status(409).json({ error: 'El usuario o correo ya esta registrado' });
     }
-    console.error('[REGISTER ERROR]', JSON.stringify({ message: err.message, code: err.code, detail: err.detail, stack: err.stack?.split('\n').slice(0,3) }));
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -395,16 +405,40 @@ app.get('/auth/me', authMiddleware, async (req, res) => {
 app.patch('/auth/profile', authMiddleware, async (req, res) => {
   try {
     const { name, email, clinic_name, veterinarian_name, clinic_phone, clinic_address, smtp_email, theme_preference, color_palette, notification_email_reminders, notification_upcoming_appointments, notification_push } = req.body;
+    if (name !== undefined && (typeof name !== 'string' || !name.trim() || name.length > 100)) {
+      return res.status(400).json({ error: 'El nombre es obligatorio (máx. 100 caracteres)' });
+    }
+    // The account email is used to log in and as reply-to on prescriptions: it can change, not disappear
+    if (email !== undefined && !isEmail(email)) {
+      return res.status(400).json({ error: 'El correo electrónico es obligatorio y debe ser válido' });
+    }
+    if (smtp_email !== undefined && smtp_email !== null && smtp_email !== '' && !isEmail(smtp_email)) {
+      return res.status(400).json({ error: 'Correo SMTP inválido' });
+    }
+    for (const value of [clinic_name, veterinarian_name, clinic_phone, clinic_address]) {
+      if (value !== undefined && value !== null && (typeof value !== 'string' || value.length > 200)) {
+        return res.status(400).json({ error: 'Los datos de la clínica deben ser texto (máx. 200 caracteres)' });
+      }
+    }
+    if (theme_preference !== undefined && !['light', 'dark'].includes(theme_preference)) {
+      return res.status(400).json({ error: 'Tema inválido' });
+    }
+    for (const value of [notification_email_reminders, notification_upcoming_appointments, notification_push]) {
+      if (value !== undefined && typeof value !== 'boolean') {
+        return res.status(400).json({ error: 'Las preferencias de notificación deben ser verdadero o falso' });
+      }
+    }
     const fields = [];
     const values = [];
     let idx = 1;
-    if (name !== undefined) { fields.push(`name = $${idx}`); values.push(name); idx++; }
-    if (email !== undefined) { fields.push(`email = $${idx}`); values.push(email); idx++; }
-    if (clinic_name !== undefined) { fields.push(`clinic_name = $${idx}`); values.push(clinic_name); idx++; }
-    if (veterinarian_name !== undefined) { fields.push(`veterinarian_name = $${idx}`); values.push(veterinarian_name); idx++; }
-    if (clinic_phone !== undefined) { fields.push(`clinic_phone = $${idx}`); values.push(clinic_phone); idx++; }
-    if (clinic_address !== undefined) { fields.push(`clinic_address = $${idx}`); values.push(clinic_address); idx++; }
-    if (smtp_email !== undefined) { fields.push(`smtp_email = $${idx}`); values.push(smtp_email); idx++; }
+    const text = (v) => (typeof v === 'string' && v.trim() ? v.trim() : null);
+    if (name !== undefined) { fields.push(`name = $${idx}`); values.push(name.trim()); idx++; }
+    if (email !== undefined) { fields.push(`email = $${idx}`); values.push(text(email)); idx++; }
+    if (clinic_name !== undefined) { fields.push(`clinic_name = $${idx}`); values.push(text(clinic_name)); idx++; }
+    if (veterinarian_name !== undefined) { fields.push(`veterinarian_name = $${idx}`); values.push(text(veterinarian_name)); idx++; }
+    if (clinic_phone !== undefined) { fields.push(`clinic_phone = $${idx}`); values.push(text(clinic_phone)); idx++; }
+    if (clinic_address !== undefined) { fields.push(`clinic_address = $${idx}`); values.push(text(clinic_address)); idx++; }
+    if (smtp_email !== undefined) { fields.push(`smtp_email = $${idx}`); values.push(text(smtp_email)); idx++; }
     if (theme_preference !== undefined) { fields.push(`theme_preference = $${idx}`); values.push(theme_preference); idx++; }
     if (color_palette !== undefined) { fields.push(`color_palette = $${idx}`); values.push(color_palette); idx++; }
     if (notification_email_reminders !== undefined) { fields.push(`notification_email_reminders = $${idx}`); values.push(notification_email_reminders); idx++; }
@@ -421,6 +455,7 @@ app.patch('/auth/profile', authMiddleware, async (req, res) => {
     if (user.smtp_password) user.smtp_password = '••••••••';
     res.json({ data: user });
   } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'Ese correo ya está registrado en otra cuenta' });
     logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
@@ -432,16 +467,16 @@ app.patch('/auth/password', authMiddleware, async (req, res) => {
     if (!current_password || !new_password) {
       return res.status(400).json({ error: 'Contraseña actual y nueva contraseña requeridas' });
     }
-    if (new_password.length < 8) {
-      return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres' });
-    }
-    if (!/[A-Z]/.test(new_password) || !/[a-z]/.test(new_password) || !/[0-9]/.test(new_password)) {
-      return res.status(400).json({ error: 'La contraseña debe contener mayúsculas, minúsculas y números' });
+    const policyError = passwordPolicyError(new_password);
+    if (policyError) return res.status(400).json({ error: policyError });
+    if (!await rateLimit(`password:${req.userId}`, 5, 900000)) {
+      return res.status(429).json({ error: 'Demasiados intentos. Intenta en 15 minutos.' });
     }
     const result = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.userId]);
     if (!result.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
     const valid = await bcrypt.compare(current_password, result.rows[0].password_hash);
-    if (!valid) return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
+    // 400, not 401: the client treats any 401 as an expired session and logs out
+    if (!valid) return res.status(400).json({ error: 'La contraseña actual es incorrecta' });
     const hash = await bcrypt.hash(new_password, 10);
     await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, req.userId]);
     res.json({ data: { success: true } });
@@ -1067,7 +1102,7 @@ app.patch('/items/appointments/:id', authMiddleware, async (req, res) => {
 
       if (!isValidTransition(current.status, a.status)) {
         return res.status(400).json({
-          error: `Transicion invalida: ${current.status} -> ${a.status}`,
+          error: `Transición inválida: ${current.status} → ${a.status}`,
           valid_transitions: APPOINTMENT_TRANSITIONS[current.status] || [],
         });
       }
@@ -1425,7 +1460,12 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Receta no encontrada' });
 
     const rx = result.rows[0];
-    if (!rx.tutor_email) return res.status(400).json({ error: 'El tutor no tiene correo electrónico registrado' });
+    // The vet may send to another address (e.g. a family member): it's their own patient and the route is rate-limited
+    const requestedTo = typeof req.body?.to === 'string' ? req.body.to.trim() : '';
+    if (requestedTo && !isEmail(requestedTo)) return res.status(400).json({ error: 'Correo del destinatario inválido' });
+    // Separate from rx.tutor_email: the PDF and the email body still show the tutor's own address
+    const recipient = requestedTo || rx.tutor_email;
+    if (!recipient) return res.status(400).json({ error: 'El tutor no tiene correo electrónico registrado' });
 
     const nodemailer = require('nodemailer');
     const { generatePrescriptionPdf } = require('./utils/generatePrescriptionPdf');
@@ -1461,7 +1501,7 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
     const pdfBuffer = await generatePrescriptionPdf(
       { ...rx, veterinarian_name: rx.veterinarian_name || userProfile.veterinarian_name, vet_email: vetEmail },
       { name: rx.pet_name, species: rx.species, breed: rx.breed, weight: rx.weight, sex: rx.sex, birth_date: rx.birth_date, reproductive_status: rx.reproductive_status, tutor_name: rx.tutor_name, tutor_email: rx.tutor_email, tutor_phone: rx.tutor_phone, tutor_rut: rx.tutor_rut, id: rx.pet_id },
-      { veterinarian_name: userProfile.veterinarian_name, clinic_name: userProfile.clinic_name, clinic_phone: userProfile.clinic_phone, vet_email: vetEmail }
+      { veterinarian_name: userProfile.veterinarian_name, clinic_name: userProfile.clinic_name, clinic_phone: userProfile.clinic_phone, clinic_address: userProfile.clinic_address, vet_email: vetEmail }
     );
 
     const beagleSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88" width="48" height="48"><ellipse cx="18" cy="42" rx="14" ry="22" fill="#8D6E63"/><ellipse cx="70" cy="42" rx="14" ry="22" fill="#8D6E63"/><ellipse cx="44" cy="76" rx="18" ry="12" fill="#FFFFFF"/><circle cx="44" cy="44" r="28" fill="#FFFFFF"/><path d="M26 38Q30 18 44 16Q58 18 62 38Q56 30 44 28Q32 30 26 38Z" fill="#5D4037"/><circle cx="34" cy="44" r="6" fill="#FFFFFF"/><circle cx="35" cy="44" r="3.5" fill="#1A1A1A"/><circle cx="36" cy="42.5" r="1.2" fill="#FFF"/><circle cx="54" cy="44" r="6" fill="#FFFFFF"/><circle cx="53" cy="44" r="3.5" fill="#1A1A1A"/><circle cx="54" cy="42.5" r="1.2" fill="#FFF"/><path d="M44 52L40 48Q44 45 48 48Z" fill="#1A1A1A"/><path d="M40 50Q36 54 32 52" stroke="#1A1A1A" stroke-width="1.5" stroke-linecap="round" fill="none"/><path d="M48 50Q52 54 56 52" stroke="#1A1A1A" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
@@ -1518,7 +1558,8 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
 
     await transporter.sendMail({
       from: `"VetCloud" <${process.env.SMTP_EMAIL}>`,
-      to: rx.tutor_email,
+      to: recipient,
+      replyTo: vetEmail,
       subject: `Receta veterinaria — ${rx.pet_name} — ${issuedDate}`,
       html: htmlBody,
       attachments,
@@ -1558,7 +1599,7 @@ app.get('/items/pets/:petId/prescriptions/:rxId/pdf', authMiddleware, async (req
     const pdfBuffer = await generatePrescriptionPdf(
       { ...rx, veterinarian_name: rx.veterinarian_name || userProfile.veterinarian_name, vet_email: userProfile.email },
       { name: pet.name, species: pet.species, breed: pet.breed, weight: pet.weight, sex: pet.sex, birth_date: pet.birth_date, reproductive_status: pet.reproductive_status, tutor_name: pet.tutor_name, tutor_email: pet.email, tutor_phone: pet.phone, tutor_rut: pet.tutor_rut, id: pet.id },
-      { veterinarian_name: userProfile.veterinarian_name, clinic_name: userProfile.clinic_name, clinic_phone: userProfile.clinic_phone, vet_email: userProfile.email }
+      { veterinarian_name: userProfile.veterinarian_name, clinic_name: userProfile.clinic_name, clinic_phone: userProfile.clinic_phone, clinic_address: userProfile.clinic_address, vet_email: userProfile.email }
     );
 
     res.setHeader('Content-Type', 'application/pdf');
@@ -2091,11 +2132,13 @@ app.get('/stats/weekly', authMiddleware, async (req, res) => {
     const current = rows.slice(7);
     const sum = (arr, k) => arr.reduce((acc, r) => acc + r[k], 0);
     res.json({
-      data: current,
-      summary: {
-        total: sum(current, 'count'), previousTotal: sum(previous, 'count'),
-        consultas: sum(current, 'consultas'), previousConsultas: sum(previous, 'consultas'),
-        vacunas: sum(current, 'vacunas'), previousVacunas: sum(previous, 'vacunas'),
+      data: {
+        days: current,
+        summary: {
+          total: sum(current, 'count'), previousTotal: sum(previous, 'count'),
+          consultas: sum(current, 'consultas'), previousConsultas: sum(previous, 'consultas'),
+          vacunas: sum(current, 'vacunas'), previousVacunas: sum(previous, 'vacunas'),
+        },
       },
     });
   } catch (err) {
