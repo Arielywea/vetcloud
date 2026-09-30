@@ -4,7 +4,7 @@ import { Text, Card, Button } from 'react-native-paper';
 import DynamicIcon from '../ui/DynamicIcon';
 import { ClinicalRecord } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
 import { RECORD_TYPE_CONFIG } from '../../constants/icons';
 import RoundTableIcon from '../icons/RoundTableIcon';
 
@@ -28,9 +28,9 @@ export default function RecordTimeline({ records, onViewRecord }: RecordTimeline
   if (!records.length) {
     return (
       <View style={styles.empty}>
-        <RoundTableIcon size={56} color={colors.textLight} accentColor="#C9A22760" />
-        <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>Sin registros clinicos</Text>
-        <Text style={[styles.emptySubtitle, { color: colors.textLight }]}>Los registros de consultas apareceran aqui</Text>
+        <RoundTableIcon size={56} color={colors.textLight} accentColor={alpha(colors.accent, 0.38)} />
+        <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>Sin registros clínicos</Text>
+        <Text style={[styles.emptySubtitle, { color: colors.textLight }]}>Los registros de consultas aparecerán aquí</Text>
       </View>
     );
   }
@@ -58,7 +58,7 @@ export default function RecordTimeline({ records, onViewRecord }: RecordTimeline
           <View key={record.id} style={styles.timelineItem}>
             {i < records.length - 1 && <View style={[styles.line, { backgroundColor: colors.border }]} />}
             <View style={[styles.dot, { backgroundColor: config.color }]}>
-              <DynamicIcon name={config.icon as any} size={12} color="#FFF" />
+              <DynamicIcon name={config.icon as any} size={12} color={colors.surface} />
             </View>
             <Card style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Card.Content>

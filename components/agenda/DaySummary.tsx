@@ -6,7 +6,7 @@ import {
 } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
-import { APPOINTMENT_STATUS_COLORS } from '../../constants/colors';
+import { APPOINTMENT_STATUS_COLORS, APPOINTMENT_TYPE_LABELS } from '../../constants/colors';
 
 interface DaySummaryData {
   total: number;
@@ -60,7 +60,7 @@ export default function DaySummary({ summary }: DaySummaryProps) {
         {stats.map((stat, i) => (
           <View key={i} style={styles.statItem}>
             <View style={[styles.statIcon, { backgroundColor: stat.color + '18' }]}>
-              <View style={{ color: stat.color }}>{stat.icon}</View>
+              {React.cloneElement(stat.icon, { color: stat.color })}
             </View>
             <Text style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{stat.label}</Text>
@@ -102,7 +102,7 @@ export default function DaySummary({ summary }: DaySummaryProps) {
           <Text style={[styles.typeTitle, { color: colors.textSecondary }]}>Por tipo</Text>
           {Object.entries(summary.porTipo).map(([type, count]) => (
             <View key={type} style={styles.typeRow}>
-              <Text style={[styles.typeName, { color: colors.text }]}>{type}</Text>
+              <Text style={[styles.typeName, { color: colors.text }]}>{APPOINTMENT_TYPE_LABELS[type] || type}</Text>
               <Text style={[styles.typeCount, { color: colors.textSecondary }]}>{count}</Text>
             </View>
           ))}
@@ -210,7 +210,6 @@ const styles = StyleSheet.create({
   },
   typeName: {
     fontSize: TYPOGRAPHY.sizes.xs,
-    textTransform: 'capitalize',
   },
   typeCount: {
     fontSize: TYPOGRAPHY.sizes.xs,

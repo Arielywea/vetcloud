@@ -380,7 +380,7 @@ export const DOG_DISEASES_2: DiseaseMaster[] = [
       lab_tests: [
         { test: 'T4 total serica', description: 'Niveles <1.0 ug/dL sugieren hipotiroidismo.', sensitivity: '70%', specificity: '80%', availability_chile: 'Disponible en laboratorios veterinarios', interpretation: 'Screening. Puede ser normal en subclinico.' },
         { test: 'TSH canino', description: 'Elevacion >0.6 ng/mL confirma hipotiroidismo primario.', sensitivity: '80%', specificity: '90%', availability_chile: 'Laboratorios especializados', interpretation: 'Gold standard para hipotiroidismo primario.' },
-        { test: 'T4 libre (fT4)', description: 'Disminucion por diálisis de equilibrio.', sensitivity: '85%', specificity: '85%', availability_chile: 'Laboratorios especializados', interpretation: 'No afectado por enfermedad no tiroidea.' },
+        { test: 'T4 libre (fT4)', description: 'Disminucion por diÃ¡lisis de equilibrio.', sensitivity: '85%', specificity: '85%', availability_chile: 'Laboratorios especializados', interpretation: 'No afectado por enfermedad no tiroidea.' },
         { test: 'Perfil lipidico', description: 'Hipercolesterolemia e hipertrigliceridemia.', sensitivity: '75%', specificity: '60%', availability_chile: 'Disponible', interpretation: 'Compatible pero no diagnostico solo.' },
       ],
       imaging: [
@@ -475,7 +475,7 @@ export const DOG_DISEASES_2: DiseaseMaster[] = [
     },
     treatment: {
       first_line: [
-        { intervention: 'Soporte intensivo', details: 'Fluidos IV, antibióticos, antiemeticos.', justification: 'No hay antiviral efectivo. Soporte es clave.', evidence: 'Greene CE 2023.' },
+        { intervention: 'Soporte intensivo', details: 'Fluidos IV, antibiÃ³ticos, antiemeticos.', justification: 'No hay antiviral efectivo. Soporte es clave.', evidence: 'Greene CE 2023.' },
         { intervention: 'Antibioticos secundarios', details: 'Amoxicilina-clavulanico.', justification: 'Prevencion neumonia bacteriana.', evidence: 'Sykes JE 2022.' },
       ],
       second_line: [
@@ -604,7 +604,7 @@ export const DOG_DISEASES_2: DiseaseMaster[] = [
       { sign: 'Dermatopatia exfoliativa', description: 'Descamacion, alopecia periocular.', severity: 'high', clinical_significance: '80% casos.' },
       { sign: 'Perdida peso', description: '>15% en 3-6 meses.', severity: 'high', clinical_significance: 'Catabolismo cronico.' },
       { sign: 'Linfadenopatia', description: 'Ganglios perifericos aumentados.', severity: 'moderate', clinical_significance: 'Inflamacion linfoide.' },
-      { sign: 'Onicogrifosis', description: 'Uñas largas y curvadas.', severity: 'moderate', clinical_significance: 'Alteracion ungueal.' },
+      { sign: 'Onicogrifosis', description: 'UÃ±as largas y curvadas.', severity: 'moderate', clinical_significance: 'Alteracion ungueal.' },
       { sign: 'Proteinuria', description: '>30 mg/dl.', severity: 'high', clinical_significance: 'Glomerulonefritis.' },
       { sign: 'Epistaxis', description: 'Sangrado nasal.', severity: 'high', clinical_significance: 'Trombocitopenia.' },
     ],
@@ -648,7 +648,7 @@ export const DOG_DISEASES_2: DiseaseMaster[] = [
       { sign: 'Eritema periferico', description: 'Borde enrojecido.', severity: 'mild', clinical_significance: 'Inflamacion activa.' },
       { sign: 'Prurito leve', description: 'Variable, raramente intenso.', severity: 'mild', clinical_significance: 'M. canis leve.' },
       { sign: 'Lesiones anulares', description: 'Anillos con centro recuperacion.', severity: 'mild', clinical_significance: 'Patognomico.' },
-      { sign: 'Onicodistrofia', description: 'Uñas quebradizas.', severity: 'moderate', clinical_significance: 'Onicomicosis dificil tratar.' },
+      { sign: 'Onicodistrofia', description: 'UÃ±as quebradizas.', severity: 'moderate', clinical_significance: 'Onicomicosis dificil tratar.' },
     ],
     diagnosis: { clinical_examination: 'Patron alopecia, lampara Wood.', lab_tests: [
       { test: 'Cultivo DTM', description: 'Aislamiento dermatofitos.', sensitivity: '85%', specificity: '98%', availability_chile: 'Laboratorios', interpretation: 'Gold standard. 7-21 dias.' },

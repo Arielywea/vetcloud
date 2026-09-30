@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { View, StyleSheet, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
 import {
   FileText, Stethoscope, Building2, Calendar, CreditCard,
@@ -46,12 +47,7 @@ export default function ContextMenu({ visible, x, y, actions = DEFAULT_ACTIONS, 
   const { colors } = useTheme();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
-  useEffect(() => {
-    if (!visible || typeof document === 'undefined') return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [visible, onClose]);
+  useEscapeKey(visible, onClose);
 
   if (!visible) return null;
 

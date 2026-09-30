@@ -32,7 +32,7 @@ export default function SurgeriesScreen() {
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <Scissors size={20} color={colors.primary} />
-          <DisplayText style={[styles.headerTitle, { color: colors.text }]}>Biblioteca de Cirugías</DisplayText>
+          <DisplayText style={[styles.headerTitle, { color: colors.text }]}>Biblioteca de cirugías</DisplayText>
         </View>
         <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
           {surgeries.length} procedimientos quirúrgicos
@@ -109,22 +109,22 @@ function SurgeryCard({ surgery, index, colors }: { surgery: Surgery; index: numb
       {expanded && (
         <View style={[styles.cardDetails, { borderTopColor: colors.border }]}>
           {surgery.tecnica_quirurgica && (
-            <DetailSection title="Técnica Quirúrgica" content={surgery.tecnica_quirurgica} colors={colors} />
+            <DetailSection title="Técnica quirúrgica" content={surgery.tecnica_quirurgica} colors={colors} />
           )}
           {surgery.material_quirurgico && (
-            <DetailSection title="Material Quirúrgico" content={surgery.material_quirurgico} colors={colors} />
+            <DetailSection title="Material quirúrgico" content={surgery.material_quirurgico} colors={colors} />
           )}
           {surgery.tipo_sutura && (
-            <DetailSection title="Tipo de Sutura" content={surgery.tipo_sutura} colors={colors} />
+            <DetailSection title="Tipo de sutura" content={surgery.tipo_sutura} colors={colors} />
           )}
           {surgery.complicaciones_frecuentes && (
-            <DetailSection title="Complicaciones Frecuentes" content={surgery.complicaciones_frecuentes} colors={colors} />
+            <DetailSection title="Complicaciones frecuentes" content={surgery.complicaciones_frecuentes} colors={colors} />
           )}
           {surgery.manejo_anestesico_sugerido && (
-            <DetailSection title="Manejo Anestésico" content={surgery.manejo_anestesico_sugerido} colors={colors} />
+            <DetailSection title="Manejo anestésico" content={surgery.manejo_anestesico_sugerido} colors={colors} />
           )}
           {surgery.consideraciones_por_raza && (
-            <DetailSection title="Consideraciones por Raza" content={surgery.consideraciones_por_raza} colors={colors} />
+            <DetailSection title="Consideraciones por raza" content={surgery.consideraciones_por_raza} colors={colors} />
           )}
           {surgery.consideraciones_comorbilidades && (
             <DetailSection title="Comorbilidades" content={surgery.consideraciones_comorbilidades} colors={colors} />

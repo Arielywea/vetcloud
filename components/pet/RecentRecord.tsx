@@ -20,7 +20,7 @@ export default function RecentRecord({ record, onView, onGenerateRx }: RecentRec
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Ultima Consulta</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Última consulta</Text>
         <Button compact mode="text" onPress={onView} labelStyle={{ color: colors.primary }}>
           Ver todo
         </Button>
@@ -142,7 +142,6 @@ const styles = StyleSheet.create({
   actionBtn: {
     flex: 1,
     borderRadius: RADIUS.md,
-    borderColor: '#C9A22740',
   },
   actionLabel: {
     fontSize: TYPOGRAPHY.sizes.sm,

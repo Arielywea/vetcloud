@@ -4,7 +4,7 @@ import {
   TextInput, ActivityIndicator, Image, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
 import { APPOINTMENT_TYPE_COLORS } from '../../constants/colors';
 import {
   X, Calendar, Clock, Stethoscope, User, FileText, Search,
@@ -184,7 +184,6 @@ export default function AppointmentCreationModal({
       onCreated();
       onClose();
     } catch (err: any) {
-      console.error('Failed to create appointment:', err);
       setError(err?.message || 'Error al crear la cita. Inténtalo de nuevo.');
     } finally {
       setSubmitting(false);
@@ -197,12 +196,12 @@ export default function AppointmentCreationModal({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.overlay}
       >
-        <TouchableOpacity style={styles.overlayBg} activeOpacity={1} onPress={onClose} />
+        <TouchableOpacity style={[styles.overlayBg, { backgroundColor: colors.overlay }]} activeOpacity={1} onPress={onClose} accessibilityRole="button" accessibilityLabel="Cerrar" />
         <TouchableOpacity activeOpacity={1} style={[styles.container, { backgroundColor: colors.surface }]}>
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.title, { color: colors.text }]}>Nueva Cita</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+            <Text accessibilityRole="header" style={[styles.title, { color: colors.text }]}>Nueva cita</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={8} accessibilityRole="button" accessibilityLabel="Cerrar">
               <X size={22} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
@@ -242,7 +241,7 @@ export default function AppointmentCreationModal({
                     </View>
                   )}
                   <Text style={[styles.selectedPetName, { color: colors.text }]}>{patientName}</Text>
-                  <TouchableOpacity onPress={() => { setSelectedPetId(null); setPatientName(''); }}>
+                  <TouchableOpacity onPress={() => { setSelectedPetId(null); setPatientName(''); }} hitSlop={12} accessibilityRole="button" accessibilityLabel="Quitar paciente seleccionado">
                     <X size={16} color={colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
@@ -432,9 +431,9 @@ export default function AppointmentCreationModal({
 
             {/* Error */}
             {error && (
-              <View style={[styles.errorBanner, { backgroundColor: '#FEE2E2', borderColor: '#EF4444' }]}>
-                <AlertCircle size={16} color="#EF4444" />
-                <Text style={[styles.errorText, { color: '#EF4444' }]}>{error}</Text>
+              <View accessibilityRole="alert" style={[styles.errorBanner, { backgroundColor: alpha(colors.error, 0.08), borderColor: colors.error }]}>
+                <AlertCircle size={16} color={colors.error} />
+                <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
               </View>
             )}
           </ScrollView>
@@ -453,9 +452,9 @@ export default function AppointmentCreationModal({
               disabled={submitting}
             >
               {submitting ? (
-                <ActivityIndicator size="small" color="#FFF" />
+                <ActivityIndicator size="small" color={onPrimaryText.default} />
               ) : (
-                <Check size={18} color="#FFF" />
+                <Check size={18} color={onPrimaryText.default} />
               )}
               <Text style={[styles.primaryBtnText, { color: onPrimaryText.default }]}>
                 {submitting ? 'Creando...' : 'Crear Cita'}
@@ -474,7 +473,6 @@ const styles = StyleSheet.create({
   },
   overlayBg: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   container: {
     position: 'absolute',
@@ -694,7 +692,6 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
   },
   primaryBtnText: {
-    color: '#FFF',
     fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: TYPOGRAPHY.weights.semibold,
   },

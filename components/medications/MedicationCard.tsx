@@ -20,7 +20,7 @@ export default function MedicationCard({ medication, onPress, index = 0 }: Medic
   const especialidad = medication.especialidad ? getEspecialidadByKey(medication.especialidad) : null;
 
   return (
-    <VCard onPress={onPress} entrance style={{ marginBottom: SPACING.md }}>
+    <VCard onPress={onPress} accessibilityLabel={medication.nombre} style={{ marginBottom: SPACING.md }}>
       <View style={styles.header}>
         <Text style={[styles.nombre, { color: colors.text }]} numberOfLines={1}>
           {medication.nombre}
@@ -59,16 +59,16 @@ export default function MedicationCard({ medication, onPress, index = 0 }: Medic
 
       <View style={styles.dosisRow}>
         {medication.dosis_perro && (
-          <View style={[styles.dosisBadge, { backgroundColor: '#1565C015', borderColor: '#1565C030' }]}>
-            <Text style={[styles.dosisLabel, { color: '#1565C0' }]}>Perro</Text>
+          <View style={[styles.dosisBadge, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+            <Text style={[styles.dosisLabel, { color: colors.textSecondary }]}>Perro</Text>
             <Text style={[styles.dosisValue, { color: colors.text }]} numberOfLines={1}>
               {medication.dosis_perro}
             </Text>
           </View>
         )}
         {medication.dosis_gato && (
-          <View style={[styles.dosisBadge, { backgroundColor: '#7B1FA215', borderColor: '#7B1FA230' }]}>
-            <Text style={[styles.dosisLabel, { color: '#7B1FA2' }]}>Gato</Text>
+          <View style={[styles.dosisBadge, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+            <Text style={[styles.dosisLabel, { color: colors.textSecondary }]}>Gato</Text>
             <Text style={[styles.dosisValue, { color: colors.text }]} numberOfLines={1}>
               {medication.dosis_gato}
             </Text>
@@ -78,7 +78,7 @@ export default function MedicationCard({ medication, onPress, index = 0 }: Medic
 
       {medication.via_administracion && (
         <View style={styles.viaRow}>
-          <Text style={[styles.viaLabel, { color: colors.textSecondary }]}>Via:</Text>
+          <Text style={[styles.viaLabel, { color: colors.textSecondary }]}>Vía:</Text>
           <Text style={[styles.viaValue, { color: colors.text }]} numberOfLines={1}>
             {medication.via_administracion}
           </Text>

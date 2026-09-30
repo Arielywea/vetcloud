@@ -7,20 +7,23 @@ import TopBar from '../../components/layout/TopBar';
 import CommandPalette from '../../components/layout/CommandPalette';
 import VetAssistantWidget from '../../components/VetAssistantWidget';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useResponsive } from '../../hooks/useResponsive';
 import { SPACING } from '../../constants/tokens';
+import { APP_COLORS } from '../../constants/colors';
 
 class ErrorBoundary extends Component<{ children: ReactNode; colors?: { text: string; textSecondary: string; error: string } }, { error: Error | null }> {
   state = { error: null as Error | null };
   static getDerivedStateFromError(error: Error) { return { error }; }
   render() {
     if (this.state.error) {
-      const colors = this.props.colors || { text: '#1A2332', textSecondary: '#5A6B80', error: '#EF4444' };
+      const colors = this.props.colors || APP_COLORS;
       return (
-        <ScrollView style={{ flex: 1, padding: 20 }}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.error, marginBottom: 8 }}>Screen Error</Text>
-          <Text style={{ fontSize: 14, color: colors.text, marginBottom: 4 }}>{this.state.error.message}</Text>
-          <Text style={{ fontSize: 12, color: colors.textSecondary, fontFamily: 'monospace' }}>{this.state.error.stack}</Text>
+        <ScrollView style={{ flex: 1, padding: 20 }} contentContainerStyle={{ gap: 8 }}>
+          <Text accessibilityRole="alert" style={{ fontSize: 18, fontWeight: 'bold', color: colors.error }}>No se pudo mostrar esta pantalla</Text>
+          <Text style={{ fontSize: 14, color: colors.text }}>{this.state.error.message}</Text>
+          <Text accessibilityRole="button" onPress={() => this.setState({ error: null })} style={{ fontSize: 14, color: colors.textSecondary, textDecorationLine: 'underline', marginTop: 8 }}>Reintentar</Text>
+          {__DEV__ ? <Text style={{ fontSize: 12, color: colors.textSecondary, fontFamily: 'monospace' }}>{this.state.error.stack}</Text> : null}
         </ScrollView>
       );
     }
@@ -42,25 +45,30 @@ function useCmdK(onOpen: () => void) {
   }, [onOpen]);
 }
 
+// usePathname() drops route groups: '/pacientes', not '/(drawer)/pacientes'
 const SCREEN_TITLES: Record<string, string> = {
   '/': 'Inicio',
-  '/(drawer)': 'Inicio',
-  '/(drawer)/pacientes': 'Pacientes',
-  '/(drawer)/add-paciente': 'Nuevo Paciente',
-  '/(drawer)/diseases': 'Enfermedades',
-  '/(drawer)/medications': 'Vademécum',
-  '/(drawer)/surgeries': 'Cirugías',
-  '/(drawer)/agenda': 'Agenda',
-  '/(drawer)/hospitalizacion': 'Hospitalización',
-  '/(drawer)/laboratorio': 'Laboratorio',
-  '/(drawer)/inventario': 'Inventario',
-  '/(drawer)/reportes': 'Reportes',
-  '/(drawer)/configuracion': 'Configuración',
-  '/(drawer)/notes': 'Notas Personales',
-  '/(drawer)/reminders': 'Recordatorios',
-  '/(drawer)/fluidoterapia': 'Fluidoterapia',
-  '/(drawer)/dosis': 'Calculadora de Dosis',
+  '/pacientes': 'Pacientes',
+  '/add-paciente': 'Paciente',
+  '/diseases': 'Enfermedades',
+  '/add-disease': 'Nueva enfermedad',
+  '/medications': 'Vademécum',
+  '/surgeries': 'Cirugías',
+  '/agenda': 'Agenda',
+  '/hospitalizacion': 'Hospitalización',
+  '/laboratorio': 'Laboratorio',
+  '/inventario': 'Inventario',
+  '/reportes': 'Reportes',
+  '/configuracion': 'Configuración',
+  '/notes': 'Notas personales',
+  '/reminders': 'Recordatorios',
+  '/fluidoterapia': 'Fluidoterapia',
+  '/dosis': 'Calculadora de dosis',
+  '/search': 'Búsqueda',
 };
+
+// Screens that draw their own DisplayText heading; the rest get it in the top bar
+const OWN_HEADING = new Set(['/', '/pacientes', '/add-paciente', '/hospitalizacion', '/laboratorio', '/reportes', '/configuracion', '/surgeries']);
 
 export default function DrawerLayout() {
   const { colors, isDark } = useTheme();
@@ -68,6 +76,7 @@ export default function DrawerLayout() {
   const { isMobile, width } = useResponsive();
   const [cmdOpen, setCmdOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  useEscapeKey(sidebarOpen, () => setSidebarOpen(false));
 
   const isWeb = Platform.OS === 'web';
 
@@ -89,8 +98,10 @@ export default function DrawerLayout() {
       {isMobile && sidebarOpen && (
         <>
           <Pressable
-            style={[styles.drawerBackdrop, { backgroundColor: 'rgba(0,0,0,0.4)' }]}
+            style={[styles.drawerBackdrop, { backgroundColor: colors.overlay }]}
             onPress={() => setSidebarOpen(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar menú"
           />
           <View style={[styles.drawerOverlay, { backgroundColor: colors.surface }]}>
             <Sidebar onNavigate={() => setSidebarOpen(false)} />
@@ -103,7 +114,7 @@ export default function DrawerLayout() {
         <TopBar
           onSearchPress={openCmd}
           onMenuPress={isMobile ? () => setSidebarOpen(true) : undefined}
-          title={isMobile ? pageTitle : undefined}
+          title={OWN_HEADING.has(pathname) ? undefined : pageTitle}
         />
         <View style={styles.screenArea}>
           <ErrorBoundary colors={{ text: colors.text, textSecondary: colors.textSecondary, error: colors.error }}>

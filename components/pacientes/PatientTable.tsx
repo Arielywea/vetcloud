@@ -7,6 +7,7 @@ import { DirectusPet } from '../../services/directus';
 import PatientRow from './PatientRow';
 import PatientPagination from './PatientPagination';
 import PatientEmptyState from './PatientEmptyState';
+import { useResponsive } from '../../hooks/useResponsive';
 
 interface PatientTableProps {
   patients: DirectusPet[];
@@ -34,11 +35,12 @@ export default function PatientTable({
   hasFilters, onClearFilters,
 }: PatientTableProps) {
   const { colors } = useTheme();
+  const { isMobile } = useResponsive();
 
   if (loading) {
     return (
       <View style={styles.tableWrapper}>
-        <View style={[styles.table, { backgroundColor: colors.surface }]}>
+        <View style={{ backgroundColor: colors.surface }}>
           {[1, 2, 3, 4, 5].map(i => (
             <View key={i} style={[styles.skeletonRow, { borderBottomColor: colors.border }]}>
               <View style={[styles.skeleton, { backgroundColor: colors.surfaceVariant, width: 18 }]} />
@@ -57,6 +59,7 @@ export default function PatientTable({
 
   return (
     <View style={styles.tableWrapper}>
+      {!isMobile && (
       <View style={[styles.tableHeader, { backgroundColor: colors.surfaceVariant }]}>
         <View style={styles.checkboxHeader} />
         <View style={styles.patientHeader}>
@@ -79,6 +82,7 @@ export default function PatientTable({
         </View>
         <View style={styles.actionsHeader} />
       </View>
+      )}
 
       <ScrollView style={styles.tableBody}>
         {paginatedPatients.length === 0 ? (
@@ -92,6 +96,7 @@ export default function PatientTable({
               onSelect={() => onToggleSelect(patient.id)}
               onClick={() => onClickPatient(patient)}
               onDelete={() => onDeletePatient(patient)}
+              compact={isMobile}
             />
           ))
         )}

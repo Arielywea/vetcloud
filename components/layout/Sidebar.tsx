@@ -131,7 +131,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
         {NAV_SECTIONS.map((section) => (
           <View key={section.title} style={styles.section}>
             {!collapsed && (
-              <Text style={[styles.sectionTitle, { color: onChromeText.faint }]}>{section.title}</Text>
+              <Text style={[styles.sectionTitle, { color: onChromeText.subtle }]}>{section.title}</Text>
             )}
             {section.items.map(renderItem)}
           </View>
@@ -153,7 +153,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
                 {user?.name || 'Usuario'}
               </Text>
               <Text style={[styles.userRole, { color: onChromeText.subtle }]}>
-                {user?.role === 'admin' ? 'Administrador' : 'Usuario'}
+                {user?.role === 'admin' ? 'Administrador' : user?.role === 'owner' ? 'Titular de la cuenta' : 'Veterinario'}
               </Text>
             </View>
           )}
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   sectionTitle: {
-    fontSize: 10.5,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
     paddingHorizontal: SPACING.xl,
     paddingTop: SPACING.sm,

@@ -21,13 +21,17 @@ export default function VInput({
   rightIcon,
   containerStyle,
   style,
+  onFocus: onFocusProp,
+  onBlur: onBlurProp,
   ...props
 }: VInputProps) {
   const { colors } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const borderAnim = useRef(new Animated.Value(0)).current;
 
-  const onFocus = () => {
+  // Callers' handlers run too (spreading them after ours used to replace ours and freeze the border)
+  const onFocus: TextInputProps['onFocus'] = (e) => {
+    onFocusProp?.(e);
     setIsFocused(true);
     Animated.timing(borderAnim, {
       toValue: 1,
@@ -36,7 +40,8 @@ export default function VInput({
     }).start();
   };
 
-  const onBlur = () => {
+  const onBlur: TextInputProps['onBlur'] = (e) => {
+    onBlurProp?.(e);
     setIsFocused(false);
     Animated.timing(borderAnim, {
       toValue: 0,
@@ -77,13 +82,15 @@ export default function VInput({
             style,
           ]}
           placeholderTextColor={colors.textLight}
+          accessibilityLabel={label}
+          accessibilityHint={error || hint}
+          {...props}
           onFocus={onFocus}
           onBlur={onBlur}
-          {...props}
         />
         {rightIcon && <View style={styles.iconRight}>{rightIcon}</View>}
       </Animated.View>
-      {error && <Text style={[styles.error, { color: colors.error }]}>{error}</Text>}
+      {error && <Text accessibilityRole="alert" style={[styles.error, { color: colors.error }]}>{error}</Text>}
       {hint && !error && <Text style={[styles.hint, { color: colors.textLight }]}>{hint}</Text>}
     </View>
   );

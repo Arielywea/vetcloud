@@ -32,7 +32,7 @@ export const RADIUS = {
 export const TYPOGRAPHY = {
   fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   sizes: {
-    xs: 11,
+    xs: 12, // 11 px failed readability for dates, badges and hints
     sm: 13,
     md: 14,
     base: 15,

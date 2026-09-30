@@ -61,7 +61,7 @@ function formatDate(dateStr: string): string {
 
 function formatTime(dateStr: string): string {
   const d = new Date(dateStr);
-  return d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 }
 
 export default function AppointmentDetailModal({
@@ -87,7 +87,7 @@ export default function AppointmentDetailModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
+      <TouchableOpacity style={[styles.overlay, { backgroundColor: colors.overlay }]} activeOpacity={1} onPress={onClose} accessibilityLabel="Cerrar">
         <TouchableOpacity activeOpacity={1} style={[styles.container, { backgroundColor: colors.surface }]} onPress={() => {}}>
           {/* Header */}
           <View style={styles.header}>
@@ -112,7 +112,7 @@ export default function AppointmentDetailModal({
                 ) : null}
               </View>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+            <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={8} accessibilityRole="button" accessibilityLabel="Cerrar">
               <X size={22} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
@@ -236,7 +236,7 @@ export default function AppointmentDetailModal({
             {!isRegistered && (
               <View style={[styles.unregisteredBanner, { backgroundColor: colors.warning + '20', borderColor: colors.warning }]}>
                 <AlertTriangle size={18} color={colors.warning} />
-                <Text style={styles.unregisteredText}>
+                <Text style={[styles.unregisteredText, { color: colors.text }]}>
                   Este paciente no tiene ficha clínica registrada
                 </Text>
               </View>
@@ -250,15 +250,15 @@ export default function AppointmentDetailModal({
                 style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
                 onPress={onGoToPatient}
               >
-                <FolderOpen size={18} color="#FFF" />
+                <FolderOpen size={18} color={onPrimaryText.default} />
                 <Text style={[styles.primaryBtnText, { color: onPrimaryText.default }]}>Ver ficha clínica</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                style={[styles.primaryBtn, { backgroundColor: colors.warning }]}
+                style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
                 onPress={onRegisterPatient}
               >
-                <UserPlus size={18} color="#FFF" />
+                <UserPlus size={18} color={onPrimaryText.default} />
                 <Text style={[styles.primaryBtnText, { color: onPrimaryText.default }]}>Registrar paciente</Text>
               </TouchableOpacity>
             )}
@@ -275,7 +275,6 @@ export default function AppointmentDetailModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -415,7 +414,6 @@ const styles = StyleSheet.create({
   },
   unregisteredText: {
     fontSize: TYPOGRAPHY.sizes.sm,
-    color: '#92400E',
     fontWeight: TYPOGRAPHY.weights.semibold,
     flex: 1,
   },
@@ -435,7 +433,6 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
   },
   primaryBtnText: {
-    color: '#FFF',
     fontSize: TYPOGRAPHY.sizes.md,
     fontWeight: TYPOGRAPHY.weights.semibold,
   },

@@ -14,24 +14,16 @@ interface VEmptyStateProps {
 
 export default function VEmptyState({ icon, title, description, action, variant = 'default' }: VEmptyStateProps) {
   const { colors } = useTheme();
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
+  // A quiet fade only: empty states show up constantly while filtering
   useEffect(() => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        damping: 12,
-        stiffness: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: ANIMATION.slower,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
+    Animated.timing(opacityAnim, {
+      toValue: 1,
+      duration: ANIMATION.normal,
+      easing: Easing.bezier(0.23, 1, 0.32, 1),
+      useNativeDriver: true,
+    }).start();
   }, []);
 
   const getVariantColor = () => {
@@ -50,7 +42,7 @@ export default function VEmptyState({ icon, title, description, action, variant 
       <Animated.View
         style={[
           styles.iconContainer,
-          { backgroundColor: variantColor + '12', transform: [{ scale: scaleAnim }] },
+          { backgroundColor: variantColor + '12' },
         ]}
       >
         {icon}

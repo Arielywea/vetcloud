@@ -169,7 +169,7 @@ export default function PacientesScreen() {
           contentStyle={styles.newButtonContent}
         >
           <Plus size={16} color={onPrimaryText.default} />
-          Nuevo Paciente
+          Nuevo paciente
         </Button>
       </View>
 
@@ -277,7 +277,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   newButtonText: {
-    color: '#FFFFFF',
     fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: TYPOGRAPHY.weights.semibold,
   },

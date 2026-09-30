@@ -9,7 +9,7 @@ import { AuthProvider, useAuth } from '../hooks/useAuth';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { ToastProvider } from '../components/ui/VToast';
 import { ConfirmProvider } from '../components/ui/ConfirmDialog';
-import { APP_COLORS } from '../constants/colors';
+import { APP_COLORS, APP_COLORS_DARK, getTextOnPrimary } from '../constants/colors';
 import LoginScreen from './auth/login';
 import { installWebFonts } from '../utils/webFonts';
 
@@ -28,11 +28,11 @@ class RootErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0A0A0F', padding: 24 }}>
-          <Text style={{ color: '#F0707A', fontSize: 20, fontWeight: 'bold', marginBottom: 12 }}>Algo salió mal</Text>
-          <Text style={{ color: '#ABA5B3', fontSize: 14, textAlign: 'center' }}>{this.state.error}</Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: APP_COLORS_DARK.background, padding: 24 }}>
+          <Text style={{ color: APP_COLORS_DARK.error, fontSize: 20, fontWeight: 'bold', marginBottom: 12 }}>Algo salió mal</Text>
+          <Text style={{ color: APP_COLORS_DARK.textSecondary, fontSize: 14, textAlign: 'center' }}>{this.state.error}</Text>
           <Text
-            style={{ color: '#D9B45B', fontSize: 14, marginTop: 20 }}
+            style={{ color: APP_COLORS_DARK.primary, fontSize: 14, marginTop: 20 }}
             onPress={() => this.setState({ hasError: false, error: '' })}
           >
             Reintentar
@@ -130,7 +130,7 @@ function ThemedPaperProvider({ children }: { children: React.ReactNode }) {
       ...(isDark ? MD3DarkTheme.colors : MD3LightTheme.colors),
       primary: colors.primary,
       secondary: colors.accent,
-      onSecondary: isDark ? '#FFFFFF' : '#0A1733',
+      onSecondary: getTextOnPrimary(colors.accent).default,
       background: colors.background,
       surface: colors.surface,
       surfaceVariant: colors.surfaceVariant,

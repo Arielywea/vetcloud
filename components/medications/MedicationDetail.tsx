@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, Modal, TouchableOpacity } from 'react-nat
 import { Text } from 'react-native-paper';
 import { X, AlertTriangle } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, alpha } from '../../constants/tokens';
 import VBadge from '../ui/Badge';
 import { Medication } from '../../services/directus';
 import { FAMILIA_COLORS, getEspecialidadByKey } from '../../constants/medications';
@@ -32,15 +32,15 @@ export default function MedicationDetail({ medication, visible, onClose }: Medic
   };
 
   const renderWarning = (text: string) => (
-    <View style={[styles.warningCard, { backgroundColor: '#FF980015', borderColor: '#FF980040' }]}>
-      <AlertTriangle size={16} color="#FF9800" />
-      <Text style={[styles.warningText, { color: '#E65100' }]}>{text}</Text>
+    <View style={[styles.warningCard, { backgroundColor: alpha(colors.warning, 0.08), borderColor: alpha(colors.warning, 0.3) }]}>
+      <AlertTriangle size={16} color={colors.warning} />
+      <Text style={[styles.warningText, { color: colors.warning }]}>{text}</Text>
     </View>
   );
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
           {/* Header */}
           <View style={styles.header}>
@@ -54,7 +54,7 @@ export default function MedicationDetail({ medication, visible, onClose }: Medic
                 </Text>
               )}
             </View>
-            <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: colors.background }]}>
+            <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: colors.background }]} accessibilityRole="button" accessibilityLabel="Cerrar" hitSlop={8}>
               <X size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
@@ -68,13 +68,13 @@ export default function MedicationDetail({ medication, visible, onClose }: Medic
               })()}
               <VBadge color={familiaColor}>{medication.familia || 'N/D'}</VBadge>
               <VBadge color={colors.primary}>{medication.presentacion || 'N/D'}</VBadge>
-              {isReceta && <VBadge color="#FF9800">Receta</VBadge>}
+              {isReceta && <VBadge variant="warning">Receta</VBadge>}
             </View>
 
             {/* Funcion */}
             {medication.funcion && (
               <View style={[styles.funcionCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <Text style={[styles.funcionLabel, { color: colors.textSecondary }]}>Funcion</Text>
+                <Text style={[styles.funcionLabel, { color: colors.textSecondary }]}>Función</Text>
                 <Text style={[styles.funcionText, { color: colors.text }]}>{medication.funcion}</Text>
               </View>
             )}
@@ -82,27 +82,27 @@ export default function MedicationDetail({ medication, visible, onClose }: Medic
             {/* Dosis */}
             <View style={styles.dosisContainer}>
               {medication.dosis_perro && (
-                <View style={[styles.dosisCard, { backgroundColor: '#1565C010', borderColor: '#1565C030' }]}>
-                  <Text style={[styles.dosisSpecies, { color: '#1565C0' }]}>Perro</Text>
+                <View style={[styles.dosisCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+                  <Text style={[styles.dosisSpecies, { color: colors.textSecondary }]}>Perro</Text>
                   <Text style={[styles.dosisValue, { color: colors.text }]}>{medication.dosis_perro}</Text>
                 </View>
               )}
               {medication.dosis_gato && (
-                <View style={[styles.dosisCard, { backgroundColor: '#7B1FA210', borderColor: '#7B1FA230' }]}>
-                  <Text style={[styles.dosisSpecies, { color: '#7B1FA2' }]}>Gato</Text>
+                <View style={[styles.dosisCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+                  <Text style={[styles.dosisSpecies, { color: colors.textSecondary }]}>Gato</Text>
                   <Text style={[styles.dosisValue, { color: colors.text }]}>{medication.dosis_gato}</Text>
                 </View>
               )}
             </View>
 
             {/* Sections */}
-            {renderSection('Via de administracion', medication.via_administracion)}
+            {renderSection('Vía de administración', medication.via_administracion)}
             {renderSection('Efectos adversos', medication.efectos_adversos)}
             
             {/* Notas / Advertencias */}
             {medication.notas && (
-              <View style={[styles.notasCard, { backgroundColor: '#1565C010', borderColor: '#1565C030' }]}>
-                <Text style={[styles.notasLabel, { color: '#1565C0' }]}>Notas</Text>
+              <View style={[styles.notasCard, { backgroundColor: alpha(colors.info, 0.08), borderColor: alpha(colors.info, 0.3) }]}>
+                <Text style={[styles.notasLabel, { color: colors.info }]}>Notas</Text>
                 <Text style={[styles.notasText, { color: colors.text }]}>{medication.notas}</Text>
               </View>
             )}
@@ -121,7 +121,6 @@ export default function MedicationDetail({ medication, visible, onClose }: Medic
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   container: {

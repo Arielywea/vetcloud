@@ -94,7 +94,7 @@ export default function DiseaseDetailScreen() {
     description: { color: colors.text, lineHeight: 22 },
     tabBar: { flexDirection: 'row', marginHorizontal: 12, marginBottom: 12, backgroundColor: colors.surface, borderRadius: 12, padding: 4 },
     tab: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 8 },
-    activeTab: { backgroundColor: colors.primaryContainer || '#E0F2F1' },
+    activeTab: { backgroundColor: colors.primaryContainer },
     tabLabel: { fontSize: TYPOGRAPHY.sizes.xs, color: colors.textSecondary, marginTop: 4 },
     activeTabLabel: { color: colors.primary, fontWeight: TYPOGRAPHY.weights.semibold },
     listItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10, gap: 10 },
@@ -110,7 +110,7 @@ export default function DiseaseDetailScreen() {
     editLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, color: colors.textSecondary, marginBottom: 6 },
     editInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, fontSize: 14 },
     editTextarea: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, fontSize: 14, minHeight: 60, textAlignVertical: 'top' },
-    editSection: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: TYPOGRAPHY.weights.bold, color: colors.primary, marginTop: 16, marginBottom: 8, paddingBottom: 6, borderBottomWidth: 2, borderBottomColor: colors.primaryContainer || '#E0F2F1' },
+    editSection: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: TYPOGRAPHY.weights.bold, color: colors.primary, marginTop: 16, marginBottom: 8, paddingBottom: 6, borderBottomWidth: 2, borderBottomColor: colors.primaryContainer },
     modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border },
     cancelBtn: { borderColor: colors.border },
     saveBtn: { backgroundColor: colors.primary },
@@ -153,7 +153,7 @@ export default function DiseaseDetailScreen() {
         multiline
         value={(value || []).join('\n')}
         onChangeText={(t) => onChange(t.split('\n').map(s => s.trim()).filter(Boolean))}
-        placeholderTextColor="#999"
+        placeholderTextColor={colors.textLight}
       />
     </View>
   );
@@ -167,10 +167,10 @@ export default function DiseaseDetailScreen() {
             <View style={styles.headerTitle}>
               <Text variant="headlineSmall" style={styles.diseaseName} numberOfLines={2}>{disease.name}</Text>
               <View style={styles.headerActions}>
-                <TouchableOpacity onPress={openEdit} style={styles.editBtn}>
+                <TouchableOpacity onPress={openEdit} style={styles.editBtn} accessibilityRole="button" accessibilityLabel="Editar enfermedad">
                   <MaterialCommunityIcons name="pencil" size={22} color={colors.primary} />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => toggleFavorite(disease.id)} style={{ padding: 8 }}>
+                <TouchableOpacity onPress={() => toggleFavorite(disease.id)} style={{ padding: 8 }} accessibilityRole="button" accessibilityState={{ selected: favorite }} accessibilityLabel={favorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}>
                   <MaterialCommunityIcons
                     name={favorite ? 'heart' : 'heart-outline'}
                     size={28}
@@ -254,7 +254,7 @@ export default function DiseaseDetailScreen() {
       {activeTab === 'signs' && (
         <Card style={styles.sectionCard}>
           <Card.Content>
-            <Text variant="titleSmall" style={styles.sectionTitle}>Signos Clave</Text>
+            <Text variant="titleSmall" style={styles.sectionTitle}>Signos clave</Text>
             {disease.key_signs && disease.key_signs.map((sign: string, index: number) => (
               <View key={index} style={styles.listItem}>
                 <MaterialCommunityIcons
@@ -276,7 +276,7 @@ export default function DiseaseDetailScreen() {
         <>
           <Card style={styles.sectionCard}>
             <Card.Content>
-              <Text variant="titleSmall" style={styles.sectionTitle}>Examen Clínico</Text>
+              <Text variant="titleSmall" style={styles.sectionTitle}>Examen clínico</Text>
               <Text style={styles.description}>{diagnosis.clinicalExam}</Text>
             </Card.Content>
           </Card>
@@ -284,7 +284,7 @@ export default function DiseaseDetailScreen() {
           {diagnosis.labTests && diagnosis.labTests.length > 0 && (
             <Card style={styles.sectionCard}>
               <Card.Content>
-                <Text variant="titleSmall" style={styles.sectionTitle}>Exámenes de Laboratorio</Text>
+                <Text variant="titleSmall" style={styles.sectionTitle}>Exámenes de laboratorio</Text>
                 {diagnosis.labTests.map((test: string, index: number) => (
                   <View key={index} style={styles.listItem}>
                     <MaterialCommunityIcons name="flask" size={16} color={colors.info} />
@@ -312,7 +312,7 @@ export default function DiseaseDetailScreen() {
           {diagnosis.differentialDiagnosis && diagnosis.differentialDiagnosis.length > 0 && (
             <Card style={styles.sectionCard}>
               <Card.Content>
-                <Text variant="titleSmall" style={styles.sectionTitle}>Diagnóstico Diferencial</Text>
+                <Text variant="titleSmall" style={styles.sectionTitle}>Diagnóstico diferencial</Text>
                 {diagnosis.differentialDiagnosis.map((dd: string, index: number) => (
                   <View key={index} style={styles.listItem}>
                     <MaterialCommunityIcons name="help-circle-outline" size={16} color={colors.textSecondary} />
@@ -337,7 +337,7 @@ export default function DiseaseDetailScreen() {
           {treatment.firstLine && treatment.firstLine.length > 0 && (
             <Card style={styles.sectionCard}>
               <Card.Content>
-                <Text variant="titleSmall" style={styles.sectionTitle}>Tratamiento Primera Línea</Text>
+                <Text variant="titleSmall" style={styles.sectionTitle}>Tratamiento primera línea</Text>
                 {treatment.firstLine.map((tx: string, index: number) => (
                   <View key={index} style={styles.listItem}>
                     <MaterialCommunityIcons name="check-circle" size={16} color={colors.success} />
@@ -351,7 +351,7 @@ export default function DiseaseDetailScreen() {
           {treatment.secondLine && treatment.secondLine.length > 0 && (
             <Card style={styles.sectionCard}>
               <Card.Content>
-                <Text variant="titleSmall" style={styles.sectionTitle}>Tratamiento Segunda Línea</Text>
+                <Text variant="titleSmall" style={styles.sectionTitle}>Tratamiento segunda línea</Text>
                 {treatment.secondLine.map((tx: string, index: number) => (
                   <View key={index} style={styles.listItem}>
                     <MaterialCommunityIcons name="circle-outline" size={16} color={colors.info} />
@@ -377,7 +377,7 @@ export default function DiseaseDetailScreen() {
           {treatment.duration && (
             <Card style={styles.sectionCard}>
               <Card.Content>
-                <Text variant="titleSmall" style={styles.sectionTitle}>Duración del Tratamiento</Text>
+                <Text variant="titleSmall" style={styles.sectionTitle}>Duración del tratamiento</Text>
                 <Text style={styles.description}>{treatment.duration}</Text>
               </Card.Content>
             </Card>
@@ -395,7 +395,7 @@ export default function DiseaseDetailScreen() {
       {activeTab === 'prevention' && disease.prevention && (
         <Card style={styles.sectionCard}>
           <Card.Content>
-            <Text variant="titleSmall" style={styles.sectionTitle}>Medidas Preventivas</Text>
+            <Text variant="titleSmall" style={styles.sectionTitle}>Medidas preventivas</Text>
             {disease.prevention.map((prev: string, index: number) => (
               <View key={index} style={styles.listItem}>
                 <MaterialCommunityIcons name="shield-check" size={16} color={colors.success} />
@@ -422,7 +422,7 @@ export default function DiseaseDetailScreen() {
       <Portal>
         <Modal visible={editVisible} onDismiss={closeEdit} contentContainerStyle={styles.modalContent}>
           <ScrollView>
-            <Text variant="titleLarge" style={styles.modalTitle}>Editar Enfermedad</Text>
+            <Text variant="titleLarge" style={styles.modalTitle}>Editar enfermedad</Text>
 
             <View style={styles.editField}>
               <Text style={styles.editLabel}>Nombre *</Text>
@@ -430,7 +430,7 @@ export default function DiseaseDetailScreen() {
             </View>
 
             <View style={styles.editField}>
-              <Text style={styles.editLabel}>Nombre Científico</Text>
+              <Text style={styles.editLabel}>Nombre científico</Text>
               <TextInput style={styles.editInput} value={editData.scientific_name || ''} onChangeText={(t) => updateEditField('scientific_name', t)} />
             </View>
 
@@ -439,21 +439,21 @@ export default function DiseaseDetailScreen() {
               <TextInput style={styles.editTextarea} multiline value={editData.description || ''} onChangeText={(t) => updateEditField('description', t)} />
             </View>
 
-            <Text style={styles.editSection}>Signos Clave</Text>
+            <Text style={styles.editSection}>Signos clave</Text>
             <ArrayEditField label="Signos" value={editData.key_signs || []} onChange={(v) => updateEditField('key_signs', v)} />
 
             <Text style={styles.editSection}>Diagnóstico</Text>
             <View style={styles.editField}>
-              <Text style={styles.editLabel}>Examen Clínico</Text>
+              <Text style={styles.editLabel}>Examen clínico</Text>
               <TextInput style={styles.editTextarea} multiline value={(editData.diagnosis as any)?.clinicalExam || ''} onChangeText={(t) => updateEditNested('diagnosis', 'clinicalExam', t)} />
             </View>
             <ArrayEditField label="Laboratorio" value={(editData.diagnosis as any)?.labTests || []} onChange={(v) => updateEditNested('diagnosis', 'labTests', v)} />
             <ArrayEditField label="Imagenología" value={(editData.diagnosis as any)?.imaging || []} onChange={(v) => updateEditNested('diagnosis', 'imaging', v)} />
-            <ArrayEditField label="Diagnóstico Diferencial" value={(editData.diagnosis as any)?.differentialDiagnosis || []} onChange={(v) => updateEditNested('diagnosis', 'differentialDiagnosis', v)} />
+            <ArrayEditField label="Diagnóstico diferencial" value={(editData.diagnosis as any)?.differentialDiagnosis || []} onChange={(v) => updateEditNested('diagnosis', 'differentialDiagnosis', v)} />
 
             <Text style={styles.editSection}>Tratamiento</Text>
-            <ArrayEditField label="Primera Línea" value={(editData.treatment as any)?.firstLine || []} onChange={(v) => updateEditNested('treatment', 'firstLine', v)} />
-            <ArrayEditField label="Segunda Línea" value={(editData.treatment as any)?.secondLine || []} onChange={(v) => updateEditNested('treatment', 'secondLine', v)} />
+            <ArrayEditField label="Primera línea" value={(editData.treatment as any)?.firstLine || []} onChange={(v) => updateEditNested('treatment', 'firstLine', v)} />
+            <ArrayEditField label="Segunda línea" value={(editData.treatment as any)?.secondLine || []} onChange={(v) => updateEditNested('treatment', 'secondLine', v)} />
             <View style={styles.editField}>
               <Text style={styles.editLabel}>Emergencia</Text>
               <TextInput style={styles.editTextarea} multiline value={(editData.treatment as any)?.emergency || ''} onChangeText={(t) => updateEditNested('treatment', 'emergency', t)} />
@@ -486,7 +486,7 @@ export default function DiseaseDetailScreen() {
             <Text style={{ textAlign: 'center' }}>{errorDialog}</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setErrorDialog(null)}>OK</Button>
+            <Button onPress={() => setErrorDialog(null)}>Entendido</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>

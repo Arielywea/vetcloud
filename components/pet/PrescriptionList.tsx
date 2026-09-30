@@ -4,7 +4,7 @@ import { Text, Card, Button } from 'react-native-paper';
 import DynamicIcon from '../ui/DynamicIcon';
 import { Prescription } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, alpha } from '../../constants/tokens';
 import RoundTableIcon from '../icons/RoundTableIcon';
 
 interface PrescriptionListProps {
@@ -20,9 +20,9 @@ export default function PrescriptionList({ prescriptions, onView, onSendEmail, o
   if (!prescriptions.length) {
     return (
       <View style={styles.empty}>
-        <RoundTableIcon size={48} color={colors.textLight} accentColor="#C9A22740" />
+        <RoundTableIcon size={48} color={colors.textLight} accentColor={alpha(colors.accent, 0.25)} />
         <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>Sin recetas</Text>
-        <Text style={[styles.emptySubtitle, { color: colors.textLight }]}>Las recetas emitidas se guardaran aqui</Text>
+        <Text style={[styles.emptySubtitle, { color: colors.textLight }]}>Las recetas emitidas se guardarán aquí</Text>
       </View>
     );
   }
@@ -46,7 +46,7 @@ export default function PrescriptionList({ prescriptions, onView, onSendEmail, o
               </View>
               <View style={styles.actions}>
                 <Button compact mode="text" onPress={() => onView(rx)}>
-                  <DynamicIcon name="eye" size={18} color="#C9A227" />
+                  <DynamicIcon name="eye" size={18} color={colors.accent} />
                 </Button>
                 <Button compact mode="text" onPress={() => onDownloadPdf(rx)}>
                   <DynamicIcon name="download" size={18} color={colors.primary} />

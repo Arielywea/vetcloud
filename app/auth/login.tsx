@@ -82,9 +82,9 @@ export default function LoginScreen() {
           <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.lg]}>
             <VInput label="Usuario *" placeholder="mi.usuario" value={regUsername} onChangeText={setRegUsername} leftIcon={<User size={18} color={colors.primary} />} autoCapitalize="none" />
             <VInput label="Correo electrónico *" placeholder="correo@ejemplo.com" value={regEmail} onChangeText={setRegEmail} leftIcon={<Mail size={18} color={colors.primary} />} keyboardType="email-address" autoCapitalize="none" />
-            <VInput label="Contraseña *" hint={PASSWORD_HINT} value={regPassword} onChangeText={setRegPassword} secureTextEntry={!showPassword} leftIcon={<Lock size={18} color={colors.primary} />}
+            <VInput label="Contraseña *" autoComplete="new-password" hint={PASSWORD_HINT} value={regPassword} onChangeText={setRegPassword} secureTextEntry={!showPassword} leftIcon={<Lock size={18} color={colors.primary} />}
               rightIcon={<View style={{ padding: 4 }}>{showPassword ? <EyeOff size={18} color={colors.textSecondary} onPress={() => setShowPassword(false)} /> : <Eye size={18} color={colors.textSecondary} onPress={() => setShowPassword(true)} />}</View>} />
-            <VInput label="Nombre de la clínica (opcional)" placeholder="Mi Clínica Veterinaria" value={regOrgName} onChangeText={setRegOrgName} leftIcon={<Building size={18} color={colors.primary} />} />
+            <VInput label="Nombre de la clínica (opcional)" onSubmitEditing={handleRegister} returnKeyType="go" placeholder="Mi clínica veterinaria" value={regOrgName} onChangeText={setRegOrgName} leftIcon={<Building size={18} color={colors.primary} />} />
 
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Tipo de negocio</Text>
             <View style={styles.orgTypeRow}>
@@ -144,8 +144,8 @@ export default function LoginScreen() {
           <Text style={[styles.cardTitle, { color: colors.text }]}>Iniciar sesión</Text>
           <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>Ingresa tus credenciales para acceder</Text>
 
-          <VInput label="Usuario o correo" placeholder="usuario o correo@ejemplo.com" value={identifier} onChangeText={setIdentifier} leftIcon={<User size={18} color={colors.primary} />} autoCapitalize="none" keyboardType="email-address" />
-          <VInput label="Contraseña" placeholder="Ingresa tu contraseña" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} leftIcon={<Lock size={18} color={colors.primary} />}
+          <VInput label="Usuario o correo" autoComplete="username" returnKeyType="next" placeholder="usuario o correo@ejemplo.com" value={identifier} onChangeText={setIdentifier} leftIcon={<User size={18} color={colors.primary} />} autoCapitalize="none" keyboardType="email-address" />
+          <VInput label="Contraseña" placeholder="Ingresa tu contraseña" value={password} onChangeText={setPassword} onSubmitEditing={handleLogin} returnKeyType="go" autoComplete="current-password" secureTextEntry={!showPassword} leftIcon={<Lock size={18} color={colors.primary} />}
             rightIcon={<View style={{ padding: 4 }}>{showPassword ? <EyeOff size={18} color={colors.textSecondary} onPress={() => setShowPassword(false)} /> : <Eye size={18} color={colors.textSecondary} onPress={() => setShowPassword(true)} />}</View>} />
 
           {error ? (

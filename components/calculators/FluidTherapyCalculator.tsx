@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Text, TextInput, SegmentedButtons } from 'react-native-paper';
 import { AlertTriangle, CheckCircle, Calculator } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, alpha } from '../../constants/tokens';
 import { parseNumberInRange } from '../../utils/parseNumber';
 
 type Species = 'perro' | 'gato';
@@ -77,7 +77,7 @@ export default function FluidTherapyCalculator({ initialWeight, initialSpecies }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={[styles.title, { color: colors.text }]}>Calculadora de Fluidoterapia</Text>
+      <Text style={[styles.title, { color: colors.text }]}>Calculadora de fluidoterapia</Text>
 
       {/* Inputs */}
       <View style={styles.inputGroup}>
@@ -164,9 +164,9 @@ export default function FluidTherapyCalculator({ initialWeight, initialSpecies }
           </View>
 
           {result.alertaSobrehidratacion && (
-            <View style={[styles.alertCard, { backgroundColor: '#FF980015', borderColor: '#FF980040' }]}>
-              <AlertTriangle size={16} color="#FF9800" />
-              <Text style={[styles.alertText, { color: '#E65100' }]}>Posible sobrehidratación: &gt;10 ml/kg/hora</Text>
+            <View style={[styles.alertCard, { backgroundColor: alpha(colors.warning, 0.08), borderColor: alpha(colors.warning, 0.3) }]}>
+              <AlertTriangle size={16} color={colors.warning} />
+              <Text style={[styles.alertText, { color: colors.warning }]}>Posible sobrehidratación: &gt;10 ml/kg/hora</Text>
             </View>
           )}
 

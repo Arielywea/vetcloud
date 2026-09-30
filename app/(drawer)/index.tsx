@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useRef, useState, useCallback } from 'react';
-import { View, ScrollView, StyleSheet, Pressable, Image, ImageStyle, useWindowDimensions, Animated, Easing } from 'react-native';
+import { View, ScrollView, StyleSheet, Pressable, Image, ImageStyle, useWindowDimensions, Animated } from 'react-native';
 import { Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar, CheckCircle, User, CalendarDays, ChevronRight, Users, AlertTriangle } from 'lucide-react-native';
@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { usePets, useAppointments, useClinicalRecords, useInventory, useRefreshOn } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, ANIMATION, alpha } from '../../constants/tokens';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, ANIMATION, BREAKPOINTS, alpha } from '../../constants/tokens';
 import VetCloudIcon from '../../components/icons/VetCloudIcon';
 import CrestStar from '../../components/icons/CrestStar';
 import DisplayText from '../../components/ui/DisplayText';
@@ -17,10 +17,14 @@ import StatsChart, { WeeklyDay, WeeklySummary } from '../../components/dashboard
 import { api } from '../../services/directus';
 import { isSameLocalDay } from '../../utils/date';
 
-const APPOINTMENT_TYPE_LABELS: Record<string, string> = {
-  consulta: 'Consulta', vacuna: 'Vacuna', examenes: 'Exámenes', cirugia: 'Cirugía',
-  hospitalizacion: 'Hospitalización', control: 'Control', terreno: 'Terreno',
-};
+// "Dra. Ginebra Pendragon" → "Ginebra": skip honorifics so the greeting uses the name
+const HONORIFICS = /^(dr|dra|doctor|doctora|mv|m\.v|sr|sra|srta)\.?$/i;
+function firstName(name?: string | null) {
+  const words = (name || '').trim().split(/\s+/).filter(Boolean);
+  return words.find((w) => !HONORIFICS.test(w)) || words[0] || '';
+}
+
+import { APPOINTMENT_TYPE_LABELS } from '../../constants/colors';
 import QuickActions from '../../components/dashboard/QuickActions';
 import InventoryBar from '../../components/dashboard/InventoryBar';
 import ActivityFeed from '../../components/dashboard/ActivityFeed';
@@ -75,7 +79,7 @@ export default function DashboardScreen() {
   const { colors, isDark, onChromeText } = useTheme();
   const iconTint = colors.primary;
   const { width } = useWindowDimensions();
-  const isMobile = width < 640;
+  const isMobile = width < BREAKPOINTS.sm;
   const { pets, loading: loadingPets, error: petsError, refresh: refreshPets } = usePets();
   const { appointments, loading: loadingAppointments, error: appointmentsError, refresh: refreshAppointments } = useAppointments();
   const { records: clinicalRecords, loading: loadingRecords, error: recordsError, refresh: refreshRecords } = useClinicalRecords();
@@ -103,8 +107,10 @@ export default function DashboardScreen() {
   useEffect(() => { loadStats(); }, [loadStats]);
   useRefreshOn(['appointments', 'clinical_records', 'pets', 'hospitalizations'], loadStats);
 
-  // ─── Entrance Animations ──────────────────────────────
-  const contentOpacity = useRef(new Animated.Value(0)).current;
+  // ─── Layout values (static) ───────────────────────────
+  // No entrance fade: this screen opens many times a day, and gating the whole
+  // dashboard's visibility on an animation left it blank when rAF was paused.
+  const contentOpacity = useRef(new Animated.Value(1)).current;
   const heroOpacity = contentOpacity;
   const heroY = useRef(new Animated.Value(0)).current;
   const statCardAnims = useRef(
@@ -119,12 +125,6 @@ export default function DashboardScreen() {
   const row4Y = useRef(new Animated.Value(0)).current;
 
 
-  useEffect(() => {
-    if (isLoading) return;
-    // One quiet fade when data arrives. This screen opens many times a day,
-    // so no staggered choreography and no count-up numbers.
-    Animated.timing(contentOpacity, { toValue: 1, duration: 180, easing: Easing.bezier(0.23, 1, 0.32, 1), useNativeDriver: true }).start();
-  }, [isLoading]);
 
   const todayStr = new Date().toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -148,7 +148,7 @@ export default function DashboardScreen() {
       petName: apt.patient_name || 'Sin nombre',
       petBreed: matchedPet?.breed || '',
       petAge: matchedPet?.birth_date ? calculateAge(matchedPet.birth_date) : '',
-      time: new Date(apt.start_time).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+      time: new Date(apt.start_time).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }),
       type: APPOINTMENT_TYPE_LABELS[apt.appointment_type as string] || 'Consulta',
       petId: (apt.pet_id as string) || null,
     };
@@ -290,7 +290,7 @@ export default function DashboardScreen() {
           colors={[colors.chrome, colors.chromeSoft]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.hero, isMobile && styles.heroMobile]}
+          style={[styles.hero, { backgroundColor: colors.chrome }, isMobile && styles.heroMobile]}
         >
           <View style={styles.heroContent}>
             <View style={styles.heroGreetingRow}>
@@ -298,7 +298,7 @@ export default function DashboardScreen() {
               <Text style={[styles.heroGreeting, { color: onChromeText.muted }]}>{getGreeting()}</Text>
             </View>
             <DisplayText style={[styles.heroName, { color: onChromeText.default }, isMobile && styles.heroNameMobile]}>
-              Hola, {user?.name?.split(' ')[0] || 'Usuario'}
+              {firstName(user?.name) ? `Hola, ${firstName(user?.name)}` : 'Hola'}
             </DisplayText>
             <View style={styles.heroStatsRow}>
               <View style={styles.heroStatBadge}>
@@ -312,7 +312,7 @@ export default function DashboardScreen() {
             </View>
             <Pressable
               onPress={() => router.push('/(drawer)/agenda')}
-              style={[styles.heroButton, { backgroundColor: 'rgba(255,255,255,0.15)', borderColor: 'rgba(255,255,255,0.25)' }, isMobile && styles.heroButtonMobile]}
+              style={[styles.heroButton, { backgroundColor: alpha(colors.onChrome, 0.12), borderColor: alpha(colors.onChrome, 0.25) }, isMobile && styles.heroButtonMobile]}
             >
               <CalendarDays size={14} color={onChromeText.default} />
               <Text style={[styles.heroButtonText, { color: onChromeText.default }]}>Ver agenda del día</Text>
@@ -323,6 +323,7 @@ export default function DashboardScreen() {
         </LinearGradient>
         <NextAppointmentCard
           {...nextAppointment}
+          emptyMessage={todayAppointments.length ? 'No quedan citas por hoy' : 'Sin citas programadas para hoy'}
           onViewDetails={() => router.push('/(drawer)/agenda')}
           onStartConsult={() => nextAppointment.petId ? router.push(`/pet/${nextAppointment.petId}` as any) : router.push('/(drawer)/agenda')}
         />
@@ -331,9 +332,9 @@ export default function DashboardScreen() {
       {/* Row 2: Stats Cards */}
       <View style={[styles.statsRow, isMobile && styles.statsRowMobile]}>
         {[{ icon: 'pacientes' as const, color: iconTint, bg: colors.primaryContainer, value: pets.length, label: 'Pacientes', anim: statCardAnims[0] },
-          { icon: 'agenda' as const, color: iconTint, bg: colors.primaryContainer, value: todayAppointments.length, label: 'Citas Hoy', anim: statCardAnims[1] },
-          { icon: 'fichas' as const, color: iconTint, bg: colors.primaryContainer, value: clinicalRecords.length, label: 'Fichas Clínicas', anim: statCardAnims[2] },
-          { icon: 'inventario' as const, color: lowStockItems.length ? colors.warning : iconTint, bg: lowStockItems.length ? colors.warning + '18' : colors.primaryContainer, value: lowStockItems.length, label: 'Alertas Stock', anim: statCardAnims[3] }
+          { icon: 'agenda' as const, color: iconTint, bg: colors.primaryContainer, value: todayAppointments.length, label: 'Citas hoy', anim: statCardAnims[1] },
+          { icon: 'fichas' as const, color: iconTint, bg: colors.primaryContainer, value: clinicalRecords.length, label: 'Fichas clínicas', anim: statCardAnims[2] },
+          { icon: 'inventario' as const, color: lowStockItems.length ? colors.warning : iconTint, bg: lowStockItems.length ? colors.warning + '18' : colors.primaryContainer, value: lowStockItems.length, label: 'Alertas stock', anim: statCardAnims[3] }
         ].map((stat, i) => (
           <Animated.View key={i} style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs, isMobile && styles.statCardMobile, { opacity: stat.anim.opacity, transform: [{ translateY: stat.anim.translateY }] }]}>
             <View style={[styles.statIcon, { backgroundColor: stat.bg }]}>
@@ -436,7 +437,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.xs,
-    backgroundColor: 'rgba(255,255,255,0.12)',
     paddingHorizontal: SPACING.sm + 2,
     paddingVertical: SPACING.xs + 1,
     borderRadius: RADIUS.full,

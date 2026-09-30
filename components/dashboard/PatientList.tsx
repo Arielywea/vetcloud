@@ -40,7 +40,7 @@ export default function PatientList({ patients = [], onViewAll, onPatientPress }
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <VetCloudIcon name="pacientes" size={18} color={colors.accent} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Pacientes Recientes</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Pacientes recientes</Text>
         </View>
         <TouchableOpacity onPress={onViewAll} activeOpacity={0.7} accessibilityRole="link" hitSlop={8}>
           <Text style={[styles.viewAll, { color: colors.primary }]}>Ver todos</Text>

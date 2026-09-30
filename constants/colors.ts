@@ -27,6 +27,7 @@ export const APP_COLORS = {
   border: '#DDD5C4',
   disabled: '#C9C2B2',
   cardShadow: '#1B1606',
+  overlay: 'rgba(11, 29, 58, 0.45)', // scrim behind modals and drawers (navy, not flat black)
 };
 
 // ─────────────────────────────────────────────────────────
@@ -57,6 +58,7 @@ export const APP_COLORS_DARK: AppColors = {
   border: '#2B2A36',
   disabled: '#3A3946',
   cardShadow: '#000000',
+  overlay: 'rgba(0, 0, 0, 0.62)',
 };
 
 export type AppColors = typeof APP_COLORS;
@@ -132,12 +134,17 @@ export const TEXT_ON_PRIMARY = {
  * If the primary is dark → returns light text. If primary is light → returns dark text.
  */
 export function getTextOnPrimary(primaryColor: string): { default: string; muted: string; subtle: string; faint: string } {
-  const hex = primaryColor.replace('#', '');
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.5 ? TEXT_ON_PRIMARY.dark : TEXT_ON_PRIMARY.light;
+  // Pick whichever text color has the higher WCAG contrast. The old 0.5 brightness
+  // cutoff put dark text on mid-tones like #546E7A (3.3:1 instead of 5.3:1).
+  const channel = (i: number) => {
+    const v = parseInt(primaryColor.replace('#', '').substring(i, i + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  };
+  const bg = 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4);
+  const DARK_TEXT_LUMINANCE = 0.0103; // #0F172A
+  const onWhite = 1.05 / (bg + 0.05);
+  const onDark = (bg + 0.05) / (DARK_TEXT_LUMINANCE + 0.05);
+  return onDark > onWhite ? TEXT_ON_PRIMARY.dark : TEXT_ON_PRIMARY.light;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -153,7 +160,12 @@ export const RECORD_TYPE_COLORS: Record<string, string> = {
 
 
 
-// Appointment type colors � centralized (used in agenda.tsx, HistoryTimeline)
+export const APPOINTMENT_TYPE_LABELS: Record<string, string> = {
+  consulta: 'Consulta', vacuna: 'Vacuna', examenes: 'Exámenes', cirugia: 'Cirugía',
+  hospitalizacion: 'Hospitalización', control: 'Control', terreno: 'Terreno',
+};
+
+// Appointment type colors — centralized (used in agenda.tsx, HistoryTimeline)
 export const APPOINTMENT_TYPE_COLORS: Record<string, string> = {
   consulta: '#3B82F6',
   vacuna: '#10B981',

@@ -25,15 +25,16 @@ function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
 }
 
+// Monday-first offset (0 = Monday), matching the week view
 function getFirstDayOfMonth(year: number, month: number): number {
-  return new Date(year, month, 1).getDay();
+  return (new Date(year, month, 1).getDay() + 6) % 7;
 }
 
 const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-const DAY_NAMES = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'];
+const DAY_NAMES = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
 
 const STATUS_OPTIONS = [
-  { key: 'all', label: 'Todas', color: '#6B7280', dot: '#6B7280' },
+  { key: 'all', label: 'Todas', color: '', dot: '' },
   ...APPOINTMENT_STATUS_LIST,
 ];
 
@@ -164,7 +165,7 @@ export default function AgendaSidebar({
                 ]}
                 onPress={() => onFilterChange({ ...filters, status: opt.key === 'all' ? '' : opt.key })}
               >
-                <View style={[styles.chipDot, { backgroundColor: opt.color }]} />
+                <View style={[styles.chipDot, { backgroundColor: opt.color || colors.textSecondary }]} />
                 <Text
                   style={[
                     styles.chipText,

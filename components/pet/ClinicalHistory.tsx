@@ -59,7 +59,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
       {/* Section header */}
       <TouchableOpacity onPress={() => setExpanded(!expanded)} style={styles.sectionHeader}>
         <View style={styles.sectionTitleRow}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Historia Clinica Inicial</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Historia clínica inicial</Text>
           {fieldCount > 0 && (
             <View style={[styles.countBadge, { backgroundColor: colors.primaryContainer }]}>
               <Text style={[styles.countText, { color: colors.primary }]}>{fieldCount}</Text>
@@ -76,19 +76,19 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
       {expanded && (
         <View style={styles.content}>
           {pet.motivo_consulta && renderField('comment-alert-outline', 'Motivo de consulta', pet.motivo_consulta)}
-          {pet.habitat && renderField('home', 'Habitat', `${pet.habitat}${pet.habitat_other ? `  ·  ${pet.habitat_other}` : ''}`)}
+          {pet.habitat && renderField('home', 'Hábitat', `${pet.habitat}${pet.habitat_other ? `  ·  ${pet.habitat_other}` : ''}`)}
           {(pet.food || pet.food_frequency) && (
             <View style={styles.fieldBlock}>
               <View style={styles.fieldHeader}>
                 <DynamicIcon name="food" size={14} color={colors.primary} />
-                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Alimentacion</Text>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Alimentación</Text>
               </View>
               {pet.food && <Text style={[styles.fieldValue, { color: colors.text }]}>Tipo: {pet.food}</Text>}
               {pet.food_frequency && <Text style={[styles.fieldValue, { color: colors.text }]}>Frecuencia: {pet.food_frequency}</Text>}
             </View>
           )}
           {pet.water_consumption && renderField('cup-water', 'Consumo de agua', pet.water_consumption, colors.info)}
-          {pet.urination && renderField('water-opacity', 'Miccion', pet.urination, colors.info)}
+          {pet.urination && renderField('water-opacity', 'Micción', pet.urination, colors.info)}
           {pet.lives_with_other_animals && renderField('paw', 'Vive con otros animales', pet.lives_with_other_animals)}
           {pet.species === 'cat' && pet.entorno && renderField('home-outline', 'Entorno', pet.entorno)}
           {pet.species === 'cat' && pet.areneros && renderField('inbox-outline', 'Areneros', pet.areneros)}
@@ -97,9 +97,9 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
           {renderSubSection('Historial sanitario', 'shield-check-outline', colors.success, historialExpanded, () => setHistorialExpanded(!historialExpanded), (
             <>
               {pet.vaccines && renderField('needle', 'Vacunas', pet.vaccines, colors.success)}
-              {pet.deworming && renderField('bug', 'Desparasitacion', pet.deworming, colors.warning)}
+              {pet.deworming && renderField('bug', 'Desparasitación', pet.deworming, colors.warning)}
               {pet.flea_treatment && renderField('shield-bug', 'Antipulgas', pet.flea_treatment, colors.warning)}
-              {pet.last_heat && renderField('calendar-heart', 'Ultimo celo', pet.last_heat)}
+              {pet.last_heat && renderField('calendar-heart', 'Último celo', pet.last_heat)}
               {pet.other_diseases && renderField('hospital-box-outline', 'Enfermedades previas', pet.other_diseases, colors.warning)}
               {pet.base_diseases && pet.base_diseases.length > 0 && (
                 <View style={styles.fieldBlock}>
@@ -116,7 +116,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
                   </View>
                 </View>
               )}
-              {pet.surgeries && renderField('scissors-cutting', 'Cirugias previas', pet.surgeries, colors.error)}
+              {pet.surgeries && renderField('scissors-cutting', 'Cirugías previas', pet.surgeries, colors.error)}
               {pet.medications && renderField('pill', 'Medicamentos actuales', pet.medications, colors.info)}
               {pet.allergies && pet.allergies.length > 0 && (
                 <View style={styles.fieldBlock}>
@@ -201,7 +201,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
           ))}
 
           {/* Hallazgos */}
-          {pet.hallazgos_examen_fisico && renderField('magnify', 'Hallazgos examen fisico', pet.hallazgos_examen_fisico, colors.warning)}
+          {pet.hallazgos_examen_fisico && renderField('magnify', 'Hallazgos examen físico', pet.hallazgos_examen_fisico, colors.warning)}
 
           {/* Notas */}
           {pet.notes && renderField('note-text-outline', 'Notas', pet.notes, colors.textSecondary)}

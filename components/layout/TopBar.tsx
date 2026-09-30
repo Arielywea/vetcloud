@@ -25,12 +25,12 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
       {/* Left: hamburger (mobile) or nothing */}
       <View style={styles.left}>
         {onMenuPress && (
-          <TouchableOpacity onPress={onMenuPress} style={[styles.menuBtn, isMobile && styles.menuBtnMobile]}>
+          <TouchableOpacity onPress={onMenuPress} style={[styles.menuBtn, isMobile && styles.menuBtnMobile]} accessibilityRole="button" accessibilityLabel="Abrir menú">
             <Menu size={22} color={colors.text} />
           </TouchableOpacity>
         )}
         {title && (
-          <DisplayText style={[styles.title, { color: colors.text }]} numberOfLines={1}>{title}</DisplayText>
+          <DisplayText accessibilityRole="header" style={[styles.title, { color: colors.text }]} numberOfLines={1}>{title}</DisplayText>
         )}
       </View>
 
@@ -42,7 +42,7 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
           activeOpacity={0.7}
         >
           <Search size={16} color={colors.textLight} />
-          <Text style={[styles.searchPlaceholder, { color: colors.textLight }]}>
+          <Text style={[styles.searchPlaceholder, { color: colors.textSecondary }]}>
             Buscar pacientes, propietarios, citas...
           </Text>
           <View style={[styles.shortcut, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -79,7 +79,7 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
           >
             <Plus size={18} color={onAccentText.default} />
             <Text style={[styles.newPatientText, { color: onAccentText.default }]}>
-              Nuevo Paciente
+              Nuevo paciente
             </Text>
           </TouchableOpacity>
         )}
@@ -156,21 +156,6 @@ const styles = StyleSheet.create({
   },
   iconBtnMobile: {
     padding: SPACING.md,
-  },
-  badge: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    width: 16,
-    height: 16,
-    borderRadius: RADIUS.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeText: {
-    color: '#FFFFFF',
-    fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: TYPOGRAPHY.weights.bold,
   },
   newPatientBtn: {
     flexDirection: 'row',

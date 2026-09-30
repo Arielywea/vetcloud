@@ -48,19 +48,20 @@ const STATUS_TRANSITIONS: Record<string, string> = {
 };
 
 const STATUS_BUTTON_LABELS: Record<string, string> = {
-  programada: 'Llego',
-  confirmada: 'Llego',
-  pendiente: 'Llego',
+  programada: 'Llegó',
+  confirmada: 'Llegó',
+  pendiente: 'Llegó',
   en_espera: 'Atender',
   en_consulta: 'Finalizar',
 };
 
-const STATUS_BUTTON_COLORS: Record<string, string> = {
-  programada: '#F59E0B',
-  confirmada: '#10B981',
-  pendiente: '#F59E0B',
-  en_espera: '#3B82F6',
-  en_consulta: '#10B981',
+// Tone of the next step: arrival (warning), in care (info), done (success)
+const STATUS_BUTTON_TONES: Record<string, 'warning' | 'info' | 'success'> = {
+  programada: 'warning',
+  confirmada: 'warning',
+  pendiente: 'warning',
+  en_espera: 'info',
+  en_consulta: 'success',
 };
 
 function getNextStatus(current: string): string | null {
@@ -68,12 +69,20 @@ function getNextStatus(current: string): string | null {
 }
 
 function QuickStatusButton({ status, onPress }: { status: string; onPress: () => void }) {
+  const { colors } = useTheme();
   const next = STATUS_TRANSITIONS[status];
   if (!next) return null;
   const label = STATUS_BUTTON_LABELS[status];
-  const color = STATUS_BUTTON_COLORS[status] || '#6B7280';
+  const color = colors[STATUS_BUTTON_TONES[status] || 'info'];
   return (
-    <TouchableOpacity onPress={onPress} style={[quickStyles.btn, { backgroundColor: color + '20', borderColor: color }]} activeOpacity={0.7}>
+    <TouchableOpacity
+      onPress={onPress}
+      style={[quickStyles.btn, { backgroundColor: color + '20', borderColor: color }]}
+      activeOpacity={0.7}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={`Marcar: ${label}`}
+    >
       <Text style={[quickStyles.label, { color }]} numberOfLines={1}>{label}</Text>
     </TouchableOpacity>
   );
@@ -262,6 +271,8 @@ export default function AppointmentCard({
 
   return (
     <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={`${appointment.patient_name}, ${formatTimeRange(appointment.start_time, appointment.end_time)}, ${status.label}`}
       style={[
         styles.card,
         {
@@ -354,7 +365,7 @@ const quickStyles = StyleSheet.create({
     marginLeft: 4,
   },
   label: {
-    fontSize: 9,
+    fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.3,

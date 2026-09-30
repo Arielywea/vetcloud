@@ -26,7 +26,7 @@ export default function ActivityFeed({ items = [] }: ActivityFeedProps) {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Clock size={18} color={colors.accent} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Actividad Reciente</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Actividad reciente</Text>
         </View>
       </View>
 

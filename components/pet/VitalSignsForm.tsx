@@ -87,7 +87,7 @@ export default function VitalSignsForm({ petId, visible, onClose }: VitalSignsPr
   const formatDate = (date: string) => {
     const d = new Date(date);
     return d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: '2-digit' }) + ' ' +
-      d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+      d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   };
 
   const VitalCard = ({ label, value, unit, icon: Icon }: { label: string; value?: number | string; unit: string; icon: any }) => (
@@ -104,9 +104,9 @@ export default function VitalSignsForm({ petId, visible, onClose }: VitalSignsPr
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.chrome, borderBottomColor: colors.border }]}>
-          <DisplayText style={[styles.headerTitle, { color: onChromeText.default }]}>Signos Vitales</DisplayText>
-          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-            <X size={22} color="#fff" />
+          <DisplayText style={[styles.headerTitle, { color: onChromeText.default }]}>Signos vitales</DisplayText>
+          <TouchableOpacity onPress={onClose} style={styles.closeBtn} accessibilityRole="button" accessibilityLabel="Cerrar">
+            <X size={22} color={onChromeText.default} />
           </TouchableOpacity>
         </View>
 
@@ -188,7 +188,7 @@ export default function VitalSignsForm({ petId, visible, onClose }: VitalSignsPr
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 60, paddingBottom: SPACING.md, paddingHorizontal: SPACING.lg },
-  headerTitle: { color: '#fff', fontSize: TYPOGRAPHY.sizes.xl, fontWeight: TYPOGRAPHY.weights.bold },
+  headerTitle: { fontSize: TYPOGRAPHY.sizes.xl, fontWeight: TYPOGRAPHY.weights.bold },
   closeBtn: { padding: SPACING.xs },
   content: { flex: 1, paddingHorizontal: SPACING.lg, paddingTop: SPACING.md },
   addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm, padding: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1.5, marginBottom: SPACING.lg },

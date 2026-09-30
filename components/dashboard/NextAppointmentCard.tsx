@@ -13,6 +13,8 @@ interface NextAppointmentCardProps {
   time?: string;
   type?: string;
   hasAppointment?: boolean;
+  /** Shown when there is no upcoming appointment */
+  emptyMessage?: string;
   onViewDetails?: () => void;
   onStartConsult?: () => void;
 }
@@ -24,6 +26,7 @@ export default function NextAppointmentCard({
   time,
   type,
   hasAppointment = false,
+  emptyMessage = 'Sin citas programadas para hoy',
   onViewDetails,
   onStartConsult,
 }: NextAppointmentCardProps) {
@@ -35,11 +38,11 @@ export default function NextAppointmentCard({
       <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.sm]}>
         <View style={styles.header}>
           <Calendar size={18} color={colors.primary} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Próxima Cita</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Próxima cita</Text>
         </View>
         <View style={styles.emptyState}>
           <CalendarDays size={32} color={colors.textLight} />
-          <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>Sin citas programadas para hoy</Text>
+          <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>{emptyMessage}</Text>
           <TouchableOpacity
             style={[styles.btnPrimary, { backgroundColor: colors.primary }]}
             onPress={() => router.push('/(drawer)/agenda')}
@@ -58,7 +61,7 @@ export default function NextAppointmentCard({
     <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.sm]}>
       <View style={styles.header}>
         <Calendar size={18} color={colors.primary} />
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Próxima Cita</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Próxima cita</Text>
       </View>
 
       <View style={styles.content}>

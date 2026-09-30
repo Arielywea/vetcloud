@@ -18,7 +18,7 @@ import { toLocalDateTimeInput, parseLocalDateTime } from '../../utils/date';
 const TYPE_ICONS: Record<string, typeof Syringe> = { vacuna: Syringe, desparasitacion: Bug, cita: CalendarClock, post_operatorio: BriefcaseMedical, control: ClipboardCheck };
 
 export default function RemindersScreen() {
-  const { colors, onPrimaryText } = useTheme();
+  const { colors, onPrimaryText, onAccentText } = useTheme();
   const { reminders, loading, addReminder, autoGenerate, updateReminder, removeReminder, sendPending, refresh } = useReminders();
   const { pets } = usePets();
   const [filter, setFilter] = useState<'all' | 'pending' | 'sent' | 'cancelled'>('all');
@@ -79,7 +79,7 @@ export default function RemindersScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} refreshControl={<VRefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
       <View style={styles.actions}>
-        <VButton variant="primary" onPress={() => setShowCreateModal(true)} icon={<Plus size={16} color="#fff" />}>Nuevo</VButton>
+        <VButton variant="primary" onPress={() => setShowCreateModal(true)} icon={<Plus size={16} color={onAccentText.default} />}>Nuevo</VButton>
         <VButton variant="accent" onPress={() => setShowAutoModal(true)} icon={<Wand2 size={16} />}>Auto</VButton>
         <VButton variant="secondary" onPress={handleSendPending} icon={<Send size={16} />} loading={saving}>Enviar</VButton>
       </View>
@@ -125,11 +125,11 @@ export default function RemindersScreen() {
                 <View style={styles.cardActions}>
                   {reminder.status === 'pending' && (
                     <>
-                      <TouchableOpacity onPress={() => updateReminder(reminder.id, { status: 'sent' })} style={{ padding: 8 }}><Check size={16} color={colors.success} /></TouchableOpacity>
-                      <TouchableOpacity onPress={() => updateReminder(reminder.id, { status: 'cancelled' })} style={{ padding: 8 }}><X size={16} color={colors.warning} /></TouchableOpacity>
+                      <TouchableOpacity onPress={() => updateReminder(reminder.id, { status: 'sent' })} style={{ padding: 8 }} hitSlop={4} accessibilityRole="button" accessibilityLabel="Marcar como enviado"><Check size={16} color={colors.success} /></TouchableOpacity>
+                      <TouchableOpacity onPress={() => updateReminder(reminder.id, { status: 'cancelled' })} style={{ padding: 8 }} hitSlop={4} accessibilityRole="button" accessibilityLabel="Cancelar recordatorio"><X size={16} color={colors.warning} /></TouchableOpacity>
                     </>
                   )}
-                  <TouchableOpacity onPress={() => removeReminder(reminder.id)} style={{ padding: 8 }}><Trash2 size={16} color={colors.error} /></TouchableOpacity>
+                  <TouchableOpacity onPress={() => removeReminder(reminder.id)} style={{ padding: 8 }} hitSlop={4} accessibilityRole="button" accessibilityLabel="Eliminar recordatorio"><Trash2 size={16} color={colors.error} /></TouchableOpacity>
                 </View>
               </View>
             </VCard>
@@ -140,7 +140,7 @@ export default function RemindersScreen() {
       <Portal>
         <Modal visible={showCreateModal} onDismiss={() => setShowCreateModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
           <ScrollView>
-            <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Nuevo Recordatorio</Text>
+            <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Nuevo recordatorio</Text>
             <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>Mascota *</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.petSelector}>
               {pets.map((pet) => (
@@ -171,7 +171,7 @@ export default function RemindersScreen() {
 
       <Portal>
         <Modal visible={showAutoModal} onDismiss={() => setShowAutoModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
-          <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Auto-generar Recordatorios</Text>
+          <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Auto-generar recordatorios</Text>
           <Text style={[styles.modalDesc, { color: colors.textSecondary }]}>Selecciona una mascota para generar recordatorios de refuerzo de vacunas.</Text>
           <View style={styles.petList}>
             {pets.filter(p => (p as any).receive_reminders !== false && p.email).map((pet) => (
@@ -192,9 +192,9 @@ export default function RemindersScreen() {
       <Portal>
         <Modal visible={!!errorDialog} onDismiss={() => setErrorDialog(null)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
           <AlertTriangle size={32} color={colors.warning} style={{ alignSelf: 'center', marginBottom: 8 }} />
-          <Text variant="titleMedium" style={{ textAlign: 'center', color: colors.text }}>Alerta</Text>
+          <Text variant="titleMedium" style={{ textAlign: 'center', color: colors.text }}>No se pudo completar</Text>
           <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 4 }}>{errorDialog}</Text>
-          <VButton variant="primary" fullWidth onPress={() => setErrorDialog(null)} style={{ marginTop: 16 }}>OK</VButton>
+          <VButton variant="primary" fullWidth onPress={() => setErrorDialog(null)} style={{ marginTop: 16 }}>Entendido</VButton>
         </Modal>
       </Portal>
     </ScrollView>

@@ -3,7 +3,7 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MoreVertical, Eye, Pencil, Trash2, Check } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, alpha } from '../../constants/tokens';
 import { useRouter } from 'expo-router';
 import { DirectusPet } from '../../services/directus';
 import { isActive } from '../../utils/patientFilters';
@@ -15,9 +15,11 @@ interface PatientRowProps {
   onSelect: () => void;
   onClick: () => void;
   onDelete: () => void;
+  /** Phones: one card-like row (name + summary + status) instead of seven columns */
+  compact?: boolean;
 }
 
-export default function PatientRow({ patient, isSelected, onSelect, onClick, onDelete }: PatientRowProps) {
+export default function PatientRow({ patient, isSelected, onSelect, onClick, onDelete, compact }: PatientRowProps) {
   const { colors, onPrimaryText } = useTheme();
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
@@ -32,6 +34,8 @@ export default function PatientRow({ patient, isSelected, onSelect, onClick, onD
     <TouchableOpacity
       onPress={onClick}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`Ver ${patient.name}`}
       style={[
         styles.row,
         {
@@ -40,7 +44,7 @@ export default function PatientRow({ patient, isSelected, onSelect, onClick, onD
         },
       ]}
     >
-      <TouchableOpacity onPress={onSelect} style={styles.checkbox} activeOpacity={0.7}>
+      <TouchableOpacity onPress={onSelect} style={styles.checkbox} activeOpacity={0.7} accessibilityRole="checkbox" accessibilityState={{ checked: !!isSelected }} accessibilityLabel={`Seleccionar ${patient.name}`}>
         <View style={[
           styles.checkboxBox,
           {
@@ -52,6 +56,20 @@ export default function PatientRow({ patient, isSelected, onSelect, onClick, onD
         </View>
       </TouchableOpacity>
 
+      {compact ? (
+        <View style={styles.compactCell}>
+          <VAvatar name={patient.name} size={36} style={{ backgroundColor: colors.primaryContainer }} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={[styles.patientName, { color: colors.text }]} numberOfLines={1}>{patient.name}</Text>
+            <Text style={[styles.cellText, { color: colors.textSecondary }]} numberOfLines={1}>
+              {[patient.species === 'dog' ? 'Canino' : 'Felino', patient.breed, patient.tutor_name].filter(Boolean).join(' · ')}
+            </Text>
+          </View>
+          <View style={[styles.badge, { alignSelf: 'center', backgroundColor: alpha(active ? colors.success : colors.warning, 0.12) }]}>
+            <Text style={[styles.badgeText, { color: active ? colors.success : colors.warning }]}>{active ? 'Activo' : 'Inactivo'}</Text>
+          </View>
+        </View>
+      ) : (<>
       <View style={styles.patientCell}>
         <VAvatar name={patient.name} size={32} style={{ backgroundColor: colors.primaryContainer }} />
         <Text style={[styles.patientName, { color: colors.text }]} numberOfLines={1}>
@@ -84,12 +102,13 @@ export default function PatientRow({ patient, isSelected, onSelect, onClick, onD
       </View>
 
       <View style={styles.cell}>
-        <View style={[styles.badge, { backgroundColor: active ? '#E3F2FD' : '#FFF3E0' }]}>
-          <Text style={[styles.badgeText, { color: active ? '#1565C0' : '#E65100' }]}>
+        <View style={[styles.badge, { backgroundColor: alpha(active ? colors.success : colors.warning, 0.12) }]}>
+          <Text style={[styles.badgeText, { color: active ? colors.success : colors.warning }]}>
             {active ? 'Activo' : 'Inactivo'}
           </Text>
         </View>
       </View>
+      </>)}
 
       <View style={styles.actionsCell}>
         <TouchableOpacity onPress={() => setShowMenu(!showMenu)} style={styles.menuBtn} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={`Acciones para ${patient.name}`} hitSlop={8}>
@@ -98,7 +117,7 @@ export default function PatientRow({ patient, isSelected, onSelect, onClick, onD
 
         {showMenu && (
           <>
-            <TouchableOpacity style={styles.menuOverlay} onPress={() => setShowMenu(false)} activeOpacity={1} />
+            <TouchableOpacity style={styles.menuOverlay} onPress={() => setShowMenu(false)} activeOpacity={1} accessibilityRole="button" accessibilityLabel="Cerrar menú" />
             <View style={[styles.menuDropdown, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); router.push(`/pet/${patient.id}` as any); }} activeOpacity={0.7}>
                 <Eye size={16} color={colors.textSecondary} />
@@ -131,6 +150,7 @@ const styles = StyleSheet.create({
   },
   checkbox: { width: 40, alignItems: 'center', justifyContent: 'center' },
   checkboxBox: { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  compactCell: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, minWidth: 0 },
   patientCell: { flex: 2, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, minWidth: 160 },
   patientName: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.semibold },
   cell: { flex: 1, minWidth: 90, paddingHorizontal: SPACING.xs },

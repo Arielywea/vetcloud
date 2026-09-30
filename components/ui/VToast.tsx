@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, TouchableOpacity, Text } from 'react-native';
+import { View, StyleSheet, Animated, TouchableOpacity, Text, Easing } from 'react-native';
 import { CheckCircle, AlertCircle, Info, X } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, ANIMATION, Z_INDEX } from '../../constants/tokens';
@@ -31,6 +31,8 @@ const ToastContext = createContext<ToastContextValue>({
   error: () => {},
   info: () => {},
 });
+
+const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
 
 export function useToast() {
   return useContext(ToastContext);
@@ -82,16 +84,17 @@ function ToastContainer({
 
 function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: () => void }) {
   const { colors } = useTheme();
-  const translateY = useRef(new Animated.Value(-80)).current;
+  const translateY = useRef(new Animated.Value(-12)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     // Slide in
     Animated.parallel([
-      Animated.spring(translateY, {
+      // Short ease-out slide; no bounce for a message that appears many times a day
+      Animated.timing(translateY, {
         toValue: 0,
-        damping: 15,
-        stiffness: 150,
+        duration: ANIMATION.normal,
+        easing: EASE_OUT,
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
@@ -105,7 +108,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: () =>
     const timer = setTimeout(() => {
       Animated.parallel([
         Animated.timing(translateY, {
-          toValue: -80,
+          toValue: -12,
           duration: ANIMATION.slow,
           useNativeDriver: true,
         }),
@@ -115,7 +118,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: () =>
           useNativeDriver: true,
         }),
       ]).start(() => onDismiss());
-    }, toast.duration || 3000);
+    }, toast.duration || (toast.type === 'error' ? 5000 : 3000)); // errors need time to be read
 
     return () => clearTimeout(timer);
   }, []);
@@ -124,24 +127,24 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: () =>
     switch (toast.type) {
       case 'success':
         return {
-          bg: colors.success + '15',
+          bg: colors.surface,
           border: colors.success,
           icon: <CheckCircle size={18} color={colors.success} />,
-          textColor: colors.success,
+          textColor: colors.text,
         };
       case 'error':
         return {
-          bg: colors.error + '15',
+          bg: colors.surface,
           border: colors.error,
           icon: <AlertCircle size={18} color={colors.error} />,
-          textColor: colors.error,
+          textColor: colors.text,
         };
       case 'info':
         return {
-          bg: colors.info + '15',
+          bg: colors.surface,
           border: colors.info,
           icon: <Info size={18} color={colors.info} />,
-          textColor: colors.info,
+          textColor: colors.text,
         };
     }
   };
@@ -150,6 +153,8 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: () =>
 
   return (
     <Animated.View
+      accessibilityRole="alert"
+      accessibilityLiveRegion={toast.type === 'error' ? 'assertive' : 'polite'}
       style={[
         styles.toast,
         {
@@ -164,7 +169,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: () =>
       <Text style={[styles.text, { color: typeStyles.textColor }]} numberOfLines={2}>
         {toast.text}
       </Text>
-      <TouchableOpacity onPress={onDismiss} style={styles.closeBtn}>
+      <TouchableOpacity onPress={onDismiss} style={styles.closeBtn} hitSlop={10} accessibilityRole="button" accessibilityLabel="Cerrar aviso">
         <X size={14} color={typeStyles.textColor} />
       </TouchableOpacity>
     </Animated.View>

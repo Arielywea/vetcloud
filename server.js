@@ -1504,48 +1504,45 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
       { veterinarian_name: userProfile.veterinarian_name, clinic_name: userProfile.clinic_name, clinic_phone: userProfile.clinic_phone, clinic_address: userProfile.clinic_address, vet_email: vetEmail }
     );
 
-    const beagleSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88" width="48" height="48"><ellipse cx="18" cy="42" rx="14" ry="22" fill="#8D6E63"/><ellipse cx="70" cy="42" rx="14" ry="22" fill="#8D6E63"/><ellipse cx="44" cy="76" rx="18" ry="12" fill="#FFFFFF"/><circle cx="44" cy="44" r="28" fill="#FFFFFF"/><path d="M26 38Q30 18 44 16Q58 18 62 38Q56 30 44 28Q32 30 26 38Z" fill="#5D4037"/><circle cx="34" cy="44" r="6" fill="#FFFFFF"/><circle cx="35" cy="44" r="3.5" fill="#1A1A1A"/><circle cx="36" cy="42.5" r="1.2" fill="#FFF"/><circle cx="54" cy="44" r="6" fill="#FFFFFF"/><circle cx="53" cy="44" r="3.5" fill="#1A1A1A"/><circle cx="54" cy="42.5" r="1.2" fill="#FFF"/><path d="M44 52L40 48Q44 45 48 48Z" fill="#1A1A1A"/><path d="M40 50Q36 54 32 52" stroke="#1A1A1A" stroke-width="1.5" stroke-linecap="round" fill="none"/><path d="M48 50Q52 54 56 52" stroke="#1A1A1A" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
-    const beagleDataUri = `data:image/svg+xml,${encodeURIComponent(beagleSvg)}`;
 
     const htmlBody = `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; color: #333; background: #f5f5f5;">
-  <div style="background: linear-gradient(135deg, #FF8F00, #FFA726); color: white; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
-    <img src="${beagleDataUri}" alt="VetCloud" width="48" height="48" style="margin-bottom: 8px;" />
-    <h1 style="margin: 0; font-size: 24px; font-weight: 800;">VetCloud</h1>
-    <p style="margin: 4px 0 0; opacity: 0.9; font-size: 14px;">Receta Veterinaria</p>
+<body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; color: #141C33; background: #F5F2EA;">
+  <div style="background: #0B1D3A; border-bottom: 3px solid #A8842A; color: #F3EFE4; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
+    <h1 style="margin: 0; font-size: 24px; font-family: Georgia, serif;">${escapeHtml(userProfile.clinic_name || 'VetCloud')}</h1>
+    <p style="margin: 4px 0 0; opacity: 0.9; font-size: 14px;">Receta veterinaria</p>
   </div>
   <div style="background: #ffffff; padding: 24px; border: 1px solid #e0e0e0; border-top: none;">
     <div style="display: flex; gap: 20px; margin-bottom: 20px;">
-      <div style="flex: 1; background: #FFF8E1; padding: 16px; border-radius: 8px; border-left: 4px solid #FF8F00;">
-        <h3 style="margin: 0 0 8px; color: #FF8F00; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5;">Paciente</h3>
+      <div style="flex: 1; background: #F5F2EA; padding: 16px; border-radius: 8px; border-left: 4px solid #A8842A;">
+        <h3 style="margin: 0 0 8px; color: #12264D; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5;">Paciente</h3>
         <p style="margin: 0; font-size: 16px; font-weight: 700;">${escapeHtml(rx.pet_name)}</p>
-        <p style="margin: 4px 0 0; font-size: 13px; color: #666;">${speciesLabel} — ${escapeHtml(rx.breed || 'N/D')}</p>
-        <p style="margin: 2px 0 0; font-size: 13px; color: #666;">Edad: ${age} | Sexo: ${sexLabel} | Peso: ${escapeHtml(rx.weight || 'N/D')} kg</p>
-        <p style="margin: 2px 0 0; font-size: 13px; color: #666;">Estado reproductivo: ${escapeHtml(rx.reproductive_status || 'N/D')}</p>
+        <p style="margin: 4px 0 0; font-size: 13px; color: #4E586F;">${speciesLabel} — ${escapeHtml(rx.breed || 'N/D')}</p>
+        <p style="margin: 2px 0 0; font-size: 13px; color: #4E586F;">Edad: ${age} | Sexo: ${sexLabel} | Peso: ${escapeHtml(rx.weight || 'N/D')} kg</p>
+        <p style="margin: 2px 0 0; font-size: 13px; color: #4E586F;">Estado reproductivo: ${escapeHtml(rx.reproductive_status || 'N/D')}</p>
       </div>
       <div style="flex: 1; background: #F3E5F5; padding: 16px; border-radius: 8px; border-left: 4px solid #6741D9;">
         <h3 style="margin: 0 0 8px; color: #6741D9; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5;">Propietario</h3>
         <p style="margin: 0; font-size: 16px; font-weight: 700;">${escapeHtml(rx.tutor_name || 'N/D')}</p>
-        <p style="margin: 4px 0 0; font-size: 13px; color: #666;">${escapeHtml(rx.tutor_email)}</p>
-        <p style="margin: 2px 0 0; font-size: 13px; color: #666;">${escapeHtml(rx.tutor_phone || '')}</p>
+        <p style="margin: 4px 0 0; font-size: 13px; color: #4E586F;">${escapeHtml(rx.tutor_email)}</p>
+        <p style="margin: 2px 0 0; font-size: 13px; color: #4E586F;">${escapeHtml(rx.tutor_phone || '')}</p>
       </div>
     </div>
-    <div style="display: flex; gap: 16px; font-size: 13px; color: #666; margin-bottom: 20px; padding: 12px; background: #fafafa; border-radius: 8px;">
+    <div style="display: flex; gap: 16px; font-size: 13px; color: #4E586F; margin-bottom: 20px; padding: 12px; background: #FFFDF8; border-radius: 8px;">
       <span><strong>Sucursal:</strong> ${escapeHtml(rx.clinic_branch || userProfile.clinic_name || 'N/D')}</span>
       <span><strong>Prescriptor:</strong> ${escapeHtml(rx.veterinarian_name || userProfile.veterinarian_name || 'N/D')}</span>
       <span><strong>Fecha:</strong> ${new Date(rx.issued_at).toLocaleDateString('es-CL')}</span>
     </div>
     <div style="background: #FAFAFA; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
-      <h3 style="margin: 0 0 12px; color: #FF8F00; font-size: 14px; font-weight: 700;">Receta</h3>
+      <h3 style="margin: 0 0 12px; color: #12264D; font-size: 14px; font-weight: 700;">Receta</h3>
       <div style="white-space: pre-wrap; line-height: 1.8; font-size: 14px;">${escapeHtml(rx.prescription_body).replace(/\n/g, '<br>')}</div>
     </div>
   </div>
   <div style="text-align: center; padding: 16px; font-size: 11px; color: #999; background: #fff; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 12px 12px;">
-    <p style="margin: 0 0 6px;">Para consultas, responda a este correo o escriba a <strong style="color: #FF8F00;">${escapeHtml(vetEmail)}</strong></p>
-    <p style="margin: 0;">Documento electrónico generado por <strong style="color: #FF8F00;">VetCloud</strong></p>
+    <p style="margin: 0 0 6px;">Para consultas, responda a este correo o escriba a <strong style="color: #12264D;">${escapeHtml(vetEmail)}</strong></p>
+    <p style="margin: 0;">Documento electrónico generado por <strong style="color: #12264D;">VetCloud</strong></p>
   </div>
 </body>
 </html>`;
@@ -1875,26 +1872,26 @@ app.post('/items/reminders/send-pending', authMiddleware, async (req, res) => {
         const htmlBody = `
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
-<body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-  <div style="background: linear-gradient(135deg, #FF8F00, #FFA726); color: white; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
-    <h1 style="margin: 0; font-size: 22px;">🐶 VetCloud</h1>
+<body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #141C33;">
+  <div style="background: #0B1D3A; border-bottom: 3px solid #A8842A; color: #F3EFE4; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
+    <h1 style="margin: 0; font-size: 22px; font-family: Georgia, serif;">${escapeHtml(userProfile.clinic_name || 'VetCloud')}</h1>
     <p style="margin: 4px 0 0; opacity: 0.9; font-size: 14px;">Recordatorio</p>
   </div>
   <div style="background: #fff; padding: 24px; border: 1px solid #e0e0e0; border-top: none;">
-    <div style="background: #FFF8E1; padding: 16px; border-radius: 8px; border-left: 4px solid #FF8F00; margin-bottom: 16px;">
-      <h3 style="margin: 0 0 8px; color: #FF8F00; font-size: 12px; text-transform: uppercase;">Paciente</h3>
+    <div style="background: #F5F2EA; padding: 16px; border-radius: 8px; border-left: 4px solid #A8842A; margin-bottom: 16px;">
+      <h3 style="margin: 0 0 8px; color: #12264D; font-size: 12px; text-transform: uppercase;">Paciente</h3>
       <p style="margin: 0; font-size: 18px; font-weight: 700;">${escapeHtml(reminder.pet_name)}</p>
-      <p style="margin: 4px 0 0; font-size: 13px; color: #666;">${speciesLabel} — ${escapeHtml(reminder.breed || 'N/D')}</p>
+      <p style="margin: 4px 0 0; font-size: 13px; color: #4E586F;">${speciesLabel} — ${escapeHtml(reminder.breed || 'N/D')}</p>
     </div>
     <div style="background: #FAFAFA; padding: 16px; border-radius: 8px; border: 1px solid #e0e0e0;">
-      <h3 style="margin: 0 0 8px; color: #333; font-size: 14px;">${escapeHtml(reminder.title)}</h3>
+      <h3 style="margin: 0 0 8px; color: #141C33; font-size: 14px;">${escapeHtml(reminder.title)}</h3>
       <p style="margin: 0; font-size: 14px; line-height: 1.6;">${escapeHtml(reminder.message)}</p>
       <p style="margin: 12px 0 0; font-size: 13px; color: #999;">Fecha: ${new Date(reminder.scheduled_for).toLocaleDateString('es-CL')}</p>
     </div>
   </div>
   <div style="text-align: center; padding: 16px; font-size: 11px; color: #999; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 12px 12px;">
     <p style="margin: 0;">Para cancelar este recordatorio, responda a este correo.</p>
-    <p style="margin: 4px 0 0;">Documento generado por <strong style="color: #FF8F00;">VetCloud</strong></p>
+    <p style="margin: 4px 0 0;">Documento generado por <strong style="color: #12264D;">VetCloud</strong></p>
   </div>
 </body></html>`;
 

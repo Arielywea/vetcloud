@@ -167,7 +167,7 @@ export default function RecordDetail({ record }: RecordDetailProps) {
             <View style={[styles.sectionIcon, { backgroundColor: colors.error + '20' }]}>
               <DynamicIcon name="scissors-cutting" size={16} color={colors.error} />
             </View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Datos de Cirugia</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Datos de cirugía</Text>
           </View>
           {d.procedimiento && (
             <View style={styles.cirugiaField}>
@@ -177,7 +177,7 @@ export default function RecordDetail({ record }: RecordDetailProps) {
           )}
           {d.descripcion && (
             <View style={styles.cirugiaField}>
-              <Text style={[styles.cirugiaLabel, { color: colors.textSecondary }]}>Descripcion</Text>
+              <Text style={[styles.cirugiaLabel, { color: colors.textSecondary }]}>Descripción</Text>
               <Text style={[styles.cirugiaContent, { color: colors.text }]}>{d.descripcion}</Text>
             </View>
           )}
@@ -192,7 +192,7 @@ export default function RecordDetail({ record }: RecordDetailProps) {
               <Text style={[styles.cirugiaLabel, { color: colors.textSecondary }]}>Archivos</Text>
               <View style={styles.filesRow}>
                 {d.files.map((fileUrl: string, idx: number) => (
-                  <TouchableOpacity key={idx} style={[styles.fileThumbContainer, { borderColor: colors.border }]} onPress={() => Linking.openURL(fileUrl)}>
+                  <TouchableOpacity key={idx} style={[styles.fileThumbContainer, { borderColor: colors.border }]} onPress={() => Linking.openURL(fileUrl)} accessibilityRole="link" accessibilityLabel={`Abrir archivo adjunto ${idx + 1}`}>
                     {fileUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                       <Image source={{ uri: fileUrl }} style={styles.fileThumb} />
                     ) : (
@@ -293,7 +293,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   cirugiaLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,

@@ -32,7 +32,7 @@ export default function EmptyState({
           onPress={onAction}
           activeOpacity={0.7}
         >
-          <Plus size={16} color="#FFF" />
+          <Plus size={16} color={onPrimaryText.default} />
           <Text style={[styles.buttonText, { color: onPrimaryText.default }]}>{actionLabel}</Text>
         </TouchableOpacity>
       )}
@@ -77,7 +77,6 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   buttonText: {
-    color: '#FFF',
     fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: TYPOGRAPHY.weights.semibold,
   },

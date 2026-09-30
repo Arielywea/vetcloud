@@ -7,7 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { usePets } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { uploadPetPhoto } from '../../services/cloudinary';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, BREAKPOINTS, alpha } from '../../constants/tokens';
 import { TEXT_ON_PRIMARY } from '../../constants/colors';
 import VoiceNotes from '../../components/VoiceNotes';
 import { DOG_BREEDS, CAT_BREEDS, filterBreeds } from '../../constants/breeds';
@@ -39,7 +39,7 @@ export default function AddPacienteScreen() {
   const toast = useToast();
   const [loadingPet, setLoadingPet] = useState(isEdit);
   const { width } = useWindowDimensions();
-  const isMobile = width < 640;
+  const isMobile = width < BREAKPOINTS.sm;
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -554,7 +554,7 @@ export default function AddPacienteScreen() {
         {/* Row 3: Color/Pelaje, Peso, Microchip */}
         <View style={[styles.grid3, isMobile && { flexDirection: 'column' }]}>
           <View style={styles.gridField}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Color / Pelaje</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Color / pelaje</Text>
             <TextInput
               value={color}
               onChangeText={setColor}
@@ -891,7 +891,7 @@ export default function AddPacienteScreen() {
           activeOutlineColor={colors.primary}
         />
 
-        <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginTop: SPACING.md }]}>Pre-diagnóstico / Sospecha</Text>
+        <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginTop: SPACING.md }]}>Pre-diagnóstico / sospecha</Text>
         <TextInput
           label="Pre-diagnóstico"
           value={preDiagnostico}
@@ -1071,7 +1071,7 @@ export default function AddPacienteScreen() {
             <Text style={{ textAlign: 'center' }}>{errorMsg}</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setErrorMsg(null)}>OK</Button>
+            <Button onPress={() => setErrorMsg(null)}>Entendido</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -1194,7 +1194,7 @@ const styles = StyleSheet.create({
   summaryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm },
   summaryPhoto: { width: 80, height: 80, borderRadius: RADIUS.lg, marginBottom: SPACING.sm },
   summaryGrid: { gap: SPACING.sm },
-  summaryItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: SPACING.xs, borderBottomWidth: 1, borderBottomColor: alpha('#000000', 0.03) },
+  summaryItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: SPACING.xs, borderBottomWidth: 1 },
   summaryLabel: { fontSize: TYPOGRAPHY.sizes.sm },
   summaryValue: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, flex: 1, textAlign: 'right', marginLeft: SPACING.md },
 

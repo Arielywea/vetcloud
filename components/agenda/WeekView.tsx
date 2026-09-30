@@ -165,9 +165,11 @@ export default function WeekView({
                     {/* Add appointment button */}
                     {onSlotPress && (
                       <TouchableOpacity
-                        style={[styles.addBtn, { top: 2, right: 2 }]}
+                        style={[styles.addBtn, { top: 2, right: 2, backgroundColor: colors.surfaceVariant }]}
                         onPress={() => onSlotPress(day, hour)}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        hitSlop={13}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Nueva cita el ${day.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric' })} a las ${hour}:00`}
                       >
                         <Plus size={10} color={colors.textSecondary + '60'} />
                       </TouchableOpacity>
@@ -274,6 +276,5 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.06)',
   },
 });

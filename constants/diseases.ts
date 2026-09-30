@@ -31,7 +31,7 @@ function convertToDisease(raw: any): Disease {
     ? (raw.species.length > 1 ? 'both' : raw.species[0])
     : raw.species;
 
-  const keySigns = (raw.key_signs || []).map((s: any) => `🔴 ${s.sign}: ${s.description}`);
+  const keySigns = (raw.key_signs || []).map((s: any) => `${s.sign}: ${s.description}`);
 
   const diagnosis = {
     clinicalExam: raw.diagnosis?.clinical_examination || '',

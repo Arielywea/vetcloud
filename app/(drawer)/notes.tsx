@@ -14,7 +14,7 @@ import { useToast } from '../../components/ui/VToast';
 
 export default function NotesScreen() {
   const { notes, loading, addNote, updateNote, refresh } = useNotes();
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
   const toast = useToast();
   const [showModal, setShowModal] = useState(false);
   const [editingNote, setEditingNote] = useState<DirectusNote | null>(null);
@@ -67,8 +67,8 @@ export default function NotesScreen() {
         <View style={styles.noteHeader}>
           <Text variant="titleMedium" style={[styles.noteTitle, { color: colors.text }]}>{item.title}</Text>
           <View style={styles.noteActions}>
-            <TouchableOpacity onPress={() => handleEdit(item)} style={{ padding: 8 }}><Pencil size={16} color={colors.primary} /></TouchableOpacity>
-            <TouchableOpacity onPress={() => setDeleteTarget(item)} style={{ padding: 8 }}><Trash2 size={16} color={colors.error} /></TouchableOpacity>
+            <TouchableOpacity onPress={() => handleEdit(item)} style={{ padding: 8 }} hitSlop={4} accessibilityRole="button" accessibilityLabel={`Editar nota ${item.title}`}><Pencil size={16} color={colors.primary} /></TouchableOpacity>
+            <TouchableOpacity onPress={() => setDeleteTarget(item)} style={{ padding: 8 }} hitSlop={4} accessibilityRole="button" accessibilityLabel={`Eliminar nota ${item.title}`}><Trash2 size={16} color={colors.error} /></TouchableOpacity>
           </View>
         </View>
         <Text variant="bodyMedium" style={[styles.noteContent, { color: colors.textSecondary }]} numberOfLines={3}>{item.content}</Text>
@@ -109,13 +109,13 @@ export default function NotesScreen() {
           />
         }
       />
-      <TouchableOpacity style={[styles.fab, { backgroundColor: colors.primary, ...SHADOWS.lg }]} onPress={() => { resetForm(); setShowModal(true); }}>
-        <Plus size={24} color="#fff" />
+      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Nueva nota" style={[styles.fab, { backgroundColor: colors.primary, ...SHADOWS.lg }]} onPress={() => { resetForm(); setShowModal(true); }}>
+        <Plus size={24} color={onPrimaryText.default} />
       </TouchableOpacity>
 
       <Portal>
         <Modal visible={showModal} onDismiss={() => { setShowModal(false); resetForm(); }} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
-          <Text variant="titleLarge" style={[styles.modalTitle, { color: colors.text }]}>{editingNote ? 'Editar Nota' : 'Nueva Nota'}</Text>
+          <Text variant="titleLarge" style={[styles.modalTitle, { color: colors.text }]}>{editingNote ? 'Editar nota' : 'Nueva nota'}</Text>
           <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Título *</Text>
           <RNTextInput style={[styles.input, { borderColor: colors.border, color: colors.text }]} value={title} onChangeText={setTitle} placeholder="Título" placeholderTextColor={colors.textLight} />
           <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Contenido *</Text>

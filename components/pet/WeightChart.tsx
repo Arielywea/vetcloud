@@ -3,7 +3,7 @@ import { View, StyleSheet, Dimensions } from 'react-native';
 import { Text } from 'react-native-paper';
 import { LineChart } from 'react-native-chart-kit';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
 import { ClinicalRecord } from '../../services/directus';
 import DynamicIcon from '../ui/DynamicIcon';
 
@@ -51,7 +51,7 @@ export default function WeightChart({ records }: WeightChartProps) {
       <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.xs]}>
         <View style={styles.header}>
           <DynamicIcon name="weight" size={18} color={colors.primary} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Evolucion de Peso</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Evolución del peso</Text>
         </View>
         <View style={styles.emptyState}>
           <DynamicIcon name="chart-line-variant" size={32} color={colors.textLight} />
@@ -73,7 +73,7 @@ export default function WeightChart({ records }: WeightChartProps) {
     <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.xs]}>
       <View style={styles.header}>
         <DynamicIcon name="weight" size={18} color={colors.primary} />
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Evolucion de Peso</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Evolución del peso</Text>
         <View style={[styles.trendBadge, { backgroundColor: trendColor + '20' }]}>
           <DynamicIcon name={trendIcon} size={14} color={trendColor} />
           <Text style={[styles.trendLabel, { color: trendColor }]}>{trendLabel}</Text>
@@ -92,7 +92,7 @@ export default function WeightChart({ records }: WeightChartProps) {
           backgroundGradientFrom: colors.surface,
           backgroundGradientTo: colors.surface,
           decimalPlaces: 1,
-          color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+          color: (opacity = 1) => alpha(colors.primary, opacity),
           labelColor: () => colors.textSecondary,
           style: { borderRadius: RADIUS.md },
           propsForDots: {
@@ -176,7 +176,6 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
     paddingTop: SPACING.md,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
   },
   stat: {
     flex: 1,

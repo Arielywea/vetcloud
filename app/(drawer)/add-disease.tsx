@@ -106,7 +106,7 @@ export default function AddDiseaseScreen() {
     >
       {/* ── Section: Datos Generales ── */}
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Datos Generales</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Datos generales</Text>
 
         <TextInput
           label="Nombre de la enfermedad *"
@@ -222,7 +222,7 @@ export default function AddDiseaseScreen() {
 
       {/* ── Section: Signos Clave ── */}
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Signos Clave</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Signos clave</Text>
         <TextInput
           label="Signos (uno por línea)"
           value={keySigns}
@@ -239,7 +239,7 @@ export default function AddDiseaseScreen() {
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Diagnóstico</Text>
         <TextInput
-          label="Examen Clínico"
+          label="Examen clínico"
           value={clinicalExam}
           onChangeText={setClinicalExam}
           mode="outlined"
@@ -345,7 +345,7 @@ export default function AddDiseaseScreen() {
 
       {/* ── Section: Foto ── */}
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Foto de la Enfermedad</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Foto de la enfermedad</Text>
         <TextInput
           label="URL de la imagen (opcional)"
           value={photoUrl}
@@ -375,7 +375,7 @@ export default function AddDiseaseScreen() {
             <Text style={{ textAlign: 'center' }}>{errorDialog}</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setErrorDialog(null)}>OK</Button>
+            <Button onPress={() => setErrorDialog(null)}>Entendido</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>

@@ -3,7 +3,7 @@ import { ScrollView, TouchableOpacity, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import DynamicIcon from './ui/DynamicIcon';
 import { useTheme } from '../contexts/ThemeContext';
-import { TYPOGRAPHY } from '../constants/tokens';
+import { TYPOGRAPHY, alpha } from '../constants/tokens';
 
 export type ClinicalTabType = 'historial' | 'consultas' | 'vacunas' | 'cirugias' | 'recetas';
 
@@ -17,7 +17,7 @@ const TABS: { key: ClinicalTabType; label: string; icon: string }[] = [
   { key: 'historial', label: 'Historial', icon: 'history' },
   { key: 'consultas', label: 'Consultas', icon: 'stethoscope' },
   { key: 'vacunas', label: 'Vacunas', icon: 'needle' },
-  { key: 'cirugias', label: 'Cirugias', icon: 'scissors-cutting' },
+  { key: 'cirugias', label: 'Cirugías', icon: 'scissors-cutting' },
   { key: 'recetas', label: 'Recetas', icon: 'file-document-outline' },
 ];
 
@@ -55,7 +55,7 @@ export default function ClinicalTabs({ activeTab, onTabChange, counts }: Clinica
               <View style={[
                 styles.badge,
                 { backgroundColor: colors.surfaceVariant },
-                isActive && { backgroundColor: '#FFFFFF30' },
+                isActive && { backgroundColor: alpha(onPrimaryText.default, 0.2) },
               ]}>
                 <Text style={[
                   styles.badgeText,

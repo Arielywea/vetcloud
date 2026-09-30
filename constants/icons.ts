@@ -1,9 +1,9 @@
 // ---------------------------------------------------------
-// VetCloud Icon System — Royal Veterinary Icons
+// VetCloud Icon System â€” Royal Veterinary Icons
 // Gold accents + Navy authority + Artoria DNA
 // ---------------------------------------------------------
 
-// Icon scale — consistent sizing across the app
+// Icon scale â€” consistent sizing across the app
 export const ICON_SIZES = {
   xxs: 10,    // Inline status dots
   xs: 12,     // Timeline dots, badges
@@ -14,7 +14,7 @@ export const ICON_SIZES = {
   '2xl': 48,  // Hero/featured icons
 } as const;
 
-// Semantic icon colors — themed, not hardcoded
+// Semantic icon colors â€” themed, not hardcoded
 export const ICON_COLORS = {
   gold: '#C9A227',
   goldLight: '#C9A22730',
@@ -29,7 +29,7 @@ export const ICON_COLORS = {
   white: '#FFFFFF',
 } as const;
 
-// Record type icon config — themed with gold accent
+// Record type icon config â€” themed with gold accent
 export const RECORD_TYPE_CONFIG: Record<string, {
   icon: string;
   color: string;
@@ -52,7 +52,7 @@ export const RECORD_TYPE_CONFIG: Record<string, {
     icon: 'scissors-cutting',
     color: '#EF4444',
     bgColor: '#EF444415',
-    label: 'Cirugía',
+    label: 'CirugÃ­a',
   },
   control: {
     icon: 'clipboard-check',
@@ -68,7 +68,7 @@ export const SPECIES_CONFIG: Record<string, { icon: string; label: string }> = {
   cat: { icon: 'cat', label: 'Felino' },
 };
 
-// Action icon config — gold for primary actions
+// Action icon config â€” gold for primary actions
 export const ACTION_CONFIG = {
   edit: { icon: 'pencil', color: '#C9A227' },
   call: { icon: 'phone', color: '#10B981' },
@@ -83,5 +83,5 @@ export const ACTION_CONFIG = {
 export const HEALTH_STATUS = {
   active: { icon: 'shield-check', color: '#10B981', label: 'Activo' },
   inactive: { icon: 'shield-off', color: '#8896A8', label: 'Inactivo' },
-  critical: { icon: 'alert-circle', color: '#EF4444', label: 'Crítico' },
+  critical: { icon: 'alert-circle', color: '#EF4444', label: 'CrÃ­tico' },
 } as const;

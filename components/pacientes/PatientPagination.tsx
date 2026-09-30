@@ -40,6 +40,7 @@ export default function PatientPagination({
       </Text>
       <View style={styles.pages}>
         <TouchableOpacity
+          accessibilityRole="button" accessibilityLabel="Página anterior"
           onPress={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
           style={[styles.pageBtn, currentPage === 1 && { opacity: 0.4 }]}
@@ -64,6 +65,7 @@ export default function PatientPagination({
           );
         })}
         <TouchableOpacity
+          accessibilityRole="button" accessibilityLabel="Página siguiente"
           onPress={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
           style={[styles.pageBtn, currentPage === totalPages && { opacity: 0.4 }]}

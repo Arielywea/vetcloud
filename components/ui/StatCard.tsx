@@ -36,7 +36,7 @@ export default function VStatCard({ label, value, icon, color, trend, onPress, s
   );
 
   if (onPress) {
-    return <TouchableOpacity activeOpacity={0.7} onPress={onPress}>{content}</TouchableOpacity>;
+    return <TouchableOpacity activeOpacity={0.7} onPress={onPress} accessibilityRole="button" accessibilityLabel={`${label}: ${value}`}>{content}</TouchableOpacity>;
   }
 
   return content;

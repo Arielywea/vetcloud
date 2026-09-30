@@ -27,11 +27,11 @@ function getDaysInMonth(year: number, month: number): number {
 }
 
 function getFirstDayOfMonth(year: number, month: number): number {
-  return new Date(year, month, 1).getDay();
+  return (new Date(year, month, 1).getDay() + 6) % 7; // Monday-first, like the week view
 }
 
 const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
 export default function MonthView({
   selectedDate,
@@ -157,7 +157,7 @@ export default function MonthView({
               {selectedDate.getDate()} de {MONTH_NAMES[month]} — {selAppts.length} cita{selAppts.length > 1 ? 's' : ''}
             </Text>
             {selAppts.map((appt) => {
-              const time = new Date(appt.start_time).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+              const time = new Date(appt.start_time).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
               const color = APPOINTMENT_TYPE_COLORS[appt.appointment_type] || colors.primary;
               return (
                 <TouchableOpacity

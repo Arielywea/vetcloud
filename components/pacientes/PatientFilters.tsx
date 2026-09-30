@@ -63,7 +63,7 @@ export default function PatientFilters({
           contentStyle={styles.searchInputContent}
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => onSearchChange('')} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => onSearchChange('')} activeOpacity={0.7} hitSlop={12} accessibilityRole="button" accessibilityLabel="Borrar búsqueda">
             <X size={16} color={colors.textLight} />
           </TouchableOpacity>
         )}

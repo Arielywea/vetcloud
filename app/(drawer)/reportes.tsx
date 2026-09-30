@@ -76,7 +76,7 @@ export default function ReportesScreen() {
     { label: 'Pacientes', value: String(dashboardStats?.totalPets ?? 0), icon: <PawPrint size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.info },
     { label: 'Citas (Hoy)', value: String(dashboardStats?.todayAppointments ?? 0), icon: <Calendar size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.success },
     { label: 'Fichas', value: String(dashboardStats?.totalRecords ?? 0), icon: <Package size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.warning },
-    { label: 'Stock Bajo', value: String(dashboardStats?.lowStockAlerts ?? 0), icon: <BarChart3 size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.error },
+    { label: 'Stock bajo', value: String(dashboardStats?.lowStockAlerts ?? 0), icon: <BarChart3 size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.error },
   ];
 
   // At least 1: an all-zero week must not divide by zero
@@ -115,7 +115,7 @@ export default function ReportesScreen() {
       </View>
 
       <VCard style={styles.card}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>Actividad de la Semana</Text>
+        <Text style={[styles.cardTitle, { color: colors.text }]}>Actividad de la semana</Text>
         <View style={styles.chart}>
           {weeklyData.map((day, idx) => {
             const heightPct = (day.count / maxWeekly) * 120;
@@ -131,7 +131,7 @@ export default function ReportesScreen() {
       </VCard>
 
       <VCard style={styles.card}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>Tipos de Fichas</Text>
+        <Text style={[styles.cardTitle, { color: colors.text }]}>Tipos de fichas</Text>
         {recordTypes.map(record => {
           const recordColor = RECORD_TYPE_COLORS[record.record_type.toLowerCase()] || colors.primary;
           const pct = totalRecords > 0 ? Math.round((record.count / totalRecords) * 100) : 0;

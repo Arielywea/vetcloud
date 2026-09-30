@@ -29,7 +29,7 @@ const CATEGORY_ICONS: Record<string, typeof Pill> = {
 };
 
 export default function InventarioScreen() {
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
   const { items, lowStockItems, loading, addItem, updateItem, removeItem, refresh } = useInventory();
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -140,8 +140,8 @@ export default function InventarioScreen() {
                     <Text style={[styles.minStock, { color: colors.textLight }]}>Mín: {item.min_stock}</Text>
                   </View>
                   <View style={styles.itemActions}>
-                    <TouchableOpacity onPress={() => openEdit(item)} style={{ padding: 8 }}><Pencil size={18} color={colors.primary} /></TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDelete(item)} style={{ padding: 8 }}><Trash2 size={18} color={colors.error} /></TouchableOpacity>
+                    <TouchableOpacity onPress={() => openEdit(item)} style={{ padding: 8 }} hitSlop={4} accessibilityRole="button" accessibilityLabel={`Editar ${item.name}`}><Pencil size={18} color={colors.primary} /></TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleDelete(item)} style={{ padding: 8 }} hitSlop={4} accessibilityRole="button" accessibilityLabel={`Eliminar ${item.name}`}><Trash2 size={18} color={colors.error} /></TouchableOpacity>
                   </View>
                 </View>
               </VCard>
@@ -150,14 +150,14 @@ export default function InventarioScreen() {
         )}
       </ScrollView>
 
-      <TouchableOpacity style={[styles.fab, { backgroundColor: colors.primary, ...SHADOWS.lg }]} onPress={() => { resetForm(); setShowModal(true); }}>
-        <Plus size={24} color="#FFF" />
+      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Nuevo producto" style={[styles.fab, { backgroundColor: colors.primary, ...SHADOWS.lg }]} onPress={() => { resetForm(); setShowModal(true); }}>
+        <Plus size={24} color={onPrimaryText.default} />
       </TouchableOpacity>
 
       <Portal>
         <Modal visible={showModal} onDismiss={() => { setShowModal(false); resetForm(); }} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
           <ScrollView>
-            <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>{editingItem ? 'Editar Item' : 'Nuevo Item'}</Text>
+            <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>{editingItem ? 'Editar producto' : 'Nuevo producto'}</Text>
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Nombre *</Text>
             <RNTextInput style={[styles.input, { borderColor: colors.border, color: colors.text }]} value={itemName} onChangeText={setItemName} placeholder="Nombre del item" placeholderTextColor={colors.textLight} />
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Categoría</Text>
@@ -201,9 +201,9 @@ export default function InventarioScreen() {
       <Portal>
         <Modal visible={!!errorDialog} onDismiss={() => setErrorDialog(null)} contentContainerStyle={[styles.dialogModal, { backgroundColor: colors.surface }]}>
           <AlertTriangle size={32} color={colors.warning} style={{ alignSelf: 'center', marginBottom: 8 }} />
-          <Text variant="titleMedium" style={{ textAlign: 'center', color: colors.text }}>Error</Text>
+          <Text variant="titleMedium" style={{ textAlign: 'center', color: colors.text }}>No se pudo completar</Text>
           <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 4 }}>{errorDialog}</Text>
-          <VButton variant="primary" fullWidth onPress={() => setErrorDialog(null)} style={{ marginTop: 16 }}>OK</VButton>
+          <VButton variant="primary" fullWidth onPress={() => setErrorDialog(null)} style={{ marginTop: 16 }}>Entendido</VButton>
         </Modal>
       </Portal>
 

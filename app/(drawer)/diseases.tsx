@@ -108,6 +108,9 @@ export default function DiseasesScreen() {
         style={[styles.sectionHeader, { backgroundColor: color + '15', borderLeftColor: color }]}
         onPress={() => toggleSection(sectionKey)}
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: !isCollapsed }}
+        accessibilityLabel={`${title}, ${count}`}
       >
         {icon}
         <Text style={[styles.sectionTitle, { color }]} numberOfLines={1}>{title}</Text>
@@ -187,7 +190,7 @@ export default function DiseasesScreen() {
           <>
             {puppyDiseases.length > 0 && (
               <>
-                {renderSectionHeader('Cachorros', <Baby size={18} color="#F57C00" />, puppyDiseases.length, '#F57C00', 'puppy')}
+                {renderSectionHeader('Cachorros', <Baby size={18} color={colors.warning} />, puppyDiseases.length, colors.warning, 'puppy')}
                 {!collapsedSections.has('puppy') && puppyDiseases.map(d => (
                   <View key={d.id}>{renderDiseaseCard({ item: d })}</View>
                 ))}
@@ -195,7 +198,7 @@ export default function DiseasesScreen() {
             )}
             {kittenDiseases.length > 0 && (
               <>
-                {renderSectionHeader('Gatitos', <Baby size={18} color="#EC407A" />, kittenDiseases.length, '#EC407A', 'kitten')}
+                {renderSectionHeader('Gatitos', <Baby size={18} color={colors.info} />, kittenDiseases.length, colors.info, 'kitten')}
                 {!collapsedSections.has('kitten') && kittenDiseases.map(d => (
                   <View key={d.id}>{renderDiseaseCard({ item: d })}</View>
                 ))}
@@ -222,8 +225,8 @@ export default function DiseasesScreen() {
         }
       />
 
-      <TouchableOpacity style={[styles.fab, { backgroundColor: colors.primary, ...SHADOWS.lg }]} onPress={() => router.push('/(drawer)/add-disease')}>
-        <Plus size={24} color="#fff" />
+      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Nueva enfermedad" style={[styles.fab, { backgroundColor: colors.primary, ...SHADOWS.lg }]} onPress={() => router.push('/(drawer)/add-disease')}>
+        <Plus size={24} color={onPrimaryText.default} />
       </TouchableOpacity>
     </View>
   );

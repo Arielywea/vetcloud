@@ -26,10 +26,11 @@ function formatDate(d: Date): string {
   return d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-const VIEW_ICONS: Record<ViewMode, React.ReactNode> = {
-  week: <LayoutGrid size={14} />,
-  day: <List size={14} />,
-  month: <Calendar size={14} />,
+// Icon components, colored at render time (a color on a wrapping View isn't inherited in RN)
+const VIEW_ICONS: Record<ViewMode, typeof Calendar> = {
+  week: LayoutGrid,
+  day: List,
+  month: Calendar,
 };
 
 const VIEW_LABELS: Record<ViewMode, string> = {
@@ -70,8 +71,8 @@ export default function AgendaToolbar({
           style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
           onPress={onNewAppointment}
         >
-          <Plus size={16} color="#FFF" />
-          <Text style={[styles.primaryBtnText, { color: onPrimaryText.default }]}>Nueva Cita</Text>
+          <Plus size={16} color={onPrimaryText.default} />
+          <Text style={[styles.primaryBtnText, { color: onPrimaryText.default }]}>Nueva cita</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.secondaryBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
@@ -84,14 +85,14 @@ export default function AgendaToolbar({
 
       {/* Center: Date navigation */}
       <View style={styles.centerSection}>
-        <TouchableOpacity onPress={() => navigateDate(-1)} style={styles.navBtn}>
+        <TouchableOpacity onPress={() => navigateDate(-1)} style={styles.navBtn} hitSlop={6} accessibilityRole="button" accessibilityLabel="Período anterior">
           <ChevronLeft size={18} color={colors.textSecondary} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={goToToday} style={styles.dateBtn}>
+        <TouchableOpacity onPress={goToToday} style={styles.dateBtn} accessibilityRole="button" accessibilityHint="Vuelve a hoy">
           <CalendarDays size={14} color={colors.primary} />
           <Text style={[styles.dateText, { color: colors.text }]}>{formatDate(selectedDate)}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigateDate(1)} style={styles.navBtn}>
+        <TouchableOpacity onPress={() => navigateDate(1)} style={styles.navBtn} hitSlop={6} accessibilityRole="button" accessibilityLabel="Período siguiente">
           <ChevronRight size={18} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
@@ -99,7 +100,7 @@ export default function AgendaToolbar({
       {/* Right: View switcher + actions */}
       <View style={styles.section}>
         {isMobile && onFilterPress && (
-          <TouchableOpacity onPress={onFilterPress} style={[styles.iconBtn, { backgroundColor: colors.background }]}>
+          <TouchableOpacity onPress={onFilterPress} style={[styles.iconBtn, { backgroundColor: colors.background }]} hitSlop={6} accessibilityRole="button" accessibilityLabel="Filtros">
             <Filter size={14} color={colors.textSecondary} />
           </TouchableOpacity>
         )}
@@ -113,9 +114,7 @@ export default function AgendaToolbar({
               ]}
               onPress={() => onViewChange(mode)}
             >
-              <View style={{ color: viewMode === mode ? onPrimaryText.default : colors.textSecondary }}>
-                {VIEW_ICONS[mode]}
-              </View>
+              {React.createElement(VIEW_ICONS[mode], { size: 14, color: viewMode === mode ? onPrimaryText.default : colors.textSecondary })}
               <Text
                 style={[
                   styles.viewBtnText,
@@ -129,10 +128,10 @@ export default function AgendaToolbar({
         </View>
         {!isMobile && (
           <>
-            <TouchableOpacity onPress={onPrint} style={[styles.iconBtn, { backgroundColor: colors.background }]}>
+            <TouchableOpacity onPress={onPrint} style={[styles.iconBtn, { backgroundColor: colors.background }]} hitSlop={6} accessibilityRole="button" accessibilityLabel="Imprimir agenda">
               <Printer size={14} color={colors.textSecondary} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={onExport} style={[styles.iconBtn, { backgroundColor: colors.background }]}>
+            <TouchableOpacity onPress={onExport} style={[styles.iconBtn, { backgroundColor: colors.background }]} hitSlop={6} accessibilityRole="button" accessibilityLabel="Exportar agenda a Excel">
               <Download size={14} color={colors.textSecondary} />
             </TouchableOpacity>
           </>
@@ -172,7 +171,6 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    color: '#FFF',
   },
   secondaryBtn: {
     flexDirection: 'row',

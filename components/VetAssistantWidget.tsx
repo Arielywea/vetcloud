@@ -87,8 +87,8 @@ export default function VetAssistantWidget() {
             {messages.length === 0 && (
               <View style={styles.welcomeContainer}>
                 <Bot size={48} color={colors.accent} />
-                <Text style={[styles.welcomeTitle, { color: colors.text }]}>¡Hola Doctor!</Text>
-                <Text style={[styles.welcomeDesc, { color: colors.textSecondary }]}>Escriba su consulta en lenguaje natural.</Text>
+                <Text style={[styles.welcomeTitle, { color: colors.text }]}>¿En qué te ayudo?</Text>
+                <Text style={[styles.welcomeDesc, { color: colors.textSecondary }]}>Pregunta con tus palabras: pacientes, dosis, vacunas o tu agenda.</Text>
                 <View style={styles.quickActions}>
                   <TouchableOpacity style={[styles.quickBtn, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '30' }]} onPress={() => sendMessage('qué tengo hoy')}>
                     <Calendar size={18} color={colors.accent} />
@@ -149,7 +149,7 @@ export default function VetAssistantWidget() {
             <TextInput
               value={inputText}
               onChangeText={setInputText}
-              placeholder="Escriba su consulta..."
+              placeholder="Escribe tu consulta…"
               placeholderTextColor={colors.textLight}
               style={[styles.input, { color: colors.text, borderColor: colors.border }]}
               onSubmitEditing={handleSend}

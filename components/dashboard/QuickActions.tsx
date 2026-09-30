@@ -7,11 +7,11 @@ import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import VetCloudIcon, { VetCloudIconName } from '../icons/VetCloudIcon';
 
 const ACTIONS: { label: string; iconName: VetCloudIconName; route: string }[] = [
-  { label: 'Nueva Consulta', iconName: 'consulta', route: '/(drawer)/agenda' },
-  { label: 'Nueva Cita', iconName: 'agenda', route: '/(drawer)/agenda' },
-  { label: 'Nuevo Paciente', iconName: 'pacientes', route: '/(drawer)/add-paciente' },
+  { label: 'Nueva consulta', iconName: 'consulta', route: '/(drawer)/agenda' },
+  { label: 'Nueva cita', iconName: 'agenda', route: '/(drawer)/agenda' },
+  { label: 'Nuevo paciente', iconName: 'pacientes', route: '/(drawer)/add-paciente' },
   { label: 'Inventario', iconName: 'inventario', route: '/(drawer)/inventario' },
-  { label: 'Exám. Laboratorio', iconName: 'laboratorio', route: '/(drawer)/laboratorio' },
+  { label: 'Exámenes de laboratorio', iconName: 'laboratorio', route: '/(drawer)/laboratorio' },
   { label: 'Reportes', iconName: 'reportes', route: '/(drawer)/reportes' },
 ];
 
@@ -24,7 +24,7 @@ export default function QuickActions() {
       {/* Header */}
       <View style={styles.header}>
         <VetCloudIcon name="dashboard" size={18} color={colors.accent} />
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Acciones Rápidas</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Acciones rápidas</Text>
       </View>
 
       {/* Actions grid */}

@@ -1,10 +1,12 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
+import { useReducedMotion, EASE_OUT } from '../../hooks/useReducedMotion';
 import { View, StyleSheet, TouchableOpacity, Animated, useWindowDimensions, TouchableWithoutFeedback, Linking } from 'react-native';
 import { Text, Divider } from 'react-native-paper';
 import { X, Phone, Mail, ChevronRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, Z_INDEX } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, Z_INDEX, alpha } from '../../constants/tokens';
 import { DirectusPet } from '../../services/directus';
 import { isActive } from '../../utils/patientFilters';
 import { calculateAge } from '../../utils/age';
@@ -24,37 +26,22 @@ export default function PatientSidePanel({ patient, visible, onClose }: PatientS
   const slideAnim = useRef(new Animated.Value(panelWidth)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  const reducedMotion = useReducedMotion();
+  // Stays mounted until the exit animation ends (returning null on !visible skipped it)
+  const [rendered, setRendered] = useState(visible);
+
   useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: panelWidth,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
+    if (visible) setRendered(true);
+    const d = (ms: number) => (reducedMotion ? 0 : ms);
+    Animated.parallel([
+      Animated.timing(slideAnim, { toValue: visible ? 0 : panelWidth, duration: d(visible ? 240 : 180), easing: EASE_OUT, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: visible ? 1 : 0, duration: d(visible ? 200 : 160), easing: EASE_OUT, useNativeDriver: true }),
+    ]).start(({ finished }) => { if (finished && !visible) setRendered(false); });
   }, [visible]);
 
-  if (!visible || !patient) return null;
+  useEscapeKey(visible, onClose);
+
+  if (!rendered || !patient) return null;
 
   const active = isActive(patient);
   const age = patient.birth_date ? calculateAge(patient.birth_date) : 'N/D';
@@ -66,8 +53,8 @@ export default function PatientSidePanel({ patient, visible, onClose }: PatientS
 
   return (
     <View style={styles.overlay} pointerEvents="box-none">
-      <TouchableWithoutFeedback onPress={onClose}>
-        <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]} />
+      <TouchableWithoutFeedback onPress={onClose} accessibilityRole="button" accessibilityLabel="Cerrar panel">
+        <Animated.View style={[styles.backdrop, { backgroundColor: colors.overlay, opacity: fadeAnim }]} />
       </TouchableWithoutFeedback>
 
       <Animated.View
@@ -92,14 +79,14 @@ export default function PatientSidePanel({ patient, visible, onClose }: PatientS
               {patient.breed ? ` · ${patient.breed}` : ''}
             </Text>
           </View>
-          <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
+          <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7} hitSlop={8} accessibilityRole="button" accessibilityLabel="Cerrar panel">
             <X size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.body}>
-          <View style={[styles.badgeRow, { backgroundColor: active ? '#E3F2FD' : '#FFF3E0' }]}>
-            <Text style={[styles.badgeText, { color: active ? '#1565C0' : '#E65100' }]}>
+          <View style={[styles.badgeRow, { backgroundColor: alpha(active ? colors.success : colors.warning, 0.12) }]}>
+            <Text style={[styles.badgeText, { color: active ? colors.success : colors.warning }]}>
               {active ? 'Activo' : 'Inactivo'}
             </Text>
           </View>
@@ -179,7 +166,6 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   panel: {
     position: 'absolute',
@@ -246,5 +232,5 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
     marginTop: SPACING.sm,
   },
-  viewFullText: { color: '#FFFFFF', fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.semibold },
+  viewFullText: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.semibold },
 });

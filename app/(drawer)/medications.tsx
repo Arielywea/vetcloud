@@ -89,7 +89,7 @@ export default function MedicationsScreen() {
       <View style={styles.tabsContainer}>
         <View style={styles.tabsRow}>
           {canScrollLeft && (
-            <TouchableOpacity onPress={scrollLeft} style={[styles.scrollArrow, { backgroundColor: colors.surface }]}>
+            <TouchableOpacity onPress={scrollLeft} style={[styles.scrollArrow, { backgroundColor: colors.surface }]} accessibilityRole="button" accessibilityLabel="Ver categorías anteriores">
               <ChevronLeft size={16} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
@@ -107,7 +107,7 @@ export default function MedicationsScreen() {
             {ESPECIALIDADES.map(renderEspecialidadTab)}
           </ScrollView>
           {canScrollRight && (
-            <TouchableOpacity onPress={scrollRight} style={[styles.scrollArrow, { backgroundColor: colors.surface }]}>
+            <TouchableOpacity onPress={scrollRight} style={[styles.scrollArrow, { backgroundColor: colors.surface }]} accessibilityRole="button" accessibilityLabel="Ver más categorías">
               <ChevronRight size={16} color={colors.textSecondary} />
             </TouchableOpacity>
           )}

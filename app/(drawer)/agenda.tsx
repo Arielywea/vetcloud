@@ -55,7 +55,7 @@ class AgendaErrorBoundary extends Component<{ children: ReactNode }, { error: Er
     if (this.state.error) {
       return (
         <View style={{ flex: 1, padding: 20, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: APP_COLORS.error, marginBottom: 8 }}>Error en Agenda</Text>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: APP_COLORS.error, marginBottom: 8 }}>Error en agenda</Text>
           <Text style={{ fontSize: 14, color: APP_COLORS.text, textAlign: 'center' }}>{this.state.error.message}</Text>
         </View>
       );
@@ -327,7 +327,7 @@ function AgendaContent() {
       {/* Mobile Sidebar Overlay */}
       {isMobile && mobileSidebarVisible && (
         <View style={styles.sidebarOverlay}>
-          <Pressable style={styles.sidebarOverlayBg} onPress={() => setMobileSidebarVisible(false)} accessibilityLabel="Cerrar filtros" />
+          <Pressable style={[styles.sidebarOverlayBg, { backgroundColor: colors.overlay }]} onPress={() => setMobileSidebarVisible(false)} accessibilityLabel="Cerrar filtros" />
           <View style={[styles.mobileSidebar, { backgroundColor: colors.surface, borderLeftColor: colors.border }]}>
             <AgendaSidebar
               selectedDate={selectedDate}
@@ -396,7 +396,6 @@ const styles = StyleSheet.create({
   },
   sidebarOverlayBg: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   mobileSidebar: {
     width: 320,

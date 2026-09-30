@@ -4,10 +4,7 @@ import { toLocalDateKey } from '../../utils/date';
 
 type ViewMode = 'day' | 'week' | 'month';
 
-const TYPE_LABELS: Record<string, string> = {
-  consulta: 'Consulta', vacuna: 'Vacuna', examenes: 'Exámenes', cirugia: 'Cirugía',
-  hospitalizacion: 'Hospitalización', control: 'Control', terreno: 'Terreno',
-};
+import { APPOINTMENT_TYPE_LABELS as TYPE_LABELS } from '../../constants/colors';
 const STATUS_LABELS: Record<string, string> = {
   programada: 'Programada', confirmada: 'Confirmada', en_espera: 'En espera', en_consulta: 'En consulta',
   completada: 'Finalizada', pendiente: 'Pendiente', cancelada: 'Cancelada', ausente: 'Ausente',
@@ -41,7 +38,7 @@ function rowsFor(appointments: any[], start: Date, end: Date) {
     .map((a) => {
       const s = new Date(a.start_time);
       const e = a.end_time ? new Date(a.end_time) : null;
-      const time = (d: Date) => d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+      const time = (d: Date) => d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
       return {
         date: s.toLocaleDateString('es-CL', { weekday: 'short', day: '2-digit', month: '2-digit' }),
         time: e ? `${time(s)}–${time(e)}` : time(s),

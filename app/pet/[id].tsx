@@ -27,12 +27,13 @@ import VoiceNotes from '../../components/VoiceNotes';
 import DynamicIcon from '../../components/ui/DynamicIcon';
 import { useToast } from '../../components/ui/VToast';
 import { authHeaders } from '../../services/auth';
+import { API_URL } from '../../config';
 import { uploadPetPhoto } from '../../services/cloudinary';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function PetDetailScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, onPrimaryText } = useTheme();
   const { user } = useAuth();
   const toast = useToast();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -207,7 +208,7 @@ export default function PetDetailScreen() {
   const handleDownloadPdf = async () => {
     if (!id) return;
     try {
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8055';
+      const baseUrl = API_URL;
       const headers = await authHeaders();
       const response = await fetch(`${baseUrl}/items/pets/${id}/file-pdf`, { headers });
       if (!response.ok) throw new Error('No se pudo generar el PDF');
@@ -241,7 +242,7 @@ export default function PetDetailScreen() {
   const handleDownloadRecipePdf = async (rx: Prescription) => {
     if (!id) return;
     try {
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8055';
+      const baseUrl = API_URL;
       const headers = await authHeaders();
       const response = await fetch(`${baseUrl}/items/pets/${id}/prescriptions/${rx.id}/pdf`, { headers });
       if (!response.ok) throw new Error('No se pudo generar el PDF');
@@ -286,7 +287,7 @@ export default function PetDetailScreen() {
       <WeightChart records={records} />
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Historial Completo</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Historial completo</Text>
           <View style={styles.headerButtons}>
             <Button mode="outlined" compact onPress={() => setShowVitals(true)} style={{ marginRight: 8 }}>Signos</Button>
             <Button mode="outlined" compact onPress={() => setShowPayment(true)} style={{ marginRight: 8 }}>Cobrar</Button>
@@ -305,7 +306,7 @@ export default function PetDetailScreen() {
       <Portal>
         <Modal visible={showRecordModal} onDismiss={() => setShowRecordModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
           <ScrollView>
-            <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Nueva Consulta</Text>
+            <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Nueva consulta</Text>
             <View style={styles.typeRow}>
               {(['consulta', 'vacuna', 'cirugia', 'control'] as const).map((t) => (
                 <Button key={t} mode={recordType === t ? 'contained' : 'outlined'} compact onPress={() => setRecordType(t)} style={styles.typeBtn}>{t.charAt(0).toUpperCase() + t.slice(1)}</Button>
@@ -323,37 +324,37 @@ export default function PetDetailScreen() {
 
             {/* SOAP: Objective */}
             <Text variant="titleSmall" style={[styles.subTitle, { color: colors.info }]}>Objetivo</Text>
-            <TextInput label="Hallazgos examen fisico" value={recordHallazgos} onChangeText={setRecordHallazgos} mode="outlined" multiline numberOfLines={3} style={styles.input} />
+            <TextInput label="Hallazgos examen físico" value={recordHallazgos} onChangeText={setRecordHallazgos} mode="outlined" multiline numberOfLines={3} style={styles.input} />
             <Text variant="titleSmall" style={[styles.subTitle, { color: colors.primary }]}>Constantes fisiologicas</Text>
             <View style={styles.rxFieldRow}><View style={styles.rxFieldHalf}><TextInput label="Temp (C)" value={recordVitalTemp} onChangeText={setRecordVitalTemp} mode="outlined" style={styles.rxInput} keyboardType="numeric" /></View><View style={styles.rxFieldHalf}><TextInput label="FC (lpm)" value={recordVitalFC} onChangeText={setRecordVitalFC} mode="outlined" style={styles.rxInput} keyboardType="numeric" /></View></View>
             <View style={styles.rxFieldRow}><View style={styles.rxFieldHalf}><TextInput label="FR (rpm)" value={recordVitalFR} onChangeText={setRecordVitalFR} mode="outlined" style={styles.rxInput} keyboardType="numeric" /></View><View style={styles.rxFieldHalf}><TextInput label="PA (mmHg)" value={recordVitalPA} onChangeText={setRecordVitalPA} mode="outlined" style={styles.rxInput} /></View></View>
             <TextInput label="SpO2 (%)" value={recordVitalSpO2} onChangeText={setRecordVitalSpO2} mode="outlined" style={styles.input} keyboardType="numeric" />
 
             {/* SOAP: Assessment */}
-            <Text variant="titleSmall" style={[styles.subTitle, { color: colors.warning }]}>Evaluacion</Text>
-            <TextInput label="Diagnostico / Evaluacion" value={recordAssessment} onChangeText={setRecordAssessment} mode="outlined" multiline numberOfLines={3} style={styles.input} />
+            <Text variant="titleSmall" style={[styles.subTitle, { color: colors.warning }]}>Evaluación</Text>
+            <TextInput label="Diagnóstico / evaluación" value={recordAssessment} onChangeText={setRecordAssessment} mode="outlined" multiline numberOfLines={3} style={styles.input} />
 
             {/* SOAP: Plan */}
             <Text variant="titleSmall" style={[styles.subTitle, { color: colors.success }]}>Plan</Text>
-            <TextInput label="Plan / Indicaciones" value={recordPlan} onChangeText={setRecordPlan} mode="outlined" multiline numberOfLines={3} style={styles.input} />
+            <TextInput label="Plan / indicaciones" value={recordPlan} onChangeText={setRecordPlan} mode="outlined" multiline numberOfLines={3} style={styles.input} />
 
             {/* SOAP: Treatment */}
             <Text variant="titleSmall" style={[styles.subTitle, { color: colors.primary }]}>Tratamiento</Text>
-            <TextInput label="Tratamiento indicado" value={recordTreatment} onChangeText={setRecordTreatment} mode="outlined" multiline numberOfLines={3} placeholder="Medicamentos, dosis, duracion..." style={styles.input} />
+            <TextInput label="Tratamiento indicado" value={recordTreatment} onChangeText={setRecordTreatment} mode="outlined" multiline numberOfLines={3} placeholder="Medicamentos, dosis, duración..." style={styles.input} />
 
             {/* Cirugia: Campos especificos */}
             {recordType === 'cirugia' && (
               <View style={{ marginTop: SPACING.md }}>
                 <Divider style={[styles.rxDivider, { backgroundColor: colors.border }]} />
-                <Text variant="titleSmall" style={[styles.subTitle, { color: colors.error }]}>Datos de Cirugia</Text>
+                <Text variant="titleSmall" style={[styles.subTitle, { color: colors.error }]}>Datos de cirugía</Text>
                 <TextInput label="Nombre de procedimiento" value={recordProcedimiento} onChangeText={setRecordProcedimiento} mode="outlined" style={styles.input} placeholder="Ej: Esterilizacion, LDA, Toracotomia..." />
-                <TextInput label="Descripcion del procedimiento" value={recordDescripcion} onChangeText={setRecordDescripcion} mode="outlined" multiline numberOfLines={4} style={styles.input} placeholder="Detalles tecnicos del procedimiento..." />
+                <TextInput label="Descripción del procedimiento" value={recordDescripcion} onChangeText={setRecordDescripcion} mode="outlined" multiline numberOfLines={4} style={styles.input} placeholder="Detalles tecnicos del procedimiento..." />
                 <TextInput label="Indicaciones postoperatorias" value={recordPostoperatorio} onChangeText={setRecordPostoperatorio} mode="outlined" multiline numberOfLines={4} style={styles.input} placeholder="Cuidados, medicacion, controles..." />
 
                 <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Archivos (imagenes / PDF)</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
                   {recordFiles.map((fileUrl, idx) => (
-                    <TouchableOpacity key={idx} style={[styles.fileChip, { backgroundColor: colors.primaryContainer, borderColor: colors.border }]} onPress={() => { setRecordFiles(prev => prev.filter((_, i) => i !== idx)); }}>
+                    <TouchableOpacity key={idx} accessibilityRole="button" accessibilityLabel={`Quitar archivo ${idx + 1}`} style={[styles.fileChip, { backgroundColor: colors.primaryContainer, borderColor: colors.border }]} onPress={() => { setRecordFiles(prev => prev.filter((_, i) => i !== idx)); }}>
                       {fileUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                         <Image source={{ uri: fileUrl }} style={styles.fileThumb} />
                       ) : (
@@ -376,7 +377,7 @@ export default function PetDetailScreen() {
               </View>
             )}
 
-            <Button mode="contained" onPress={handleAddRecord} style={styles.saveButton} loading={saving} disabled={saving}>Guardar Registro</Button>
+            <Button mode="contained" onPress={handleAddRecord} style={styles.saveButton} loading={saving} disabled={saving}>Guardar registro</Button>
           </ScrollView>
         </Modal>
       </Portal>
@@ -386,7 +387,7 @@ export default function PetDetailScreen() {
         <Modal visible={!!selectedRecord} onDismiss={() => setSelectedRecord(null)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
           {selectedRecord && (
             <ScrollView>
-              <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Detalle del Registro</Text>
+              <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Detalle del registro</Text>
               <View style={styles.detailRow}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Tipo:</Text><Text style={[styles.detailValue, { color: colors.text }]}>{selectedRecord.record_type}</Text></View>
               <View style={styles.detailRow}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Fecha:</Text><Text style={[styles.detailValue, { color: colors.text }]}>{new Date(selectedRecord.date).toLocaleString('es-CL')}</Text></View>
               {selectedRecord.veterinarian && <View style={styles.detailRow}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Veterinario:</Text><Text style={[styles.detailValue, { color: colors.text }]}>{selectedRecord.veterinarian}</Text></View>}
@@ -394,7 +395,7 @@ export default function PetDetailScreen() {
               <RecordDetail record={selectedRecord} />
               <View style={styles.detailActions}>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <Button mode="contained" compact onPress={() => { setSelectedRecord(null); openRxModal(selectedRecord.id); }}>Generar Receta</Button>
+                  <Button mode="contained" compact onPress={() => { setSelectedRecord(null); openRxModal(selectedRecord.id); }}>Generar receta</Button>
                   <Button mode="outlined" compact onPress={() => setDeleteRecordTarget(selectedRecord)} textColor={colors.error}>Eliminar</Button>
                 </View>
                 <Button mode="outlined" onPress={() => setSelectedRecord(null)} style={{ marginTop: 8 }}>Cerrar</Button>
@@ -408,7 +409,7 @@ export default function PetDetailScreen() {
       <Portal>
         <Modal visible={showRxModal} onDismiss={() => setShowRxModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Nueva Receta</Text>
+            <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Nueva receta</Text>
             <View style={styles.rxInfoRow}>
               <View style={styles.rxInfoCol}>
                 <Text style={[styles.rxInfoSectionTitle, { color: colors.primary }]}>Paciente</Text>
@@ -425,23 +426,23 @@ export default function PetDetailScreen() {
             </View>
             <Divider style={[styles.rxDivider, { backgroundColor: colors.border }]} />
             <View style={styles.rxFieldRow}>
-              <View style={styles.rxFieldHalf}><Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Sucursal</Text><TextInput placeholder="Clinica Central" value={rxBranch} onChangeText={setRxBranch} mode="outlined" dense style={styles.rxInput} /></View>
+              <View style={styles.rxFieldHalf}><Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Sucursal</Text><TextInput placeholder="Clínica central" value={rxBranch} onChangeText={setRxBranch} mode="outlined" dense style={styles.rxInput} /></View>
               <View style={styles.rxFieldHalf}>
                 <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Formato</Text>
                 <View style={styles.rxSelectRow}>
-                  {[{ value: 'standard', label: 'Estandar' }, { value: 'compact', label: 'Compacto' }].map(f => (
-                    <Button key={f.value} mode={rxFormat === f.value ? 'contained' : 'outlined'} onPress={() => setRxFormat(f.value)} style={[styles.rxSelectBtn, rxFormat === f.value && { backgroundColor: colors.primary }]} labelStyle={[styles.rxSelectLabel, rxFormat === f.value ? { color: '#FFF' } : { color: colors.primary }]} compact>{f.label}</Button>
+                  {[{ value: 'standard', label: 'Estándar' }, { value: 'compact', label: 'Compacto' }].map(f => (
+                    <Button key={f.value} mode={rxFormat === f.value ? 'contained' : 'outlined'} onPress={() => setRxFormat(f.value)} style={[styles.rxSelectBtn, rxFormat === f.value && { backgroundColor: colors.primary }]} labelStyle={[styles.rxSelectLabel, rxFormat === f.value ? { color: onPrimaryText.default } : { color: colors.primary }]} compact>{f.label}</Button>
                   ))}
                 </View>
               </View>
             </View>
             <View style={styles.rxFieldRow}>
               <View style={styles.rxFieldHalf}><Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Prescriptor</Text><TextInput value={rxVet} onChangeText={setRxVet} mode="outlined" dense placeholder="Nombre del veterinario" style={styles.rxInput} /></View>
-              <View style={styles.rxFieldHalf}><Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Fecha Emision</Text><TextInput value={new Date().toLocaleDateString('es-CL')} mode="outlined" dense disabled style={styles.rxInput} /></View>
+              <View style={styles.rxFieldHalf}><Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Fecha de emisión</Text><TextInput value={new Date().toLocaleDateString('es-CL')} mode="outlined" dense disabled style={styles.rxInput} /></View>
             </View>
             <Divider style={[styles.rxDivider, { backgroundColor: colors.border }]} />
             <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Receta *</Text>
-            <TextInput value={rxBody} onChangeText={setRxBody} mode="outlined" multiline numberOfLines={12} style={styles.rxBodyInput} placeholder={"Uso Veterinario\nRimadyl:\nDar via oral 1 comprimido cada 24 horas x 7 dias."} />
+            <TextInput value={rxBody} onChangeText={setRxBody} mode="outlined" multiline numberOfLines={12} style={styles.rxBodyInput} placeholder={"Uso Veterinario\nRimadyl:\nDar vía oral 1 comprimido cada 24 horas x 7 días."} />
             <View style={styles.rxActionRow}>
               <Button mode="outlined" onPress={() => setShowRxModal(false)} style={{ flex: 1, marginRight: 8 }}>Volver</Button>
               <Button mode="contained" onPress={handleSaveRx} style={{ flex: 1 }} loading={saving} disabled={saving} icon="content-save">Guardar</Button>
@@ -516,7 +517,7 @@ export default function PetDetailScreen() {
         <Dialog visible={!!deleteRecordTarget} onDismiss={() => setDeleteRecordTarget(null)}>
           <Dialog.Icon icon="alert-circle-outline" />
           <Dialog.Title style={{ textAlign: 'center' }}>Eliminar registro</Dialog.Title>
-          <Dialog.Content><Text style={{ textAlign: 'center' }}>Estas seguro? Esta accion no se puede deshacer.</Text></Dialog.Content>
+          <Dialog.Content><Text style={{ textAlign: 'center' }}>¿Estás seguro? Esta acción no se puede deshacer.</Text></Dialog.Content>
           <Dialog.Actions><Button onPress={() => setDeleteRecordTarget(null)}>Cancelar</Button><Button onPress={confirmDeleteRecord} textColor={colors.error}>Eliminar</Button></Dialog.Actions>
         </Dialog>
       </Portal>
@@ -525,7 +526,7 @@ export default function PetDetailScreen() {
           <Dialog.Icon icon="alert-circle-outline" />
           <Dialog.Title style={{ textAlign: 'center' }}>Error</Dialog.Title>
           <Dialog.Content><Text style={{ textAlign: 'center' }}>{errorDialog}</Text></Dialog.Content>
-          <Dialog.Actions><Button onPress={() => setErrorDialog(null)}>OK</Button></Dialog.Actions>
+          <Dialog.Actions><Button onPress={() => setErrorDialog(null)}>Entendido</Button></Dialog.Actions>
         </Dialog>
       </Portal>
     </ScrollView>

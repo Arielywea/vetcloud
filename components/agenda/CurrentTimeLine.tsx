@@ -69,7 +69,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 2 },
   labelText: {
-    color: '#FFF',
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.bold },
   line: {

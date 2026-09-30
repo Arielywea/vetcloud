@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, Modal, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Pressable, Modal, Platform } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 import {
   Search, Home, PawPrint, Activity, Calendar, Heart, FlaskConical,
@@ -55,8 +55,8 @@ export default function CommandPalette({ visible, onClose }: CommandPaletteProps
     })), [pets, colors.accent]);
 
   const actionItems: PaletteItem[] = useMemo(() => [
-    { id: 'act-new-pet', category: 'ACCIONES', label: 'Nuevo Paciente', icon: <Plus size={18} color={colors.success} />, route: '/(drawer)/add-paciente' },
-    { id: 'act-new-appt', category: 'ACCIONES', label: 'Nueva Cita', icon: <Plus size={18} color={colors.info} />, route: '/(drawer)/agenda' },
+    { id: 'act-new-pet', category: 'ACCIONES', label: 'Nuevo paciente', icon: <Plus size={18} color={colors.success} />, route: '/(drawer)/add-paciente' },
+    { id: 'act-new-appt', category: 'ACCIONES', label: 'Nueva cita', icon: <Plus size={18} color={colors.info} />, route: '/(drawer)/agenda' },
   ], [colors.success, colors.info]);
 
   useEffect(() => {
@@ -146,7 +146,7 @@ export default function CommandPalette({ visible, onClose }: CommandPaletteProps
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
+      <TouchableOpacity style={[styles.overlay, { backgroundColor: colors.overlay }]} activeOpacity={1} onPress={onClose} accessibilityLabel="Cerrar búsqueda">
         <View style={[styles.container, { backgroundColor: colors.surface }, SHADOWS.lg]}>
           {/* Search input */}
           <View style={[styles.inputRow, { borderBottomColor: colors.border }]}>
@@ -183,20 +183,21 @@ export default function CommandPalette({ visible, onClose }: CommandPaletteProps
                     const currentIndex = flatIndex++;
                     const isSelected = currentIndex === selectedIndex;
                     return (
-                      <TouchableOpacity
+                      <Pressable
                         key={item.id}
                         style={[
                           styles.item,
                           isSelected && { backgroundColor: colors.primaryContainer },
                         ]}
                         onPress={() => handleSelect(item)}
-                        activeOpacity={0.7}
-                        onMouseEnter={() => setSelectedIndex(currentIndex)}
+                        onHoverIn={() => setSelectedIndex(currentIndex)}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: isSelected }}
                       >
                         {item.icon}
                         <Text style={[styles.itemLabel, { color: colors.text }]}>{item.label}</Text>
                         <ArrowRight size={14} color={colors.textLight} />
-                      </TouchableOpacity>
+                      </Pressable>
                     );
                   })}
                 </View>
@@ -212,7 +213,6 @@ export default function CommandPalette({ visible, onClose }: CommandPaletteProps
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15,23,42,0.3)',
     justifyContent: 'flex-start',
     paddingTop: 100,
     paddingHorizontal: SPACING.xl,
