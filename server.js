@@ -95,7 +95,46 @@ async function rateLimit(key, maxAttempts, windowMs) {
 }
 
 // Accepts DD/MM/AAAA or AAAA-MM-DD; returns ISO date, null for empty, or undefined if invalid
-function parseDateInput(value) {
+// Datetime from the client (ISO string or Date-parsable). Returns ISO string,
+// null for empty, or undefined if invalid.
+function parseDateTimeInput(value) {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return undefined;
+  const y = d.getUTCFullYear();
+  if (y < 1980 || y > 2100) return undefined;
+  return d.toISOString();
+}
+
+// Number with optional range. Accepts numbers or numeric strings ("12.5" / "12,5").
+// Returns the number, null for empty, or undefined if invalid/out of range.
+function parseNumberInput(value, { min = -Infinity, max = Infinity, integer = false } = {}) {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
+  const n = typeof value === 'number' ? value : Number(String(value).replace(',', '.'));
+  if (!Number.isFinite(n) || n < min || n > max) return undefined;
+  if (integer && !Number.isInteger(n)) return undefined;
+  return n;
+}
+
+// Validates fields of a body in place. rules: { field: { type: 'date'|'datetime'|'number'|'enum', ...opts, label } }
+// Returns an error message (Spanish) or null. Only validates fields that are present.
+function validateFields(body, rules) {
+  for (const [field, rule] of Object.entries(rules)) {
+    if (!(field in body)) continue;
+    const v = body[field];
+    let parsed;
+    if (rule.type === 'date') parsed = parseDateInput(v, { allowFuture: !!rule.allowFuture });
+    else if (rule.type === 'datetime') parsed = parseDateTimeInput(v);
+    else if (rule.type === 'number') parsed = parseNumberInput(v, rule);
+    else if (rule.type === 'enum') parsed = v === null || v === '' ? null : (rule.values.includes(v) ? v : undefined);
+    if (parsed === undefined) return `${rule.label || field}: valor inválido`;
+    if (parsed === null && rule.required) return `${rule.label || field} es obligatorio`;
+    body[field] = parsed;
+  }
+  return null;
+}
+
+function parseDateInput(value, { allowFuture = false } = {}) {
   if (value === null || value === undefined || String(value).trim() === '') return null;
   const str = String(value).trim();
   let y, m, d;
@@ -105,12 +144,12 @@ function parseDateInput(value) {
   else return undefined;
   const date = new Date(Date.UTC(y, m - 1, d));
   if (date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) return undefined;
-  if (date > new Date() || y < 1980) return undefined;
+  if ((!allowFuture && date > new Date()) || y < 1980 || y > 2100) return undefined;
   return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
 // Columns a client may set on pets (create + update). JSON columns are stringified.
-const PET_COLUMNS = ['name','species','breed','birth_date','weight','color','photo','allergies','notes','tutor_name','phone','email','address','clinic_location','id_number','sex','temperament','habitat','habitat_other','food','food_frequency','water_consumption','urination','lives_with_other_animals','vaccines','deworming','flea_treatment','last_heat','surgeries','other_diseases','medications','reproductive_status','anamnesis','vital_signs','hallazgos_examen_fisico','motivo_consulta','entorno','areneros','status','receive_reminders','last_visit','pre_diagnostico','base_diseases'];
+const PET_COLUMNS = ['name','tutor_rut','species','breed','birth_date','weight','color','photo','allergies','notes','tutor_name','phone','email','address','clinic_location','id_number','sex','temperament','habitat','habitat_other','food','food_frequency','water_consumption','urination','lives_with_other_animals','vaccines','deworming','flea_treatment','last_heat','surgeries','other_diseases','medications','reproductive_status','anamnesis','vital_signs','hallazgos_examen_fisico','motivo_consulta','entorno','areneros','status','receive_reminders','last_visit','pre_diagnostico','base_diseases'];
 const PET_JSON_COLUMNS = ['allergies','temperament','vital_signs','base_diseases'];
 
 // Validates and normalizes a pet payload. Returns { values } or { error }.
@@ -121,6 +160,9 @@ function normalizePet(body, { partial }) {
     safe.name = String(safe.name).trim();
   }
   if (safe.species !== undefined && !['dog', 'cat'].includes(safe.species)) return { error: 'La especie debe ser dog o cat' };
+  if (safe.tutor_rut !== undefined && safe.tutor_rut !== null && String(safe.tutor_rut).trim().length > 20) {
+    return { error: 'RUT inválido' };
+  }
   if (safe.birth_date !== undefined) {
     const parsed = parseDateInput(safe.birth_date);
     if (parsed === undefined) return { error: 'Fecha de nacimiento inválida (usa DD/MM/AAAA)' };
@@ -471,7 +513,7 @@ app.get('/items/diseases', async (req, res) => {
     const result = await pool.query(query, params);
     res.json({ data: result.rows });
   } catch (err) {
-    console.error(err);
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -530,7 +572,7 @@ app.patch('/items/diseases/:id', authMiddleware, async (req, res) => {
     let idx = 1;
     for (const [key, val] of Object.entries(safe)) {
       const column = aliasMap[key] || key;
-      const valStr = typeof val === 'object' ? JSON.stringify(val) : val;
+      const valStr = val !== null && typeof val === 'object' ? JSON.stringify(val) : val;
       fields.push(`${column} = $${idx}`);
       values.push(valStr);
       idx++;
@@ -606,7 +648,7 @@ app.get('/items/medications', async (req, res) => {
     const result = await pool.query(query, params);
     res.json({ data: result.rows });
   } catch (err) {
-    console.error(err);
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -626,7 +668,7 @@ app.post('/items/medications', authMiddleware, async (req, res) => {
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
-    console.error(err);
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -649,7 +691,7 @@ app.get('/items/surgeries', async (req, res) => {
     const result = await pool.query(query, params);
     res.json({ data: result.rows });
   } catch (err) {
-    console.error(err);
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -660,7 +702,7 @@ app.get('/items/surgeries/:id', async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ data: result.rows[0] });
   } catch (err) {
-    console.error(err);
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -826,7 +868,7 @@ app.patch('/items/personal_notes/:id', authMiddleware, async (req, res) => {
     const values = [];
     let idx = 1;
     for (const [key, val] of Object.entries(safe)) {
-      const valStr = typeof val === 'object' ? JSON.stringify(val) : val;
+      const valStr = val !== null && typeof val === 'object' ? JSON.stringify(val) : val;
       fields.push(`${key} = $${idx}`);
       values.push(valStr);
       idx++;
@@ -933,7 +975,13 @@ app.post('/items/appointments', authMiddleware, async (req, res) => {
     if (refError) return res.status(403).json({ error: refError });
     const a = req.body;
     if (!a.patient_name || !String(a.patient_name).trim()) return res.status(400).json({ error: 'El nombre del paciente es obligatorio' });
-    if (!a.start_time || isNaN(Date.parse(a.start_time))) return res.status(400).json({ error: 'Fecha de inicio válida es requerida' });
+    const vErr = validateFields(a, {
+      start_time: { type: 'datetime', required: true, label: 'Fecha de inicio' },
+      end_time: { type: 'datetime', label: 'Fecha de término' },
+      appointment_type: { type: 'enum', values: APPOINTMENT_TYPES, label: 'Tipo de cita' },
+    });
+    if (vErr || !a.start_time) return res.status(400).json({ error: vErr || 'Fecha de inicio válida es requerida' });
+    if (a.end_time && new Date(a.end_time) <= new Date(a.start_time)) return res.status(400).json({ error: 'La hora de término debe ser posterior al inicio' });
     const result = await pool.query(
       `INSERT INTO appointments (user_id, patient_name, tutor_phone, start_time, end_time, appointment_type, description, organization_id, pet_id, follow_up_of, veterinarian)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
@@ -947,6 +995,24 @@ app.post('/items/appointments', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
+
+const INVENTORY_RULES = {
+  current_stock: { type: 'number', integer: true, min: 0, max: 1000000, label: 'Stock' },
+  min_stock: { type: 'number', integer: true, min: 0, max: 1000000, label: 'Stock mínimo' },
+  last_restocked: { type: 'datetime', label: 'Fecha de reposición' },
+  expiration_date: { type: 'date', allowFuture: true, label: 'Fecha de vencimiento' },
+};
+
+const PRESCRIPTION_RULES = {
+  format: { type: 'enum', values: ['standard', 'compact'], label: 'Formato' },
+  status: { type: 'enum', values: ['active', 'cancelled', 'dispensed'], label: 'Estado de la receta' },
+  issued_at: { type: 'datetime', label: 'Fecha de emisión' },
+};
+
+const HOSPITALIZATION_STATUSES = ['internado', 'cirugia', 'recuperacion', 'discharged'];
+const LAB_STATUSES = ['pendiente', 'completado'];
+
+const APPOINTMENT_TYPES = ['consulta', 'vacuna', 'examenes', 'cirugia', 'hospitalizacion', 'control', 'terreno'];
 
 // Valid appointment status transitions
 const APPOINTMENT_TRANSITIONS = {
@@ -979,6 +1045,16 @@ app.patch('/items/appointments/:id', authMiddleware, async (req, res) => {
     const refError = await checkRefs(req);
     if (refError) return res.status(403).json({ error: refError });
     const a = req.body;
+    // Lifecycle timestamps are derived from status transitions, never set by the client
+    delete a.checked_in_at; delete a.started_at; delete a.finished_at;
+    const vErr = validateFields(a, {
+      start_time: { type: 'datetime', label: 'Fecha de inicio' },
+      end_time: { type: 'datetime', label: 'Fecha de término' },
+      appointment_type: { type: 'enum', values: APPOINTMENT_TYPES, label: 'Tipo de cita' },
+    });
+    if (vErr) return res.status(400).json({ error: vErr });
+    if ('start_time' in a && !a.start_time) return res.status(400).json({ error: 'La fecha de inicio es obligatoria' });
+    if ('status' in a && !a.status) return res.status(400).json({ error: 'Estado inválido' });
 
     // If changing status, validate transition
     if (a.status) {
@@ -1009,7 +1085,7 @@ app.patch('/items/appointments/:id', authMiddleware, async (req, res) => {
     const values = [];
     let idx = 1;
     for (const [key, val] of Object.entries(safe)) {
-      const valStr = typeof val === 'object' ? JSON.stringify(val) : val;
+      const valStr = val !== null && typeof val === 'object' ? JSON.stringify(val) : val;
       fields.push(`${key} = $${idx}`);
       values.push(valStr);
       idx++;
@@ -1068,6 +1144,8 @@ app.post('/items/clinical_records', authMiddleware, async (req, res) => {
     if (!r.record_type || !['consulta', 'vacuna', 'cirugia', 'control'].includes(r.record_type)) {
       return res.status(400).json({ error: 'record_type debe ser consulta, vacuna, cirugia o control' });
     }
+    const vErr = validateFields(r, { date: { type: 'datetime', label: 'Fecha' } });
+    if (vErr) return res.status(400).json({ error: vErr });
     const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [r.pet_id, req.userId]);
     if (!ownerCheck.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa mascota' });
     const result = await pool.query(
@@ -1093,13 +1171,18 @@ app.patch('/items/clinical_records/:id', authMiddleware, async (req, res) => {
     const refError = await checkRefs(req);
     if (refError) return res.status(403).json({ error: refError });
     const r = req.body;
+    const vErr = validateFields(r, {
+      date: { type: 'datetime', label: 'Fecha' },
+      record_type: { type: 'enum', values: ['consulta', 'vacuna', 'cirugia', 'control'], label: 'Tipo de registro' },
+    });
+    if (vErr) return res.status(400).json({ error: vErr });
     const allowed = ['pet_id','record_type','date','veterinarian','details'];
     const safe = sanitizeColumns(allowed, r);
     const fields = [];
     const values = [];
     let idx = 1;
     for (const [key, val] of Object.entries(safe)) {
-      const valStr = key === 'details' ? JSON.stringify(val) : (typeof val === 'object' ? JSON.stringify(val) : val);
+      const valStr = key === 'details' ? JSON.stringify(val || {}) : (val !== null && typeof val === 'object' ? JSON.stringify(val) : val);
       fields.push(`${key} = $${idx}`);
       values.push(valStr);
       idx++;
@@ -1164,11 +1247,14 @@ app.get('/items/inventory/low-stock', authMiddleware, async (req, res) => {
 app.post('/items/inventory', authMiddleware, async (req, res) => {
   try {
     const i = req.body;
+    if (!i.name || !String(i.name).trim()) return res.status(400).json({ error: 'El nombre es obligatorio' });
+    const vErr = validateFields(i, INVENTORY_RULES);
+    if (vErr) return res.status(400).json({ error: vErr });
     const result = await pool.query(
-      `INSERT INTO inventory (user_id, name, category, current_stock, min_stock, unit, last_restocked, organization_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [req.userId, i.name, i.category || 'insumo', i.current_stock || 0, i.min_stock || 5,
-       i.unit || 'unidades', i.last_restocked || null, req.organizationId || null]
+      `INSERT INTO inventory (user_id, name, category, current_stock, min_stock, unit, last_restocked, expiration_date, organization_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [req.userId, String(i.name).trim(), i.category || 'insumo', i.current_stock ?? 0, i.min_stock ?? 5,
+       i.unit || 'unidades', i.last_restocked || null, i.expiration_date || null, req.organizationId || null]
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
@@ -1180,13 +1266,16 @@ app.post('/items/inventory', authMiddleware, async (req, res) => {
 app.patch('/items/inventory/:id', authMiddleware, async (req, res) => {
   try {
     const i = req.body;
-    const allowed = ['name','category','current_stock','min_stock','unit','last_restocked'];
+    const vErr = validateFields(i, INVENTORY_RULES);
+    if (vErr) return res.status(400).json({ error: vErr });
+    if ('name' in i && !String(i.name || '').trim()) return res.status(400).json({ error: 'El nombre es obligatorio' });
+    const allowed = ['name','category','current_stock','min_stock','unit','last_restocked','expiration_date'];
     const safe = sanitizeColumns(allowed, i);
     const fields = [];
     const values = [];
     let idx = 1;
     for (const [key, val] of Object.entries(safe)) {
-      const valStr = typeof val === 'object' ? JSON.stringify(val) : val;
+      const valStr = val !== null && typeof val === 'object' ? JSON.stringify(val) : val;
       fields.push(`${key} = $${idx}`);
       values.push(valStr);
       idx++;
@@ -1253,6 +1342,10 @@ app.post('/items/prescriptions', authMiddleware, async (req, res) => {
     const refError = await checkRefs(req);
     if (refError) return res.status(403).json({ error: refError });
     const r = req.body;
+    if (!r.pet_id) return res.status(400).json({ error: 'pet_id es requerido' });
+    if (!r.prescription_body || !String(r.prescription_body).trim()) return res.status(400).json({ error: 'El contenido de la receta es obligatorio' });
+    const vErr = validateFields(r, PRESCRIPTION_RULES);
+    if (vErr) return res.status(400).json({ error: vErr });
     const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [r.pet_id, req.userId]);
     if (!ownerCheck.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa mascota' });
     const result = await pool.query(
@@ -1275,13 +1368,16 @@ app.patch('/items/prescriptions/:id', authMiddleware, async (req, res) => {
     const refError = await checkRefs(req);
     if (refError) return res.status(403).json({ error: refError });
     const r = req.body;
+    const vErr = validateFields(r, PRESCRIPTION_RULES);
+    if (vErr) return res.status(400).json({ error: vErr });
+    if ('prescription_body' in r && !String(r.prescription_body || '').trim()) return res.status(400).json({ error: 'El contenido de la receta es obligatorio' });
     const allowed = ['pet_id','clinical_record_id','veterinarian_name','clinic_branch','prescription_body','format','status','issued_at'];
     const safe = sanitizeColumns(allowed, r);
     const fields = [];
     const values = [];
     let idx = 1;
     for (const [key, val] of Object.entries(safe)) {
-      const valStr = typeof val === 'object' ? JSON.stringify(val) : val;
+      const valStr = val !== null && typeof val === 'object' ? JSON.stringify(val) : val;
       fields.push(`${key} = $${idx}`);
       values.push(valStr);
       idx++;
@@ -1319,7 +1415,7 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
     }
     const result = await pool.query(
       `SELECT pr.*, p.name AS pet_name, p.species, p.breed, p.weight, p.sex,
-              p.tutor_name, p.email AS tutor_email, p.phone AS tutor_phone,
+              p.tutor_name, p.tutor_rut, p.email AS tutor_email, p.phone AS tutor_phone,
               p.birth_date, p.reproductive_status
        FROM prescriptions pr
        JOIN pets p ON p.id = pr.pet_id
@@ -1364,7 +1460,7 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
 
     const pdfBuffer = await generatePrescriptionPdf(
       { ...rx, veterinarian_name: rx.veterinarian_name || userProfile.veterinarian_name, vet_email: vetEmail },
-      { name: rx.pet_name, species: rx.species, breed: rx.breed, weight: rx.weight, sex: rx.sex, birth_date: rx.birth_date, reproductive_status: rx.reproductive_status, tutor_name: rx.tutor_name, tutor_email: rx.tutor_email, tutor_phone: rx.tutor_phone, id: rx.pet_id },
+      { name: rx.pet_name, species: rx.species, breed: rx.breed, weight: rx.weight, sex: rx.sex, birth_date: rx.birth_date, reproductive_status: rx.reproductive_status, tutor_name: rx.tutor_name, tutor_email: rx.tutor_email, tutor_phone: rx.tutor_phone, tutor_rut: rx.tutor_rut, id: rx.pet_id },
       { veterinarian_name: userProfile.veterinarian_name, clinic_name: userProfile.clinic_name, clinic_phone: userProfile.clinic_phone, vet_email: vetEmail }
     );
 
@@ -1430,7 +1526,7 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
 
     res.json({ data: { success: true } });
   } catch (err) {
-    console.error('Email error:', err);
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1461,7 +1557,7 @@ app.get('/items/pets/:petId/prescriptions/:rxId/pdf', authMiddleware, async (req
     const { generatePrescriptionPdf } = require('./utils/generatePrescriptionPdf');
     const pdfBuffer = await generatePrescriptionPdf(
       { ...rx, veterinarian_name: rx.veterinarian_name || userProfile.veterinarian_name, vet_email: userProfile.email },
-      { name: pet.name, species: pet.species, breed: pet.breed, weight: pet.weight, sex: pet.sex, birth_date: pet.birth_date, reproductive_status: pet.reproductive_status, tutor_name: pet.tutor_name, tutor_email: pet.tutor_email, tutor_phone: pet.tutor_phone, id: pet.id },
+      { name: pet.name, species: pet.species, breed: pet.breed, weight: pet.weight, sex: pet.sex, birth_date: pet.birth_date, reproductive_status: pet.reproductive_status, tutor_name: pet.tutor_name, tutor_email: pet.email, tutor_phone: pet.phone, tutor_rut: pet.tutor_rut, id: pet.id },
       { veterinarian_name: userProfile.veterinarian_name, clinic_name: userProfile.clinic_name, clinic_phone: userProfile.clinic_phone, vet_email: userProfile.email }
     );
 
@@ -1469,8 +1565,8 @@ app.get('/items/pets/:petId/prescriptions/:rxId/pdf', authMiddleware, async (req
     res.attachment(`receta_${String(pet.name || 'paciente').replace(/\s+/g, '_')}.pdf`);
     res.send(pdfBuffer);
   } catch (err) {
-    console.error('Prescription PDF error:', err);
-    res.status(500).json({ error: 'Error generando PDF' });
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -1502,8 +1598,8 @@ app.get('/items/pets/:id/file-pdf', authMiddleware, async (req, res) => {
     res.attachment(`ficha_${String(pet.name || 'paciente').replace(/\s+/g, '_')}.pdf`);
     res.send(pdfBuffer);
   } catch (err) {
-    console.error('Patient file PDF error:', err);
-    res.status(500).json({ error: 'Error generando PDF' });
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -1536,7 +1632,7 @@ app.post('/assistant', authMiddleware, async (req, res) => {
     const response = await processAssistantMessage(message.trim(), req.userId, pool, diseases, vaccinations);
     res.json({ data: response });
   } catch (err) {
-    console.error('Assistant error:', err);
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1555,7 +1651,7 @@ app.get('/items/reminders', authMiddleware, async (req, res) => {
     const result = await pool.query(query, params);
     res.json({ data: result.rows });
   } catch (err) {
-    console.error('List reminders error:', err);
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1571,7 +1667,7 @@ app.get('/items/reminders/upcoming', authMiddleware, async (req, res) => {
     );
     res.json({ data: result.rows });
   } catch (err) {
-    console.error('Upcoming reminders error:', err);
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1602,7 +1698,7 @@ app.post('/items/reminders', authMiddleware, async (req, res) => {
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
-    console.error('Create reminder error:', err);
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1653,7 +1749,7 @@ app.post('/items/reminders/auto-generate', authMiddleware, async (req, res) => {
     }
     res.json({ data: reminders });
   } catch (err) {
-    console.error('Auto-generate reminders error:', err);
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1662,6 +1758,11 @@ app.patch('/items/reminders/:id', authMiddleware, async (req, res) => {
   try {
     const check = await pool.query('SELECT id FROM reminders WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
     if (!check.rows.length) return res.status(404).json({ error: 'Recordatorio no encontrado' });
+    const vErr = validateFields(req.body, {
+      status: { type: 'enum', values: ['pending', 'sent', 'cancelled'], label: 'Estado' },
+      scheduled_for: { type: 'datetime', label: 'Fecha del recordatorio' },
+    });
+    if (vErr) return res.status(400).json({ error: vErr });
     const { status, scheduled_for } = req.body;
     const updates = [];
     const params = [];
@@ -1671,10 +1772,11 @@ app.patch('/items/reminders/:id', authMiddleware, async (req, res) => {
     if (status === 'sent') { updates.push(`sent_at = NOW()`); }
     if (!updates.length) return res.status(400).json({ error: 'Sin cambios' });
     params.push(req.params.id);
-    const result = await pool.query(`UPDATE reminders SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`, params);
+    params.push(req.userId);
+    const result = await pool.query(`UPDATE reminders SET ${updates.join(', ')} WHERE id = ${idx} AND user_id = ${idx + 1} RETURNING *`, params);
     res.json({ data: result.rows[0] });
   } catch (err) {
-    console.error('Update reminder error:', err);
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1686,7 +1788,7 @@ app.delete('/items/reminders/:id', authMiddleware, async (req, res) => {
     await pool.query('DELETE FROM reminders WHERE id = $1', [req.params.id]);
     res.json({ data: { success: true } });
   } catch (err) {
-    console.error('Delete reminder error:', err);
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1772,7 +1874,7 @@ app.post('/items/reminders/send-pending', authMiddleware, async (req, res) => {
     }
     res.json({ data: { sent: sentCount } });
   } catch (err) {
-    console.error('Send reminders error:', err);
+    logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -1791,8 +1893,8 @@ app.get('/items/hospitalizations', authMiddleware, async (req, res) => {
     const result = await pool.query(query, params);
     res.json({ data: result.rows });
   } catch (error) {
-    console.error('Error fetching hospitalizations:', error);
-    res.status(500).json({ error: 'Failed to fetch hospitalizations' });
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -1801,6 +1903,7 @@ app.post('/items/hospitalizations', authMiddleware, async (req, res) => {
     const { pet_id, reason, status, veterinarian, notes } = req.body;
     if (!pet_id || !isValidUUID(pet_id)) return res.status(400).json({ error: 'pet_id válido es requerido' });
     if (!reason || !String(reason).trim()) return res.status(400).json({ error: 'El motivo es obligatorio' });
+    if (status && !HOSPITALIZATION_STATUSES.includes(status)) return res.status(400).json({ error: 'Estado de hospitalización inválido' });
     const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [pet_id, req.userId]);
     if (!ownerCheck.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa mascota' });
     const result = await pool.query(
@@ -1809,8 +1912,8 @@ app.post('/items/hospitalizations', authMiddleware, async (req, res) => {
     );
     res.json({ data: result.rows[0] });
   } catch (error) {
-    console.error('Error creating hospitalization:', error);
-    res.status(500).json({ error: 'Failed to create hospitalization' });
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -1819,6 +1922,13 @@ app.patch('/items/hospitalizations/:id', authMiddleware, async (req, res) => {
     if (!isValidUUID(req.params.id)) return res.status(400).json({ error: 'ID inválido' });
     const allowed = ['discharge_date', 'status', 'veterinarian', 'notes', 'reason'];
     const safe = sanitizeColumns(allowed, req.body);
+    const vErr = validateFields(safe, {
+      status: { type: 'enum', values: HOSPITALIZATION_STATUSES, label: 'Estado' },
+      discharge_date: { type: 'datetime', label: 'Fecha de alta' },
+    });
+    if (vErr) return res.status(400).json({ error: vErr });
+    // Discharging stamps the date server-side unless one was given
+    if (safe.status === 'discharged' && !safe.discharge_date) safe.discharge_date = new Date().toISOString();
     if (Object.keys(safe).length === 0) return res.status(400).json({ error: 'Sin cambios' });
     const sets = Object.keys(safe).map((k, i) => `${k} = $${i + 2}`).join(', ');
     const values = [req.params.id, ...Object.values(safe), req.userId];
@@ -1826,8 +1936,8 @@ app.patch('/items/hospitalizations/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'No encontrado' });
     res.json({ data: result.rows[0] });
   } catch (error) {
-    console.error('Error updating hospitalization:', error);
-    res.status(500).json({ error: 'Failed to update hospitalization' });
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -1838,8 +1948,8 @@ app.delete('/items/hospitalizations/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'No encontrado' });
     res.json({ data: { success: true } });
   } catch (error) {
-    console.error('Error deleting hospitalization:', error);
-    res.status(500).json({ error: 'Failed to delete hospitalization' });
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -1857,8 +1967,8 @@ app.get('/items/lab_exams', authMiddleware, async (req, res) => {
     const result = await pool.query(query, params);
     res.json({ data: result.rows });
   } catch (error) {
-    console.error('Error fetching lab exams:', error);
-    res.status(500).json({ error: 'Failed to fetch lab exams' });
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -1867,6 +1977,7 @@ app.post('/items/lab_exams', authMiddleware, async (req, res) => {
     const { pet_id, exam_name, exam_type, status, result: examResult, veterinarian } = req.body;
     if (!pet_id || !isValidUUID(pet_id)) return res.status(400).json({ error: 'pet_id válido es requerido' });
     if (!exam_name || !String(exam_name).trim()) return res.status(400).json({ error: 'El nombre del examen es obligatorio' });
+    if (status && !LAB_STATUSES.includes(status)) return res.status(400).json({ error: 'Estado de examen inválido' });
     const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [pet_id, req.userId]);
     if (!ownerCheck.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa mascota' });
     const result = await pool.query(
@@ -1875,8 +1986,8 @@ app.post('/items/lab_exams', authMiddleware, async (req, res) => {
     );
     res.json({ data: result.rows[0] });
   } catch (error) {
-    console.error('Error creating lab exam:', error);
-    res.status(500).json({ error: 'Failed to create lab exam' });
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -1885,6 +1996,16 @@ app.patch('/items/lab_exams/:id', authMiddleware, async (req, res) => {
     if (!isValidUUID(req.params.id)) return res.status(400).json({ error: 'ID inválido' });
     const allowed = ['exam_name', 'exam_type', 'status', 'result', 'veterinarian'];
     const safe = sanitizeColumns(allowed, req.body);
+    const vErr = validateFields(safe, { status: { type: 'enum', values: LAB_STATUSES, label: 'Estado' } });
+    if (vErr) return res.status(400).json({ error: vErr });
+    if (safe.status === 'completado') {
+      let result = 'result' in safe ? safe.result : null;
+      if (!('result' in safe)) {
+        const current = await pool.query('SELECT result FROM lab_exams WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
+        result = current.rows[0]?.result;
+      }
+      if (!String(result || '').trim()) return res.status(400).json({ error: 'Ingresa el resultado para completar el examen' });
+    }
     if (Object.keys(safe).length === 0) return res.status(400).json({ error: 'Sin cambios' });
     const sets = Object.keys(safe).map((k, i) => `${k} = $${i + 2}`).join(', ');
     const values = [req.params.id, ...Object.values(safe), req.userId];
@@ -1892,8 +2013,8 @@ app.patch('/items/lab_exams/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'No encontrado' });
     res.json({ data: result.rows[0] });
   } catch (error) {
-    console.error('Error updating lab exam:', error);
-    res.status(500).json({ error: 'Failed to update lab exam' });
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -1904,62 +2025,98 @@ app.delete('/items/lab_exams/:id', authMiddleware, async (req, res) => {
     if (!result.rows.length) return res.status(404).json({ error: 'No encontrado' });
     res.json({ data: { success: true } });
   } catch (error) {
-    console.error('Error deleting lab exam:', error);
-    res.status(500).json({ error: 'Failed to delete lab exam' });
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
 // ─── STATS ─────────────────────────────────────────────
+// Day boundaries use the clinic's local time; UTC made evening data land on "tomorrow".
+const CLINIC_TZ = 'America/Santiago';
+const WEEKDAYS_ES = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
+
 app.get('/stats/dashboard', authMiddleware, async (req, res) => {
   try {
-    const [pets, appointments, records, lowStock] = await Promise.all([
-      pool.query('SELECT COUNT(*) FROM pets WHERE user_id = $1', [req.userId]),
-      pool.query("SELECT COUNT(*) FROM appointments WHERE user_id = $1 AND start_time::date = CURRENT_DATE", [req.userId]),
-      pool.query('SELECT COUNT(*) FROM clinical_records WHERE user_id = $1', [req.userId]),
-      pool.query('SELECT COUNT(*) FROM inventory WHERE user_id = $1 AND current_stock <= min_stock', [req.userId])
+    const [pets, appointments, records, lowStock, hospitalized] = await Promise.all([
+      pool.query('SELECT COUNT(*)::int AS n FROM pets WHERE user_id = $1', [req.userId]),
+      pool.query(
+        `SELECT COUNT(*)::int AS n FROM appointments
+         WHERE user_id = $1 AND status NOT IN ('cancelada', 'ausente')
+           AND (start_time AT TIME ZONE $2)::date = (NOW() AT TIME ZONE $2)::date`,
+        [req.userId, CLINIC_TZ]
+      ),
+      pool.query('SELECT COUNT(*)::int AS n FROM clinical_records WHERE user_id = $1', [req.userId]),
+      pool.query('SELECT COUNT(*)::int AS n FROM inventory WHERE user_id = $1 AND current_stock <= min_stock', [req.userId]),
+      pool.query("SELECT COUNT(*)::int AS n FROM hospitalizations WHERE user_id = $1 AND status <> 'discharged'", [req.userId]),
     ]);
     res.json({
       data: {
-        totalPets: parseInt(pets.rows[0].count),
-        todayAppointments: parseInt(appointments.rows[0].count),
-        totalRecords: parseInt(records.rows[0].count),
-        lowStockAlerts: parseInt(lowStock.rows[0].count)
-      }
+        totalPets: pets.rows[0].n,
+        todayAppointments: appointments.rows[0].n,
+        totalRecords: records.rows[0].n,
+        lowStockAlerts: lowStock.rows[0].n,
+        activeHospitalizations: hospitalized.rows[0].n,
+      },
     });
-  } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
-    res.status(500).json({ error: 'Failed to fetch stats' });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
+// Last 7 local days, oldest first, zero-filled, with the same window of the
+// previous week so the client can show a real (signed) trend.
 app.get('/stats/weekly', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT TO_CHAR(date, 'Dy') as day, COUNT(*)::int as count
-      FROM clinical_records
-      WHERE user_id = $1 AND date >= NOW() - INTERVAL '7 days'
-      GROUP BY TO_CHAR(date, 'Dy'), EXTRACT(DOW FROM date)
-      ORDER BY EXTRACT(DOW FROM date)
-    `, [req.userId]);
-    res.json({ data: result.rows });
-  } catch (error) {
-    console.error('Error fetching weekly stats:', error);
-    res.status(500).json({ error: 'Failed to fetch weekly stats' });
+    const result = await pool.query(
+      `WITH days AS (
+         SELECT generate_series((NOW() AT TIME ZONE $2)::date - 13, (NOW() AT TIME ZONE $2)::date, '1 day')::date AS day
+       ), counts AS (
+         SELECT (date AT TIME ZONE $2)::date AS day,
+                COUNT(*)::int AS total,
+                COUNT(*) FILTER (WHERE record_type = 'consulta')::int AS consultas,
+                COUNT(*) FILTER (WHERE record_type = 'vacuna')::int AS vacunas
+         FROM clinical_records
+         WHERE user_id = $1 AND date >= NOW() - INTERVAL '15 days'
+         GROUP BY 1
+       )
+       SELECT to_char(d.day, 'YYYY-MM-DD') AS date, EXTRACT(ISODOW FROM d.day)::int AS dow,
+              COALESCE(c.total, 0) AS count, COALESCE(c.consultas, 0) AS consultas, COALESCE(c.vacunas, 0) AS vacunas
+       FROM days d LEFT JOIN counts c ON c.day = d.day
+       ORDER BY d.day`,
+      [req.userId, CLINIC_TZ]
+    );
+    const rows = result.rows.map((r) => ({ ...r, day: WEEKDAYS_ES[r.dow - 1] }));
+    const previous = rows.slice(0, 7);
+    const current = rows.slice(7);
+    const sum = (arr, k) => arr.reduce((acc, r) => acc + r[k], 0);
+    res.json({
+      data: current,
+      summary: {
+        total: sum(current, 'count'), previousTotal: sum(previous, 'count'),
+        consultas: sum(current, 'consultas'), previousConsultas: sum(previous, 'consultas'),
+        vacunas: sum(current, 'vacunas'), previousVacunas: sum(previous, 'vacunas'),
+      },
+    });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
 app.get('/stats/record-types', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT record_type, COUNT(*)::int as count
-      FROM clinical_records
-      WHERE user_id = $1
-      GROUP BY record_type
-    `, [req.userId]);
+    const result = await pool.query(
+      `SELECT record_type, COUNT(*)::int AS count
+       FROM clinical_records
+       WHERE user_id = $1
+       GROUP BY record_type`,
+      [req.userId]
+    );
     res.json({ data: result.rows });
-  } catch (error) {
-    console.error('Error fetching record types:', error);
-    res.status(500).json({ error: 'Failed to fetch record types' });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -1977,8 +2134,8 @@ app.get('/vital-measurements', authMiddleware, async (req, res) => {
     const result = await pool.query(query, params);
     res.json({ data: result.rows });
   } catch (error) {
-    console.error('Error fetching vital measurements:', error);
-    res.status(500).json({ error: 'Failed to fetch vital measurements' });
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -1991,14 +2148,22 @@ app.post('/vital-measurements', authMiddleware, async (req, res) => {
     if (!data.pet_id || !isValidUUID(data.pet_id)) {
       return res.status(400).json({ error: 'pet_id requerido y debe ser UUID valido' });
     }
+    const vErr = validateFields(data, {
+      weight: { type: 'number', min: 0.05, max: 150, label: 'Peso' },
+      temperature: { type: 'number', min: 30, max: 45, label: 'Temperatura' },
+      heart_rate: { type: 'number', integer: true, min: 20, max: 350, label: 'Frecuencia cardíaca' },
+      respiratory_rate: { type: 'number', integer: true, min: 4, max: 150, label: 'Frecuencia respiratoria' },
+      spo2: { type: 'number', integer: true, min: 50, max: 100, label: 'SpO2' },
+    });
+    if (vErr) return res.status(400).json({ error: vErr });
     const result = await pool.query(
       'INSERT INTO vital_measurements (pet_id, user_id, organization_id, weight, temperature, heart_rate, respiratory_rate, blood_pressure, spo2, mucous_membranes, hydration, body_condition, notes, recorded_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *',
       [data.pet_id, req.userId, req.organizationId, data.weight || null, data.temperature || null, data.heart_rate || null, data.respiratory_rate || null, data.blood_pressure || null, data.spo2 || null, data.mucous_membranes || null, data.hydration || null, data.body_condition || null, data.notes || null, req.userId]
     );
     res.status(201).json({ data: result.rows[0] });
   } catch (error) {
-    console.error('Error creating vital measurement:', error);
-    res.status(500).json({ error: 'Failed to create vital measurement' });
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -2006,13 +2171,13 @@ app.post('/vital-measurements', authMiddleware, async (req, res) => {
 app.get('/payments', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT py.*, p.name as pet_name FROM payments py LEFT JOIN pets p ON py.pet_id = p.id WHERE py.organization_id = $1 ORDER BY py.paid_at DESC LIMIT 200',
-      [req.organizationId]
+      'SELECT py.*, p.name as pet_name FROM payments py LEFT JOIN pets p ON py.pet_id = p.id WHERE py.user_id = $1 ORDER BY py.paid_at DESC LIMIT 200',
+      [req.userId]
     );
     res.json({ data: result.rows });
   } catch (error) {
-    console.error('Error fetching payments:', error);
-    res.status(500).json({ error: 'Failed to fetch payments' });
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
@@ -2022,9 +2187,11 @@ app.post('/payments', authMiddleware, async (req, res) => {
     if (refError) return res.status(403).json({ error: refError });
     const allowed = ['appointment_id', 'pet_id', 'amount', 'method', 'description'];
     const data = sanitizeColumns(allowed, req.body);
-    if (!data.amount || isNaN(parseFloat(data.amount))) {
-      return res.status(400).json({ error: 'amount requerido y debe ser numerico' });
+    const amount = parseNumberInput(data.amount, { min: 1, max: 99999999 });
+    if (amount === null || amount === undefined) {
+      return res.status(400).json({ error: 'Ingresa un monto válido mayor a 0' });
     }
+    data.amount = amount;
     const validMethods = ['efectivo', 'debito', 'credito', 'transferencia', 'otro'];
     if (data.method && !validMethods.includes(data.method)) {
       return res.status(400).json({ error: 'method invalido. Use: ' + validMethods.join(', ') });
@@ -2035,19 +2202,19 @@ app.post('/payments', authMiddleware, async (req, res) => {
     );
     res.status(201).json({ data: result.rows[0] });
   } catch (error) {
-    console.error('Error creating payment:', error);
-    res.status(500).json({ error: 'Failed to create payment' });
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
 // ─── REPORTS ──────────────────────────────────────────
 app.get('/reports/summary', authMiddleware, async (req, res) => {
   try {
-    const orgId = req.organizationId;
+
     const [patients, appointments, payments, records] = await Promise.all([
-      pool.query('SELECT COUNT(*)::int as total FROM pets WHERE organization_id = $1', [orgId]),
-      pool.query(`SELECT COUNT(*)::int as total, COUNT(CASE WHEN status = 'completada' THEN 1 END)::int as completed FROM appointments WHERE organization_id = $1 AND start_time >= date_trunc('month', now())`, [orgId]),
-      pool.query('SELECT COALESCE(SUM(amount),0)::numeric as total, COUNT(*)::int as count FROM payments WHERE organization_id = $1 AND paid_at >= date_trunc(\'month\', now())', [orgId]),
+      pool.query('SELECT COUNT(*)::int as total FROM pets WHERE user_id = $1', [req.userId]),
+      pool.query(`SELECT COUNT(*)::int as total, COUNT(CASE WHEN status = 'completada' THEN 1 END)::int as completed FROM appointments WHERE user_id = $1 AND start_time >= date_trunc('month', now())`, [req.userId]),
+      pool.query('SELECT COALESCE(SUM(amount),0)::numeric as total, COUNT(*)::int as count FROM payments WHERE user_id = $1 AND paid_at >= date_trunc(\'month\', now())', [req.userId]),
       pool.query('SELECT COUNT(*)::int as total FROM clinical_records WHERE user_id = $1 AND created_at >= date_trunc(\'month\', now())', [req.userId]),
     ]);
     res.json({
@@ -2059,21 +2226,21 @@ app.get('/reports/summary', authMiddleware, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching report summary:', error);
-    res.status(500).json({ error: 'Failed to fetch report summary' });
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
 app.get('/reports/expiring-inventory', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM inventory WHERE organization_id = $1 AND expiration_date IS NOT NULL AND expiration_date <= now() + interval '30 days' ORDER BY expiration_date ASC LIMIT 50",
-      [req.organizationId]
+      "SELECT * FROM inventory WHERE user_id = $1 AND expiration_date IS NOT NULL AND expiration_date <= now() + interval '30 days' ORDER BY expiration_date ASC LIMIT 50",
+      [req.userId]
     );
     res.json({ data: result.rows });
   } catch (error) {
-    console.error('Error fetching expiring inventory:', error);
-    res.status(500).json({ error: 'Failed to fetch expiring inventory' });
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 

@@ -248,8 +248,8 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    letterSpacing: 0.5, textTransform: 'uppercase',
     letterSpacing: 0.5,
+    textTransform: 'uppercase',
     marginTop: SPACING.xs,
   },
   fieldInput: { borderRadius: RADIUS.sm, fontSize: TYPOGRAPHY.sizes.sm, minHeight: 36 },

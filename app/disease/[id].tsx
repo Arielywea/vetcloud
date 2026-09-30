@@ -69,7 +69,7 @@ export default function DiseaseDetailScreen() {
   const updateEditNested = (parent: string, field: string, value: any) => {
     setEditData(prev => ({
       ...prev,
-      [parent]: { ...(prev[parent] as any || {}), [field]: value },
+      [parent]: { ...((prev as Record<string, any>)[parent] || {}), [field]: value },
     }));
   };
 

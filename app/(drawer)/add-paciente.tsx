@@ -60,6 +60,7 @@ export default function AddPacienteScreen() {
 
   // Identificación
   const [idNumber, setIdNumber] = useState('');
+  const [tutorRut, setTutorRut] = useState('');
 
   // Temperamento
   const [temperament, setTemperament] = useState<string[]>([]);
@@ -194,6 +195,7 @@ export default function AddPacienteScreen() {
         address: address.trim() || null,
         clinic_location: null,
         id_number: idNumber.trim() || null,
+        tutor_rut: tutorRut.trim() || null,
         sex,
         temperament,
         habitat: habitat || null,
@@ -578,8 +580,10 @@ export default function AddPacienteScreen() {
         />
         <TextInput
           label="RUT"
-          value={idNumber}
-          onChangeText={setIdNumber}
+          value={tutorRut}
+          onChangeText={setTutorRut}
+          maxLength={12}
+          autoCapitalize="characters"
           mode="outlined"
           placeholder="Ej: 12.345.678-9"
           style={[styles.input, { backgroundColor: colors.surface }]}
@@ -858,7 +862,7 @@ export default function AddPacienteScreen() {
           </View>
           <View style={styles.summaryGrid}>
             <SummaryItem label="Nombre" value={tutorName || '-'} colors={colors} />
-            <SummaryItem label="RUT" value={idNumber || '-'} colors={colors} />
+            <SummaryItem label="RUT" value={tutorRut || '-'} colors={colors} />
             <SummaryItem label="Teléfono" value={phone || '-'} colors={colors} />
             <SummaryItem label="Correo" value={email || '-'} colors={colors} />
             <SummaryItem label="Dirección" value={address || '-'} colors={colors} />

@@ -13,6 +13,7 @@ import VBadge from '../../components/ui/Badge';
 import VEmptyState from '../../components/ui/EmptyState';
 import VRefreshControl from '../../components/ui/VRefreshControl';
 import { SkeletonList } from '../../components/ui/Skeleton';
+import { toLocalDateTimeInput, parseLocalDateTime } from '../../utils/date';
 
 const TYPE_ICONS: Record<string, typeof Syringe> = { vacuna: Syringe, desparasitacion: Bug, cita: CalendarClock, post_operatorio: BriefcaseMedical, control: ClipboardCheck };
 
@@ -32,7 +33,7 @@ export default function RemindersScreen() {
   const [formType, setFormType] = useState<Reminder['reminder_type']>('cita');
   const [formTitle, setFormTitle] = useState('');
   const [formMessage, setFormMessage] = useState('');
-  const [formDate, setFormDate] = useState(new Date().toISOString().slice(0, 16));
+  const [formDate, setFormDate] = useState(() => toLocalDateTimeInput());
 
   const filtered = useMemo(() => {
     if (filter === 'all') return reminders;
@@ -42,14 +43,16 @@ export default function RemindersScreen() {
   const pendingCount = reminders.filter(r => r.status === 'pending').length;
 
   const handleCreate = async () => {
-    if (!formPetId || !formTitle.trim() || !formMessage.trim()) { setErrorDialog('Complete todos los campos obligatorios'); return; }
+    if (!formPetId || !formTitle.trim() || !formMessage.trim()) { setErrorDialog('Completa todos los campos obligatorios'); return; }
     const pet = pets.find(p => p.id === formPetId);
     if (!pet?.email) { setErrorDialog('El tutor no tiene email registrado'); return; }
+    const when = parseLocalDateTime(formDate);
+    if (!when) { setErrorDialog('Fecha inválida. Usa el formato AAAA-MM-DD HH:MM'); return; }
     setSaving(true);
     try {
-      await addReminder({ pet_id: formPetId, tutor_email: pet.email, reminder_type: formType, title: formTitle.trim(), message: formMessage.trim(), scheduled_for: new Date(formDate).toISOString() });
-      setShowCreateModal(false); setFormPetId(''); setFormTitle(''); setFormMessage(''); setFormDate(new Date().toISOString().slice(0, 16));
-    } catch { setErrorDialog('No se pudo crear el recordatorio'); } finally { setSaving(false); }
+      await addReminder({ pet_id: formPetId, tutor_email: pet.email, reminder_type: formType, title: formTitle.trim(), message: formMessage.trim(), scheduled_for: when.toISOString() });
+      setShowCreateModal(false); setFormPetId(''); setFormTitle(''); setFormMessage(''); setFormDate(toLocalDateTimeInput());
+    } catch (e: any) { setErrorDialog(e?.message || 'No se pudo crear el recordatorio'); } finally { setSaving(false); }
   };
 
   const handleAutoGenerate = async () => {

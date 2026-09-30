@@ -135,7 +135,7 @@ export default function AppointmentCreationModal({
     setSelectedPetId(pet.id);
     setPatientName(pet.name || '');
     setTutorName(pet.tutor_name || '');
-    setTutorPhone(pet.tutor_phone || '');
+    setTutorPhone(pet.phone || '');
     setShowPetSearch(false);
     setPetSearchQuery('');
   }, []);
@@ -152,13 +152,24 @@ export default function AppointmentCreationModal({
     try {
       const startDateTime = new Date(`${date}T${formatHour(parseInt(startHour))}:${startMinute.padStart(2, '0')}:00`);
       const endDateTime = new Date(`${date}T${formatHour(parseInt(endHour))}:${endMinute.padStart(2, '0')}:00`);
+      if (Number.isNaN(startDateTime.getTime()) || Number.isNaN(endDateTime.getTime())) {
+        setError('Fecha u hora inválida');
+        setSubmitting(false);
+        return;
+      }
+      if (endDateTime <= startDateTime) {
+        setError('La hora de término debe ser posterior a la de inicio');
+        setSubmitting(false);
+        return;
+      }
 
       const appointmentData: any = {
         patient_name: patientName.trim(),
+        tutor_phone: tutorPhone.trim() || null,
         start_time: startDateTime.toISOString(),
         end_time: endDateTime.toISOString(),
         appointment_type: appointmentType,
-        description: description.trim() || null,
+        description: [tutorName.trim() && !selectedPetId ? `Tutor: ${tutorName.trim()}` : '', description.trim()].filter(Boolean).join(' · ') || null,
         status: 'programada',
       };
 
@@ -502,8 +513,8 @@ const styles = StyleSheet.create({
   label: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    letterSpacing: 0.5, textTransform: 'uppercase',
     letterSpacing: 0.5,
+    textTransform: 'uppercase',
     marginBottom: 6,
   },
   input: {

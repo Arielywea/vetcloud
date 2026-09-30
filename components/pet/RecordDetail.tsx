@@ -23,7 +23,23 @@ export default function RecordDetail({ record }: RecordDetailProps) {
 
   const d = record.details || {};
   const hasSoapData = d.subjective || d.objective || d.assessment || d.plan || d.treatment;
-  const hasLegacyData = d.notes || d.anamnesis || d.hallazgos || d.motivo_consulta;
+  const hasLegacyData = d.notes || d.anamnesis || d.hallazgos || d.hallazgos_examen_fisico || d.motivo_consulta;
+
+  // The record form saves temperature/heart_rate/...; older records used temp/fc/fr/pa.
+  const vs = d.vital_signs || {};
+  const fmtNum = (n: any) => String(n).replace('.', ',');
+  const temp = vs.temperature ?? vs.temp;
+  const fc = vs.heart_rate ?? vs.fc;
+  const fr = vs.respiratory_rate ?? vs.fr;
+  const pa = vs.blood_pressure ?? vs.pa;
+  const objectiveFields = [
+    d.weight != null ? { label: 'Peso', value: `${fmtNum(d.weight)} kg` } : null,
+    temp != null ? { label: 'Temp.', value: `${fmtNum(temp)} °C` } : null,
+    fc != null ? { label: 'FC', value: `${fc} lpm` } : null,
+    fr != null ? { label: 'FR', value: `${fr} rpm` } : null,
+    pa ? { label: 'PA', value: String(pa) } : null,
+    vs.spo2 != null ? { label: 'SpO₂', value: `${vs.spo2}%` } : null,
+  ].filter(Boolean) as { label: string; value: string }[];
 
   const buildSoapSections = (): SoapSection[] => {
     if (hasSoapData) {
@@ -32,28 +48,22 @@ export default function RecordDetail({ record }: RecordDetailProps) {
           label: 'Subjetivo',
           icon: 'account-heart-outline',
           color: colors.primary,
-          content: d.subjective || '',
+          content: [d.subjective, d.anamnesis && `Anamnesis: ${d.anamnesis}`].filter(Boolean).join('\n\n'),
           fields: d.motivo_consulta ? [{ label: 'Motivo', value: d.motivo_consulta }] : [],
         },
         {
           label: 'Objetivo',
           icon: 'stethoscope',
           color: colors.info,
-          content: d.objective || '',
-          fields: [
-            d.vital_signs?.temp ? { label: 'Temp', value: `${d.vital_signs.temp} C` } : null,
-            d.vital_signs?.fc ? { label: 'FC', value: `${d.vital_signs.fc} lpm` } : null,
-            d.vital_signs?.fr ? { label: 'FR', value: `${d.vital_signs.fr} rpm` } : null,
-            d.vital_signs?.pa ? { label: 'PA', value: d.vital_signs.pa } : null,
-            d.vital_signs?.spo2 ? { label: 'SpO2', value: `${d.vital_signs.spo2}%` } : null,
-          ].filter(Boolean) as { label: string; value: string }[],
+          content: [d.objective, (d.hallazgos_examen_fisico || d.hallazgos) && `Examen físico: ${d.hallazgos_examen_fisico || d.hallazgos}`].filter(Boolean).join('\n\n'),
+          fields: objectiveFields,
         },
         {
-          label: 'Evaluacion',
+          label: 'Evaluación',
           icon: 'clipboard-text-search-outline',
           color: colors.warning,
           content: d.assessment || '',
-          fields: d.diagnostico ? [{ label: 'Diagnostico', value: d.diagnostico }] : [],
+          fields: d.diagnostico ? [{ label: 'Diagnóstico', value: d.diagnostico }] : [],
         },
         {
           label: 'Plan',
@@ -92,8 +102,8 @@ export default function RecordDetail({ record }: RecordDetailProps) {
           label: 'Hallazgos',
           icon: 'magnify',
           color: colors.warning,
-          content: d.hallazgos || '',
-          fields: [],
+          content: d.hallazgos_examen_fisico || d.hallazgos || '',
+          fields: objectiveFields,
         },
         {
           label: 'Notas',
@@ -109,7 +119,7 @@ export default function RecordDetail({ record }: RecordDetailProps) {
   };
 
   const sections = buildSoapSections();
-  const formatType = hasSoapData ? 'SOAP' : hasLegacyData ? 'Legacy' : null;
+  const formatType = hasSoapData ? 'SOAP' : hasLegacyData ? 'libre' : null;
 
   return (
     <View style={styles.container}>

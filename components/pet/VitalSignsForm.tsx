@@ -8,6 +8,8 @@ import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import VInput from '../../components/ui/Input';
 import VButton from '../../components/ui/Button';
 import DisplayText from '../ui/DisplayText';
+import { useToast } from '../ui/VToast';
+import { parseVitals } from '../../utils/vitals';
 
 interface VitalSignsProps {
   petId: string;
@@ -32,6 +34,7 @@ interface VitalRecord {
 
 export default function VitalSignsForm({ petId, visible, onClose }: VitalSignsProps) {
   const { colors, onChromeText } = useTheme();
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [history, setHistory] = useState<VitalRecord[]>([]);
@@ -59,22 +62,23 @@ export default function VitalSignsForm({ petId, visible, onClose }: VitalSignsPr
   };
 
   const handleSave = async () => {
+    const { values, error } = parseVitals({ weight, temperature, heart_rate: heartRate, respiratory_rate: respRate, spo2 });
+    if (error) { toast.error(error); return; }
+    if (!Object.keys(values).length && !bp && !notes) { toast.error('Ingresa al menos un signo vital'); return; }
     setSaving(true);
     try {
-      const data: any = { pet_id: petId };
-      if (weight) data.weight = parseFloat(weight);
-      if (temperature) data.temperature = parseFloat(temperature);
-      if (heartRate) data.heart_rate = parseInt(heartRate);
-      if (respRate) data.respiratory_rate = parseInt(respRate);
+      const data: any = { pet_id: petId, ...values };
       if (bp) data.blood_pressure = bp;
-      if (spo2) data.spo2 = parseInt(spo2);
       if (notes) data.notes = notes;
 
       await api.vitals.create(data);
       setShowForm(false);
       setWeight(''); setTemperature(''); setHeartRate(''); setRespRate(''); setBp(''); setSpo2(''); setNotes('');
+      toast.success('Signos vitales guardados');
       await loadHistory();
-    } catch { /* */ }
+    } catch (e: any) {
+      toast.error(e?.message || 'No se pudieron guardar los signos vitales');
+    }
     setSaving(false);
   };
 

@@ -78,7 +78,7 @@ function generatePatientFilePdf(pet, records, clinic) {
     doc.fill(darkText).fontSize(13).font('Helvetica-Bold').text(pet.tutor_name || 'N/D', rightX + 12, y + 38, { width: colW - 24 });
     py = y + 56;
     doc.fill(secondaryText).fontSize(9).font('Helvetica');
-    if (pet.tutor_email) { doc.text(pet.tutor_email, rightX + 12, py, { width: colW - 24 }); py += 14; }
+    if (pet.tutor_email || pet.email) { doc.text(pet.tutor_email || pet.email, rightX + 12, py, { width: colW - 24 }); py += 14; }
     if (pet.tutor_phone || pet.phone) { doc.text(pet.tutor_phone || pet.phone, rightX + 12, py, { width: colW - 24 }); py += 14; }
     if (pet.tutor_rut) { doc.text(`RUT: ${pet.tutor_rut}`, rightX + 12, py, { width: colW - 24 }); py += 14; }
     if (pet.address) { doc.text(pet.address, rightX + 12, py, { width: colW - 24 }); py += 14; }

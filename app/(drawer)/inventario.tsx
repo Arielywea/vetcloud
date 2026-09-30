@@ -5,6 +5,7 @@ import { Package, Pill, Syringe, Scissors, AlertTriangle, Pencil, Trash2, Plus, 
 import { useInventory } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
+import { parseLocaleNumber } from '../../utils/parseNumber';
 import VCard from '../../components/ui/Card';
 import VButton from '../../components/ui/Button';
 import VEmptyState from '../../components/ui/EmptyState';
@@ -42,6 +43,7 @@ export default function InventarioScreen() {
   const [itemMinStock, setItemMinStock] = useState('5');
   const [itemUnit, setItemUnit] = useState('unidades');
   const [errorDialog, setErrorDialog] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ name: string; id: string } | null>(null);
 
   const resetForm = () => {
@@ -63,12 +65,25 @@ export default function InventarioScreen() {
   };
 
   const handleSave = async () => {
+    if (saving) return;
     if (!itemName.trim()) { setErrorDialog('El nombre es obligatorio'); return; }
+    const stock = itemStock.trim() === '' ? 0 : parseLocaleNumber(itemStock);
+    const minStock = itemMinStock.trim() === '' ? 0 : parseLocaleNumber(itemMinStock);
+    if (stock === null || Number.isNaN(stock) || stock < 0 || !Number.isInteger(stock)) { setErrorDialog('El stock debe ser un número entero mayor o igual a 0'); return; }
+    if (minStock === null || Number.isNaN(minStock) || minStock < 0 || !Number.isInteger(minStock)) { setErrorDialog('El stock mínimo debe ser un número entero mayor o igual a 0'); return; }
+    const original = editingItem ? items.find((i: any) => i.id === editingItem) : null;
+    const data: any = { name: itemName.trim(), category: itemCategory, current_stock: stock, min_stock: minStock, unit: itemUnit };
+    // Only a real restock (new item or stock going up) moves the restock date
+    if (!original || stock > Number(original.current_stock)) data.last_restocked = new Date().toISOString();
+    setSaving(true);
     try {
-      const data = { name: itemName.trim(), category: itemCategory, current_stock: parseInt(itemStock) || 0, min_stock: parseInt(itemMinStock) || 5, unit: itemUnit, last_restocked: new Date().toISOString() };
       if (editingItem) { await updateItem(editingItem, data); } else { await addItem(data); }
       resetForm(); setShowModal(false);
-    } catch { setErrorDialog('No se pudo guardar el item'); }
+    } catch (e: any) {
+      setErrorDialog(e?.message || 'No se pudo guardar el ítem');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const getStockColor = (current: number, min: number) => {
@@ -177,7 +192,7 @@ export default function InventarioScreen() {
             </Menu>
             <View style={styles.actions}>
               <VButton variant="secondary" onPress={() => { setShowModal(false); resetForm(); }}>Cancelar</VButton>
-              <VButton variant="primary" onPress={handleSave}>Guardar</VButton>
+              <VButton variant="primary" onPress={handleSave} loading={saving} disabled={saving}>Guardar</VButton>
             </View>
           </ScrollView>
         </Modal>
@@ -199,7 +214,12 @@ export default function InventarioScreen() {
           <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 4 }}>¿Eliminar "{confirmDelete?.name}"?</Text>
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
             <VButton variant="secondary" onPress={() => setConfirmDelete(null)} style={{ flex: 1 }}>Cancelar</VButton>
-            <VButton variant="danger" onPress={() => { if (confirmDelete) removeItem(confirmDelete.id); setConfirmDelete(null); }} style={{ flex: 1 }}>Eliminar</VButton>
+            <VButton variant="danger" onPress={async () => {
+              const target = confirmDelete;
+              setConfirmDelete(null);
+              if (!target) return;
+              try { await removeItem(target.id); } catch (e: any) { setErrorDialog(e?.message || 'No se pudo eliminar el ítem'); }
+            }} style={{ flex: 1 }}>Eliminar</VButton>
           </View>
         </Modal>
       </Portal>

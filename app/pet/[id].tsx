@@ -8,6 +8,8 @@ import { ClinicalRecord, Prescription } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
 import { calculateAge } from '../../utils/age';
+import { toLocalDateTimeInput, parseLocalDateTime } from '../../utils/date';
+import { parseVitals } from '../../utils/vitals';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import ClinicalTabs, { ClinicalTabType } from '../../components/ClinicalTabs';
@@ -44,7 +46,7 @@ export default function PetDetailScreen() {
   const [errorDialog, setErrorDialog] = useState<string | null>(null);
   const [deleteRecordTarget, setDeleteRecordTarget] = useState<ClinicalRecord | null>(null);
   const [recordType, setRecordType] = useState<ClinicalRecord['record_type']>('consulta');
-  const [recordDate, setRecordDate] = useState(new Date().toISOString().slice(0, 16));
+  const [recordDate, setRecordDate] = useState(() => toLocalDateTimeInput());
   const [recordVet, setRecordVet] = useState('');
   const [recordAssessment, setRecordAssessment] = useState('');
   const [recordPlan, setRecordPlan] = useState('');
@@ -124,7 +126,14 @@ export default function PetDetailScreen() {
   }, [pet]);
 
   const handleAddRecord = async () => {
-    if (!recordAssessment.trim() && !recordTreatment.trim()) { setErrorDialog('La evaluacion o tratamiento son obligatorios'); return; }
+    if (!recordAssessment.trim() && !recordTreatment.trim()) { setErrorDialog('La evaluación o el tratamiento son obligatorios'); return; }
+    const when = parseLocalDateTime(recordDate);
+    if (!when) { setErrorDialog('Fecha inválida. Usa el formato AAAA-MM-DD HH:MM'); return; }
+    const { values: vitals, error: vitalsError } = parseVitals({
+      weight: recordWeight, temperature: recordVitalTemp, heart_rate: recordVitalFC,
+      respiratory_rate: recordVitalFR, spo2: recordVitalSpO2,
+    });
+    if (vitalsError) { setErrorDialog(vitalsError); return; }
     if (!id) return; setSaving(true);
     try {
       const details: any = {
@@ -132,15 +141,17 @@ export default function PetDetailScreen() {
         assessment: recordAssessment.trim() || undefined,
         plan: recordPlan.trim() || undefined,
         treatment: recordTreatment.trim() || undefined,
-        weight: recordWeight ? parseFloat(recordWeight) : undefined,
+        weight: vitals.weight,
         motivo_consulta: recordMotivoConsulta.trim() || undefined,
         anamnesis: recordAnamnesis.trim() || undefined,
         hallazgos_examen_fisico: recordHallazgos.trim() || undefined,
-        vital_signs: { temperature: recordVitalTemp ? parseFloat(recordVitalTemp) : undefined,
-          heart_rate: recordVitalFC ? parseInt(recordVitalFC) : undefined,
-          respiratory_rate: recordVitalFR ? parseInt(recordVitalFR) : undefined,
+        vital_signs: {
+          temperature: vitals.temperature,
+          heart_rate: vitals.heart_rate,
+          respiratory_rate: vitals.respiratory_rate,
           blood_pressure: recordVitalPA.trim() || undefined,
-          spo2: recordVitalSpO2 ? parseInt(recordVitalSpO2) : undefined },
+          spo2: vitals.spo2,
+        },
       };
       if (recordType === 'cirugia') {
         details.procedimiento = recordProcedimiento.trim() || undefined;
@@ -149,7 +160,7 @@ export default function PetDetailScreen() {
         if (recordFiles.length > 0) details.files = recordFiles;
       }
       await addRecord({
-        pet_id: id, record_type: recordType, date: new Date(recordDate).toISOString(),
+        pet_id: id, record_type: recordType, date: when.toISOString(),
         veterinarian: recordVet.trim() || null,
         details,
       });
@@ -165,6 +176,7 @@ export default function PetDetailScreen() {
     setRecordVitalFC(''); setRecordVitalFR(''); setRecordVitalPA(''); setRecordVitalSpO2('');
     setRecordProcedimiento(''); setRecordDescripcion(''); setRecordPostoperatorio('');
     setRecordFiles([]);
+    setRecordDate(toLocalDateTimeInput());
   };
 
   const openRxModal = (linkedRecordId?: string) => {
@@ -296,7 +308,7 @@ export default function PetDetailScreen() {
             <Text variant="titleSmall" style={[styles.subTitle, { color: colors.primary }]}>Subjetivo</Text>
             <TextInput label="Motivo de consulta" value={recordMotivoConsulta} onChangeText={setRecordMotivoConsulta} mode="outlined" multiline numberOfLines={2} style={styles.input} />
             <TextInput label="Anamnesis" value={recordAnamnesis} onChangeText={setRecordAnamnesis} mode="outlined" multiline numberOfLines={3} style={styles.input} />
-            <VoiceNotes onTranscription={(text) => setRecordAssessment(text)} onSoapParsed={(soapData) => { if (soapData.subjective) setRecordAnamnesis(soapData.subjective); if (soapData.objective) setRecordHallazgos(soapData.objective); if (soapData.assessment) setRecordAssessment(soapData.assessment); if (soapData.plan) setRecordPlan(soapData.plan); }} />
+            <VoiceNotes onTranscription={(text) => setRecordAssessment(prev => prev ? prev + ' ' + text : text)} onSoapParsed={(soapData) => { if (soapData.subjective) setRecordAnamnesis(soapData.subjective); if (soapData.objective) setRecordHallazgos(soapData.objective); if (soapData.assessment) setRecordAssessment(soapData.assessment); if (soapData.plan) setRecordPlan(soapData.plan); }} />
 
             {/* SOAP: Objective */}
             <Text variant="titleSmall" style={[styles.subTitle, { color: colors.info }]}>Objetivo</Text>

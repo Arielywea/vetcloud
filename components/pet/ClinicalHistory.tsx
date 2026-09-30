@@ -18,6 +18,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
   const [historialExpanded, setHistorialExpanded] = useState(false);
   const [anamnesisExpanded, setAnamnesisExpanded] = useState(false);
   const [constantExpanded, setConstantExpanded] = useState(false);
+  const [preDxExpanded, setPreDxExpanded] = useState(true);
 
   const renderField = (icon: string, label: string, value: string, iconColor?: string) => (
     <View style={styles.fieldBlock}>
@@ -141,7 +142,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
           ))}
 
           {/* Pre-diagnóstico */}
-          {pet.pre_diagnostico && renderSubSection('Pre-diagnóstico', 'clipboard-check-outline', colors.info, false, null, (
+          {pet.pre_diagnostico && renderSubSection('Pre-diagnóstico', 'clipboard-check-outline', colors.info, preDxExpanded, () => setPreDxExpanded(!preDxExpanded), (
             <Text style={[styles.fieldValue, { color: colors.text }]}>{pet.pre_diagnostico}</Text>
           ))}
 
@@ -174,8 +175,26 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
               )}
               {pet.vital_signs.spo2 != null && (
                 <View style={styles.vitalItem}>
-                  <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>SpO2</Text>
+                  <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>SpO₂</Text>
                   <Text style={[styles.vitalValue, { color: colors.text }]}>{pet.vital_signs.spo2}%</Text>
+                </View>
+              )}
+              {pet.vital_signs.mucous_membranes && (
+                <View style={styles.vitalItem}>
+                  <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>Mucosas</Text>
+                  <Text style={[styles.vitalValue, { color: colors.text }]}>{pet.vital_signs.mucous_membranes}</Text>
+                </View>
+              )}
+              {pet.vital_signs.hydration && (
+                <View style={styles.vitalItem}>
+                  <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>Hidratación</Text>
+                  <Text style={[styles.vitalValue, { color: colors.text }]}>{pet.vital_signs.hydration}</Text>
+                </View>
+              )}
+              {pet.vital_signs.body_condition && (
+                <View style={styles.vitalItem}>
+                  <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>Condición corporal</Text>
+                  <Text style={[styles.vitalValue, { color: colors.text }]}>{pet.vital_signs.body_condition}</Text>
                 </View>
               )}
             </View>
@@ -190,9 +209,9 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
           {/* Empty state */}
           {!pet.motivo_consulta && !pet.anamnesis && (!pet.allergies || pet.allergies.length === 0) && !pet.habitat && !pet.food && !pet.vaccines && !pet.surgeries && !pet.medications && !pet.notes && !pet.vital_signs && !pet.hallazgos_examen_fisico && !pet.pre_diagnostico && (!pet.base_diseases || pet.base_diseases.length === 0) && (
             <View style={styles.emptyState}>
-              <RoundTableIcon size={48} color={colors.textLight} accentColor="#C9A22740" />
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Sin datos clinicos iniciales registrados</Text>
-              <Text style={[styles.emptyHint, { color: colors.textLight }]}>Edita el paciente para completar la historia clinica</Text>
+              <RoundTableIcon size={48} color={colors.textLight} accentColor={colors.accent} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Sin datos clínicos iniciales registrados</Text>
+              <Text style={[styles.emptyHint, { color: colors.textLight }]}>Edita el paciente para completar la historia clínica</Text>
             </View>
           )}
         </View>
@@ -248,8 +267,8 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    letterSpacing: 0.5, textTransform: 'uppercase',
     letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   fieldValue: {
     fontSize: TYPOGRAPHY.sizes.sm,

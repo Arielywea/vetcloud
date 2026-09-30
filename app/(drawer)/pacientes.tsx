@@ -14,6 +14,7 @@ import PatientTable from '../../components/pacientes/PatientTable';
 import PatientSidePanel from '../../components/pacientes/PatientSidePanel';
 import { DirectusPet } from '../../services/directus';
 import DisplayText from '../../components/ui/DisplayText';
+import { useToast } from '../../components/ui/VToast';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -33,6 +34,8 @@ export default function PacientesScreen() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<DirectusPet | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const toast = useToast();
 
   const effectiveStatus: StatusFilter = useMemo(() => {
     if (activeTab === 'active') return 'active';
@@ -108,15 +111,27 @@ export default function PacientesScreen() {
     setSelectedIds(new Set());
   }, []);
 
-  const handleExport = useCallback(() => {
-    exportCsv(filteredPatients, 'pacientes', { includeMedical: true });
-  }, [filteredPatients]);
+  const handleExport = useCallback(async () => {
+    try {
+      await exportCsv(filteredPatients, 'pacientes', { includeMedical: true });
+    } catch (e: any) {
+      toast.error(e?.message || 'No se pudo exportar la lista');
+    }
+  }, [filteredPatients, toast]);
 
   const handleDelete = useCallback(async () => {
-    if (!deleteTarget) return;
-    await removePet(deleteTarget.id);
-    setDeleteTarget(null);
-  }, [deleteTarget, removePet]);
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    try {
+      await removePet(deleteTarget.id);
+      setDeleteTarget(null);
+      toast.success('Paciente eliminado');
+    } catch (e: any) {
+      toast.error(e?.message || 'No se pudo eliminar el paciente');
+    } finally {
+      setDeleting(false);
+    }
+  }, [deleteTarget, deleting, removePet, toast]);
 
   const handleClickPatient = useCallback((pet: DirectusPet) => {
     setSelectedPatient(pet);

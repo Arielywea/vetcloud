@@ -245,8 +245,8 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
     marginBottom: 4,
-    letterSpacing: 0.5, textTransform: 'uppercase',
     letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   filterChips: {
     flexDirection: 'row',

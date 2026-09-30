@@ -4,7 +4,7 @@ import { Text, Modal, Portal } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { Search, Stethoscope, Dog, Cat } from 'lucide-react-native';
 import { useDiseases } from '../../hooks/useDirectus';
-import { SEVERITY_COLORS, SEVERITY_LABELS } from '../../constants/colors';
+import { SEVERITY_COLORS, SEVERITY_LABELS, SEVERITY_TONE } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { DirectusDisease } from '../../services/directus';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/tokens';
@@ -38,7 +38,7 @@ export default function SearchScreen() {
       <VCard style={styles.resultCard}>
         <View style={styles.resultHeader}>
           <Text variant="titleMedium" style={[styles.resultName, { color: colors.text }]}>{item.name}</Text>
-          <VBadge variant={item.severity === 'high' ? 'danger' : item.severity === 'medium' ? 'warning' : 'info'}>
+          <VBadge variant={SEVERITY_TONE[item.severity] || 'neutral'}>
             {SEVERITY_LABELS[item.severity as keyof typeof SEVERITY_LABELS] || item.severity}
           </VBadge>
         </View>

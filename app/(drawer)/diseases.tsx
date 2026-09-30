@@ -4,7 +4,7 @@ import { Text, Modal, Portal } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { Search, Filter, FilterX, Plus, BriefcaseMedical, Dog, Cat, PawPrint, Baby, ChevronDown } from 'lucide-react-native';
 import { useDiseases } from '../../hooks/useDirectus';
-import { SEVERITY_COLORS, SEVERITY_LABELS } from '../../constants/colors';
+import { SEVERITY_COLORS, SEVERITY_LABELS, SEVERITY_TONE } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { DISEASE_CATEGORIES, SPECIES_INFO } from '../../constants/diseases';
 import { DirectusDisease } from '../../services/directus';
@@ -75,7 +75,7 @@ export default function DiseasesScreen() {
             <View style={styles.cardBadges}>
               {isPuppy && <VBadge variant="warning">Cachorro</VBadge>}
               {isKitten && <VBadge variant="warning">Gatito</VBadge>}
-              <VBadge variant={item.severity === 'high' ? 'danger' : item.severity === 'medium' ? 'warning' : 'info'}>
+              <VBadge variant={SEVERITY_TONE[item.severity] || 'neutral'}>
                 {SEVERITY_LABELS[item.severity as keyof typeof SEVERITY_LABELS] || item.severity}
               </VBadge>
             </View>

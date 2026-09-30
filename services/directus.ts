@@ -48,6 +48,7 @@ export interface DirectusPet {
   allergies: string[];
   notes: string;
   tutor_name: string | null;
+  tutor_rut?: string | null;
   phone: string | null;
   email: string | null;
   address: string | null;

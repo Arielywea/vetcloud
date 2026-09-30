@@ -77,7 +77,8 @@ export default function ReportesScreen() {
     { label: 'Stock Bajo', value: String(dashboardStats?.lowStockAlerts ?? 0), icon: <BarChart3 size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.error },
   ];
 
-  const maxWeekly = weeklyData.length > 0 ? Math.max(...weeklyData.map(d => d.count)) : 1;
+  // At least 1: an all-zero week must not divide by zero
+  const maxWeekly = Math.max(1, ...weeklyData.map(d => d.count));
   const totalRecords = recordTypes.reduce((sum, r) => sum + r.count, 0);
 
   return (

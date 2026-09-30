@@ -4,6 +4,7 @@ import { Text, TextInput, SegmentedButtons } from 'react-native-paper';
 import { AlertTriangle, CheckCircle, Calculator } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { parseNumberInRange } from '../../utils/parseNumber';
 
 type Species = 'perro' | 'gato';
 type Size = 'pequeño' | 'mediano' | 'grande';
@@ -49,9 +50,11 @@ export default function FluidTherapyCalculator({ initialWeight, initialSpecies }
   const [infusion, setInfusion] = useState<Infusion>('microgota');
 
   const result = useMemo<FluidResult | null>(() => {
-    const pesoNum = parseFloat(peso);
-    const dhNum = parseFloat(deshidratacion) || 0;
-    if (isNaN(pesoNum) || pesoNum <= 0) return null;
+    // Decimal comma accepted: "4,5" kg must not become 4
+    const pesoNum = parseNumberInRange(peso, 0.05, 150);
+    const dhParsed = parseNumberInRange(deshidratacion, 0, 15);
+    const dhNum = dhParsed === null || Number.isNaN(dhParsed) ? 0 : dhParsed;
+    if (pesoNum === null || Number.isNaN(pesoNum)) return null;
 
     const mantencion = FLUID_RATES[especie][tamano] * pesoNum;
     const dhVolumen = (dhNum / 100) * pesoNum * 1000;
@@ -82,7 +85,7 @@ export default function FluidTherapyCalculator({ initialWeight, initialSpecies }
         <TextInput
           value={peso}
           onChangeText={setPeso}
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
           mode="outlined"
           placeholder="Ej: 5"
           style={styles.input}
@@ -119,7 +122,7 @@ export default function FluidTherapyCalculator({ initialWeight, initialSpecies }
         <TextInput
           value={deshidratacion}
           onChangeText={setDeshidratacion}
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
           mode="outlined"
           placeholder="Ej: 5"
           style={styles.input}

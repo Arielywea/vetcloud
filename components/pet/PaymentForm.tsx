@@ -7,6 +7,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import VInput from '../../components/ui/Input';
 import VButton from '../../components/ui/Button';
+import { parseCLP } from '../../utils/parseNumber';
 
 interface PaymentFormProps {
   visible: boolean;
@@ -19,8 +20,8 @@ interface PaymentFormProps {
 
 const METHODS = [
   { key: 'efectivo', label: 'Efectivo', icon: Banknote },
-  { key: 'debito', label: 'Debito', icon: CreditCard },
-  { key: 'credito', label: 'Credito', icon: CreditCard },
+  { key: 'debito', label: 'Débito', icon: CreditCard },
+  { key: 'credito', label: 'Crédito', icon: CreditCard },
   { key: 'transferencia', label: 'Transferencia', icon: ArrowRightLeft },
   { key: 'otro', label: 'Otro', icon: Smartphone },
 ];
@@ -31,22 +32,31 @@ export default function PaymentForm({ visible, onClose, onPaid, appointmentId, p
   const [method, setMethod] = useState('efectivo');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSave = async () => {
-    if (!amount || isNaN(parseFloat(amount))) return;
+    // CLP: "15.000" is fifteen thousand pesos, not 15
+    const value = parseCLP(amount);
+    if (value === null || Number.isNaN(value) || value <= 0) {
+      setError('Ingresa un monto válido (ej: 15.000)');
+      return;
+    }
+    setError(null);
     setSaving(true);
     try {
       await api.payments.create({
         appointment_id: appointmentId || undefined,
         pet_id: petId || undefined,
-        amount: parseFloat(amount),
+        amount: value,
         method,
         description: description || undefined,
       });
       onPaid?.();
       onClose();
       setAmount(''); setMethod('efectivo'); setDescription('');
-    } catch { /* */ }
+    } catch (e: any) {
+      setError(e?.message || 'No se pudo registrar el cobro');
+    }
     setSaving(false);
   };
 
@@ -56,12 +66,12 @@ export default function PaymentForm({ visible, onClose, onPaid, appointmentId, p
         <View style={[styles.sheet, { backgroundColor: colors.surface }]}>
           <View style={styles.sheetHeader}>
             <Text style={[styles.sheetTitle, { color: colors.text }]}>Registrar cobro</Text>
-            <TouchableOpacity onPress={onClose}><X size={20} color={colors.textSecondary} /></TouchableOpacity>
+            <TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Cerrar" hitSlop={10}><X size={20} color={colors.textSecondary} /></TouchableOpacity>
           </View>
 
-          <VInput label="Monto ($)" placeholder="0" value={amount} onChangeText={setAmount} keyboardType="decimal-pad" leftIcon={<DollarSign size={18} color={colors.primary} />} />
+          <VInput label="Monto ($)" placeholder="Ej: 15.000" value={amount} onChangeText={(t) => { setAmount(t); setError(null); }} error={error || undefined} keyboardType="decimal-pad" leftIcon={<DollarSign size={18} color={colors.primary} />} />
 
-          <Text style={[styles.label, { color: colors.textSecondary }]}>Metodo de pago</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Método de pago</Text>
           <View style={styles.methodRow}>
             {METHODS.map((m) => (
               <TouchableOpacity
@@ -75,7 +85,7 @@ export default function PaymentForm({ visible, onClose, onPaid, appointmentId, p
             ))}
           </View>
 
-          <VInput label="Descripcion (opcional)" placeholder="Consulta, vacuna, etc." value={description} onChangeText={setDescription} />
+          <VInput label="Descripción (opcional)" placeholder="Consulta, vacuna, etc." value={description} onChangeText={setDescription} />
 
           <View style={styles.actions}>
             <VButton onPress={onClose} variant="secondary" style={{ flex: 1 }}>Cancelar</VButton>

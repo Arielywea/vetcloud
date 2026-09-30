@@ -54,8 +54,8 @@ const styles = StyleSheet.create({
   dayName: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    letterSpacing: 0.5, textTransform: 'uppercase',
     letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   dayNumberWrap: {
     width: 28,

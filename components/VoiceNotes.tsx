@@ -7,6 +7,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../constants/tokens';
 
 interface VoiceNotesProps {
+  /** Called once per newly recognized final phrase (a delta, not the whole transcript). */
   onTranscription: (text: string) => void;
   onSoapParsed?: (soap: { subjective: string; objective: string; assessment: string; plan: string }) => void;
 }
@@ -46,8 +47,12 @@ export default function VoiceNotes({ onTranscription, onSoapParsed }: VoiceNotes
   const [isSupported, setIsSupported] = useState(true);
   const [showSoap, setShowSoap] = useState(false);
   const [soap, setSoap] = useState({ subjective: '', objective: '', assessment: '', plan: '' });
+  const [micError, setMicError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Latest callback without re-creating the recognizer on every render
+  const onTranscriptionRef = useRef(onTranscription);
+  onTranscriptionRef.current = onTranscription;
   const { colors } = useTheme();
 
   useEffect(() => {
@@ -66,21 +71,28 @@ export default function VoiceNotes({ onTranscription, onSoapParsed }: VoiceNotes
         const result = event.results[i];
         if (result.isFinal) { final += result[0].transcript; } else { interim += result[0].transcript; }
       }
-      if (final) { setTranscript(prev => prev ? prev + ' ' + final : final); }
+      if (final.trim()) {
+        setTranscript(prev => prev ? prev + ' ' + final.trim() : final.trim());
+        // Emit only the new phrase; emitting the whole transcript made callers repeat text
+        onTranscriptionRef.current(final.trim());
+      }
       setInterimTranscript(interim);
     };
 
-    recognition.onerror = () => { setIsRecording(false); if (timerRef.current) clearInterval(timerRef.current); };
+    recognition.onerror = (event) => {
+      setIsRecording(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+      setMicError(event?.error === 'not-allowed' ? 'Permite el acceso al micrófono para dictar.' : 'El dictado se detuvo. Intenta de nuevo.');
+    };
     recognition.onend = () => { setIsRecording(false); setIsPaused(false); if (timerRef.current) clearInterval(timerRef.current); };
 
     recognitionRef.current = recognition;
     return () => { recognition.abort(); if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
-  useEffect(() => { onTranscription(transcript); }, [transcript]);
-
   const startRecording = () => {
     if (!recognitionRef.current) return;
+    setMicError(null);
     setTranscript(''); setInterimTranscript(''); setDuration(0); setIsRecording(true); setIsPaused(false);
     recognitionRef.current.start();
     timerRef.current = setInterval(() => setDuration(prev => prev + 1), 1000);
@@ -125,6 +137,9 @@ export default function VoiceNotes({ onTranscription, onSoapParsed }: VoiceNotes
 
   return (
     <View style={[styles.container, { backgroundColor: colors.primaryContainer, borderColor: colors.primaryContainer }]}>
+      {micError && (
+        <Text accessibilityRole="alert" style={{ color: colors.error, fontSize: TYPOGRAPHY.sizes.sm, marginBottom: SPACING.xs }}>{micError}</Text>
+      )}
       <View style={styles.controls}>
         {!isRecording ? (
           <Button mode="contained" onPress={startRecording} icon="microphone" style={[styles.recordButton, { backgroundColor: colors.primary }]}>

@@ -103,6 +103,14 @@ export const SEVERITY_LABELS = {
   critical: 'Crítico',
 };
 
+// Badge tone per severity (DB CHECK: mild | moderate | severe | critical)
+export const SEVERITY_TONE: Record<string, 'success' | 'warning' | 'danger'> = {
+  mild: 'success',
+  moderate: 'warning',
+  severe: 'danger',
+  critical: 'danger',
+};
+
 export const PROGNOSIS_LABELS = {
   excellent: 'Excelente',
   good: 'Bueno',
