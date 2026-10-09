@@ -184,6 +184,18 @@ function normalizePet(body, { partial }) {
   return { values: safe };
 }
 
+// SET clause for a PATCH: one placeholder per column ($1..$n), objects and arrays stored as JSON.
+// `idx` is the next free placeholder, for the WHERE clause.
+function buildSet(safe, aliasMap = {}) {
+  const fields = [];
+  const values = [];
+  for (const [key, val] of Object.entries(safe)) {
+    fields.push(`${aliasMap[key] || key} = $${fields.length + 1}`);
+    values.push(val !== null && typeof val === 'object' ? JSON.stringify(val) : val);
+  }
+  return { fields, values, idx: fields.length + 1 };
+}
+
 // LIKE pattern with user input: escape %, _ and \ so they match literally
 function likeTerm(str) {
   return '%' + String(str).replace(/[\\%_]/g, (c) => '\\' + c) + '%';
@@ -236,20 +248,20 @@ const OWNED_REFS = {
 };
 async function checkRefs(req) {
   const body = req.body || {};
-  for (const [key, sql] of Object.entries(OWNED_REFS)) {
-    const val = body[key];
-    if (val === undefined || val === null || val === '') continue;
-    const r = await pool.query(sql, [String(val), req.userId]);
-    if (!r.rows.length) return `No tienes acceso a ese registro (${key})`;
-  }
+  // Independent lookups: run them together instead of one round trip after another
+  const checks = Object.entries(OWNED_REFS)
+    .filter(([key]) => body[key] !== undefined && body[key] !== null && body[key] !== '')
+    .map(async ([key, sql]) => {
+      const r = await pool.query(sql, [String(body[key]), req.userId]);
+      return r.rows.length ? null : `No tienes acceso a ese registro (${key})`;
+    });
   if (body.disease_id) {
-    const r = await pool.query(
+    checks.push(pool.query(
       'SELECT 1 FROM diseases WHERE id::text = $1 AND (organization_id IS NULL OR organization_id = $2)',
       [String(body.disease_id), req.organizationId || -1]
-    );
-    if (!r.rows.length) return 'No tienes acceso a esa enfermedad';
+    ).then((r) => (r.rows.length ? null : 'No tienes acceso a esa enfermedad')));
   }
-  return null;
+  return (await Promise.all(checks)).find(Boolean) || null;
 }
 
 // Route ids: UUIDs everywhere except the SERIAL catalogs (medications, surgeries).
@@ -570,7 +582,6 @@ app.get('/items/diseases', async (req, res) => {
 
 app.get('/items/diseases/:id', async (req, res) => {
   try {
-    if (!isValidUUID(req.params.id)) return res.status(404).json({ error: 'Enfermedad no encontrada' });
     const orgId = optionalAuth(req).organizationId;
     const result = await pool.query(
       'SELECT *, references_list AS references FROM diseases WHERE id = $1 AND (organization_id IS NULL OR organization_id = $2)',
@@ -612,22 +623,11 @@ app.post('/items/diseases', authMiddleware, async (req, res) => {
 app.patch('/items/diseases/:id', authMiddleware, async (req, res) => {
   try {
     const d = req.body;
-    if (!isValidUUID(req.params.id)) return res.status(404).json({ error: 'Enfermedad no encontrada' });
     const fieldError = diseaseFieldError(d || {}, true);
     if (fieldError) return res.status(400).json({ error: fieldError });
     const allowed = ['name','scientific_name','english_name','species','category','severity','description','pathophysiology','key_signs','diagnosis','treatment','prevention','prognosis','is_zoonotic','references','references_list','photo_url','life_stage'];
     const safe = sanitizeColumns(allowed, d);
-    const aliasMap = { references: 'references_list' };
-    const fields = [];
-    const values = [];
-    let idx = 1;
-    for (const [key, val] of Object.entries(safe)) {
-      const column = aliasMap[key] || key;
-      const valStr = val !== null && typeof val === 'object' ? JSON.stringify(val) : val;
-      fields.push(`${column} = $${idx}`);
-      values.push(valStr);
-      idx++;
-    }
+    const { fields, values, idx } = buildSet(safe, { references: 'references_list' });
     if (!fields.length) return res.status(400).json({ error: 'No hay campos para actualizar' });
     fields.push(`updated_at = NOW()`);
     values.push(req.params.id);
@@ -647,7 +647,6 @@ app.patch('/items/diseases/:id', authMiddleware, async (req, res) => {
 
 app.delete('/items/diseases/:id', authMiddleware, async (req, res) => {
   try {
-    if (!isValidUUID(req.params.id)) return res.status(404).json({ error: 'Enfermedad no encontrada' });
     const scope = diseaseWriteScope(req, 2);
     const result = await pool.query(`DELETE FROM diseases WHERE id = $1 AND ${scope.clause} RETURNING id`, [req.params.id, ...scope.params]);
     if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
@@ -807,7 +806,6 @@ app.post('/items/pets', authMiddleware, async (req, res) => {
 
 app.patch('/items/pets/:id', authMiddleware, async (req, res) => {
   try {
-    if (!isValidUUID(req.params.id)) return res.status(404).json({ error: 'No se encontró el registro' });
     const { values: safe, error } = normalizePet(req.body || {}, { partial: true });
     if (error) return res.status(400).json({ error });
     const fields = [];
@@ -916,15 +914,7 @@ app.patch('/items/personal_notes/:id', authMiddleware, async (req, res) => {
     const n = req.body;
     const allowed = ['title','content','tags','disease_id','pet_id'];
     const safe = sanitizeColumns(allowed, n);
-    const fields = [];
-    const values = [];
-    let idx = 1;
-    for (const [key, val] of Object.entries(safe)) {
-      const valStr = val !== null && typeof val === 'object' ? JSON.stringify(val) : val;
-      fields.push(`${key} = $${idx}`);
-      values.push(valStr);
-      idx++;
-    }
+    const { fields, values, idx } = buildSet(safe);
     fields.push(`updated_at = NOW()`);
     values.push(req.params.id);
     values.push(req.userId);
@@ -1133,16 +1123,8 @@ app.patch('/items/appointments/:id', authMiddleware, async (req, res) => {
 
     const allowed = ['patient_name','tutor_phone','start_time','end_time','appointment_type','description','veterinarian','status','pet_id','room','checked_in_at','started_at','finished_at'];
     const safe = sanitizeColumns(allowed, a);
-    const fields = [];
-    const values = [];
-    let idx = 1;
-    for (const [key, val] of Object.entries(safe)) {
-      const valStr = val !== null && typeof val === 'object' ? JSON.stringify(val) : val;
-      fields.push(`${key} = $${idx}`);
-      values.push(valStr);
-      idx++;
-    }
-    if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
+    const { fields, values, idx } = buildSet(safe);
+    if (!fields.length) return res.status(400).json({ error: 'No hay campos para actualizar' });
     values.push(req.params.id);
     values.push(req.userId);
     const result = await pool.query(
@@ -1192,9 +1174,9 @@ app.get('/items/clinical_records', authMiddleware, async (req, res) => {
 app.post('/items/clinical_records', authMiddleware, async (req, res) => {
   try {
     const r = req.body;
-    if (!r.pet_id || !isValidUUID(r.pet_id)) return res.status(400).json({ error: 'pet_id válido es requerido' });
+    if (!r.pet_id || !isValidUUID(r.pet_id)) return res.status(400).json({ error: 'Selecciona un paciente' });
     if (!r.record_type || !['consulta', 'vacuna', 'cirugia', 'control'].includes(r.record_type)) {
-      return res.status(400).json({ error: 'record_type debe ser consulta, vacuna, cirugia o control' });
+      return res.status(400).json({ error: 'El tipo de registro debe ser consulta, vacuna, cirugía o control' });
     }
     const vErr = validateFields(r, { date: { type: 'datetime', label: 'Fecha' } });
     if (vErr) return res.status(400).json({ error: vErr });
@@ -1230,16 +1212,9 @@ app.patch('/items/clinical_records/:id', authMiddleware, async (req, res) => {
     if (vErr) return res.status(400).json({ error: vErr });
     const allowed = ['pet_id','record_type','date','veterinarian','details'];
     const safe = sanitizeColumns(allowed, r);
-    const fields = [];
-    const values = [];
-    let idx = 1;
-    for (const [key, val] of Object.entries(safe)) {
-      const valStr = key === 'details' ? JSON.stringify(val || {}) : (val !== null && typeof val === 'object' ? JSON.stringify(val) : val);
-      fields.push(`${key} = $${idx}`);
-      values.push(valStr);
-      idx++;
-    }
-    if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
+    if ('details' in safe && safe.details == null) safe.details = {};
+    const { fields, values, idx } = buildSet(safe);
+    if (!fields.length) return res.status(400).json({ error: 'No hay campos para actualizar' });
     values.push(req.params.id);
     values.push(req.userId);
     const result = await pool.query(
@@ -1323,16 +1298,8 @@ app.patch('/items/inventory/:id', authMiddleware, async (req, res) => {
     if ('name' in i && !String(i.name || '').trim()) return res.status(400).json({ error: 'El nombre es obligatorio' });
     const allowed = ['name','category','current_stock','min_stock','unit','last_restocked','expiration_date'];
     const safe = sanitizeColumns(allowed, i);
-    const fields = [];
-    const values = [];
-    let idx = 1;
-    for (const [key, val] of Object.entries(safe)) {
-      const valStr = val !== null && typeof val === 'object' ? JSON.stringify(val) : val;
-      fields.push(`${key} = $${idx}`);
-      values.push(valStr);
-      idx++;
-    }
-    if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
+    const { fields, values, idx } = buildSet(safe);
+    if (!fields.length) return res.status(400).json({ error: 'No hay campos para actualizar' });
     values.push(req.params.id);
     values.push(req.userId);
     const result = await pool.query(
@@ -1394,7 +1361,7 @@ app.post('/items/prescriptions', authMiddleware, async (req, res) => {
     const refError = await checkRefs(req);
     if (refError) return res.status(403).json({ error: refError });
     const r = req.body;
-    if (!r.pet_id) return res.status(400).json({ error: 'pet_id es requerido' });
+    if (!r.pet_id) return res.status(400).json({ error: 'Selecciona un paciente' });
     if (!r.prescription_body || !String(r.prescription_body).trim()) return res.status(400).json({ error: 'El contenido de la receta es obligatorio' });
     const vErr = validateFields(r, PRESCRIPTION_RULES);
     if (vErr) return res.status(400).json({ error: vErr });
@@ -1425,16 +1392,8 @@ app.patch('/items/prescriptions/:id', authMiddleware, async (req, res) => {
     if ('prescription_body' in r && !String(r.prescription_body || '').trim()) return res.status(400).json({ error: 'El contenido de la receta es obligatorio' });
     const allowed = ['pet_id','clinical_record_id','veterinarian_name','clinic_branch','prescription_body','format','status','issued_at'];
     const safe = sanitizeColumns(allowed, r);
-    const fields = [];
-    const values = [];
-    let idx = 1;
-    for (const [key, val] of Object.entries(safe)) {
-      const valStr = val !== null && typeof val === 'object' ? JSON.stringify(val) : val;
-      fields.push(`${key} = $${idx}`);
-      values.push(valStr);
-      idx++;
-    }
-    if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
+    const { fields, values, idx } = buildSet(safe);
+    if (!fields.length) return res.status(400).json({ error: 'No hay campos para actualizar' });
     values.push(req.params.id);
     values.push(req.userId);
     const result = await pool.query(
@@ -1761,7 +1720,7 @@ app.post('/items/reminders', authMiddleware, async (req, res) => {
 app.post('/items/reminders/auto-generate', authMiddleware, async (req, res) => {
   try {
     const { pet_id } = req.body;
-    if (!pet_id) return res.status(400).json({ error: 'pet_id requerido' });
+    if (!pet_id) return res.status(400).json({ error: 'Selecciona un paciente' });
     const petCheck = await pool.query(
       'SELECT id, name, species, breed, birth_date, email, receive_reminders FROM pets WHERE id = $1 AND user_id = $2',
       [pet_id, req.userId]
@@ -1828,7 +1787,7 @@ app.patch('/items/reminders/:id', authMiddleware, async (req, res) => {
     if (!updates.length) return res.status(400).json({ error: 'Sin cambios' });
     params.push(req.params.id);
     params.push(req.userId);
-    const result = await pool.query(`UPDATE reminders SET ${updates.join(', ')} WHERE id = ${idx} AND user_id = ${idx + 1} RETURNING *`, params);
+    const result = await pool.query(`UPDATE reminders SET ${updates.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`, params);
     res.json({ data: result.rows[0] });
   } catch (err) {
     logError(req, err);
@@ -1858,14 +1817,16 @@ app.post('/items/reminders/send-pending', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'SMTP no configurado' });
     }
     // Claim at most 20 due reminders by flipping them to 'sending' first: a timeout
-    // mid-batch can't resend the ones already delivered.
+    // mid-batch can't resend the ones already delivered. While 'sending', sent_at holds
+    // the claim time, so a batch cut off by a timeout is retried after 15 minutes.
     const result = await pool.query(
       `WITH due AS (
          SELECT r.id FROM reminders r
-         WHERE r.user_id = $1 AND r.status = 'pending' AND r.scheduled_for <= NOW()
+         WHERE r.user_id = $1 AND r.scheduled_for <= NOW()
+           AND (r.status = 'pending' OR (r.status = 'sending' AND r.sent_at < NOW() - INTERVAL '15 minutes'))
          ORDER BY r.scheduled_for LIMIT 20 FOR UPDATE SKIP LOCKED
        )
-       UPDATE reminders r SET status = 'sending' FROM due, pets p
+       UPDATE reminders r SET status = 'sending', sent_at = NOW() FROM due, pets p
        WHERE r.id = due.id AND p.id = r.pet_id
        RETURNING r.*, p.name AS pet_name, p.species, p.breed, p.email AS pet_email`,
       [req.userId]
@@ -1913,7 +1874,11 @@ app.post('/items/reminders/send-pending', authMiddleware, async (req, res) => {
 </body></html>`;
 
         const to = reminder.pet_email;
-        if (!isEmail(to)) throw new Error('email de tutor inválido');
+        if (!isEmail(to)) {
+          // Permanent: retrying would put it first in every batch and starve newer reminders
+          await pool.query(`UPDATE reminders SET status = 'cancelled', sent_at = NULL WHERE id = $1`, [reminder.id]);
+          continue;
+        }
         await transporter.sendMail({
           from: `"VetCloud" <${process.env.SMTP_EMAIL}>`,
           to,
@@ -1924,7 +1889,7 @@ app.post('/items/reminders/send-pending', authMiddleware, async (req, res) => {
         sentCount++;
       } catch (e) {
         console.error(`Failed to send reminder ${reminder.id}:`, e.message);
-        await pool.query(`UPDATE reminders SET status = 'pending' WHERE id = $1`, [reminder.id]).catch(() => {});
+        await pool.query(`UPDATE reminders SET status = 'pending', sent_at = NULL WHERE id = $1`, [reminder.id]).catch(() => {});
       }
     }
     res.json({ data: { sent: sentCount } });
@@ -1956,7 +1921,7 @@ app.get('/items/hospitalizations', authMiddleware, async (req, res) => {
 app.post('/items/hospitalizations', authMiddleware, async (req, res) => {
   try {
     const { pet_id, reason, status, veterinarian, notes } = req.body;
-    if (!pet_id || !isValidUUID(pet_id)) return res.status(400).json({ error: 'pet_id válido es requerido' });
+    if (!pet_id || !isValidUUID(pet_id)) return res.status(400).json({ error: 'Selecciona un paciente' });
     if (!reason || !String(reason).trim()) return res.status(400).json({ error: 'El motivo es obligatorio' });
     if (status && !HOSPITALIZATION_STATUSES.includes(status)) return res.status(400).json({ error: 'Estado de hospitalización inválido' });
     const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [pet_id, req.userId]);
@@ -1974,7 +1939,6 @@ app.post('/items/hospitalizations', authMiddleware, async (req, res) => {
 
 app.patch('/items/hospitalizations/:id', authMiddleware, async (req, res) => {
   try {
-    if (!isValidUUID(req.params.id)) return res.status(400).json({ error: 'ID inválido' });
     const allowed = ['discharge_date', 'status', 'veterinarian', 'notes', 'reason'];
     const safe = sanitizeColumns(allowed, req.body);
     const vErr = validateFields(safe, {
@@ -1998,7 +1962,6 @@ app.patch('/items/hospitalizations/:id', authMiddleware, async (req, res) => {
 
 app.delete('/items/hospitalizations/:id', authMiddleware, async (req, res) => {
   try {
-    if (!isValidUUID(req.params.id)) return res.status(400).json({ error: 'ID inválido' });
     const result = await pool.query('DELETE FROM hospitalizations WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
     if (!result.rows.length) return res.status(404).json({ error: 'No encontrado' });
     res.json({ data: { success: true } });
@@ -2030,7 +1993,7 @@ app.get('/items/lab_exams', authMiddleware, async (req, res) => {
 app.post('/items/lab_exams', authMiddleware, async (req, res) => {
   try {
     const { pet_id, exam_name, exam_type, status, result: examResult, veterinarian } = req.body;
-    if (!pet_id || !isValidUUID(pet_id)) return res.status(400).json({ error: 'pet_id válido es requerido' });
+    if (!pet_id || !isValidUUID(pet_id)) return res.status(400).json({ error: 'Selecciona un paciente' });
     if (!exam_name || !String(exam_name).trim()) return res.status(400).json({ error: 'El nombre del examen es obligatorio' });
     if (status && !LAB_STATUSES.includes(status)) return res.status(400).json({ error: 'Estado de examen inválido' });
     const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [pet_id, req.userId]);
@@ -2048,7 +2011,6 @@ app.post('/items/lab_exams', authMiddleware, async (req, res) => {
 
 app.patch('/items/lab_exams/:id', authMiddleware, async (req, res) => {
   try {
-    if (!isValidUUID(req.params.id)) return res.status(400).json({ error: 'ID inválido' });
     const allowed = ['exam_name', 'exam_type', 'status', 'result', 'veterinarian'];
     const safe = sanitizeColumns(allowed, req.body);
     const vErr = validateFields(safe, { status: { type: 'enum', values: LAB_STATUSES, label: 'Estado' } });
@@ -2075,7 +2037,6 @@ app.patch('/items/lab_exams/:id', authMiddleware, async (req, res) => {
 
 app.delete('/items/lab_exams/:id', authMiddleware, async (req, res) => {
   try {
-    if (!isValidUUID(req.params.id)) return res.status(400).json({ error: 'ID inválido' });
     const result = await pool.query('DELETE FROM lab_exams WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
     if (!result.rows.length) return res.status(404).json({ error: 'No encontrado' });
     res.json({ data: { success: true } });
@@ -2212,7 +2173,7 @@ app.post('/vital-measurements', authMiddleware, async (req, res) => {
     const allowed = ['pet_id', 'weight', 'temperature', 'heart_rate', 'respiratory_rate', 'blood_pressure', 'spo2', 'mucous_membranes', 'hydration', 'body_condition', 'notes'];
     const data = sanitizeColumns(allowed, req.body);
     if (!data.pet_id || !isValidUUID(data.pet_id)) {
-      return res.status(400).json({ error: 'pet_id requerido y debe ser UUID valido' });
+      return res.status(400).json({ error: 'Selecciona un paciente' });
     }
     const vErr = validateFields(data, {
       weight: { type: 'number', min: 0.05, max: 150, label: 'Peso' },
@@ -2260,7 +2221,7 @@ app.post('/payments', authMiddleware, async (req, res) => {
     data.amount = amount;
     const validMethods = ['efectivo', 'debito', 'credito', 'transferencia', 'otro'];
     if (data.method && !validMethods.includes(data.method)) {
-      return res.status(400).json({ error: 'method invalido. Use: ' + validMethods.join(', ') });
+      return res.status(400).json({ error: 'Medio de pago inválido' });
     }
     const result = await pool.query(
       'INSERT INTO payments (organization_id, user_id, appointment_id, pet_id, amount, method, description) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',

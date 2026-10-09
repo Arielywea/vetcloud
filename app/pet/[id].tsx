@@ -284,7 +284,7 @@ export default function PetDetailScreen() {
       <AlertBanner pet={pet} />
       <ClinicalHistory pet={pet} fieldCount={clinicalFieldCount} />
       {mostRecentRecord && <RecentRecord record={mostRecentRecord} onView={() => setSelectedRecord(mostRecentRecord)} onGenerateRx={() => openRxModal(mostRecentRecord.id)} />}
-      <WeightChart records={records} />
+      <WeightChart records={records} petId={id || undefined} />
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Historial completo</Text>

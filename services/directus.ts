@@ -269,8 +269,9 @@ export interface DirectusLabExam {
 // ─────────────────────────────────────────────────────────
 
 // ─── Change notifications ────────────────────────────────
-// Every successful write to /items/<collection> is announced so that screens
-// still mounted in the drawer (lists, dashboard, agenda) refetch instead of going stale.
+// Every successful write is announced by collection (/items/<collection>, or a top-level
+// route such as /vital-measurements → vital_measurements) so that screens still mounted
+// in the drawer (lists, dashboard, agenda) refetch instead of going stale.
 type DataChangeListener = (collection: string) => void;
 const dataChangeListeners = new Set<DataChangeListener>();
 
@@ -280,7 +281,7 @@ export function onDataChange(listener: DataChangeListener): () => void {
 }
 
 function emitDataChange(endpoint: string) {
-  const collection = endpoint.match(/^\/items\/([^/?]+)/)?.[1];
+  const collection = endpoint.match(/^\/(?:items\/)?([^/?]+)/)?.[1]?.replace(/-/g, '_');
   if (!collection) return;
   dataChangeListeners.forEach((listener) => {
     try { listener(collection); } catch { /* a broken listener must not break the write */ }

@@ -21,6 +21,7 @@ export interface EditableAppointment {
   description?: string | null;
   veterinarian?: string | null;
   tutor_phone?: string | null;
+  status?: string | null;
 }
 
 const TYPES = [
@@ -96,6 +97,8 @@ export default function AppointmentEditSheet({ visible, mode, appointment, onClo
         });
       } else {
         const patch: any = { start_time: startDate.toISOString(), end_time: endDate.toISOString() };
+        // Moving a cancelled or no-show visit books it again; otherwise it stayed cancelled at the new time
+        if (mode === 'reschedule' && ['cancelada', 'ausente'].includes(appointment.status || '')) patch.status = 'programada';
         if (mode === 'edit') {
           // Only when changed: an old appointment with a legacy type must stay editable
           if (type !== appointment.appointment_type) patch.appointment_type = type;

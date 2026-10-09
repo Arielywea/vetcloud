@@ -1,16 +1,22 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, StyleSheet, LayoutChangeEvent } from 'react-native';
 import { Text } from 'react-native-paper';
 import Svg, { Circle, Line, Path, Polyline, Text as SvgText } from 'react-native-svg';
 import { Weight, LineChart as LineChartIcon, TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
-import { ClinicalRecord } from '../../services/directus';
+import { api, ClinicalRecord } from '../../services/directus';
+import { useRefreshOn } from '../../hooks/useDirectus';
+import { toLocalDateKey } from '../../utils/date';
 import VBadge from '../ui/Badge';
 
 interface WeightChartProps {
   records: ClinicalRecord[];
+  /** Also plots weights saved with the "Signos" form (/vital-measurements) */
+  petId?: string;
 }
+
+type WeightPoint = { date: Date; kg: number };
 
 const CHART_HEIGHT = 160;
 const PAD = { top: 12, right: 12, bottom: 24, left: 40 };
@@ -22,16 +28,42 @@ const formatDate = (d: Date) => d.toLocaleDateString('es-CL', { month: 'short', 
 // Drawn with react-native-svg (already a dependency) instead of react-native-chart-kit:
 // sized by onLayout so it fits its card next to the sidebar, straight segments (a bezier
 // invents values between visits) and x positions proportional to the visit dates.
-export default function WeightChart({ records }: WeightChartProps) {
+export default function WeightChart({ records, petId }: WeightChartProps) {
   const { colors } = useTheme();
   const [width, setWidth] = useState(0);
+  const [vitalWeights, setVitalWeights] = useState<WeightPoint[]>([]);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
+
+  const loadVitals = useCallback(() => {
+    if (!petId) return;
+    api.vitals.list(petId)
+      .then((rows: any[]) => {
+        if (!mountedRef.current) return;
+        setVitalWeights((rows || [])
+          .filter(r => r.weight != null && Number(r.weight) > 0 && r.recorded_at)
+          .map(r => ({ date: new Date(r.recorded_at), kg: Number(r.weight) })));
+      })
+      .catch(() => { /* the chart still shows the weights from clinical records */ });
+  }, [petId]);
+  useEffect(() => { loadVitals(); }, [loadVitals]);
+  useRefreshOn(['vital_measurements'], loadVitals);
 
   const weightData = useMemo(() => {
-    const points = records
+    const fromRecords: WeightPoint[] = records
       .filter(r => r.details?.weight && r.details.weight > 0)
-      .map(r => ({ date: new Date(r.date), kg: Number(r.details.weight) }))
+      .map(r => ({ date: new Date(r.date), kg: Number(r.details.weight) }));
+    // A visit often stores the same weight in the record and in Signos: keep one per day and value
+    const seen = new Set<string>();
+    const points = [...fromRecords, ...vitalWeights]
       .filter(p => !Number.isNaN(p.date.getTime()) && Number.isFinite(p.kg))
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .filter(p => {
+        const key = `${toLocalDateKey(p.date)}|${p.kg}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
 
     if (points.length === 0) return null;
 
@@ -50,7 +82,7 @@ export default function WeightChart({ records }: WeightChartProps) {
     }
 
     return { points, current, avg, min, max, trend, count: data.length };
-  }, [records]);
+  }, [records, vitalWeights]);
 
   const chart = useMemo(() => {
     if (!weightData || weightData.count < 2 || width <= 0) return null;
