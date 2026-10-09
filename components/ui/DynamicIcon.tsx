@@ -58,6 +58,7 @@ const LUCIDE_MAP: Record<string, any> = {
   'cancel': XCircle, 'check-circle': CheckCircle, 'check-circle-outline': CheckCircle,
   'circle-outline': Circle, 'auto-fix': Wand2, 'radiobox-marked': Circle,
   'radiobox-blank': Circle, 'checkbox-marked': Check, 'checkbox-blank-outline': Circle,
+  'menu-down': ChevronDown, 'menu-up': ChevronUp,
 };
 
 interface DynamicIconProps {

@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { View, FlatList, StyleSheet, TouchableOpacity, TextInput as RNTextInput, ScrollView } from 'react-native';
 import { Text } from 'react-native-paper';
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react-native';
-import * as Icons from 'lucide-react-native';
+import {
+  Search, ChevronLeft, ChevronRight, HelpCircle, LayoutGrid, Heart, Shield, Flame, Bug, HeartPulse, Sparkles,
+  Activity, Stethoscope, Syringe, Brain, Eye, Ribbon, Wind, Droplets, Pill,
+} from 'lucide-react-native';
 import { useMedications } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
@@ -13,12 +15,14 @@ import MedicationDetail from '../../components/medications/MedicationDetail';
 import { Medication } from '../../services/directus';
 import { ESPECIALIDADES } from '../../constants/medications';
 
+// Explicit map: a namespace import of lucide pulls every icon into the bundle
+const SPECIALTY_ICONS: Record<string, typeof HelpCircle> = {
+  LayoutGrid, Heart, Shield, Flame, Bug, HeartPulse, Sparkles, Activity, Stethoscope, Syringe, Brain, Eye, Ribbon, Wind, Droplets,
+};
+
 const getIcon = (iconName: string, size: number, color: string) => {
-  const IconComponent = (Icons as any)[iconName];
-  if (IconComponent) {
-    return <IconComponent size={size} color={color} />;
-  }
-  return <Icons.HelpCircle size={size} color={color} />;
+  const IconComponent = SPECIALTY_ICONS[iconName] || HelpCircle;
+  return <IconComponent size={size} color={color} />;
 };
 
 export default function MedicationsScreen() {
@@ -139,7 +143,7 @@ export default function MedicationsScreen() {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <VEmptyState
-              icon="pill"
+              icon={<Pill size={32} color={colors.textLight} />}
               title="Sin medicamentos"
               description={searchQuery ? 'No se encontraron resultados para tu búsqueda' : 'No hay medicamentos en esta especialidad'}
             />

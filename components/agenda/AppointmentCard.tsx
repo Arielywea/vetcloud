@@ -88,7 +88,7 @@ function QuickStatusButton({ status, onPress }: { status: string; onPress: () =>
   );
 }
 
-export default function AppointmentCard({
+function AppointmentCard({
   appointment,
   top,
   height,
@@ -371,3 +371,6 @@ const quickStyles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 });
+
+// Memoized: dragging updates agenda state on every move, and without this every card re-rendered
+export default React.memo(AppointmentCard);

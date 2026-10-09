@@ -64,7 +64,7 @@ export default function SurgeriesScreen() {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <VEmptyState
-              icon="scissors"
+              icon={<Scissors size={32} color={colors.textLight} />}
               title="Sin cirugías"
               description={searchQuery ? 'No se encontraron resultados para tu búsqueda' : 'No hay cirugías disponibles'}
             />

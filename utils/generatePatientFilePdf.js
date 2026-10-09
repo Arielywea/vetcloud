@@ -28,8 +28,8 @@ function generatePatientFilePdf(pet, records, clinic) {
     // ── HEADER ──
     doc.rect(0, 0, pageW, 85).fill(navy);
 
-    // Logo
-    doc.image(path.join(__dirname, '../assets/logo.png'), 30, 12, { width: 40, height: 40 });
+    // The crest is portrait (≈0.72:1); fit keeps its proportions inside the 85 pt header
+    doc.image(path.join(__dirname, '../assets/logo.png'), 30, 12, { fit: [46, 60], align: 'center', valign: 'center' });
 
     doc.fill(white).fontSize(20).font('Helvetica-Bold').text(clinic?.clinic_name || 'VetCloud', 84, 20, { width: pageW / 2 - 40, lineBreak: false, ellipsis: true });
     doc.fontSize(10).font('Helvetica').fill(gold).text('Ficha clínica del paciente', 84, 46);

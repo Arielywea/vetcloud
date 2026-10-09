@@ -6,7 +6,7 @@ Software de gestión clínica veterinaria. Expo 52 (React Native Web, expo-route
 
 - `npm run server` — API local en :8055 (usa `DATABASE_URL` de `.env`, que apunta a **producción** en Neon)
 - `npm run web` — Expo web en desarrollo; `npx expo export --platform web` para el build
-- `npm run typecheck` — `tsc`; hay ~89 errores previos (sobre todo en `data/*.ts`). No agregues nuevos: compara antes/después
+- `npm run typecheck` — `tsc` sobre la app; debe dar 0 errores. `data/` y `constants/diseases.ts` (solo para scripts) están excluidos en `tsconfig.json`
 - `npm run check:schema` — verifica que las columnas que usa `server.js` existan en la BD y que cada ruta de la API tenga rewrite en `vercel.json`. Córrelo antes de cada push
 - `node scripts/run-migrations.js` — aplica migraciones pendientes (idempotentes, `IF NOT EXISTS`)
 

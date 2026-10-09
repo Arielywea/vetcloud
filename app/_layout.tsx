@@ -12,6 +12,11 @@ import { ConfirmProvider } from '../components/ui/ConfirmDialog';
 import { APP_COLORS, APP_COLORS_DARK, getTextOnPrimary } from '../constants/colors';
 import LoginScreen from './auth/login';
 import { installWebFonts } from '../utils/webFonts';
+import DynamicIcon from '../components/ui/DynamicIcon';
+
+// Paper names its icons after MaterialCommunityIcons; drawing them with that font downloads a
+// 1.1 MB .ttf the first time one appears. DynamicIcon maps the same names to lucide.
+const PAPER_SETTINGS = { icon: ({ name, size, color }: { name: string; size: number; color?: string }) => <DynamicIcon name={name} size={size} color={color} /> };
 
 installWebFonts();
 
@@ -147,7 +152,7 @@ function ThemedPaperProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <PaperProvider theme={paperTheme}>
+    <PaperProvider theme={paperTheme} settings={PAPER_SETTINGS}>
       {children}
     </PaperProvider>
   );

@@ -37,6 +37,8 @@
     ".expo",
     "tests",
     "scripts",
+    "data",
+    "constants/diseases.ts",
     "playwright.config.js"
   ]
 }
