@@ -8,7 +8,10 @@ import { authHeaders, notifyUnauthorized } from './auth';
 export interface DirectusDisease {
   id: string;
   name: string;
-  scientific_name: string;
+  /** Latin name of the agent/condition, only when one exists */
+  scientific_name: string | null;
+  /** English name, for searching literature ("Feline Chronic Kidney Disease") */
+  english_name?: string | null;
   species: 'dog' | 'cat' | 'both';
   category: string;
   severity: 'mild' | 'moderate' | 'severe' | 'critical';
@@ -29,11 +32,13 @@ export interface DirectusDisease {
     notes?: string;
   };
   prevention: string[];
-  prognosis: 'excellent' | 'good' | 'guarded' | 'poor' | 'grave';
+  prognosis: 'excellent' | 'good' | 'guarded' | 'poor' | 'grave' | 'chronic';
   is_zoonotic: boolean;
   references: string[];
   photo_url?: string | null;
   life_stage?: 'puppy' | 'kitten' | 'adult' | 'senior' | 'all';
+  /** null = global catalog (only admins edit it); set = this clinic's own entry */
+  organization_id?: number | null;
 }
 
 export interface DirectusPet {

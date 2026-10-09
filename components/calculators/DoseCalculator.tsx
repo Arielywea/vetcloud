@@ -163,7 +163,7 @@ export default function DoseCalculator({ initialWeight, initialSpecies }: { init
               ]}
               onPress={() => setSelectedMed(item)}
               accessibilityRole="button"
-              accessibilityState={{ selected }}
+              aria-selected={selected}
             >
               <View style={{ flex: 1 }}>
                 <Text style={[styles.medName, { color: colors.text }]}>{item.nombre}</Text>

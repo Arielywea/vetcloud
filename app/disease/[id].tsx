@@ -1,495 +1,452 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, TextInput, Image } from 'react-native';
-import { Text, Card, Badge, Button, Modal, Portal, Dialog } from 'react-native-paper';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Text, Modal, Portal } from 'react-native-paper';
+import { useLocalSearchParams } from 'expo-router';
+import {
+  Pencil, Heart, Stethoscope, Microscope, Pill, ShieldCheck, FlaskConical, ScanLine, GitCompare,
+  CheckCircle2, Circle, AlertTriangle, Dna, BookOpen, TrendingUp, Clock, MapPin, Info, Dog, Cat, PawPrint,
+} from 'lucide-react-native';
 import { useDisease, useFavorites } from '../../hooks/useDirectus';
+import { useAuth } from '../../hooks/useAuth';
 import { DirectusDisease } from '../../services/directus';
-import { DISEASE_CATEGORIES, SPECIES_INFO } from '../../constants/diseases';
-import { CATEGORY_COLORS, SEVERITY_COLORS, SEVERITY_LABELS, PROGNOSIS_LABELS, TEXT_ON_PRIMARY } from '../../constants/colors';
+import { DISEASE_CATEGORIES, DiseaseCategoryKey, PROGNOSIS_LABELS, LIFE_STAGE_LABELS, SPECIES_LABELS, categoryLabel } from '../../constants/diseaseMeta';
+import { SEVERITY_LABELS, SEVERITY_TONE } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useToast } from '../../components/ui/VToast';
 import { SkeletonCard } from '../../components/ui/Skeleton';
-import { TYPOGRAPHY } from '../../constants/tokens';
+import VCard from '../../components/ui/Card';
+import VBadge from '../../components/ui/Badge';
+import VButton from '../../components/ui/Button';
+import DisplayText from '../../components/ui/DisplayText';
+import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+
+type TabKey = 'signs' | 'diagnosis' | 'treatment' | 'prevention';
+const TABS: { key: TabKey; label: string; Icon: typeof Pill }[] = [
+  { key: 'signs', label: 'Signos', Icon: Stethoscope },
+  { key: 'diagnosis', label: 'Diagnóstico', Icon: Microscope },
+  { key: 'treatment', label: 'Tratamiento', Icon: Pill },
+  { key: 'prevention', label: 'Prevención', Icon: ShieldCheck },
+];
+
+/** "Vómitos proyectivos: detalle…" → ["Vómitos proyectivos", "detalle…"] */
+function splitItem(text: string): [string, string] {
+  const i = text.indexOf(':');
+  if (i > 0 && i < 80) return [text.slice(0, i).trim(), text.slice(i + 1).trim()];
+  return [text, ''];
+}
+
+/** The seed stores emergencies as "PRESENTACIÓN: …\nPROTOCOLO:\n  - paso" */
+function parseEmergency(text: string): { presentation: string; steps: string[]; rest: string } {
+  const presentation = text.match(/PRESENTACI[ÓO]N:\s*([\s\S]*?)(?:\n\s*PROTOCOLO:|$)/i)?.[1]?.trim() || '';
+  const protocol = text.match(/PROTOCOLO:\s*([\s\S]*)$/i)?.[1] || '';
+  const steps = protocol.split('\n').map(l => l.replace(/^\s*[-•]\s*/, '').trim()).filter(Boolean);
+  return presentation || steps.length ? { presentation, steps, rest: '' } : { presentation: '', steps: [], rest: text };
+}
+
+// Defined at module scope: components created inside render remount their TextInput on every
+// keystroke, which dropped focus after each letter in the edit form.
+type FieldStyle = { inputStyle: any; labelColor: string };
+function TextEditField({ label, value, onChange, multiline, inputStyle, labelColor }: FieldStyle & { label: string; value: string; onChange: (v: string) => void; multiline?: boolean }) {
+  return (
+    <View style={styles.editField}>
+      <Text style={[styles.editLabel, { color: labelColor }]}>{label}</Text>
+      <TextInput style={[inputStyle, multiline && styles.editTextarea]} multiline={multiline} value={value} onChangeText={onChange} accessibilityLabel={label} />
+    </View>
+  );
+}
+function ArrayEditField({ label, value, onChange, inputStyle, labelColor }: FieldStyle & { label: string; value: string[]; onChange: (v: string[]) => void }) {
+  // Keep the raw text while typing so blank lines and trailing spaces aren't stripped mid-edit
+  const [text, setText] = useState((value || []).join('\n'));
+  return (
+    <View style={styles.editField}>
+      <Text style={[styles.editLabel, { color: labelColor }]}>{label} (uno por línea)</Text>
+      <TextInput
+        style={[inputStyle, styles.editTextarea]}
+        multiline
+        value={text}
+        onChangeText={(t) => { setText(t); onChange(t.split('\n').map(s => s.trim()).filter(Boolean)); }}
+        accessibilityLabel={label}
+      />
+    </View>
+  );
+}
 
 export default function DiseaseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
   const { disease, loading, updateDisease } = useDisease(id || null);
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { user } = useAuth();
+  const toast = useToast();
   const { colors } = useTheme();
-  const [activeTab, setActiveTab] = useState<'signs' | 'diagnosis' | 'treatment' | 'prevention'>('signs');
+  const [activeTab, setActiveTab] = useState<TabKey>('signs');
   const [editVisible, setEditVisible] = useState(false);
   const [editData, setEditData] = useState<Partial<DirectusDisease>>({});
   const [saving, setSaving] = useState(false);
-  const [errorDialog, setErrorDialog] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
 
   useEffect(() => {
     if (disease) {
       setEditData({
         name: disease.name,
         scientific_name: disease.scientific_name,
-        species: disease.species,
-        category: disease.category,
-        severity: disease.severity,
-        prognosis: disease.prognosis,
+        english_name: disease.english_name,
         description: disease.description,
-        is_zoonotic: disease.is_zoonotic,
         key_signs: [...(disease.key_signs || [])],
         prevention: [...(disease.prevention || [])],
         references: [...(disease.references || [])],
-        diagnosis: { ...(disease.diagnosis as any) || {} },
-        treatment: { ...(disease.treatment as any) || {} },
+        diagnosis: { ...(disease.diagnosis as any || {}) },
+        treatment: { ...(disease.treatment as any || {}) },
       });
     }
   }, [disease]);
 
-  const openEdit = () => setEditVisible(true);
-  const closeEdit = () => setEditVisible(false);
-
   const handleSave = async () => {
-    if (!editData.name?.trim()) {
-      setErrorDialog('El nombre es obligatorio');
-      return;
-    }
+    setEditError(null);
+    if (!editData.name?.trim()) { setEditError('El nombre es obligatorio'); return; }
+    if (!editData.description?.trim()) { setEditError('La descripción es obligatoria'); return; }
     setSaving(true);
     try {
-      await updateDisease(editData);
-      closeEdit();
+      await updateDisease({ ...editData, scientific_name: editData.scientific_name?.trim() || null, english_name: editData.english_name?.trim() || null });
+      setEditVisible(false);
+      toast.success('Enfermedad actualizada');
     } catch (e: any) {
-      setErrorDialog(e.message);
+      setEditError(e?.message || 'No se pudo guardar');
     } finally {
       setSaving(false);
     }
   };
 
-  const updateEditField = (field: string, value: any) => {
-    setEditData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const updateEditNested = (parent: string, field: string, value: any) => {
-    setEditData(prev => ({
-      ...prev,
-      [parent]: { ...((prev as Record<string, any>)[parent] || {}), [field]: value },
-    }));
-  };
-
-  const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
-    content: { paddingBottom: 32 },
-    loadingText: { textAlign: 'center', marginTop: 40, color: colors.textSecondary },
-    headerCard: { margin: 12, borderRadius: 12, backgroundColor: colors.surface },
-    headerTop: { marginBottom: 8 },
-    headerTitle: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-    headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    editBtn: { padding: 8 },
-    diseaseName: { fontWeight: TYPOGRAPHY.weights.bold, color: colors.text, flex: 1, marginRight: 8 },
-    scientificName: { fontStyle: 'italic', color: colors.textSecondary, marginTop: 4 },
-    badgeRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 6 },
-    badge: { color: TEXT_ON_PRIMARY.light.default, fontSize: TYPOGRAPHY.sizes.xs, paddingHorizontal: 8 },
-    prognosisRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border },
-    prognosisLabel: { color: colors.textSecondary, marginLeft: 4 },
-    prognosisValue: { fontWeight: TYPOGRAPHY.weights.semibold },
-    sectionCard: { marginHorizontal: 12, marginBottom: 12, borderRadius: 12, backgroundColor: colors.surface },
-    sectionTitle: { fontWeight: TYPOGRAPHY.weights.bold, color: colors.text, marginBottom: 12, fontSize: TYPOGRAPHY.sizes.base },
-    description: { color: colors.text, lineHeight: 22 },
-    tabBar: { flexDirection: 'row', marginHorizontal: 12, marginBottom: 12, backgroundColor: colors.surface, borderRadius: 12, padding: 4 },
-    tab: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 8 },
-    activeTab: { backgroundColor: colors.primaryContainer },
-    tabLabel: { fontSize: TYPOGRAPHY.sizes.xs, color: colors.textSecondary, marginTop: 4 },
-    activeTabLabel: { color: colors.primary, fontWeight: TYPOGRAPHY.weights.semibold },
-    listItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10, gap: 10 },
-    listItemText: { flex: 1, color: colors.text, lineHeight: 20 },
-    emergencyCard: { borderColor: colors.error, borderWidth: 1, backgroundColor: colors.error + '10' },
-    emergencyHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
-    emergencyTitle: { fontWeight: TYPOGRAPHY.weights.bold, color: colors.error },
-    emergencyText: { color: colors.text, lineHeight: 20 },
-    reference: { color: colors.textSecondary, fontSize: TYPOGRAPHY.sizes.xs, marginBottom: 4, lineHeight: 18 },
-    modalContent: { backgroundColor: colors.surface, margin: 16, borderRadius: 16, padding: 20, maxHeight: '90%' },
-    modalTitle: { fontWeight: TYPOGRAPHY.weights.bold, color: colors.text, marginBottom: 16 },
-    editField: { marginBottom: 12 },
-    editLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, color: colors.textSecondary, marginBottom: 6 },
-    editInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, fontSize: 14 },
-    editTextarea: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, fontSize: 14, minHeight: 60, textAlignVertical: 'top' },
-    editSection: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: TYPOGRAPHY.weights.bold, color: colors.primary, marginTop: 16, marginBottom: 8, paddingBottom: 6, borderBottomWidth: 2, borderBottomColor: colors.primaryContainer },
-    modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border },
-    cancelBtn: { borderColor: colors.border },
-    saveBtn: { backgroundColor: colors.primary },
-    diseasePhoto: { width: '100%', height: 200, borderRadius: 12, marginTop: 12 },
-  });
+  const setField = (field: string, value: any) => setEditData(prev => ({ ...prev, [field]: value }));
+  const setNested = (parent: 'diagnosis' | 'treatment', field: string, value: any) =>
+    setEditData(prev => ({ ...prev, [parent]: { ...((prev as any)[parent] || {}), [field]: value } }));
 
   if (loading) {
-    return (
-      <View style={styles.container}>
-        <SkeletonCard style={{ margin: 16 }} />
-      </View>
-    );
+    return <View style={[styles.container, { backgroundColor: colors.background }]}><SkeletonCard style={{ margin: SPACING.lg }} /></View>;
   }
-
   if (!disease) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Enfermedad no encontrada</Text>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Text style={{ textAlign: 'center', marginTop: 40, color: colors.textSecondary }}>Enfermedad no encontrada</Text>
       </View>
     );
   }
 
   const favorite = isFavorite(disease.id);
+  // Global catalog entries (organization_id null) are admin-only on the server
+  const canEdit = user?.role === 'admin' || disease.organization_id != null;
+  const diagnosis = (disease.diagnosis as any) || {};
+  const treatment = (disease.treatment as any) || {};
+  const category = DISEASE_CATEGORIES[disease.category as DiseaseCategoryKey];
+  const SpeciesIcon = disease.species === 'dog' ? Dog : disease.species === 'cat' ? Cat : PawPrint;
+  const emergency = treatment.emergency ? parseEmergency(treatment.emergency) : null;
+  const notes: string = (treatment.notes || '').replace(/^Chile:\s*/i, '');
 
-  const tabs = [
-    { key: 'signs', label: 'Signos', icon: 'stethoscope' },
-    { key: 'diagnosis', label: 'Diagnóstico', icon: 'microscope' },
-    { key: 'treatment', label: 'Tratamiento', icon: 'pill' },
-    { key: 'prevention', label: 'Prevención', icon: 'shield-check' },
-  ] as const;
+  const inputStyle = [styles.editInput, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }];
 
-  const diagnosis = disease.diagnosis as any || {};
-  const treatment = disease.treatment as any || {};
+  const ItemList = ({ items, Icon, iconColor }: { items: string[]; Icon: typeof Pill; iconColor: string }) => (
+    <>
+      {items.map((raw, i) => {
+        const [title, detail] = splitItem(raw);
+        return (
+          <View key={i} style={styles.listItem}>
+            <Icon size={16} color={iconColor} style={{ marginTop: 2 }} />
+            <Text style={[styles.listItemText, { color: colors.text }]}>
+              {detail ? <Text style={{ fontWeight: TYPOGRAPHY.weights.semibold }}>{title}: </Text> : null}
+              {detail || title}
+            </Text>
+          </View>
+        );
+      })}
+    </>
+  );
 
-  const ArrayEditField = ({ label, value, onChange }: { label: string; value: string[]; onChange: (v: string[]) => void }) => (
-    <View style={styles.editField}>
-      <Text style={styles.editLabel}>{label} (uno por línea)</Text>
-      <TextInput
-        style={styles.editTextarea}
-        multiline
-        value={(value || []).join('\n')}
-        onChangeText={(t) => onChange(t.split('\n').map(s => s.trim()).filter(Boolean))}
-        placeholderTextColor={colors.textLight}
-      />
-    </View>
+  const Section = ({ title, Icon, children, tone }: { title: string; Icon?: typeof Pill; children: React.ReactNode; tone?: string }) => (
+    <VCard style={[styles.sectionCard, tone ? { borderColor: tone } : null] as any} padding={SPACING.lg}>
+      <View style={styles.sectionHeader}>
+        {Icon ? <Icon size={18} color={tone || colors.textSecondary} /> : null}
+        <Text accessibilityRole="header" style={[styles.sectionTitle, { color: tone || colors.text }]}>{title}</Text>
+      </View>
+      {children}
+    </VCard>
   );
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* Header */}
-      <Card style={styles.headerCard}>
-        <Card.Content>
-          <View style={styles.headerTop}>
-            <View style={styles.headerTitle}>
-              <Text variant="headlineSmall" style={styles.diseaseName} numberOfLines={2}>{disease.name}</Text>
-              <View style={styles.headerActions}>
-                <TouchableOpacity onPress={openEdit} style={styles.editBtn} accessibilityRole="button" accessibilityLabel="Editar enfermedad">
-                  <MaterialCommunityIcons name="pencil" size={22} color={colors.primary} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => toggleFavorite(disease.id)} style={{ padding: 8 }} accessibilityRole="button" accessibilityState={{ selected: favorite }} accessibilityLabel={favorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}>
-                  <MaterialCommunityIcons
-                    name={favorite ? 'heart' : 'heart-outline'}
-                    size={28}
-                    color={favorite ? colors.error : colors.textSecondary}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-            <Text variant="bodyMedium" style={styles.scientificName}>{disease.scientific_name}</Text>
+      <VCard style={styles.sectionCard} padding={SPACING.xl}>
+        <View style={styles.headerTitle}>
+          <View style={{ flex: 1 }}>
+            <DisplayText style={[styles.diseaseName, { color: colors.text }]}>{disease.name}</DisplayText>
+            {disease.scientific_name ? (
+              <Text style={[styles.scientificName, { color: colors.textSecondary }]}>{disease.scientific_name}</Text>
+            ) : null}
+            {disease.english_name ? (
+              <Text style={[styles.englishName, { color: colors.textSecondary }]}>En inglés: {disease.english_name}</Text>
+            ) : null}
           </View>
-
-          <View style={styles.badgeRow}>
-            <Badge style={[styles.badge, { backgroundColor: SPECIES_INFO[disease.species as keyof typeof SPECIES_INFO]?.color || colors.textSecondary }]}>
-              {SPECIES_INFO[disease.species as keyof typeof SPECIES_INFO]?.label || disease.species}
-            </Badge>
-            <Badge style={[styles.badge, { backgroundColor: CATEGORY_COLORS[disease.category] || colors.textSecondary }]}>
-              {DISEASE_CATEGORIES[disease.category as keyof typeof DISEASE_CATEGORIES]?.label || disease.category}
-            </Badge>
-            <Badge style={[styles.badge, { backgroundColor: SEVERITY_COLORS[disease.severity as keyof typeof SEVERITY_COLORS] || colors.textSecondary }]}>
-              {SEVERITY_LABELS[disease.severity as keyof typeof SEVERITY_LABELS] || disease.severity}
-            </Badge>
-            {disease.is_zoonotic && (
-              <Badge style={[styles.badge, { backgroundColor: colors.error }]}>
-                Zoonótica
-              </Badge>
+          <View style={styles.headerActions}>
+            {canEdit && (
+              <TouchableOpacity onPress={() => setEditVisible(true)} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel="Editar enfermedad">
+                <Pencil size={20} color={colors.primary} />
+              </TouchableOpacity>
             )}
+            <TouchableOpacity
+              onPress={() => toggleFavorite(disease.id)}
+              style={styles.iconBtn}
+              accessibilityRole="button"
+              aria-selected={favorite}
+              accessibilityLabel={favorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+            >
+              <Heart size={22} color={favorite ? colors.error : colors.textSecondary} fill={favorite ? colors.error : 'transparent'} />
+            </TouchableOpacity>
           </View>
+        </View>
 
-          <View style={styles.prognosisRow}>
-            <MaterialCommunityIcons name="chart-line-variant" size={16} color={colors.textSecondary} />
-            <Text style={styles.prognosisLabel}>Pronóstico: </Text>
-            <Text style={[styles.prognosisValue, { color: colors.primary }]}>
-              {PROGNOSIS_LABELS[disease.prognosis as keyof typeof PROGNOSIS_LABELS] || disease.prognosis}
-            </Text>
+        <View style={styles.badgeRow}>
+          <View style={[styles.metaPill, { borderColor: colors.border }]}>
+            <SpeciesIcon size={14} color={colors.textSecondary} />
+            <Text style={[styles.metaPillText, { color: colors.text }]}>{SPECIES_LABELS[disease.species] || disease.species}</Text>
           </View>
-        </Card.Content>
-      </Card>
-
-      {/* Description */}
-      <Card style={styles.sectionCard}>
-        <Card.Content>
-          <Text variant="titleSmall" style={styles.sectionTitle}>Descripción</Text>
-          <Text style={styles.description} numberOfLines={6}>{disease.description}</Text>
-        </Card.Content>
-      </Card>
-
-      {/* Pathophysiology */}
-      {disease.pathophysiology && (
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <View style={styles.listItem}>
-              <MaterialCommunityIcons name="dna" size={20} color={colors.primary} />
-              <Text variant="titleSmall" style={styles.sectionTitle}>Fisiopatología</Text>
+          <View style={[styles.metaPill, { borderColor: colors.border }]}>
+            <View style={[styles.categoryDot, { backgroundColor: category?.color || colors.textLight }]} />
+            <Text style={[styles.metaPillText, { color: colors.text }]}>{categoryLabel(disease.category)}</Text>
+          </View>
+          {disease.life_stage && disease.life_stage !== 'all' ? (
+            <View style={[styles.metaPill, { borderColor: colors.border }]}>
+              <Text style={[styles.metaPillText, { color: colors.text }]}>{LIFE_STAGE_LABELS[disease.life_stage] || disease.life_stage}</Text>
             </View>
-            <Text style={styles.description}>{disease.pathophysiology}</Text>
-          </Card.Content>
-        </Card>
-      )}
+          ) : null}
+          <VBadge variant={SEVERITY_TONE[disease.severity] || 'neutral'}>
+            {`Severidad: ${(SEVERITY_LABELS as Record<string, string>)[disease.severity] || disease.severity}`}
+          </VBadge>
+          {disease.is_zoonotic && <VBadge variant="danger">Zoonótica</VBadge>}
+        </View>
 
-      {/* Tab Navigation */}
-      <View style={styles.tabBar}>
-        {tabs.map(tab => (
-          <TouchableOpacity
-            key={tab.key}
-            onPress={() => setActiveTab(tab.key)}
-            style={[styles.tab, activeTab === tab.key && styles.activeTab]}
-          >
-            <MaterialCommunityIcons
-              name={tab.icon}
-              size={20}
-              color={activeTab === tab.key ? colors.primary : colors.textSecondary}
-            />
-            <Text style={[styles.tabLabel, activeTab === tab.key && styles.activeTabLabel]}>
-              {tab.label}
+        {disease.prognosis ? (
+          <View style={[styles.prognosisRow, { borderTopColor: colors.border }]}>
+            <TrendingUp size={16} color={colors.textSecondary} />
+            <Text style={{ color: colors.textSecondary }}>Pronóstico:</Text>
+            <Text style={{ color: colors.text, fontWeight: TYPOGRAPHY.weights.semibold }}>
+              {PROGNOSIS_LABELS[disease.prognosis] || disease.prognosis}
             </Text>
-          </TouchableOpacity>
-        ))}
+          </View>
+        ) : null}
+
+        {disease.photo_url ? (
+          <Image source={{ uri: disease.photo_url }} style={styles.diseasePhoto} resizeMode="cover" accessibilityLabel={`Imagen de ${disease.name}`} />
+        ) : null}
+      </VCard>
+
+      <Section title="Descripción">
+        <Text style={[styles.body, { color: colors.text }]}>{disease.description}</Text>
+      </Section>
+
+      {disease.pathophysiology ? (
+        <Section title="Fisiopatología" Icon={Dna}>
+          <Text style={[styles.body, { color: colors.text }]}>{disease.pathophysiology}</Text>
+        </Section>
+      ) : null}
+
+      {/* Tabs */}
+      <View style={[styles.tabBar, { backgroundColor: colors.surface, borderColor: colors.border }]} accessibilityRole="tablist">
+        {TABS.map(({ key, label, Icon }) => {
+          const active = activeTab === key;
+          return (
+            <TouchableOpacity
+              key={key}
+              onPress={() => setActiveTab(key)}
+              style={[styles.tab, active && { backgroundColor: colors.primaryContainer }]}
+              accessibilityRole="tab"
+              aria-selected={active}
+            >
+              <Icon size={18} color={active ? colors.primary : colors.textSecondary} />
+              <Text style={[styles.tabLabel, { color: active ? colors.primary : colors.textSecondary }, active && { fontWeight: TYPOGRAPHY.weights.semibold }]}>{label}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      {/* Tab Content */}
       {activeTab === 'signs' && (
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Text variant="titleSmall" style={styles.sectionTitle}>Signos clave</Text>
-            {disease.key_signs && disease.key_signs.map((sign: string, index: number) => (
-              <View key={index} style={styles.listItem}>
-                <MaterialCommunityIcons
-                  name="alert-circle-outline"
-                  size={16}
-                  color={SEVERITY_COLORS[disease.severity as keyof typeof SEVERITY_COLORS] || colors.textSecondary}
-                />
-                <Text style={styles.listItemText} numberOfLines={3}>{sign}</Text>
-              </View>
-            ))}
-            {disease.photo_url ? (
-              <Image source={{ uri: disease.photo_url }} style={styles.diseasePhoto} resizeMode="cover" />
-            ) : null}
-          </Card.Content>
-        </Card>
+        <Section title="Signos clave" Icon={Stethoscope}>
+          {disease.key_signs?.length
+            ? <ItemList items={disease.key_signs} Icon={Circle} iconColor={colors.textSecondary} />
+            : <Text style={{ color: colors.textSecondary }}>Sin signos registrados.</Text>}
+        </Section>
       )}
 
       {activeTab === 'diagnosis' && (
         <>
-          <Card style={styles.sectionCard}>
-            <Card.Content>
-              <Text variant="titleSmall" style={styles.sectionTitle}>Examen clínico</Text>
-              <Text style={styles.description}>{diagnosis.clinicalExam}</Text>
-            </Card.Content>
-          </Card>
-
-          {diagnosis.labTests && diagnosis.labTests.length > 0 && (
-            <Card style={styles.sectionCard}>
-              <Card.Content>
-                <Text variant="titleSmall" style={styles.sectionTitle}>Exámenes de laboratorio</Text>
-                {diagnosis.labTests.map((test: string, index: number) => (
-                  <View key={index} style={styles.listItem}>
-                    <MaterialCommunityIcons name="flask" size={16} color={colors.info} />
-                    <Text style={styles.listItemText}>{test}</Text>
-                  </View>
-                ))}
-              </Card.Content>
-            </Card>
-          )}
-
-          {diagnosis.imaging && diagnosis.imaging.length > 0 && (
-            <Card style={styles.sectionCard}>
-              <Card.Content>
-                <Text variant="titleSmall" style={styles.sectionTitle}>Imagenología</Text>
-                {diagnosis.imaging.map((img: string, index: number) => (
-                  <View key={index} style={styles.listItem}>
-                    <MaterialCommunityIcons name="camera" size={16} color={colors.warning} />
-                    <Text style={styles.listItemText}>{img}</Text>
-                  </View>
-                ))}
-              </Card.Content>
-            </Card>
-          )}
-
-          {diagnosis.differentialDiagnosis && diagnosis.differentialDiagnosis.length > 0 && (
-            <Card style={styles.sectionCard}>
-              <Card.Content>
-                <Text variant="titleSmall" style={styles.sectionTitle}>Diagnóstico diferencial</Text>
-                {diagnosis.differentialDiagnosis.map((dd: string, index: number) => (
-                  <View key={index} style={styles.listItem}>
-                    <MaterialCommunityIcons name="help-circle-outline" size={16} color={colors.textSecondary} />
-                    <Text style={styles.listItemText}>{dd}</Text>
-                  </View>
-                ))}
-              </Card.Content>
-            </Card>
-          )}
-          {disease.photo_url ? (
-            <Card style={styles.sectionCard}>
-              <Card.Content>
-                <Image source={{ uri: disease.photo_url }} style={styles.diseasePhoto} resizeMode="cover" />
-              </Card.Content>
-            </Card>
+          {diagnosis.clinicalExam ? (
+            <Section title="Examen clínico" Icon={Stethoscope}>
+              <Text style={[styles.body, { color: colors.text }]}>{diagnosis.clinicalExam}</Text>
+            </Section>
+          ) : null}
+          {diagnosis.labTests?.length ? (
+            <Section title="Exámenes de laboratorio" Icon={FlaskConical}>
+              <ItemList items={diagnosis.labTests} Icon={Circle} iconColor={colors.textSecondary} />
+            </Section>
+          ) : null}
+          {diagnosis.imaging?.length ? (
+            <Section title="Imagenología" Icon={ScanLine}>
+              <ItemList items={diagnosis.imaging} Icon={Circle} iconColor={colors.textSecondary} />
+            </Section>
+          ) : null}
+          {diagnosis.differentialDiagnosis?.length ? (
+            <Section title="Diagnóstico diferencial" Icon={GitCompare}>
+              <ItemList items={diagnosis.differentialDiagnosis} Icon={Circle} iconColor={colors.textSecondary} />
+            </Section>
           ) : null}
         </>
       )}
 
       {activeTab === 'treatment' && (
         <>
-          {treatment.firstLine && treatment.firstLine.length > 0 && (
-            <Card style={styles.sectionCard}>
-              <Card.Content>
-                <Text variant="titleSmall" style={styles.sectionTitle}>Tratamiento primera línea</Text>
-                {treatment.firstLine.map((tx: string, index: number) => (
-                  <View key={index} style={styles.listItem}>
-                    <MaterialCommunityIcons name="check-circle" size={16} color={colors.success} />
-                    <Text style={styles.listItemText}>{tx}</Text>
-                  </View>
-                ))}
-              </Card.Content>
-            </Card>
-          )}
+          <View style={[styles.disclaimer, { backgroundColor: colors.surfaceVariant }]}>
+            <Info size={16} color={colors.textSecondary} />
+            <Text style={[styles.disclaimerText, { color: colors.textSecondary }]}>
+              Contenido de referencia. Verifica dosis, vías y contraindicaciones según el paciente antes de indicar.
+            </Text>
+          </View>
 
-          {treatment.secondLine && treatment.secondLine.length > 0 && (
-            <Card style={styles.sectionCard}>
-              <Card.Content>
-                <Text variant="titleSmall" style={styles.sectionTitle}>Tratamiento segunda línea</Text>
-                {treatment.secondLine.map((tx: string, index: number) => (
-                  <View key={index} style={styles.listItem}>
-                    <MaterialCommunityIcons name="circle-outline" size={16} color={colors.info} />
-                    <Text style={styles.listItemText}>{tx}</Text>
-                  </View>
-                ))}
-              </Card.Content>
-            </Card>
-          )}
-
-          {treatment.emergency && (
-            <Card style={[styles.sectionCard, styles.emergencyCard]}>
-              <Card.Content>
-                <View style={styles.emergencyHeader}>
-                  <MaterialCommunityIcons name="alert" size={20} color={colors.error} />
-                  <Text variant="titleSmall" style={styles.emergencyTitle}>Emergencia</Text>
+          {emergency && (
+            <Section title="Emergencia" Icon={AlertTriangle} tone={colors.error}>
+              {emergency.presentation ? (
+                <Text style={[styles.body, { color: colors.text, marginBottom: emergency.steps.length ? SPACING.sm : 0 }]}>
+                  <Text style={{ fontWeight: TYPOGRAPHY.weights.semibold }}>Presentación: </Text>{emergency.presentation}
+                </Text>
+              ) : null}
+              {emergency.steps.map((step, i) => (
+                <View key={i} style={styles.listItem}>
+                  <Text style={[styles.stepNumber, { color: colors.error }]}>{i + 1}.</Text>
+                  <Text style={[styles.listItemText, { color: colors.text }]}>{step}</Text>
                 </View>
-                <Text style={styles.emergencyText}>{treatment.emergency}</Text>
-              </Card.Content>
-            </Card>
+              ))}
+              {emergency.rest ? <Text style={[styles.body, { color: colors.text }]}>{emergency.rest}</Text> : null}
+            </Section>
           )}
 
-          {treatment.duration && (
-            <Card style={styles.sectionCard}>
-              <Card.Content>
-                <Text variant="titleSmall" style={styles.sectionTitle}>Duración del tratamiento</Text>
-                <Text style={styles.description}>{treatment.duration}</Text>
-              </Card.Content>
-            </Card>
-          )}
-          {disease.photo_url ? (
-            <Card style={styles.sectionCard}>
-              <Card.Content>
-                <Image source={{ uri: disease.photo_url }} style={styles.diseasePhoto} resizeMode="cover" />
-              </Card.Content>
-            </Card>
+          {treatment.firstLine?.length ? (
+            <Section title="Primera línea" Icon={CheckCircle2}>
+              <ItemList items={treatment.firstLine} Icon={CheckCircle2} iconColor={colors.success} />
+            </Section>
+          ) : null}
+          {treatment.secondLine?.length ? (
+            <Section title="Segunda línea" Icon={Circle}>
+              <ItemList items={treatment.secondLine} Icon={Circle} iconColor={colors.textSecondary} />
+            </Section>
+          ) : null}
+          {treatment.duration ? (
+            <Section title="Duración" Icon={Clock}>
+              <Text style={[styles.body, { color: colors.text }]}>{treatment.duration}</Text>
+            </Section>
+          ) : null}
+          {notes ? (
+            <Section title="Disponibilidad en Chile" Icon={MapPin}>
+              <Text style={[styles.body, { color: colors.text }]}>{notes}</Text>
+            </Section>
           ) : null}
         </>
       )}
 
-      {activeTab === 'prevention' && disease.prevention && (
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Text variant="titleSmall" style={styles.sectionTitle}>Medidas preventivas</Text>
-            {disease.prevention.map((prev: string, index: number) => (
-              <View key={index} style={styles.listItem}>
-                <MaterialCommunityIcons name="shield-check" size={16} color={colors.success} />
-                <Text style={styles.listItemText}>{prev}</Text>
-              </View>
-            ))}
-          </Card.Content>
-        </Card>
+      {activeTab === 'prevention' && (
+        <Section title="Medidas preventivas" Icon={ShieldCheck}>
+          {disease.prevention?.length
+            ? <ItemList items={disease.prevention} Icon={ShieldCheck} iconColor={colors.success} />
+            : <Text style={{ color: colors.textSecondary }}>Sin medidas registradas.</Text>}
+        </Section>
       )}
 
-      {/* References */}
-      {disease.references && disease.references.length > 0 && (
-        <Card style={styles.sectionCard}>
-          <Card.Content>
-            <Text variant="titleSmall" style={styles.sectionTitle}>Referencias</Text>
-            {disease.references.map((ref: string, index: number) => (
-              <Text key={index} style={styles.reference}>• {ref}</Text>
-            ))}
-          </Card.Content>
-        </Card>
-      )}
+      {disease.references?.length ? (
+        <Section title="Referencias" Icon={BookOpen}>
+          {disease.references.map((ref: string, index: number) => (
+            <Text key={index} style={[styles.reference, { color: colors.textSecondary }]}>• {ref}</Text>
+          ))}
+        </Section>
+      ) : null}
 
-      {/* Edit Modal */}
+      {/* Edit (only clinic-owned entries, or admins for the global catalog) */}
       <Portal>
-        <Modal visible={editVisible} onDismiss={closeEdit} contentContainerStyle={styles.modalContent}>
+        <Modal visible={editVisible} onDismiss={() => setEditVisible(false)} contentContainerStyle={[styles.modalContent, { backgroundColor: colors.surface }]}>
           <ScrollView>
-            <Text variant="titleLarge" style={styles.modalTitle}>Editar enfermedad</Text>
+            <Text accessibilityRole="header" style={[styles.modalTitle, { color: colors.text }]}>Editar enfermedad</Text>
+            <TextEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Nombre *" value={editData.name || ''} onChange={(t) => setField('name', t)} />
+            <TextEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Agente o nombre científico (latín)" value={editData.scientific_name || ''} onChange={(t) => setField('scientific_name', t)} />
+            <TextEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Nombre en inglés" value={editData.english_name || ''} onChange={(t) => setField('english_name', t)} />
+            <TextEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Descripción *" value={editData.description || ''} onChange={(t) => setField('description', t)} multiline />
 
-            <View style={styles.editField}>
-              <Text style={styles.editLabel}>Nombre *</Text>
-              <TextInput style={styles.editInput} value={editData.name || ''} onChangeText={(t) => updateEditField('name', t)} />
-            </View>
+            <Text style={[styles.editSection, { color: colors.primary, borderBottomColor: colors.border }]}>Signos clave</Text>
+            <ArrayEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Signos" value={editData.key_signs || []} onChange={(v) => setField('key_signs', v)} />
 
-            <View style={styles.editField}>
-              <Text style={styles.editLabel}>Nombre científico</Text>
-              <TextInput style={styles.editInput} value={editData.scientific_name || ''} onChangeText={(t) => updateEditField('scientific_name', t)} />
-            </View>
+            <Text style={[styles.editSection, { color: colors.primary, borderBottomColor: colors.border }]}>Diagnóstico</Text>
+            <TextEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Examen clínico" value={(editData.diagnosis as any)?.clinicalExam || ''} onChange={(t) => setNested('diagnosis', 'clinicalExam', t)} multiline />
+            <ArrayEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Laboratorio" value={(editData.diagnosis as any)?.labTests || []} onChange={(v) => setNested('diagnosis', 'labTests', v)} />
+            <ArrayEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Imagenología" value={(editData.diagnosis as any)?.imaging || []} onChange={(v) => setNested('diagnosis', 'imaging', v)} />
+            <ArrayEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Diagnóstico diferencial" value={(editData.diagnosis as any)?.differentialDiagnosis || []} onChange={(v) => setNested('diagnosis', 'differentialDiagnosis', v)} />
 
-            <View style={styles.editField}>
-              <Text style={styles.editLabel}>Descripción *</Text>
-              <TextInput style={styles.editTextarea} multiline value={editData.description || ''} onChangeText={(t) => updateEditField('description', t)} />
-            </View>
+            <Text style={[styles.editSection, { color: colors.primary, borderBottomColor: colors.border }]}>Tratamiento</Text>
+            <ArrayEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Primera línea" value={(editData.treatment as any)?.firstLine || []} onChange={(v) => setNested('treatment', 'firstLine', v)} />
+            <ArrayEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Segunda línea" value={(editData.treatment as any)?.secondLine || []} onChange={(v) => setNested('treatment', 'secondLine', v)} />
+            <TextEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Emergencia" value={(editData.treatment as any)?.emergency || ''} onChange={(t) => setNested('treatment', 'emergency', t)} multiline />
+            <TextEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Duración" value={(editData.treatment as any)?.duration || ''} onChange={(t) => setNested('treatment', 'duration', t)} />
+            <TextEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Disponibilidad en Chile" value={(editData.treatment as any)?.notes || ''} onChange={(t) => setNested('treatment', 'notes', t)} multiline />
 
-            <Text style={styles.editSection}>Signos clave</Text>
-            <ArrayEditField label="Signos" value={editData.key_signs || []} onChange={(v) => updateEditField('key_signs', v)} />
+            <Text style={[styles.editSection, { color: colors.primary, borderBottomColor: colors.border }]}>Prevención</Text>
+            <ArrayEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Medidas" value={editData.prevention || []} onChange={(v) => setField('prevention', v)} />
 
-            <Text style={styles.editSection}>Diagnóstico</Text>
-            <View style={styles.editField}>
-              <Text style={styles.editLabel}>Examen clínico</Text>
-              <TextInput style={styles.editTextarea} multiline value={(editData.diagnosis as any)?.clinicalExam || ''} onChangeText={(t) => updateEditNested('diagnosis', 'clinicalExam', t)} />
-            </View>
-            <ArrayEditField label="Laboratorio" value={(editData.diagnosis as any)?.labTests || []} onChange={(v) => updateEditNested('diagnosis', 'labTests', v)} />
-            <ArrayEditField label="Imagenología" value={(editData.diagnosis as any)?.imaging || []} onChange={(v) => updateEditNested('diagnosis', 'imaging', v)} />
-            <ArrayEditField label="Diagnóstico diferencial" value={(editData.diagnosis as any)?.differentialDiagnosis || []} onChange={(v) => updateEditNested('diagnosis', 'differentialDiagnosis', v)} />
+            <Text style={[styles.editSection, { color: colors.primary, borderBottomColor: colors.border }]}>Referencias</Text>
+            <ArrayEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Referencias" value={editData.references || []} onChange={(v) => setField('references', v)} />
 
-            <Text style={styles.editSection}>Tratamiento</Text>
-            <ArrayEditField label="Primera línea" value={(editData.treatment as any)?.firstLine || []} onChange={(v) => updateEditNested('treatment', 'firstLine', v)} />
-            <ArrayEditField label="Segunda línea" value={(editData.treatment as any)?.secondLine || []} onChange={(v) => updateEditNested('treatment', 'secondLine', v)} />
-            <View style={styles.editField}>
-              <Text style={styles.editLabel}>Emergencia</Text>
-              <TextInput style={styles.editTextarea} multiline value={(editData.treatment as any)?.emergency || ''} onChangeText={(t) => updateEditNested('treatment', 'emergency', t)} />
-            </View>
-            <View style={styles.editField}>
-              <Text style={styles.editLabel}>Duración</Text>
-              <TextInput style={styles.editInput} value={(editData.treatment as any)?.duration || ''} onChangeText={(t) => updateEditNested('treatment', 'duration', t)} />
-            </View>
-
-            <Text style={styles.editSection}>Prevención</Text>
-            <ArrayEditField label="Medidas" value={editData.prevention || []} onChange={(v) => updateEditField('prevention', v)} />
-
-            <Text style={styles.editSection}>Referencias</Text>
-            <ArrayEditField label="Referencias" value={editData.references || []} onChange={(v) => updateEditField('references', v)} />
-
-            <View style={styles.modalActions}>
-              <Button mode="outlined" onPress={closeEdit} style={styles.cancelBtn}>Cancelar</Button>
-              <Button mode="contained" onPress={handleSave} loading={saving} style={styles.saveBtn}>Guardar</Button>
+            {editError ? (
+              <View accessibilityRole="alert" style={[styles.disclaimer, { backgroundColor: colors.surfaceVariant }]}>
+                <AlertTriangle size={16} color={colors.error} />
+                <Text style={[styles.disclaimerText, { color: colors.error }]}>{editError}</Text>
+              </View>
+            ) : null}
+            <View style={[styles.modalActions, { borderTopColor: colors.border }]}>
+              <VButton variant="secondary" onPress={() => setEditVisible(false)}>Cancelar</VButton>
+              <VButton variant="primary" onPress={handleSave} loading={saving} disabled={saving}>Guardar</VButton>
             </View>
           </ScrollView>
         </Modal>
       </Portal>
-
-      {/* Error Dialog */}
-      <Portal>
-        <Dialog visible={!!errorDialog} onDismiss={() => setErrorDialog(null)}>
-          <Dialog.Icon icon="alert-circle-outline" />
-          <Dialog.Title style={{ textAlign: 'center' }}>Error</Dialog.Title>
-          <Dialog.Content>
-            <Text style={{ textAlign: 'center' }}>{errorDialog}</Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setErrorDialog(null)}>Entendido</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  content: { padding: SPACING.lg, paddingBottom: SPACING['4xl'], maxWidth: 900, width: '100%', alignSelf: 'center' },
+  sectionCard: { marginBottom: SPACING.md },
+  headerTitle: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm },
+  headerActions: { flexDirection: 'row', alignItems: 'center' },
+  iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  diseaseName: { fontSize: TYPOGRAPHY.sizes['2xl'] },
+  scientificName: { fontStyle: 'italic', marginTop: SPACING.xs, fontSize: TYPOGRAPHY.sizes.md },
+  englishName: { marginTop: 2, fontSize: TYPOGRAPHY.sizes.sm },
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginTop: SPACING.md, gap: SPACING.sm },
+  metaPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: SPACING.sm, paddingVertical: 4, borderRadius: RADIUS.full, borderWidth: 1 },
+  metaPillText: { fontSize: TYPOGRAPHY.sizes.sm },
+  categoryDot: { width: 8, height: 8, borderRadius: 4 },
+  prognosisRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: SPACING.md, paddingTop: SPACING.md, borderTopWidth: 1 },
+  diseasePhoto: { width: '100%', height: 220, borderRadius: RADIUS.md, marginTop: SPACING.md },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.md },
+  sectionTitle: { fontWeight: TYPOGRAPHY.weights.bold, fontSize: TYPOGRAPHY.sizes.base },
+  body: { lineHeight: 22, fontSize: TYPOGRAPHY.sizes.md },
+  tabBar: { flexDirection: 'row', marginBottom: SPACING.md, borderRadius: RADIUS.lg, borderWidth: 1, padding: 4 },
+  tab: { flex: 1, alignItems: 'center', paddingVertical: SPACING.sm, borderRadius: RADIUS.md, gap: 4, minHeight: 52, justifyContent: 'center' },
+  tabLabel: { fontSize: TYPOGRAPHY.sizes.xs },
+  listItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: SPACING.sm, gap: SPACING.sm },
+  listItemText: { flex: 1, lineHeight: 21, fontSize: TYPOGRAPHY.sizes.md },
+  stepNumber: { fontWeight: TYPOGRAPHY.weights.bold, minWidth: 18 },
+  disclaimer: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm, padding: SPACING.md, borderRadius: RADIUS.md, marginBottom: SPACING.md },
+  disclaimerText: { flex: 1, fontSize: TYPOGRAPHY.sizes.sm, lineHeight: 19 },
+  reference: { fontSize: TYPOGRAPHY.sizes.sm, marginBottom: 4, lineHeight: 19 },
+  modalContent: { margin: SPACING.lg, borderRadius: RADIUS.lg, padding: SPACING.xl, maxHeight: '90%', maxWidth: 720, width: '100%', alignSelf: 'center' },
+  modalTitle: { fontWeight: TYPOGRAPHY.weights.bold, fontSize: TYPOGRAPHY.sizes.xl, marginBottom: SPACING.lg },
+  editField: { marginBottom: SPACING.md },
+  editLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, marginBottom: 6 },
+  editInput: { borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.sm + 2, fontSize: TYPOGRAPHY.sizes.md },
+  editTextarea: { minHeight: 80, textAlignVertical: 'top' },
+  editSection: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: TYPOGRAPHY.weights.bold, marginTop: SPACING.lg, marginBottom: SPACING.sm, paddingBottom: 6, borderBottomWidth: 1 },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: SPACING.md, marginTop: SPACING.lg, paddingTop: SPACING.lg, borderTopWidth: 1 },
+});

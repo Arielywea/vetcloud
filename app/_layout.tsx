@@ -75,7 +75,7 @@ function AppContent() {
           headerStyle: { backgroundColor: colors.chrome },
           headerTintColor: onChromeText.default,
           headerShadowVisible: false,
-          headerTitle: 'Detalle de Enfermedad',
+          headerTitle: 'Enfermedad',
         }}
       />
       <Stack.Screen
@@ -85,7 +85,7 @@ function AppContent() {
           headerStyle: { backgroundColor: colors.chrome },
           headerTintColor: onChromeText.default,
           headerShadowVisible: false,
-          headerTitle: 'Ficha Clínica',
+          headerTitle: 'Ficha clínica',
         }}
       />
     </Stack>

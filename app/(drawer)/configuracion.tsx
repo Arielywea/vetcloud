@@ -141,7 +141,7 @@ export default function ConfiguracionScreen() {
         style={[styles.modeBtn, { borderColor: colors.border }, active && { backgroundColor: colors.primary, borderColor: colors.primary }]}
         onPress={() => setMode(dark)}
         accessibilityRole="radio"
-        accessibilityState={{ checked: active }}
+        aria-checked={active}
         accessibilityLabel={dark ? 'Modo oscuro' : 'Modo claro'}
       >
         <Icon size={15} color={active ? onPrimaryText.default : colors.textSecondary} />

@@ -70,7 +70,7 @@ export default function VButton({
       onPressIn={() => pressTo(0.97, 110)}
       onPressOut={() => pressTo(1, 180)}
       accessibilityRole="button"
-      accessibilityState={{ disabled: inactive, busy: loading }}
+      aria-disabled={inactive} aria-busy={loading}
       style={fullWidth ? { width: '100%' } : undefined}
     >
       <Animated.View

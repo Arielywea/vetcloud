@@ -69,7 +69,7 @@ export default function VBadge({
         activeOpacity={0.7}
         style={[box, styles.pressable, style]}
         accessibilityRole="button"
-        accessibilityState={selected !== undefined ? { selected } : undefined}
+        aria-selected={selected}
         accessibilityLabel={accessibilityLabel || displayText}
       >
         <Text style={textStyle}>{displayText}</Text>

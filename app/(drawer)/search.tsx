@@ -7,6 +7,7 @@ import { useDiseases } from '../../hooks/useDirectus';
 import { SEVERITY_COLORS, SEVERITY_LABELS, SEVERITY_TONE } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { DirectusDisease } from '../../services/directus';
+import { normalizeSearch, categoryLabel, SPECIES_LABELS } from '../../constants/diseaseMeta';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/tokens';
 import VCard from '../../components/ui/Card';
 import VBadge from '../../components/ui/Badge';
@@ -22,14 +23,15 @@ export default function SearchScreen() {
 
   const results = useMemo(() => {
     if (!query.trim()) return [];
-    const q = query.toLowerCase();
+    // Accent-insensitive: "vomitos" must find "Vómitos"
+    const q = normalizeSearch(query.trim());
     let filtered = diseases;
     if (selectedSpecies !== 'all') { filtered = filtered.filter(d => d.species === selectedSpecies || d.species === 'both'); }
     if (mode === 'symptoms') {
-      return filtered.filter(d => d.key_signs && d.key_signs.some((sign: string) => sign.toLowerCase().includes(q)));
+      return filtered.filter(d => d.key_signs && d.key_signs.some((sign: string) => normalizeSearch(sign).includes(q)));
     }
     return filtered.filter(d =>
-      d.name.toLowerCase().includes(q) || d.scientific_name?.toLowerCase().includes(q) || d.category?.toLowerCase().includes(q) || d.description?.toLowerCase().includes(q)
+      normalizeSearch([d.name, d.english_name, d.scientific_name, categoryLabel(d.category), d.description].filter(Boolean).join(' ')).includes(q)
     );
   }, [diseases, query, mode, selectedSpecies]);
 
@@ -42,10 +44,10 @@ export default function SearchScreen() {
             {SEVERITY_LABELS[item.severity as keyof typeof SEVERITY_LABELS] || item.severity}
           </VBadge>
         </View>
-        <Text variant="bodySmall" style={[styles.resultScientific, { color: colors.textSecondary }]}>{item.scientific_name}</Text>
+        {item.scientific_name ? <Text variant="bodySmall" style={[styles.resultScientific, { color: colors.textSecondary }]}>{item.scientific_name}</Text> : null}
         <View style={styles.resultMeta}>
           {item.species === 'dog' ? <Dog size={14} color={colors.primary} /> : <Cat size={14} color={colors.primary} />}
-          <Text style={[styles.resultSpecies, { color: colors.primary }]}>{item.species === 'dog' ? 'Perro' : 'Gato'}</Text>
+          <Text style={[styles.resultSpecies, { color: colors.primary }]}>{SPECIES_LABELS[item.species] || item.species}</Text>
         </View>
         {mode === 'symptoms' && item.key_signs && (
           <View style={[styles.matchedSigns, { borderTopColor: colors.border }]}>

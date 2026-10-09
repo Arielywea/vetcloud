@@ -195,6 +195,21 @@ function escapeHtml(str) {
 }
 
 const DISEASE_SEVERITIES = ['mild', 'moderate', 'severe', 'critical'];
+// Same keys as constants/diseaseMeta.ts
+const DISEASE_CATEGORY_KEYS = ['infectious', 'parasitic', 'degenerative', 'oncological', 'nutritional', 'autoimmune', 'traumatic', 'congenital',
+  'respiratory', 'gastrointestinal', 'dermatological', 'ocular', 'dental', 'endocrine', 'cardiovascular', 'neurological', 'musculoskeletal',
+  'renal', 'reproductive', 'toxic', 'urological', 'hematologic', 'metabolic', 'environmental'];
+const DISEASE_PROGNOSES = ['excellent', 'good', 'guarded', 'poor', 'grave', 'chronic'];
+const DISEASE_LIFE_STAGES = ['puppy', 'kitten', 'adult', 'senior', 'all'];
+function diseaseFieldError(d, partial) {
+  if ((!partial || d.species !== undefined) && !['dog', 'cat', 'both'].includes(d.species)) return 'La especie debe ser perro, gato o ambos';
+  if ((!partial || d.category !== undefined) && !DISEASE_CATEGORY_KEYS.includes(d.category)) return 'Categoría inválida';
+  if ((!partial || d.severity !== undefined) && !DISEASE_SEVERITIES.includes(d.severity)) return 'La severidad debe ser leve, moderada, severa o crítica';
+  if (d.prognosis != null && !DISEASE_PROGNOSES.includes(d.prognosis)) return 'Pronóstico inválido';
+  if (d.life_stage != null && !DISEASE_LIFE_STAGES.includes(d.life_stage)) return 'Etapa de vida inválida';
+  if (partial && d.name !== undefined && !String(d.name || '').trim()) return 'El nombre es obligatorio';
+  return null;
+}
 const REMINDER_TYPES = ['vacuna', 'desparasitacion', 'control', 'post_operatorio', 'cita', 'otro'];
 
 function isEmail(value) {
@@ -242,7 +257,7 @@ async function checkRefs(req) {
 app.param(['id', 'petId', 'rxId'], (req, res, next, value) => {
   const numericCatalog = /^\/items\/(medications|surgeries)\//.test(req.path);
   const ok = numericCatalog ? /^\d+$/.test(value) : isValidUUID(value);
-  if (!ok) return res.status(404).json({ error: 'Not found' });
+  if (!ok) return res.status(404).json({ error: 'No se encontró el registro' });
   next();
 });
 
@@ -555,13 +570,13 @@ app.get('/items/diseases', async (req, res) => {
 
 app.get('/items/diseases/:id', async (req, res) => {
   try {
-    if (!isValidUUID(req.params.id)) return res.status(404).json({ error: 'Not found' });
+    if (!isValidUUID(req.params.id)) return res.status(404).json({ error: 'Enfermedad no encontrada' });
     const orgId = optionalAuth(req).organizationId;
     const result = await pool.query(
       'SELECT *, references_list AS references FROM diseases WHERE id = $1 AND (organization_id IS NULL OR organization_id = $2)',
       [req.params.id, orgId || -1]
     );
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'Enfermedad no encontrada' });
     res.json({ data: result.rows[0] });
   } catch (err) {
     logError(req, err);
@@ -573,20 +588,19 @@ app.post('/items/diseases', authMiddleware, async (req, res) => {
   try {
     const d = req.body || {};
     if (!d.name || !String(d.name).trim()) return res.status(400).json({ error: 'El nombre es obligatorio' });
-    if (!['dog', 'cat', 'both'].includes(d.species)) return res.status(400).json({ error: 'La especie debe ser dog, cat o both' });
-    if (!d.category) return res.status(400).json({ error: 'La categoría es obligatoria' });
-    if (!DISEASE_SEVERITIES.includes(d.severity)) return res.status(400).json({ error: 'La severidad debe ser leve, moderada, severa o crítica' });
+    const fieldError = diseaseFieldError(d, false);
+    if (fieldError) return res.status(400).json({ error: fieldError });
     if (!d.description || !String(d.description).trim()) return res.status(400).json({ error: 'La descripción es obligatoria' });
     if (!req.organizationId && req.userRole !== 'admin') return res.status(403).json({ error: 'Tu cuenta no tiene una clínica asociada' });
     const result = await pool.query(
-      `WITH ins AS (INSERT INTO diseases (name, scientific_name, species, category, severity, description, pathophysiology, life_stage, key_signs, diagnosis, treatment, prevention, prognosis, is_zoonotic, references_list, photo_url, organization_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *)
+      `WITH ins AS (INSERT INTO diseases (name, scientific_name, species, category, severity, description, pathophysiology, life_stage, key_signs, diagnosis, treatment, prevention, prognosis, is_zoonotic, references_list, photo_url, organization_id, english_name)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *)
        SELECT *, references_list AS references FROM ins`,
       [String(d.name).trim(), d.scientific_name || null, d.species, d.category || null, d.severity || null, d.description || null,
        d.pathophysiology || null, d.life_stage || 'all',
        JSON.stringify(d.key_signs || []), JSON.stringify(d.diagnosis || {}), JSON.stringify(d.treatment || {}),
        JSON.stringify(d.prevention || []), d.prognosis || null, d.is_zoonotic === true, JSON.stringify(d.references || []), d.photo_url || null,
-       req.organizationId || null]
+       req.organizationId || null, d.english_name ? String(d.english_name).trim() : null]
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
@@ -598,8 +612,10 @@ app.post('/items/diseases', authMiddleware, async (req, res) => {
 app.patch('/items/diseases/:id', authMiddleware, async (req, res) => {
   try {
     const d = req.body;
-    if (!isValidUUID(req.params.id)) return res.status(404).json({ error: 'Not found' });
-    const allowed = ['name','scientific_name','species','category','severity','description','pathophysiology','key_signs','diagnosis','treatment','prevention','prognosis','is_zoonotic','references','references_list','photo_url','life_stage'];
+    if (!isValidUUID(req.params.id)) return res.status(404).json({ error: 'Enfermedad no encontrada' });
+    const fieldError = diseaseFieldError(d || {}, true);
+    if (fieldError) return res.status(400).json({ error: fieldError });
+    const allowed = ['name','scientific_name','english_name','species','category','severity','description','pathophysiology','key_signs','diagnosis','treatment','prevention','prognosis','is_zoonotic','references','references_list','photo_url','life_stage'];
     const safe = sanitizeColumns(allowed, d);
     const aliasMap = { references: 'references_list' };
     const fields = [];
@@ -620,7 +636,8 @@ app.patch('/items/diseases/:id', authMiddleware, async (req, res) => {
     const result = await pool.query(
       `WITH u AS (UPDATE diseases SET ${fields.join(', ')} WHERE id = $${idx} AND ${scope.clause} RETURNING *) SELECT *, references_list AS references FROM u`, values
     );
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    // Global entries are admin-only (diseaseWriteScope): say so instead of a bare 404
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró la enfermedad o no tienes permiso para editarla (las fichas del catálogo general solo las edita un administrador)' });
     res.json({ data: result.rows[0] });
   } catch (err) {
     logError(req, err);
@@ -630,10 +647,10 @@ app.patch('/items/diseases/:id', authMiddleware, async (req, res) => {
 
 app.delete('/items/diseases/:id', authMiddleware, async (req, res) => {
   try {
-    if (!isValidUUID(req.params.id)) return res.status(404).json({ error: 'Not found' });
+    if (!isValidUUID(req.params.id)) return res.status(404).json({ error: 'Enfermedad no encontrada' });
     const scope = diseaseWriteScope(req, 2);
     const result = await pool.query(`DELETE FROM diseases WHERE id = $1 AND ${scope.clause} RETURNING id`, [req.params.id, ...scope.params]);
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: null });
   } catch (err) {
     logError(req, err);
@@ -734,7 +751,7 @@ app.get('/items/surgeries', async (req, res) => {
 app.get('/items/surgeries/:id', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM surgeries WHERE id = $1', [req.params.id]);
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: result.rows[0] });
   } catch (err) {
     logError(req, err);
@@ -756,7 +773,7 @@ app.get('/items/pets', authMiddleware, async (req, res) => {
 app.get('/items/pets/:id', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM pets WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: result.rows[0] });
   } catch (err) {
     logError(req, err);
@@ -790,7 +807,7 @@ app.post('/items/pets', authMiddleware, async (req, res) => {
 
 app.patch('/items/pets/:id', authMiddleware, async (req, res) => {
   try {
-    if (!isValidUUID(req.params.id)) return res.status(404).json({ error: 'Not found' });
+    if (!isValidUUID(req.params.id)) return res.status(404).json({ error: 'No se encontró el registro' });
     const { values: safe, error } = normalizePet(req.body || {}, { partial: true });
     if (error) return res.status(400).json({ error });
     const fields = [];
@@ -807,7 +824,7 @@ app.patch('/items/pets/:id', authMiddleware, async (req, res) => {
     const result = await pool.query(
       `UPDATE pets SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`, values
     );
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: result.rows[0] });
   } catch (err) {
     logError(req, err);
@@ -818,7 +835,7 @@ app.patch('/items/pets/:id', authMiddleware, async (req, res) => {
 app.delete('/items/pets/:id', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM pets WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: null });
   } catch (err) {
     logError(req, err);
@@ -914,7 +931,7 @@ app.patch('/items/personal_notes/:id', authMiddleware, async (req, res) => {
     const result = await pool.query(
       `UPDATE personal_notes SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`, values
     );
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: result.rows[0] });
   } catch (err) {
     logError(req, err);
@@ -925,7 +942,7 @@ app.patch('/items/personal_notes/:id', authMiddleware, async (req, res) => {
 app.delete('/items/personal_notes/:id', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM personal_notes WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: null });
   } catch (err) {
     logError(req, err);
@@ -963,7 +980,7 @@ app.post('/items/favorites', authMiddleware, async (req, res) => {
 app.delete('/items/favorites/:id', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM favorites WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: null });
   } catch (err) {
     logError(req, err);
@@ -996,7 +1013,7 @@ app.get('/items/appointments', authMiddleware, async (req, res) => {
 app.get('/items/appointments/:id', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM appointments WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: result.rows[0] });
   } catch (err) {
     logError(req, err);
@@ -1097,7 +1114,7 @@ app.patch('/items/appointments/:id', authMiddleware, async (req, res) => {
         'SELECT status, checked_in_at, started_at, finished_at FROM appointments WHERE id = $1 AND user_id = $2',
         [req.params.id, req.userId]
       );
-      if (!currentResult.rows.length) return res.status(404).json({ error: 'Not found' });
+      if (!currentResult.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
       const current = currentResult.rows[0];
 
       if (!isValidTransition(current.status, a.status)) {
@@ -1131,7 +1148,7 @@ app.patch('/items/appointments/:id', authMiddleware, async (req, res) => {
     const result = await pool.query(
       `UPDATE appointments SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`, values
     );
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: result.rows[0] });
   } catch (err) {
     logError(req, err);
@@ -1142,7 +1159,7 @@ app.patch('/items/appointments/:id', authMiddleware, async (req, res) => {
 app.delete('/items/appointments/:id', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM appointments WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: null });
   } catch (err) {
     logError(req, err);
@@ -1228,7 +1245,7 @@ app.patch('/items/clinical_records/:id', authMiddleware, async (req, res) => {
     const result = await pool.query(
       `UPDATE clinical_records SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`, values
     );
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     // Auto-update pet's last_visit if date changed
     if (r.date) {
       const record = result.rows[0];
@@ -1247,7 +1264,7 @@ app.patch('/items/clinical_records/:id', authMiddleware, async (req, res) => {
 app.delete('/items/clinical_records/:id', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM clinical_records WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: null });
   } catch (err) {
     logError(req, err);
@@ -1321,7 +1338,7 @@ app.patch('/items/inventory/:id', authMiddleware, async (req, res) => {
     const result = await pool.query(
       `UPDATE inventory SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`, values
     );
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: result.rows[0] });
   } catch (err) {
     logError(req, err);
@@ -1332,7 +1349,7 @@ app.patch('/items/inventory/:id', authMiddleware, async (req, res) => {
 app.delete('/items/inventory/:id', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM inventory WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: null });
   } catch (err) {
     logError(req, err);
@@ -1364,7 +1381,7 @@ app.get('/items/prescriptions/:id', authMiddleware, async (req, res) => {
       'SELECT pr.* FROM prescriptions pr JOIN pets p ON p.id = pr.pet_id WHERE pr.id = $1 AND p.user_id = $2',
       [req.params.id, req.userId]
     );
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: result.rows[0] });
   } catch (err) {
     logError(req, err);
@@ -1423,7 +1440,7 @@ app.patch('/items/prescriptions/:id', authMiddleware, async (req, res) => {
     const result = await pool.query(
       `UPDATE prescriptions SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`, values
     );
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: result.rows[0] });
   } catch (err) {
     logError(req, err);
@@ -1434,7 +1451,7 @@ app.patch('/items/prescriptions/:id', authMiddleware, async (req, res) => {
 app.delete('/items/prescriptions/:id', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM prescriptions WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
-    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: null });
   } catch (err) {
     logError(req, err);

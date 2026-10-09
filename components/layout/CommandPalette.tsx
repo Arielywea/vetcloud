@@ -192,7 +192,7 @@ export default function CommandPalette({ visible, onClose }: CommandPaletteProps
                         onPress={() => handleSelect(item)}
                         onHoverIn={() => setSelectedIndex(currentIndex)}
                         accessibilityRole="button"
-                        accessibilityState={{ selected: isSelected }}
+                        aria-selected={isSelected}
                       >
                         {item.icon}
                         <Text style={[styles.itemLabel, { color: colors.text }]}>{item.label}</Text>

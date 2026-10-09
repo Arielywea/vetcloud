@@ -44,7 +44,7 @@ export default function PatientRow({ patient, isSelected, onSelect, onClick, onD
         },
       ]}
     >
-      <TouchableOpacity onPress={onSelect} style={styles.checkbox} activeOpacity={0.7} accessibilityRole="checkbox" accessibilityState={{ checked: !!isSelected }} accessibilityLabel={`Seleccionar ${patient.name}`}>
+      <TouchableOpacity onPress={onSelect} style={styles.checkbox} activeOpacity={0.7} accessibilityRole="checkbox" aria-checked={!!isSelected} accessibilityLabel={`Seleccionar ${patient.name}`}>
         <View style={[
           styles.checkboxBox,
           {

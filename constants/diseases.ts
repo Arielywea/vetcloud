@@ -1,30 +1,9 @@
 import { Disease, DiseaseCategory } from '../types';
 import { ALL_DISEASES, PUPPY_DISEASES, KITTEN_DISEASES } from '../data';
+import { DISEASE_CATEGORIES as META_CATEGORIES } from './diseaseMeta';
 
-const DISEASE_CATEGORIES: Record<DiseaseCategory, { label: string; icon: string; color: string }> = {
-  infectious: { label: 'Infecciosas', icon: 'virus', color: '#E53935' },
-  parasitic: { label: 'Parasitarias', icon: 'bug-outline', color: '#8E24AA' },
-  degenerative: { label: 'Degenerativas', icon: 'trending-down', color: '#F57C00' },
-  oncological: { label: 'Oncologicas', icon: 'alert-circle', color: '#C62828' },
-  nutritional: { label: 'Nutricionales', icon: 'nutrition', color: '#43A047' },
-  autoimmune: { label: 'Autoinmunes', icon: 'shield', color: '#1565C0' },
-  traumatic: { label: 'Traumaticas', icon: 'bandage', color: '#6D4C41' },
-  congenital: { label: 'Congenitas', icon: 'dna', color: '#00838F' },
-  respiratory: { label: 'Respiratorias', icon: 'lungs', color: '#26A69A' },
-  gastrointestinal: { label: 'Gastrointestinales', icon: 'stomach', color: '#7CB342' },
-  dermatological: { label: 'Dermatologicas', icon: 'hand-heart', color: '#EC407A' },
-  ocular: { label: 'Oculares', icon: 'eye', color: '#5C6BC0' },
-  dental: { label: 'Dentales', icon: 'tooth', color: '#78909C' },
-  endocrine: { label: 'Endocrinas', icon: 'flask', color: '#AB47BC' },
-  cardiovascular: { label: 'Cardiovasculares', icon: 'heart-pulse', color: '#E53935' },
-  neurological: { label: 'Neurologicas', icon: 'brain', color: '#7E57C2' },
-  musculoskeletal: { label: 'Musculoesqueleticas', icon: 'bone', color: '#8D6E63' },
-  renal: { label: 'Renales', icon: 'kidney', color: '#0097A7' },
-  reproductive: { label: 'Reproductivas', icon: 'baby-carriage', color: '#EC407A' },
-  toxic: { label: 'Toxicas', icon: 'skull', color: '#D32F2F' },
-  urological: { label: 'Urologicas', icon: 'kidney', color: '#00838F' },
-  hematologic: { label: 'Hematologicas', icon: 'droplet', color: '#C62828' },
-};
+// Labels live in constants/diseaseMeta.ts (shared with the app screens, which must not import ../data)
+const DISEASE_CATEGORIES = META_CATEGORIES as Record<string, { label: string; icon: string; color: string }>;
 
 function convertToDisease(raw: any): Disease {
   const species = Array.isArray(raw.species)

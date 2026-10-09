@@ -5,8 +5,7 @@ import { useRouter } from 'expo-router';
 import DynamicIcon from '../../components/ui/DynamicIcon';
 import { useTheme } from '../../contexts/ThemeContext';
 import { api } from '../../services/directus';
-import { DISEASE_CATEGORIES, SPECIES_INFO } from '../../constants/diseases';
-import { DiseaseCategory } from '../../types';
+import { DISEASE_CATEGORIES, DiseaseCategoryKey, PROGNOSIS_LABELS, LIFE_STAGE_LABELS } from '../../constants/diseaseMeta';
 import { TYPOGRAPHY } from '../../constants/tokens';
 
 const SEVERITY_OPTIONS = [
@@ -16,15 +15,16 @@ const SEVERITY_OPTIONS = [
   { value: 'critical', label: 'Crítico' },
 ];
 
-const PROGNOSIS_OPTIONS = [
-  { value: 'excellent', label: 'Excelente' },
-  { value: 'good', label: 'Bueno' },
-  { value: 'guarded', label: 'Reservado' },
-  { value: 'poor', label: 'Malo' },
-  { value: 'grave', label: 'Grave' },
+const PROGNOSIS_OPTIONS = Object.entries(PROGNOSIS_LABELS).map(([value, label]) => ({ value, label }));
+
+const SPECIES_OPTIONS = [
+  { value: 'dog', label: 'Perro', icon: 'dog' },
+  { value: 'cat', label: 'Gato', icon: 'cat' },
+  { value: 'both', label: 'Ambos', icon: 'paw' },
 ];
 
-const CATEGORY_KEYS = Object.keys(DISEASE_CATEGORIES) as DiseaseCategory[];
+const CATEGORY_KEYS = (Object.keys(DISEASE_CATEGORIES) as DiseaseCategoryKey[])
+  .sort((a, b) => DISEASE_CATEGORIES[a].label.localeCompare(DISEASE_CATEGORIES[b].label, 'es'));
 
 export default function AddDiseaseScreen() {
   const router = useRouter();
@@ -32,8 +32,10 @@ export default function AddDiseaseScreen() {
 
   const [name, setName] = useState('');
   const [scientificName, setScientificName] = useState('');
-  const [species, setSpecies] = useState<'dog' | 'cat' | 'both'>('both');
-  const [category, setCategory] = useState<DiseaseCategory>('infectious');
+  const [species, setSpecies] = useState<'dog' | 'cat' | 'both'>('dog');
+  const [category, setCategory] = useState<DiseaseCategoryKey>('infectious');
+  const [englishName, setEnglishName] = useState('');
+  const [lifeStage, setLifeStage] = useState('all');
   const [severity, setSeverity] = useState('moderate');
   const [prognosis, setPrognosis] = useState('good');
   const [isZoonotic, setIsZoonotic] = useState(false);
@@ -64,11 +66,17 @@ export default function AddDiseaseScreen() {
       setErrorDialog('El nombre de la enfermedad es obligatorio');
       return;
     }
+    if (!description.trim()) {
+      setErrorDialog('La descripción es obligatoria');
+      return;
+    }
 
     try {
       await api.diseases.create({
         name: name.trim(),
-        scientific_name: scientificName.trim(),
+        scientific_name: scientificName.trim() || null,
+        english_name: englishName.trim() || null,
+        life_stage: lifeStage,
         species,
         category,
         severity,
@@ -94,8 +102,8 @@ export default function AddDiseaseScreen() {
         photo_url: photoUrl.trim() || undefined,
       });
       router.back();
-    } catch (error) {
-      setErrorDialog('No se pudo guardar la enfermedad');
+    } catch (error: any) {
+      setErrorDialog(error?.message || 'No se pudo guardar la enfermedad');
     }
   };
 
@@ -116,9 +124,16 @@ export default function AddDiseaseScreen() {
           style={[styles.input, { backgroundColor: colors.surface }]}
         />
         <TextInput
-          label="Nombre científico"
+          label="Agente o nombre científico (latín, opcional)"
           value={scientificName}
           onChangeText={setScientificName}
+          mode="outlined"
+          style={[styles.input, { backgroundColor: colors.surface }]}
+        />
+        <TextInput
+          label="Nombre en inglés (opcional, mejora la búsqueda)"
+          value={englishName}
+          onChangeText={setEnglishName}
           mode="outlined"
           style={[styles.input, { backgroundColor: colors.surface }]}
         />
@@ -126,12 +141,20 @@ export default function AddDiseaseScreen() {
         <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Especie</Text>
         <SegmentedButtons
           value={species}
-          onValueChange={(val) => setSpecies(val as 'dog' | 'cat' | 'both')}
-          buttons={Object.entries(SPECIES_INFO).map(([key, info]) => ({
-            value: key,
-            label: info.label,
-            icon: info.icon as any,
-          }))}
+          onValueChange={(val) => {
+            setSpecies(val as 'dog' | 'cat' | 'both');
+            if (lifeStage === 'puppy' || lifeStage === 'kitten') setLifeStage('all');
+          }}
+          buttons={SPECIES_OPTIONS.map((o) => ({ value: o.value, label: o.label, icon: o.icon as any }))}
+          style={styles.segmented}
+        />
+
+        <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Etapa de vida</Text>
+        <SegmentedButtons
+          value={lifeStage}
+          onValueChange={setLifeStage}
+          buttons={['all', ...(species === 'dog' ? ['puppy'] : species === 'cat' ? ['kitten'] : []), 'adult', 'senior']
+            .map((v) => ({ value: v, label: LIFE_STAGE_LABELS[v] }))}
           style={styles.segmented}
         />
 
@@ -248,7 +271,7 @@ export default function AddDiseaseScreen() {
           style={[styles.input, { backgroundColor: colors.surface }]}
         />
         <TextInput
-          label="Exámenes de Laboratorio (uno por línea)"
+          label="Exámenes de laboratorio (uno por línea)"
           value={labTests}
           onChangeText={setLabTests}
           mode="outlined"
@@ -266,7 +289,7 @@ export default function AddDiseaseScreen() {
           style={[styles.input, { backgroundColor: colors.surface }]}
         />
         <TextInput
-          label="Diagnóstico Diferencial (uno por línea)"
+          label="Diagnóstico diferencial (uno por línea)"
           value={differentialDiagnosis}
           onChangeText={setDifferentialDiagnosis}
           mode="outlined"
@@ -280,7 +303,7 @@ export default function AddDiseaseScreen() {
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Tratamiento</Text>
         <TextInput
-          label="Primera Línea (uno por línea)"
+          label="Primera línea (uno por línea)"
           value={firstLine}
           onChangeText={setFirstLine}
           mode="outlined"
@@ -289,7 +312,7 @@ export default function AddDiseaseScreen() {
           style={[styles.input, { backgroundColor: colors.surface }]}
         />
         <TextInput
-          label="Segunda Línea (uno por línea)"
+          label="Segunda línea (uno por línea)"
           value={secondLine}
           onChangeText={setSecondLine}
           mode="outlined"

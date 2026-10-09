@@ -121,7 +121,7 @@ export default function VetAssistantWidget() {
                             key={aIdx}
                             disabled={!!rxState}
                             accessibilityRole="button"
-                            accessibilityState={{ disabled: !!rxState }}
+                            aria-disabled={!!rxState}
                             style={[styles.actionBtn, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '30', opacity: rxState ? 0.6 : 1 }]}
                             onPress={() => handleAction(act.action, act.payload, idx)}
                           >

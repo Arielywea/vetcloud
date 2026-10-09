@@ -360,7 +360,7 @@ export default function AddPacienteScreen() {
               onPress={() => setCurrentStep(step)}
               accessibilityRole="button"
               accessibilityLabel={`Paso ${step}: ${label}`}
-              accessibilityState={{ selected: isCurrent, disabled: !canJump }}
+              aria-selected={isCurrent} aria-disabled={!canJump}
             >
               <View style={[
                 styles.progressCircle,

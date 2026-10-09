@@ -93,7 +93,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
         onPress={() => handleNavigate(item.route)}
         activeOpacity={0.6}
         accessibilityRole="link"
-        accessibilityState={{ selected: active }}
+        aria-selected={active}
         accessibilityLabel={item.label}
       >
         {active && <View style={[styles.lozenge, { backgroundColor: activeMark }]} />}

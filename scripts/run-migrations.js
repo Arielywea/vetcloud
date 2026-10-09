@@ -26,6 +26,7 @@ const MIGRATIONS = [
   '015_create_surgeries_table.sql',
   '016_pets_clinical_columns_rate_limits.sql',
   '017_tutor_rut_fk_cleanup_indexes.sql',
+  '018_disease_english_name_archive.sql',
 ];
 
 async function runMigrations() {
