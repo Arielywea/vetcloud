@@ -13,7 +13,8 @@ import DisplayText from '../../components/ui/DisplayText';
 export default function SurgeriesScreen() {
   const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
-  const { surgeries, loading } = useSurgeries(searchQuery || undefined);
+  // Small reference catalog: load it once and filter locally (searching on the server fired a request per keystroke)
+  const { surgeries, loading } = useSurgeries();
 
   const filteredSurgeries = useMemo(() => {
     if (!searchQuery.trim()) return surgeries;

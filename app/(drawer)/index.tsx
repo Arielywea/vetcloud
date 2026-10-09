@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar, CheckCircle, User, CalendarDays, ChevronRight, Users, AlertTriangle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
-import { usePets, useAppointments, useClinicalRecords, useInventory, useRefreshOn } from '../../hooks/useDirectus';
+import { usePets, useAppointments, useInventory, useRefreshOn } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, ANIMATION, BREAKPOINTS, alpha } from '../../constants/tokens';
 import VetCloudIcon from '../../components/icons/VetCloudIcon';
@@ -73,6 +73,15 @@ function BannerIllustration({ isMobile }: { isMobile: boolean }) {
   );
 }
 
+type RecentRecord = { id: string; pet_id: string; record_type: string; date: string; created_at: string };
+type DashboardStats = {
+  totalRecords: number;
+  activeHospitalizations: number;
+  lastVisitByPet: Record<string, string>;
+  recentRecords: RecentRecord[];
+};
+const EMPTY_DASHBOARD: DashboardStats = { totalRecords: 0, activeHospitalizations: 0, lastVisitByPet: {}, recentRecords: [] };
+
 export default function DashboardScreen() {
   const router = useRouter();
   const { user } = useAuth();
@@ -82,16 +91,17 @@ export default function DashboardScreen() {
   const isMobile = width < BREAKPOINTS.sm;
   const { pets, loading: loadingPets, error: petsError, refresh: refreshPets } = usePets();
   const { appointments, loading: loadingAppointments, error: appointmentsError, refresh: refreshAppointments } = useAppointments();
-  const { records: clinicalRecords, loading: loadingRecords, error: recordsError, refresh: refreshRecords } = useClinicalRecords();
   const { items: inventoryItems, lowStockItems, loading: loadingInventory, error: inventoryError, refresh: refreshInventory } = useInventory();
 
-  const isLoading = loadingPets || loadingAppointments || loadingRecords || loadingInventory;
-  const loadErrors = [petsError, appointmentsError, recordsError, inventoryError].filter(Boolean);
-
-  // Server-side stats (local-time days, real week-over-week trend, active hospitalizations)
+  // Server-side stats (local-time days, real week-over-week trend, active hospitalizations, and the
+  // record counts/recency the dashboard needs, so it no longer downloads every clinical record)
   const [weekly, setWeekly] = useState<{ days: WeeklyDay[]; summary: WeeklySummary | null }>({ days: [], summary: null });
-  const [activeHospitalizations, setActiveHospitalizations] = useState(0);
+  const [dash, setDash] = useState<DashboardStats>(EMPTY_DASHBOARD);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
+
+  const isLoading = loadingPets || loadingAppointments || loadingInventory || statsLoading;
+  const loadErrors = [petsError, appointmentsError, statsError, inventoryError].filter(Boolean);
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
   const loadStats = useCallback(() => {
@@ -99,9 +109,15 @@ export default function DashboardScreen() {
       .then(([w, d]: any[]) => {
         if (!mountedRef.current) return;
         setWeekly({ days: w?.days || [], summary: w?.summary || null });
-        setActiveHospitalizations(d?.activeHospitalizations || 0);
+        setDash({
+          totalRecords: d?.totalRecords || 0,
+          activeHospitalizations: d?.activeHospitalizations || 0,
+          lastVisitByPet: d?.lastVisitByPet || {},
+          recentRecords: d?.recentRecords || [],
+        });
+        setStatsError(null);
       })
-      .catch(() => { /* the cards show "—"; the error banner covers the main data */ })
+      .catch((e: any) => { if (mountedRef.current) setStatsError(e?.message || 'estadísticas'); })
       .finally(() => { if (mountedRef.current) setStatsLoading(false); });
   }, []);
   useEffect(() => { loadStats(); }, [loadStats]);
@@ -154,15 +170,7 @@ export default function DashboardScreen() {
     };
   }, [todayAppointments, pets]);
 
-  // Latest record per pet computed once (the old sort re-filtered all records inside the comparator)
-  const lastRecordByPet = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const r of clinicalRecords) {
-      const prev = map.get(r.pet_id);
-      if (!prev || new Date(r.date) > new Date(prev)) map.set(r.pet_id, r.date);
-    }
-    return map;
-  }, [clinicalRecords]);
+  const lastRecordByPet = useMemo(() => new Map(Object.entries(dash.lastVisitByPet)), [dash.lastVisitByPet]);
 
   const recentPatients = useMemo(() => {
     const activity = (p: typeof pets[number]) => new Date(lastRecordByPet.get(p.id) || p.created_at || 0).getTime();
@@ -218,9 +226,10 @@ export default function DashboardScreen() {
   const activityItems = useMemo(() => {
     const items: Array<{ id: string; icon: React.ReactNode; iconColor: string; iconBg: string; text: string; time: string; sortDate: string }> = [];
 
-    [...clinicalRecords].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 3).forEach(record => {
+    dash.recentRecords.forEach(record => {
       const pet = pets.find(p => p.id === record.pet_id);
-      const typeLabel = record.record_type.charAt(0).toUpperCase() + record.record_type.slice(1);
+      const type = record.record_type || 'consulta';
+      const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
       items.push({
         id: `cr-${record.id}`,
         icon: <CheckCircle size={14} color={colors.success} />,
@@ -264,7 +273,7 @@ export default function DashboardScreen() {
       .sort((a, b) => new Date(b.sortDate).getTime() - new Date(a.sortDate).getTime())
       .slice(0, 5)
       .map(({ sortDate, ...rest }) => rest);
-  }, [clinicalRecords, appointments, pets, colors]);
+  }, [dash.recentRecords, appointments, pets, colors]);
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
@@ -275,7 +284,7 @@ export default function DashboardScreen() {
             Parte de la información no se pudo cargar ({loadErrors[0]}). Las cifras pueden estar incompletas.
           </Text>
           <Pressable
-            onPress={() => { refreshPets(); refreshAppointments(); refreshRecords(); refreshInventory(); }}
+            onPress={() => { refreshPets(); refreshAppointments(); loadStats(); refreshInventory(); }}
             accessibilityRole="button"
             style={[styles.retryBtn, { borderColor: colors.border }]}
           >
@@ -333,7 +342,7 @@ export default function DashboardScreen() {
       <View style={[styles.statsRow, isMobile && styles.statsRowMobile]}>
         {[{ icon: 'pacientes' as const, color: iconTint, bg: colors.primaryContainer, value: pets.length, label: 'Pacientes', anim: statCardAnims[0] },
           { icon: 'agenda' as const, color: iconTint, bg: colors.primaryContainer, value: todayAppointments.length, label: 'Citas hoy', anim: statCardAnims[1] },
-          { icon: 'fichas' as const, color: iconTint, bg: colors.primaryContainer, value: clinicalRecords.length, label: 'Fichas clínicas', anim: statCardAnims[2] },
+          { icon: 'fichas' as const, color: iconTint, bg: colors.primaryContainer, value: dash.totalRecords, label: 'Fichas clínicas', anim: statCardAnims[2] },
           { icon: 'inventario' as const, color: lowStockItems.length ? colors.warning : iconTint, bg: lowStockItems.length ? colors.warning + '18' : colors.primaryContainer, value: lowStockItems.length, label: 'Alertas stock', anim: statCardAnims[3] }
         ].map((stat, i) => (
           <Animated.View key={i} style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs, isMobile && styles.statCardMobile, { opacity: stat.anim.opacity, transform: [{ translateY: stat.anim.translateY }] }]}>
@@ -360,7 +369,7 @@ export default function DashboardScreen() {
             days={weekly.days}
             summary={weekly.summary}
             pacientesNuevos={newPetsThisMonth}
-            hospitalizados={activeHospitalizations}
+            hospitalizados={dash.activeHospitalizations}
             loading={statsLoading}
           />
         </View>

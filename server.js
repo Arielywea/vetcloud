@@ -2092,7 +2092,7 @@ const WEEKDAYS_ES = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
 
 app.get('/stats/dashboard', authMiddleware, async (req, res) => {
   try {
-    const [pets, appointments, records, lowStock, hospitalized] = await Promise.all([
+    const [pets, appointments, records, lowStock, hospitalized, lastVisits, recentRecords] = await Promise.all([
       pool.query('SELECT COUNT(*)::int AS n FROM pets WHERE user_id = $1', [req.userId]),
       pool.query(
         `SELECT COUNT(*)::int AS n FROM appointments
@@ -2103,6 +2103,13 @@ app.get('/stats/dashboard', authMiddleware, async (req, res) => {
       pool.query('SELECT COUNT(*)::int AS n FROM clinical_records WHERE user_id = $1', [req.userId]),
       pool.query('SELECT COUNT(*)::int AS n FROM inventory WHERE user_id = $1 AND current_stock <= min_stock', [req.userId]),
       pool.query("SELECT COUNT(*)::int AS n FROM hospitalizations WHERE user_id = $1 AND status <> 'discharged'", [req.userId]),
+      // The dashboard used to download every clinical record (with its JSON details) just for these two
+      pool.query('SELECT pet_id, MAX(date) AS last FROM clinical_records WHERE user_id = $1 AND pet_id IS NOT NULL GROUP BY pet_id', [req.userId]),
+      pool.query(
+        `SELECT id, pet_id, record_type, date, created_at FROM clinical_records
+         WHERE user_id = $1 ORDER BY date DESC NULLS LAST, created_at DESC LIMIT 3`,
+        [req.userId]
+      ),
     ]);
     res.json({
       data: {
@@ -2111,6 +2118,8 @@ app.get('/stats/dashboard', authMiddleware, async (req, res) => {
         totalRecords: records.rows[0].n,
         lowStockAlerts: lowStock.rows[0].n,
         activeHospitalizations: hospitalized.rows[0].n,
+        lastVisitByPet: Object.fromEntries(lastVisits.rows.map((r) => [r.pet_id, r.last])),
+        recentRecords: recentRecords.rows,
       },
     });
   } catch (err) {

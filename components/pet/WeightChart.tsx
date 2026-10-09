@@ -16,7 +16,8 @@ const CHART_HEIGHT = 160;
 const PAD = { top: 12, right: 12, bottom: 24, left: 40 };
 
 const formatKg = (n: number) => n.toLocaleString('es-CL', { maximumFractionDigits: 1 });
-const formatDate = (d: Date) => d.toLocaleDateString('es-CL', { month: 'short', year: '2-digit' });
+// "nov 2025", not "nov 25" (which reads as the 25th of November)
+const formatDate = (d: Date) => d.toLocaleDateString('es-CL', { month: 'short', year: 'numeric' });
 
 // Drawn with react-native-svg (already a dependency) instead of react-native-chart-kit:
 // sized by onLayout so it fits its card next to the sidebar, straight segments (a bezier
@@ -118,13 +119,15 @@ export default function WeightChart({ records }: WeightChartProps) {
     <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.xs]}>
       {header(<VBadge variant={trend.tone}>{trend.label}</VBadge>)}
 
-      <View onLayout={onLayout} style={styles.chart} accessible accessibilityRole="image" accessibilityLabel={summary}>
+      {/* The key makes this a fresh mount: react-native-web only starts observing layout when a View
+          mounts, and without it React reused the empty-state View and onLayout never fired */}
+      <View key="chart" onLayout={onLayout} style={styles.chart} accessible accessibilityRole="image" accessibilityLabel={summary}>
         {chart ? (
           <Svg width={width} height={CHART_HEIGHT}>
             {chart.ticks.map((t, i) => (
               <React.Fragment key={i}>
                 <Line x1={PAD.left} x2={width - PAD.right} y1={t.y} y2={t.y} stroke={colors.border} strokeWidth={1} strokeDasharray="4 4" />
-                <SvgText x={PAD.left - 6} y={t.y + 4} fontSize={11} fill={colors.textSecondary} textAnchor="end">{formatKg(t.v)}</SvgText>
+                <SvgText x={PAD.left - 6} y={t.y + 4} fontSize={11} fontFamily={TYPOGRAPHY.fontFamily} fill={colors.textSecondary} textAnchor="end">{formatKg(t.v)}</SvgText>
               </React.Fragment>
             ))}
             <Path d={chart.area} fill={alpha(colors.primary, 0.08)} />
@@ -134,7 +137,7 @@ export default function WeightChart({ records }: WeightChartProps) {
               return <Circle key={i} cx={p.x} cy={p.y} r={last ? 4.5 : 3.5} fill={last ? colors.primary : colors.surface} stroke={colors.primary} strokeWidth={2} />;
             })}
             {chart.xLabels.map((l, i) => (
-              <SvgText key={i} x={l.x} y={CHART_HEIGHT - 6} fontSize={11} fill={colors.textSecondary} textAnchor={l.anchor}>{l.label}</SvgText>
+              <SvgText key={i} x={l.x} y={CHART_HEIGHT - 6} fontSize={11} fontFamily={TYPOGRAPHY.fontFamily} fill={colors.textSecondary} textAnchor={l.anchor}>{l.label}</SvgText>
             ))}
           </Svg>
         ) : (
