@@ -36,11 +36,15 @@ function splitItem(text: string): [string, string] {
 }
 
 /** The seed stores emergencies as "PRESENTACIÓN: …\nPROTOCOLO:\n  - paso" */
-function parseEmergency(text: string): { presentation: string; steps: string[]; rest: string } {
-  const presentation = text.match(/PRESENTACI[ÓO]N:\s*([\s\S]*?)(?:\n\s*PROTOCOLO:|$)/i)?.[1]?.trim() || '';
-  const protocol = text.match(/PROTOCOLO:\s*([\s\S]*)$/i)?.[1] || '';
-  const steps = protocol.split('\n').map(l => l.replace(/^\s*[-•]\s*/, '').trim()).filter(Boolean);
-  return presentation || steps.length ? { presentation, steps, rest: '' } : { presentation: '', steps: [], rest: text };
+type EmergencyBlock = { presentation: string; steps: string[]; rest: string };
+// An entry may describe several emergencies, each as "PRESENTACIÓN: …\nPROTOCOLO:\n  - step"
+function parseEmergency(text: string): EmergencyBlock[] {
+  return text.split(/(?=PRESENTACI[ÓO]N:)/i).map(s => s.trim()).filter(Boolean).map((block) => {
+    const presentation = block.match(/PRESENTACI[ÓO]N:\s*([\s\S]*?)(?:\n\s*PROTOCOLO:|$)/i)?.[1]?.trim() || '';
+    const protocol = block.match(/PROTOCOLO:\s*([\s\S]*)$/i)?.[1] || '';
+    const steps = protocol.split('\n').map(l => l.replace(/^\s*[-•]\s*/, '').trim()).filter(Boolean);
+    return presentation || steps.length ? { presentation, steps, rest: '' } : { presentation: '', steps: [], rest: block };
+  });
 }
 
 // Defined at module scope: components created inside render remount their TextInput on every
@@ -139,7 +143,11 @@ export default function DiseaseDetailScreen() {
   const category = DISEASE_CATEGORIES[disease.category as DiseaseCategoryKey];
   const SpeciesIcon = disease.species === 'dog' ? Dog : disease.species === 'cat' ? Cat : PawPrint;
   const emergency = treatment.emergency ? parseEmergency(treatment.emergency) : null;
-  const notes: string = (treatment.notes || '').replace(/^Chile:\s*/i, '');
+  const rawNotes: string = treatment.notes || '';
+  const notesTitle = /^Chile:/i.test(rawNotes) ? 'Disponibilidad en Chile' : 'Notas';
+  const notes = rawNotes.replace(/^Chile:\s*/i, '');
+  // Entries added from scripts/add-diseases-2026-10.js start their notes with this marker until a vet reviews them
+  const isDraft = /^Borrador pendiente de revisión/i.test(rawNotes);
 
   const inputStyle = [styles.editInput, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }];
 
@@ -220,6 +228,7 @@ export default function DiseaseDetailScreen() {
             {`Severidad: ${(SEVERITY_LABELS as Record<string, string>)[disease.severity] || disease.severity}`}
           </VBadge>
           {disease.is_zoonotic && <VBadge variant="danger">Zoonótica</VBadge>}
+          {isDraft && <VBadge variant="warning">Borrador sin revisar</VBadge>}
         </View>
 
         {disease.prognosis ? (
@@ -310,18 +319,22 @@ export default function DiseaseDetailScreen() {
 
           {emergency && (
             <Section title="Emergencia" Icon={AlertTriangle} tone={colors.error}>
-              {emergency.presentation ? (
-                <Text style={[styles.body, { color: colors.text, marginBottom: emergency.steps.length ? SPACING.sm : 0 }]}>
-                  <Text style={{ fontWeight: TYPOGRAPHY.weights.semibold }}>Presentación: </Text>{emergency.presentation}
-                </Text>
-              ) : null}
-              {emergency.steps.map((step, i) => (
-                <View key={i} style={styles.listItem}>
-                  <Text style={[styles.stepNumber, { color: colors.error }]}>{i + 1}.</Text>
-                  <Text style={[styles.listItemText, { color: colors.text }]}>{step}</Text>
+              {emergency.map((block, b) => (
+                <View key={b} style={b > 0 ? { marginTop: SPACING.md } : null}>
+                  {block.presentation ? (
+                    <Text style={[styles.body, { color: colors.text, marginBottom: block.steps.length ? SPACING.sm : 0 }]}>
+                      <Text style={{ fontWeight: TYPOGRAPHY.weights.semibold }}>Presentación: </Text>{block.presentation}
+                    </Text>
+                  ) : null}
+                  {block.steps.map((step, i) => (
+                    <View key={i} style={styles.listItem}>
+                      <Text style={[styles.stepNumber, { color: colors.error }]}>{i + 1}.</Text>
+                      <Text style={[styles.listItemText, { color: colors.text }]}>{step}</Text>
+                    </View>
+                  ))}
+                  {block.rest ? <Text style={[styles.body, { color: colors.text }]}>{block.rest}</Text> : null}
                 </View>
               ))}
-              {emergency.rest ? <Text style={[styles.body, { color: colors.text }]}>{emergency.rest}</Text> : null}
             </Section>
           )}
 
@@ -341,7 +354,7 @@ export default function DiseaseDetailScreen() {
             </Section>
           ) : null}
           {notes ? (
-            <Section title="Disponibilidad en Chile" Icon={MapPin}>
+            <Section title={notesTitle} Icon={MapPin}>
               <Text style={[styles.body, { color: colors.text }]}>{notes}</Text>
             </Section>
           ) : null}
@@ -388,7 +401,7 @@ export default function DiseaseDetailScreen() {
             <ArrayEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Segunda línea" value={(editData.treatment as any)?.secondLine || []} onChange={(v) => setNested('treatment', 'secondLine', v)} />
             <TextEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Emergencia" value={(editData.treatment as any)?.emergency || ''} onChange={(t) => setNested('treatment', 'emergency', t)} multiline />
             <TextEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Duración" value={(editData.treatment as any)?.duration || ''} onChange={(t) => setNested('treatment', 'duration', t)} />
-            <TextEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Disponibilidad en Chile" value={(editData.treatment as any)?.notes || ''} onChange={(t) => setNested('treatment', 'notes', t)} multiline />
+            <TextEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Notas (disponibilidad en Chile)" value={(editData.treatment as any)?.notes || ''} onChange={(t) => setNested('treatment', 'notes', t)} multiline />
 
             <Text style={[styles.editSection, { color: colors.primary, borderBottomColor: colors.border }]}>Prevención</Text>
             <ArrayEditField inputStyle={inputStyle} labelColor={colors.textSecondary} label="Medidas" value={editData.prevention || []} onChange={(v) => setField('prevention', v)} />
