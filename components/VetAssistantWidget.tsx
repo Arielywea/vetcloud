@@ -8,7 +8,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from './ui/VToast';
 import { api } from '../services/directus';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../constants/tokens';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FAB } from '../constants/tokens';
 
 export default function VetAssistantWidget() {
   const { messages, loading, sendMessage } = useAssistant();
@@ -71,8 +71,8 @@ export default function VetAssistantWidget() {
 
   return (
     <>
-      <Pressable style={[styles.fab, { backgroundColor: colors.accent, ...SHADOWS.lg }]} onPress={() => setVisible(true)} accessibilityRole="button" accessibilityLabel="Abrir asistente">
-        <Bot size={28} color={onAccentText.default} />
+      <Pressable style={({ pressed }) => [styles.fab, { backgroundColor: colors.accent, ...SHADOWS.lg, transform: [{ scale: pressed ? 0.97 : 1 }] }]} onPress={() => setVisible(true)} accessibilityRole="button" accessibilityLabel="Abrir asistente">
+        <Bot size={24} color={onAccentText.default} />
       </Pressable>
 
       <Portal>
@@ -165,8 +165,10 @@ export default function VetAssistantWidget() {
 }
 
 const styles = StyleSheet.create({
-  fab: { position: 'absolute', left: SPACING.lg, bottom: SPACING.lg, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', zIndex: 999 },
-  panel: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 420, maxWidth: '90%', borderTopRightRadius: RADIUS.xl, borderBottomRightRadius: RADIUS.xl, overflow: 'hidden', margin: 0, padding: 0 },
+  // Bottom-right: bottom-left covered the sidebar account block and the list pagination
+  fab: { position: 'absolute', right: SPACING.lg, bottom: SPACING.lg, width: FAB.assistantSize, height: FAB.assistantSize, borderRadius: FAB.assistantSize / 2, alignItems: 'center', justifyContent: 'center', zIndex: 999 },
+  // Opens from the same edge as its button
+  panel: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 420, maxWidth: '90%', borderTopLeftRadius: RADIUS.xl, borderBottomLeftRadius: RADIUS.xl, overflow: 'hidden', margin: 0, padding: 0 },
   header: { flexDirection: 'row', alignItems: 'center', padding: SPACING.lg, paddingTop: SPACING.xl, gap: SPACING.sm + 2 },
   headerTitle: { flex: 1, fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.bold },
   messagesContainer: { flex: 1 },

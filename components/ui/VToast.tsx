@@ -41,7 +41,8 @@ export function useToast() {
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  const toast = useCallback((type: ToastType, text: string, duration = 3000) => {
+  // No default here: an unset duration lets errors stay 5 s (with `= 3000` they never did)
+  const toast = useCallback((type: ToastType, text: string, duration?: number) => {
     const id = Date.now().toString() + Math.random().toString(36).slice(2);
     setToasts(prev => [...prev, { id, type, text, duration }]);
   }, []);
@@ -107,14 +108,17 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: () =>
     // Auto-dismiss
     const timer = setTimeout(() => {
       Animated.parallel([
+        // Exit faster than the entrance, on the same ease-out curve
         Animated.timing(translateY, {
           toValue: -12,
-          duration: ANIMATION.slow,
+          duration: ANIMATION.fast,
+          easing: EASE_OUT,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 0,
-          duration: ANIMATION.slow,
+          duration: ANIMATION.fast,
+          easing: EASE_OUT,
           useNativeDriver: true,
         }),
       ]).start(() => onDismiss());

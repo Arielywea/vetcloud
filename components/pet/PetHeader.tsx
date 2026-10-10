@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Image, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Text } from 'react-native-paper';
 import DynamicIcon from '../ui/DynamicIcon';
 import { DirectusPet } from '../../services/directus';
@@ -7,10 +7,11 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { calculateAge } from '../../utils/age';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, MapPin } from 'lucide-react-native';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, BREAKPOINTS } from '../../constants/tokens';
 import InfoPills from './InfoPills';
 import PawShieldIcon from '../icons/PawShieldIcon';
 import DisplayText from '../ui/DisplayText';
+import { isActive } from '../../utils/patientFilters';
 
 interface PetHeaderProps {
   pet: DirectusPet;
@@ -29,9 +30,14 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
   const crestGold = isDark ? colors.primary : colors.accent;
   const router = useRouter();
   const age = calculateAge(pet.birth_date);
+  // Phones: the tutor block drops below instead of squeezing the name into "Rocin/ante"
+  const narrow = useWindowDimensions().width < BREAKPOINTS.sm;
+  // Same rule as the patient list (a visit in the last 6 months); this badge used to say "Activo" for everyone
+  const active = isActive(pet);
+  const statusColor = active ? colors.success : colors.textSecondary;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
       {/* Breadcrumb */}
       <View style={styles.breadcrumb}>
         <TouchableOpacity onPress={() => router.push('/(drawer)/pacientes' as any)} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
@@ -43,7 +49,7 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
       </View>
 
       {/* Main header row */}
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, narrow && styles.headerRowNarrow]}>
         {/* Left: Photo */}
         <View style={styles.photoSection}>
           <View style={[styles.photo, { backgroundColor: colors.chrome, borderWidth: 1.5, borderColor: crestGold }]}>
@@ -57,7 +63,7 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
 
         {/* Center: Pet info */}
         <View style={styles.infoSection}>
-          <DisplayText style={[styles.petName, { color: colors.text }]} numberOfLines={1}>{pet.name}</DisplayText>
+          <DisplayText style={[styles.petName, { color: colors.text }]} numberOfLines={2}>{pet.name}</DisplayText>
           <Text style={[styles.petBreed, { color: colors.textSecondary }]}>
             {pet.breed || 'Sin raza'}  ·  {age}
           </Text>
@@ -75,17 +81,17 @@ export default function PetHeader({ pet, onEdit, onCall, onEmail }: PetHeaderPro
               </View>
             )}
             <View style={styles.statusBadge}>
-              <View style={[styles.statusDot, { backgroundColor: colors.success }]} />
-              <Text style={[styles.statusText, { color: colors.success }]}>Activo</Text>
+              <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+              <Text style={[styles.statusText, { color: statusColor }]}>{active ? 'Activo' : 'Inactivo · sin visitas en 6 meses'}</Text>
             </View>
           </View>
         </View>
 
         {/* Right: Owner + actions */}
-        <View style={styles.ownerSection}>
+        <View style={[styles.ownerSection, narrow && styles.ownerSectionNarrow]}>
           {pet.tutor_name && (
             <>
-              <Text style={[styles.ownerLabel, { color: colors.textSecondary }]}>PROPIETARIO</Text>
+              <Text style={[styles.ownerLabel, { color: colors.textSecondary }]}>Tutor</Text>
               <Text style={[styles.ownerName, { color: colors.text }]} numberOfLines={1}>{pet.tutor_name}</Text>
             </>
           )}
@@ -131,8 +137,8 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xl,
     borderRadius: RADIUS.lg,
     padding: SPACING.xl,
-    borderWidth: 1,
-    ...SHADOWS.xl,
+    // Elevation declared once: shadow, no border
+    ...SHADOWS.md,
   },
   breadcrumb: {
     flexDirection: 'row',
@@ -206,11 +212,17 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     alignItems: 'flex-end',
   },
+  headerRowNarrow: {
+    flexWrap: 'wrap',
+    gap: SPACING.lg,
+  },
+  ownerSectionNarrow: {
+    flexBasis: '100%',
+    alignItems: 'flex-start',
+  },
   ownerLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
   ownerName: {
     fontSize: TYPOGRAPHY.sizes.base,

@@ -109,7 +109,8 @@ export default function HospitalizacionScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={styles.content} refreshControl={<VRefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
         <View style={styles.header}>
-          <View style={{ flex: 1 }}>
+          {/* minWidth + wrap: on phones the button drops below instead of splitting the word "Hospitalizaci/ón" */}
+          <View style={{ flexGrow: 1, flexShrink: 1, minWidth: 220 }}>
             <DisplayText style={[styles.title, { color: colors.text }]}>Hospitalización</DisplayText>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               {loading ? ' ' : `${filtered.length} paciente${filtered.length !== 1 ? 's' : ''}`}

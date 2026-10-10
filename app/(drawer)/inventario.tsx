@@ -4,7 +4,7 @@ import { Text, Modal, Portal, Menu } from 'react-native-paper';
 import { Package, Pill, Syringe, Scissors, AlertTriangle, Pencil, Trash2, Plus, X } from 'lucide-react-native';
 import { useInventory } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FAB } from '../../constants/tokens';
 import { parseLocaleNumber } from '../../utils/parseNumber';
 import VCard from '../../components/ui/Card';
 import VButton from '../../components/ui/Button';
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   stockFill: { height: 4, borderRadius: 2 },
   minStock: { fontSize: TYPOGRAPHY.sizes.xs, marginTop: 2 },
   itemActions: { flexDirection: 'row', gap: SPACING.md },
-  fab: { position: 'absolute', right: SPACING.lg, bottom: SPACING.lg, width: 56, height: 56, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
+  fab: { position: 'absolute', right: SPACING.lg, bottom: FAB.pageBottom, width: FAB.size, height: FAB.size, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
   modal: { padding: 24, margin: 20, borderRadius: RADIUS.lg, maxHeight: '85%' },
   dialogModal: { padding: 24, margin: 20, borderRadius: RADIUS.lg },
   modalTitle: { fontWeight: TYPOGRAPHY.weights.bold, marginBottom: SPACING.lg },

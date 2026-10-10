@@ -5,7 +5,7 @@ import { StickyNote, Pencil, Trash2, Plus, AlertTriangle } from 'lucide-react-na
 import { useNotes } from '../../hooks/useDirectus';
 import { DirectusNote, api } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
-import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/tokens';
+import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, FAB } from '../../constants/tokens';
 import VCard from '../../components/ui/Card';
 import VButton from '../../components/ui/Button';
 import VEmptyState from '../../components/ui/EmptyState';
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: SPACING.sm, gap: 4 },
   tagChip: { height: 24, paddingHorizontal: SPACING.sm, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center' },
   noteDate: { marginTop: SPACING.sm, fontSize: 11 },
-  fab: { position: 'absolute', right: SPACING.lg, bottom: SPACING.lg, width: 56, height: 56, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
+  fab: { position: 'absolute', right: SPACING.lg, bottom: FAB.pageBottom, width: FAB.size, height: FAB.size, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
   modal: { padding: 20, margin: 20, borderRadius: RADIUS.lg, maxHeight: '85%' },
   modalTitle: { fontWeight: TYPOGRAPHY.weights.bold, marginBottom: SPACING.lg },
   fieldLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, marginBottom: SPACING.xs },

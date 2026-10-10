@@ -150,6 +150,12 @@ export default function DashboardScreen() {
     [appointments],
   );
 
+  // Late = time passed 10+ min ago and the patient hasn't arrived or been seen
+  const lateCount = useMemo(() => {
+    const cutoff = Date.now() - 10 * 60 * 1000;
+    return todayAppointments.filter(a => ['programada', 'confirmada', 'pendiente'].includes(a.status as string) && new Date(a.start_time).getTime() < cutoff).length;
+  }, [todayAppointments]);
+
   // Next appointment = the earliest one today that hasn't finished yet
   const nextAppointment = useMemo(() => {
     const cutoff = Date.now() - 30 * 60 * 1000;
@@ -333,6 +339,7 @@ export default function DashboardScreen() {
         <NextAppointmentCard
           {...nextAppointment}
           emptyMessage={todayAppointments.length ? 'No quedan citas por hoy' : 'Sin citas programadas para hoy'}
+          lateCount={lateCount}
           onViewDetails={() => router.push('/(drawer)/agenda')}
           onStartConsult={() => nextAppointment.petId ? router.push(`/pet/${nextAppointment.petId}` as any) : router.push('/(drawer)/agenda')}
         />

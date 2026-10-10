@@ -144,6 +144,8 @@ export default function AgendaToolbar({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
+    // Wraps on phones instead of cutting the date off at the edge
+    flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.md,

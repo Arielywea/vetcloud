@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import { Platform } from 'react-native';
 import { useAuth } from '../hooks/useAuth';
 import { APP_COLORS, APP_COLORS_DARK, PALETTES, AppColors, getTextOnPrimary } from '../constants/colors';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, ANIMATION, Z_INDEX } from '../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, ANIMATION, Z_INDEX, alpha } from '../constants/tokens';
 
 type OnColor = { default: string; muted: string; subtle: string; faint: string };
 
@@ -68,6 +69,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       spacing: SPACING, radius: RADIUS, typography: TYPOGRAPHY, shadows: SHADOWS, animation: ANIMATION, zIndex: Z_INDEX,
     };
   }, [user?.color_palette, user?.theme_preference]);
+
+  // Web: expose the focus/selection colours to the global CSS in utils/webFonts.ts
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const focus = value.isDark ? value.colors.primary : value.colors.accent;
+    document.documentElement.style.setProperty('--vc-focus', focus);
+    document.documentElement.style.setProperty('--vc-selection', alpha(focus, 0.28));
+    document.documentElement.style.colorScheme = value.isDark ? 'dark' : 'light';
+  }, [value]);
 
   return (
     <ThemeContext.Provider value={value}>

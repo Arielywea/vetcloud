@@ -8,7 +8,7 @@ import { SEVERITY_LABELS, SEVERITY_TONE } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { DISEASE_CATEGORIES, DiseaseCategoryKey, SPECIES_LABELS, categoryLabel, normalizeSearch, signTitle } from '../../constants/diseaseMeta';
 import { DirectusDisease } from '../../services/directus';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FAB } from '../../constants/tokens';
 import VCard from '../../components/ui/Card';
 import VBadge from '../../components/ui/Badge';
 import VEmptyState from '../../components/ui/EmptyState';
@@ -166,8 +166,12 @@ export default function DiseasesScreen() {
           {signs.length > 0 && (
             <Text style={[styles.signsText, { color: colors.text }]} numberOfLines={2}>{signs.join(' · ')}</Text>
           )}
-          {item.is_zoonotic ? (
-            <View style={styles.zooRow}><VBadge variant="danger" size="sm">Zoonótica</VBadge></View>
+          {item.is_zoonotic || /^Borrador pendiente de revisión/i.test(item.treatment?.notes || '') ? (
+            <View style={styles.zooRow}>
+              {item.is_zoonotic ? <VBadge variant="danger" size="sm">Zoonótica</VBadge> : null}
+              {/* Unreviewed entries must be recognisable before opening them, not only on the detail */}
+              {/^Borrador pendiente de revisión/i.test(item.treatment?.notes || '') ? <VBadge variant="warning" size="sm">Borrador sin revisar</VBadge> : null}
+            </View>
           ) : null}
         </VCard>
       </View>
@@ -345,6 +349,6 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: SPACING.sm, gap: 6 },
   metaText: { fontSize: TYPOGRAPHY.sizes.sm, flexShrink: 1 },
   signsText: { lineHeight: 19, marginTop: SPACING.sm, fontSize: TYPOGRAPHY.sizes.sm },
-  zooRow: { flexDirection: 'row', marginTop: SPACING.sm },
-  fab: { position: 'absolute', right: SPACING.lg, bottom: SPACING.lg, width: 56, height: 56, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
+  zooRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginTop: SPACING.sm },
+  fab: { position: 'absolute', right: SPACING.lg, bottom: FAB.pageBottom, width: FAB.size, height: FAB.size, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
 });

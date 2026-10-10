@@ -21,6 +21,11 @@ const CSS = `
 }
 [data-numeric="tabular"] { font-variant-numeric: tabular-nums; }
 body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+/* Browser surfaces in the theme (variables set by ThemeProvider): a visible on-brand focus ring
+   instead of the 1px default that disappeared on the navy sidebar, and themed text selection */
+:focus-visible { outline: 2px solid var(--vc-focus, #A8842A) !important; outline-offset: 2px; }
+:focus:not(:focus-visible) { outline: none; }
+::selection { background: var(--vc-selection, rgba(168, 132, 42, 0.28)); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
@@ -28,6 +33,8 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 
 export function installWebFonts() {
   if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+  // Expo's single-page template ships <html lang="en">: screen readers then read Spanish with English phonetics
+  document.documentElement.lang = 'es-CL';
   if (document.getElementById('vc-fonts')) return;
 
   const head = document.head;

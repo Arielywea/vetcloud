@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, Component, ReactNode } from 'react';
-import { View, StyleSheet, Platform, Text, useWindowDimensions, Pressable } from 'react-native';
+import { View, StyleSheet, Platform, Text, useWindowDimensions, Pressable, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useResponsive } from '../../hooks/useResponsive';
@@ -32,6 +32,7 @@ import { APP_COLORS } from '../../constants/colors';
 
 // API
 import { api } from '../../services/directus';
+import { BREAKPOINTS } from '../../constants/tokens';
 
 type ViewMode = 'week' | 'day' | 'month';
 
@@ -72,7 +73,8 @@ function AgendaContent() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<ViewMode>('week');
+  // Phones open on the day view: seven columns at 390px crushed every event to "10… Roc…"
+  const [viewMode, setViewMode] = useState<ViewMode>(() => (Dimensions.get('window').width < BREAKPOINTS.md ? 'day' : 'week'));
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, appointment: null as EnrichedAppointment | null });
   
   const [filters, setFilters] = useState({ veterinarian: '', species: '', appointmentType: '', status: '' });

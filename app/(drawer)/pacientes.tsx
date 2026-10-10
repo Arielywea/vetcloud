@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Button, Dialog, Portal } from 'react-native-paper';
 import { Plus } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { usePets } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
@@ -23,7 +23,10 @@ export default function PacientesScreen() {
   const { pets, loading, removePet } = usePets();
   const { colors, onPrimaryText } = useTheme();
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const { q: initialQuery } = useLocalSearchParams<{ q?: string }>();
+  const [searchQuery, setSearchQuery] = useState(typeof initialQuery === 'string' ? initialQuery : '');
+  // Ctrl+K tutor results land here pre-filtered
+  useEffect(() => { if (typeof initialQuery === 'string') setSearchQuery(initialQuery); }, [initialQuery]);
   const [species, setSpecies] = useState<SpeciesFilter>('all');
   const [selectedBreed, setSelectedBreed] = useState('all');
   const [ownerFilter, setOwnerFilter] = useState('');

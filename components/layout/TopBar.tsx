@@ -8,6 +8,9 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import DisplayText from '../ui/DisplayText';
 
+// The palette opens with Ctrl+K or ⌘K; show the one this keyboard has
+const IS_MAC = Platform.OS === 'ios' || (Platform.OS === 'web' && typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent));
+
 interface TopBarProps {
   onMenuPress?: () => void;
   onSearchPress?: () => void;
@@ -46,8 +49,8 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
             Buscar pacientes, propietarios, citas...
           </Text>
           <View style={[styles.shortcut, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Command size={12} color={colors.textSecondary} />
-            <Text style={[styles.shortcutText, { color: colors.textSecondary }]}>K</Text>
+            {IS_MAC ? <Command size={12} color={colors.textSecondary} /> : null}
+            <Text style={[styles.shortcutText, { color: colors.textSecondary }]}>{IS_MAC ? 'K' : 'Ctrl K'}</Text>
           </View>
         </TouchableOpacity>
       )}

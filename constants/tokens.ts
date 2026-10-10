@@ -118,6 +118,14 @@ export const ANIMATION = {
 } as const;
 
 // Z-index layers
+// The assistant button lives bottom-right on every screen; page FABs stack above it
+export const FAB = {
+  size: 56,
+  assistantSize: 48,
+  /** bottom offset for a page FAB so it clears the assistant button */
+  pageBottom: 16 + 48 + 12,
+} as const;
+
 export const Z_INDEX = {
   base: 0,
   dropdown: 100,

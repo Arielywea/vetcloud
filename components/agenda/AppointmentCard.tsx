@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Image, Animated, Platform } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import type { DragOrigin } from './useDragDrop';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 import { APPOINTMENT_TYPE_COLORS, APPOINTMENT_STATUS_COLORS } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -32,7 +33,10 @@ interface AppointmentCardProps {
   onPress?: (appointment: AppointmentCardData) => void;
   onContextMenu?: (appointment: AppointmentCardData, x: number, y: number) => void;
   onStatusChange?: (appointmentId: string, newStatus: string) => void;
-  onDragStart?: (appointmentId: string, data: AppointmentCardData, x: number, y: number) => void;
+  onDragStart?: (appointmentId: string, data: AppointmentCardData, origin: DragOrigin) => void;
+  /** Week view: the card's day column (0 = Monday) and the real column width, for drag targeting */
+  dayIndex?: number;
+  dayColumnWidth?: number;
   onDragMove?: (x: number, y: number) => void;
   onDragEnd?: () => void;
   isDragging?: boolean;
@@ -96,6 +100,8 @@ function AppointmentCard({
   onContextMenu,
   onStatusChange,
   onDragStart,
+  dayIndex,
+  dayColumnWidth,
   onDragMove,
   onDragEnd,
   isDragging,
@@ -133,14 +139,14 @@ function AppointmentCard({
     return () => node.removeEventListener('contextmenu', handler);
   }, [onContextMenu, appointment]);
 
-  // Snappy settle for drag lift/return (default springs take >500 ms)
-  const SPRING = { damping: 20, stiffness: 300, useNativeDriver: true } as const;
+  // Critically damped settle (~200 ms, no overshoot): a bounce reads as "rejected" in a work tool
+  const SPRING = { damping: 26, stiffness: 400, useNativeDriver: true } as const;
 
   const longPress = Gesture.LongPress()
     .minDuration(500)
     .onStart((e) => {
       isDragActive.current = true;
-      onDragStart?.(appointment.id, appointment, e.absoluteX, e.absoluteY);
+      onDragStart?.(appointment.id, appointment, { dayIndex, colWidth: dayColumnWidth, top });
       Animated.spring(scale, { toValue: 1.03, ...SPRING }).start();
     });
 

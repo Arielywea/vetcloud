@@ -1,7 +1,7 @@
 ﻿import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
-import { Calendar, CalendarDays, PawPrint } from 'lucide-react-native';
+import { Calendar, CalendarDays, PawPrint, AlertTriangle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
@@ -15,6 +15,8 @@ interface NextAppointmentCardProps {
   hasAppointment?: boolean;
   /** Shown when there is no upcoming appointment */
   emptyMessage?: string;
+  /** Today's appointments whose time passed without check-in: never hide them behind "no quedan citas" */
+  lateCount?: number;
   onViewDetails?: () => void;
   onStartConsult?: () => void;
 }
@@ -27,6 +29,7 @@ export default function NextAppointmentCard({
   type,
   hasAppointment = false,
   emptyMessage = 'Sin citas programadas para hoy',
+  lateCount = 0,
   onViewDetails,
   onStartConsult,
 }: NextAppointmentCardProps) {
@@ -40,16 +43,18 @@ export default function NextAppointmentCard({
           <Calendar size={18} color={colors.primary} />
           <Text style={[styles.headerTitle, { color: colors.text }]}>Próxima cita</Text>
         </View>
-        <View style={styles.emptyState}>
-          <CalendarDays size={32} color={colors.textLight} />
-          <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>{emptyMessage}</Text>
+        <View style={styles.emptyState} accessibilityRole={lateCount ? 'alert' : undefined}>
+          {lateCount ? <AlertTriangle size={32} color={colors.warning} /> : <CalendarDays size={32} color={colors.textLight} />}
+          <Text style={[styles.emptyTitle, { color: lateCount ? colors.text : colors.textSecondary }]}>
+            {lateCount ? `${lateCount} ${lateCount === 1 ? 'cita atrasada' : 'citas atrasadas'} sin atender` : emptyMessage}
+          </Text>
           <TouchableOpacity
             style={[styles.btnPrimary, { backgroundColor: colors.primary }]}
             onPress={() => router.push('/(drawer)/agenda')}
-            activeOpacity={0.7}
+            accessibilityRole="button"
           >
             <Text style={[styles.btnPrimaryText, { color: onPrimaryText.default }]}>
-              Programar cita
+              {lateCount ? 'Ver agenda' : 'Programar cita'}
             </Text>
           </TouchableOpacity>
         </View>

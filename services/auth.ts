@@ -3,6 +3,16 @@ import { API_URL } from '../config';
 
 let storedToken: string | null = null;
 
+// fetch() rejects with a browser TypeError ("Failed to fetch") when there is no connection;
+// that English text used to reach the toasts. Every API call goes through here.
+export async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch {
+    throw new Error('Sin conexión con el servidor. Revisa tu internet e inténtalo de nuevo.');
+  }
+}
+
 // Set by AuthProvider: any 401 from the API logs the user out instead of
 // leaving every screen showing empty lists with an expired token.
 let unauthorizedHandler: (() => void) | null = null;
@@ -30,7 +40,7 @@ export async function clearToken() {
 }
 
 export async function apiAuthLogin(identifier: string, password: string) {
-  const res = await fetch(`${API_URL}/auth/login`, {
+  const res = await apiFetch(`${API_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ identifier, password }),
@@ -47,7 +57,7 @@ export async function apiAuthRegister(data: {
   org_name?: string;
   org_type?: string;
 }) {
-  const res = await fetch(`${API_URL}/auth/register`, {
+  const res = await apiFetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -60,7 +70,7 @@ export async function apiAuthRegister(data: {
 export async function apiAuthMe() {
   const token = await getToken();
   if (!token) throw new Error('No hay token');
-  const res = await fetch(`${API_URL}/auth/me`, {
+  const res = await apiFetch(`${API_URL}/auth/me`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   const json = await res.json().catch(() => ({}));
@@ -80,7 +90,7 @@ export async function authHeaders(): Promise<Record<string, string>> {
 export async function apiAuthUpdateProfile(data: Record<string, any>) {
   const token = await getToken();
   if (!token) throw new Error('No hay token');
-  const res = await fetch(`${API_URL}/auth/profile`, {
+  const res = await apiFetch(`${API_URL}/auth/profile`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(data),
@@ -95,7 +105,7 @@ export async function apiAuthUpdateProfile(data: Record<string, any>) {
 export async function apiAuthChangePassword(current_password: string, new_password: string) {
   const token = await getToken();
   if (!token) throw new Error('No hay token');
-  const res = await fetch(`${API_URL}/auth/password`, {
+  const res = await apiFetch(`${API_URL}/auth/password`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ current_password, new_password }),

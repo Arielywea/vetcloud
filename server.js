@@ -759,9 +759,14 @@ app.get('/items/surgeries/:id', async (req, res) => {
 });
 
 // ─── PETS ────────────────────────────────────────────────
+// last_visit is derived from the clinical records: the stored column was only bumped when a record was
+// created through the API, so the list said "Sin visitas / Inactivo" for patients with records.
+const PET_SELECT = `SELECT p.*, GREATEST(p.last_visit, (SELECT MAX(cr.date) FROM clinical_records cr WHERE cr.pet_id = p.id)) AS last_visit
+  FROM pets p`;
+
 app.get('/items/pets', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM pets WHERE user_id = $1 ORDER BY name', [req.userId]);
+    const result = await pool.query(`${PET_SELECT} WHERE p.user_id = $1 ORDER BY p.name`, [req.userId]);
     res.json({ data: result.rows });
   } catch (err) {
     logError(req, err);
@@ -771,7 +776,7 @@ app.get('/items/pets', authMiddleware, async (req, res) => {
 
 app.get('/items/pets/:id', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM pets WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
+    const result = await pool.query(`${PET_SELECT} WHERE p.id = $1 AND p.user_id = $2`, [req.params.id, req.userId]);
     if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: result.rows[0] });
   } catch (err) {

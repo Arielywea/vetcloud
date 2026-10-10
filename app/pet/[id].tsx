@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Platform, Linking } from 'react-native';
-import { Text, Button, TextInput, Portal, Modal, Dialog, Divider } from 'react-native-paper';
+import { Text, Button, TextInput, Portal, Dialog, Divider } from 'react-native-paper';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { usePet, useClinicalRecords, usePrescriptions } from '../../hooks/useDirectus';
@@ -26,14 +26,19 @@ import PaymentForm from '../../components/pet/PaymentForm';
 import VoiceNotes from '../../components/VoiceNotes';
 import DynamicIcon from '../../components/ui/DynamicIcon';
 import { useToast } from '../../components/ui/VToast';
-import { authHeaders } from '../../services/auth';
+import VModal from '../../components/ui/VModal';
+import VButton from '../../components/ui/Button';
+import { Plus, FileText, Wallet, HeartPulse, Download } from 'lucide-react-native';
+
+const RECORD_TYPE_LABELS = { consulta: 'Consulta', vacuna: 'Vacuna', cirugia: 'Cirugía', control: 'Control' } as const;
+import { authHeaders, apiFetch } from '../../services/auth';
 import { API_URL } from '../../config';
 import { uploadPetPhoto } from '../../services/cloudinary';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function PetDetailScreen() {
   const router = useRouter();
-  const { colors, onPrimaryText } = useTheme();
+  const { colors, onPrimaryText, onAccentText } = useTheme();
   const { user } = useAuth();
   const toast = useToast();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -210,7 +215,7 @@ export default function PetDetailScreen() {
     try {
       const baseUrl = API_URL;
       const headers = await authHeaders();
-      const response = await fetch(`${baseUrl}/items/pets/${id}/file-pdf`, { headers });
+      const response = await apiFetch(`${baseUrl}/items/pets/${id}/file-pdf`, { headers });
       if (!response.ok) throw new Error('No se pudo generar el PDF');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -244,7 +249,7 @@ export default function PetDetailScreen() {
     try {
       const baseUrl = API_URL;
       const headers = await authHeaders();
-      const response = await fetch(`${baseUrl}/items/pets/${id}/prescriptions/${rx.id}/pdf`, { headers });
+      const response = await apiFetch(`${baseUrl}/items/pets/${id}/prescriptions/${rx.id}/pdf`, { headers });
       if (!response.ok) throw new Error('No se pudo generar el PDF');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -281,6 +286,14 @@ export default function PetDetailScreen() {
         onCall={pet.phone ? () => Linking.openURL(`tel:${String(pet.phone).replace(/[^\d+]/g, '')}`) : undefined}
         onEmail={pet.email ? () => Linking.openURL(`mailto:${pet.email}`) : undefined}
       />
+      {/* The day's work first: these actions used to sit below the weight chart as five equal pills */}
+      <View style={styles.actionBar}>
+        <VButton variant="primary" onPress={() => setShowRecordModal(true)} icon={<Plus size={16} color={onAccentText.default} />}>Nueva consulta</VButton>
+        <VButton variant="secondary" onPress={() => openRxModal()} icon={<FileText size={16} color={colors.primary} />}>Receta</VButton>
+        <VButton variant="secondary" onPress={() => setShowPayment(true)} icon={<Wallet size={16} color={colors.primary} />}>Cobrar</VButton>
+        <VButton variant="ghost" onPress={() => setShowVitals(true)} icon={<HeartPulse size={16} color={colors.primary} />}>Signos</VButton>
+        <VButton variant="ghost" onPress={handleDownloadPdf} icon={<Download size={16} color={colors.primary} />}>Ficha PDF</VButton>
+      </View>
       <AlertBanner pet={pet} />
       <ClinicalHistory pet={pet} fieldCount={clinicalFieldCount} />
       {mostRecentRecord && <RecentRecord record={mostRecentRecord} onView={() => setSelectedRecord(mostRecentRecord)} onGenerateRx={() => openRxModal(mostRecentRecord.id)} />}
@@ -288,13 +301,6 @@ export default function PetDetailScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Historial completo</Text>
-          <View style={styles.headerButtons}>
-            <Button mode="outlined" compact onPress={() => setShowVitals(true)} style={{ marginRight: 8 }}>Signos</Button>
-            <Button mode="outlined" compact onPress={() => setShowPayment(true)} style={{ marginRight: 8 }}>Cobrar</Button>
-            <Button mode="outlined" compact onPress={() => openRxModal()} style={{ marginRight: 8 }}>Receta</Button>
-            <Button mode="outlined" compact onPress={handleDownloadPdf} style={{ marginRight: 8, borderColor: colors.info }}>Ficha PDF</Button>
-            <Button mode="contained" compact onPress={() => setShowRecordModal(true)}>Agregar</Button>
-          </View>
         </View>
         <ClinicalTabs activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
         {activeTab === 'recetas' ? (
@@ -303,13 +309,11 @@ export default function PetDetailScreen() {
       </View>
 
       {/* Modal: Nuevo Registro */}
-      <Portal>
-        <Modal visible={showRecordModal} onDismiss={() => setShowRecordModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
+      <VModal visible={showRecordModal} onDismiss={() => setShowRecordModal(false)} title="Nueva consulta">
           <ScrollView>
-            <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Nueva consulta</Text>
             <View style={styles.typeRow}>
               {(['consulta', 'vacuna', 'cirugia', 'control'] as const).map((t) => (
-                <Button key={t} mode={recordType === t ? 'contained' : 'outlined'} compact onPress={() => setRecordType(t)} style={styles.typeBtn}>{t.charAt(0).toUpperCase() + t.slice(1)}</Button>
+                <Button key={t} mode={recordType === t ? 'contained' : 'outlined'} compact onPress={() => setRecordType(t)} style={styles.typeBtn}>{RECORD_TYPE_LABELS[t]}</Button>
               ))}
             </View>
             <TextInput label="Fecha y hora" value={recordDate} onChangeText={setRecordDate} mode="outlined" style={styles.input} />
@@ -347,9 +351,9 @@ export default function PetDetailScreen() {
               <View style={{ marginTop: SPACING.md }}>
                 <Divider style={[styles.rxDivider, { backgroundColor: colors.border }]} />
                 <Text variant="titleSmall" style={[styles.subTitle, { color: colors.error }]}>Datos de cirugía</Text>
-                <TextInput label="Nombre de procedimiento" value={recordProcedimiento} onChangeText={setRecordProcedimiento} mode="outlined" style={styles.input} placeholder="Ej: Esterilizacion, LDA, Toracotomia..." />
-                <TextInput label="Descripción del procedimiento" value={recordDescripcion} onChangeText={setRecordDescripcion} mode="outlined" multiline numberOfLines={4} style={styles.input} placeholder="Detalles tecnicos del procedimiento..." />
-                <TextInput label="Indicaciones postoperatorias" value={recordPostoperatorio} onChangeText={setRecordPostoperatorio} mode="outlined" multiline numberOfLines={4} style={styles.input} placeholder="Cuidados, medicacion, controles..." />
+                <TextInput label="Nombre de procedimiento" value={recordProcedimiento} onChangeText={setRecordProcedimiento} mode="outlined" style={styles.input} placeholder="Ej.: esterilización, LDA, toracotomía" />
+                <TextInput label="Descripción del procedimiento" value={recordDescripcion} onChangeText={setRecordDescripcion} mode="outlined" multiline numberOfLines={4} style={styles.input} placeholder="Detalles técnicos del procedimiento" />
+                <TextInput label="Indicaciones postoperatorias" value={recordPostoperatorio} onChangeText={setRecordPostoperatorio} mode="outlined" multiline numberOfLines={4} style={styles.input} placeholder="Cuidados, medicación, controles" />
 
                 <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Archivos (imagenes / PDF)</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
@@ -379,15 +383,12 @@ export default function PetDetailScreen() {
 
             <Button mode="contained" onPress={handleAddRecord} style={styles.saveButton} loading={saving} disabled={saving}>Guardar registro</Button>
           </ScrollView>
-        </Modal>
-      </Portal>
+      </VModal>
 
       {/* Modal: Detalle de Registro */}
-      <Portal>
-        <Modal visible={!!selectedRecord} onDismiss={() => setSelectedRecord(null)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
+      <VModal visible={!!selectedRecord} onDismiss={() => setSelectedRecord(null)} title="Detalle del registro">
           {selectedRecord && (
             <ScrollView>
-              <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Detalle del registro</Text>
               <View style={styles.detailRow}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Tipo:</Text><Text style={[styles.detailValue, { color: colors.text }]}>{selectedRecord.record_type}</Text></View>
               <View style={styles.detailRow}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Fecha:</Text><Text style={[styles.detailValue, { color: colors.text }]}>{new Date(selectedRecord.date).toLocaleString('es-CL')}</Text></View>
               {selectedRecord.veterinarian && <View style={styles.detailRow}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Veterinario:</Text><Text style={[styles.detailValue, { color: colors.text }]}>{selectedRecord.veterinarian}</Text></View>}
@@ -402,14 +403,11 @@ export default function PetDetailScreen() {
               </View>
             </ScrollView>
           )}
-        </Modal>
-      </Portal>
+      </VModal>
 
       {/* Modal: Nueva Receta */}
-      <Portal>
-        <Modal visible={showRxModal} onDismiss={() => setShowRxModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
+      <VModal visible={showRxModal} onDismiss={() => setShowRxModal(false)} title="Nueva receta">
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Nueva receta</Text>
             <View style={styles.rxInfoRow}>
               <View style={styles.rxInfoCol}>
                 <Text style={[styles.rxInfoSectionTitle, { color: colors.primary }]}>Paciente</Text>
@@ -442,21 +440,18 @@ export default function PetDetailScreen() {
             </View>
             <Divider style={[styles.rxDivider, { backgroundColor: colors.border }]} />
             <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Receta *</Text>
-            <TextInput value={rxBody} onChangeText={setRxBody} mode="outlined" multiline numberOfLines={12} style={styles.rxBodyInput} placeholder={"Uso Veterinario\nRimadyl:\nDar vía oral 1 comprimido cada 24 horas x 7 días."} />
+            <TextInput value={rxBody} onChangeText={setRxBody} mode="outlined" multiline numberOfLines={12} style={styles.rxBodyInput} placeholder="Fármaco, dosis, vía, frecuencia y duración. Ej.: carprofeno 4 mg/kg VO cada 24 h por 7 días." />
             <View style={styles.rxActionRow}>
               <Button mode="outlined" onPress={() => setShowRxModal(false)} style={{ flex: 1, marginRight: 8 }}>Volver</Button>
               <Button mode="contained" onPress={handleSaveRx} style={{ flex: 1 }} loading={saving} disabled={saving} icon="content-save">Guardar</Button>
             </View>
           </ScrollView>
-        </Modal>
-      </Portal>
+      </VModal>
 
       {/* Modal: Ver Receta */}
-      <Portal>
-        <Modal visible={!!selectedRx} onDismiss={() => setSelectedRx(null)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
+      <VModal visible={!!selectedRx} onDismiss={() => setSelectedRx(null)} title="Receta">
           {selectedRx && (
             <ScrollView>
-              <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>Receta</Text>
               <View style={styles.detailRow}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Fecha:</Text><Text style={[styles.detailValue, { color: colors.text }]}>{new Date(selectedRx.issued_at).toLocaleDateString('es-CL')}</Text></View>
               {selectedRx.veterinarian_name && <View style={styles.detailRow}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Prescriptor:</Text><Text style={[styles.detailValue, { color: colors.text }]}>{selectedRx.veterinarian_name}</Text></View>}
               {selectedRx.clinic_branch && <View style={styles.detailRow}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Sucursal:</Text><Text style={[styles.detailValue, { color: colors.text }]}>{selectedRx.clinic_branch}</Text></View>}
@@ -467,12 +462,10 @@ export default function PetDetailScreen() {
               </View>
             </ScrollView>
           )}
-        </Modal>
-      </Portal>
+      </VModal>
 
       {/* Modal: Enviar Correo */}
-      <Portal>
-        <Modal visible={showEmailModal} onDismiss={() => setShowEmailModal(false)} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
+      <VModal visible={showEmailModal} onDismiss={() => setShowEmailModal(false)}>
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.emailHeader}>
               <DynamicIcon name="email-outline" size={28} color={colors.primary} />
@@ -503,8 +496,7 @@ export default function PetDetailScreen() {
               </>
             )}
           </ScrollView>
-        </Modal>
-      </Portal>
+      </VModal>
 
       {/* VitalSignsForm */}
       <VitalSignsForm petId={id || ''} visible={showVitals} onClose={() => setShowVitals(false)} />
@@ -540,13 +532,12 @@ const styles = StyleSheet.create({
   section: { marginHorizontal: 16, marginTop: 16 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   sectionTitle: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.bold },
-  headerButtons: { flexDirection: 'row', alignItems: 'center' },
+  actionBar: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: SPACING.sm, marginHorizontal: SPACING.xl, marginTop: SPACING.md, marginBottom: SPACING.md },
   typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   typeBtn: { flex: 1, minWidth: 60 },
   input: { marginBottom: 8 },
   saveButton: { marginTop: 8 },
   subTitle: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.bold, marginBottom: 8, marginTop: 12 },
-  modal: { padding: 16, margin: 12, borderRadius: 20, maxHeight: '85%' },
   modalTitle: { fontWeight: TYPOGRAPHY.weights.bold, marginBottom: 16 },
   detailRow: { flexDirection: 'row', marginBottom: 8 },
   detailLabel: { minWidth: 80, fontSize: TYPOGRAPHY.sizes.sm },

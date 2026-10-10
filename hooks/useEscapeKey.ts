@@ -11,7 +11,9 @@ export function useEscapeKey(active: boolean, onEscape: () => void) {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') handlerRef.current();
     };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
+    // Capture phase: react-native-web's TextInput stops keydown propagation, so a bubbling
+    // listener never saw Escape while a field had focus
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => document.removeEventListener('keydown', onKeyDown, true);
   }, [active]);
 }

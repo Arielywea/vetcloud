@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, Text, TouchableOpacity } from 'react-nati
 import { Plus } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { HOUR_HEIGHT, HOURS } from './TimeGrid';
+import type { DragOrigin } from './useDragDrop';
 import AppointmentCard, { AppointmentCardData } from './AppointmentCard';
 import CurrentTimeLine from './CurrentTimeLine';
 import SkeletonLoader from './SkeletonLoader';
@@ -34,7 +35,7 @@ interface DayViewProps {
   onAppointmentContextMenu?: (appointment: AppointmentCardData, x: number, y: number) => void;
   onStatusChange?: (appointmentId: string, newStatus: string) => void;
   onSlotPress?: (date: Date, hour: number) => void;
-  onDragStart?: (appointmentId: string, data: AppointmentCardData, x: number, y: number) => void;
+  onDragStart?: (appointmentId: string, data: AppointmentCardData, origin: DragOrigin) => void;
   onDragMove?: (x: number, y: number) => void;
   onDragEnd?: () => void;
   dragState?: { isDragging: boolean; appointmentId: string | null; currentSnapY?: number };
@@ -101,14 +102,16 @@ export default function DayView({
               >
                 {/* Add appointment button */}
                 {onSlotPress && (
+                  // The whole empty hour is the target (hitSlop does nothing on web)
                   <TouchableOpacity
-                    style={[styles.addBtn, { top: 2, right: 2, backgroundColor: colors.surfaceVariant }]}
+                    style={[styles.addSlot, { height: HOUR_HEIGHT }]}
                     onPress={() => onSlotPress(date, hour)}
-                    hitSlop={13}
                     accessibilityRole="button"
                     accessibilityLabel={`Nueva cita a las ${hour}:00`}
                   >
-                    <Plus size={10} color={colors.textSecondary + '60'} />
+                    <View style={[styles.addBtn, { backgroundColor: colors.surfaceVariant }]}>
+                      <Plus size={10} color={colors.textSecondary} />
+                    </View>
                   </TouchableOpacity>
                 )}
               </View>
@@ -223,8 +226,15 @@ const styles = StyleSheet.create({
     zIndex: 50,
     opacity: 0.7,
   },
-  addBtn: {
+  addSlot: {
     position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'flex-end',
+    padding: 2,
+  },
+  addBtn: {
     width: 14,
     height: 14,
     borderRadius: 7,

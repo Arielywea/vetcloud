@@ -1,5 +1,5 @@
 import { API_URL } from '../config';
-import { authHeaders, notifyUnauthorized } from './auth';
+import { authHeaders, notifyUnauthorized, apiFetch } from './auth';
 
 // ─────────────────────────────────────────────────────────
 // Schema Types
@@ -313,14 +313,14 @@ async function apiGet(endpoint: string, params?: Record<string, string>) {
       if (v && v !== 'all') url.searchParams.set(k, v);
     });
   }
-  const res = await fetch(url.toString(), { headers: await authHeaders() });
+  const res = await apiFetch(url.toString(), { headers: await authHeaders() });
   if (!res.ok) throw await apiError(res);
   const json = await res.json();
   return json.data;
 }
 
 async function apiPost(endpoint: string, body: any) {
-  const res = await fetch(`${API_URL}${endpoint}`, {
+  const res = await apiFetch(`${API_URL}${endpoint}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
     body: JSON.stringify(body),
@@ -332,7 +332,7 @@ async function apiPost(endpoint: string, body: any) {
 }
 
 async function apiPatch(endpoint: string, body: any) {
-  const res = await fetch(`${API_URL}${endpoint}`, {
+  const res = await apiFetch(`${API_URL}${endpoint}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
     body: JSON.stringify(body),
@@ -344,7 +344,7 @@ async function apiPatch(endpoint: string, body: any) {
 }
 
 async function apiDelete(endpoint: string) {
-  const res = await fetch(`${API_URL}${endpoint}`, { method: 'DELETE', headers: await authHeaders() });
+  const res = await apiFetch(`${API_URL}${endpoint}`, { method: 'DELETE', headers: await authHeaders() });
   if (!res.ok) throw await apiError(res);
   emitDataChange(endpoint);
 }
