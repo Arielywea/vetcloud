@@ -636,10 +636,10 @@ const DISEASES = [
   },
 ];
 
-async function addDiseases(c, orgId) {
+async function addDiseases(c, orgId, list = DISEASES) {
   const lines = [];
   let inserted = 0;
-  for (const d of DISEASES) {
+  for (const d of list) {
     const exists = await c.query(
       'SELECT id, organization_id FROM diseases WHERE lower(name) = lower($1) AND (organization_id IS NULL OR organization_id = $2)',
       [d.name, orgId],
