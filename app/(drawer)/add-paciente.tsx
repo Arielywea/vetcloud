@@ -28,7 +28,7 @@ const REPRODUCTIVE_OPTIONS = [
 const REPRODUCTIVE_MACHO = ['intacto', 'castrado'];
 const REPRODUCTIVE_HEMBRA = ['intacto', 'castrado', 'esterilizado', 'gestante'];
 
-const STEP_LABELS = ['Propietario', 'Información básica', 'Información médica', 'Revisión'];
+const STEP_LABELS = ['Tutor', 'Información básica', 'Información médica', 'Revisión'];
 
 export default function AddPacienteScreen() {
   const router = useRouter();
@@ -323,7 +323,7 @@ export default function AddPacienteScreen() {
 
   const handleNext = () => {
     if (currentStep === 1 && !tutorName.trim()) {
-      setErrorMsg('El nombre del propietario es obligatorio');
+      setErrorMsg('El nombre del tutor es obligatorio');
       return;
     }
     if (currentStep === 2 && !name.trim()) {
@@ -406,10 +406,7 @@ export default function AddPacienteScreen() {
       {/* Información básica card — 3-column grid */}
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <View style={styles.cardTitleRow}>
-          <View style={[styles.cardIcon, { backgroundColor: colors.primaryContainer }]}>
-            <UserRound size={18} color={colors.primary} />
-          </View>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Información básica</Text>
+          <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Información básica</DisplayText>
         </View>
 
         {/* Row 1: Nombre, Especie, Raza */}
@@ -596,10 +593,7 @@ export default function AddPacienteScreen() {
       {/* Foto del paciente card */}
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <View style={styles.cardTitleRow}>
-          <View style={[styles.cardIcon, { backgroundColor: colors.primaryContainer }]}>
-            <Camera size={18} color={colors.primary} />
-          </View>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Foto del paciente</Text>
+          <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Foto del paciente</DisplayText>
         </View>
         <TouchableOpacity onPress={pickImage} style={[styles.photoUpload, { borderColor: colors.border }]}>
           {photo ? (
@@ -627,10 +621,7 @@ export default function AddPacienteScreen() {
       {/* Características adicionales card */}
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <View style={styles.cardTitleRow}>
-          <View style={[styles.cardIcon, { backgroundColor: colors.primaryContainer }]}>
-            <FileEdit size={18} color={colors.primary} />
-          </View>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Características adicionales</Text>
+          <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Características adicionales</DisplayText>
         </View>
 
         <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Temperamento</Text>
@@ -654,10 +645,10 @@ export default function AddPacienteScreen() {
   const renderStep2 = () => (
     <View style={styles.stepContent}>
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>Datos del propietario</Text>
+        <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Datos del tutor</DisplayText>
 
         <TextInput
-          label="Nombre del propietario *"
+          label="Nombre del tutor *"
           value={tutorName}
           onChangeText={setTutorName}
           mode="outlined"
@@ -717,7 +708,7 @@ export default function AddPacienteScreen() {
     <View style={styles.stepContent}>
       {/* Section A — Motivo de consulta */}
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>Motivo de consulta</Text>
+        <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Motivo de consulta</DisplayText>
         <VoiceNotes
           onTranscription={(text) => setMotivoConsulta(prev => prev ? prev + ' ' + text : text)}
         />
@@ -737,7 +728,7 @@ export default function AddPacienteScreen() {
       {/* Section B — Hábitat y entorno */}
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={() => setHabitatExpanded(!habitatExpanded)} style={styles.collapsibleHeader}>
-          <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Hábitat y entorno</Text>
+          <DisplayText style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Hábitat y entorno</DisplayText>
           {habitatExpanded ? <ChevronUp size={20} color={colors.textSecondary} /> : <ChevronDown size={20} color={colors.textSecondary} />}
         </TouchableOpacity>
         {habitatExpanded && (
@@ -777,7 +768,7 @@ export default function AddPacienteScreen() {
         <TouchableOpacity onPress={() => setHistorialExpanded(!historialExpanded)} style={styles.collapsibleHeader}>
           <View style={styles.collapsibleTitleRow}>
             <ShieldCheck size={18} color={colors.success} />
-            <Text style={[styles.cardTitle, { color: colors.success, marginBottom: 0 }]}>Historial sanitario</Text>
+            <DisplayText style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Historial sanitario</DisplayText>
           </View>
           {historialExpanded ? <ChevronUp size={20} color={colors.textSecondary} /> : <ChevronDown size={20} color={colors.textSecondary} />}
         </TouchableOpacity>
@@ -798,7 +789,7 @@ export default function AddPacienteScreen() {
 
       {/* Section D — Anamnesis */}
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>Anamnesis</Text>
+        <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Anamnesis</DisplayText>
         <TextInput
           label="Anamnesis"
           value={anamnesis}
@@ -817,7 +808,7 @@ export default function AddPacienteScreen() {
         <TouchableOpacity onPress={() => setExamenExpanded(!examenExpanded)} style={styles.collapsibleHeader}>
           <View style={styles.collapsibleTitleRow}>
             <Stethoscope size={18} color={colors.warning} />
-            <Text style={[styles.cardTitle, { color: colors.warning, marginBottom: 0 }]}>Examen físico</Text>
+            <DisplayText style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Examen físico</DisplayText>
           </View>
           {examenExpanded ? <ChevronUp size={20} color={colors.textSecondary} /> : <ChevronDown size={20} color={colors.textSecondary} />}
         </TouchableOpacity>
@@ -861,7 +852,7 @@ export default function AddPacienteScreen() {
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <View style={styles.collapsibleTitleRow}>
           <ClipboardCheck size={18} color={colors.info} />
-          <Text style={[styles.cardTitle, { color: colors.info, marginBottom: 0 }]}>Pre-diagnóstico</Text>
+          <DisplayText style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Pre-diagnóstico</DisplayText>
         </View>
         <Text style={[styles.fieldHint, { color: colors.textSecondary }]}>Enfermedades de base conocidas y sospecha diagnóstica</Text>
 
@@ -919,7 +910,7 @@ export default function AddPacienteScreen() {
         {/* Card — Paciente */}
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <View style={styles.summaryHeader}>
-            <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Paciente</Text>
+            <DisplayText style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Paciente</DisplayText>
             <TouchableOpacity onPress={() => setCurrentStep(2)}>
               <Text style={{ color: colors.primary, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold }}>Editar</Text>
             </TouchableOpacity>
@@ -942,7 +933,7 @@ export default function AddPacienteScreen() {
         {/* Card — Propietario */}
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <View style={styles.summaryHeader}>
-            <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Propietario</Text>
+            <DisplayText style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Tutor</DisplayText>
             <TouchableOpacity onPress={() => setCurrentStep(1)}>
               <Text style={{ color: colors.primary, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold }}>Editar</Text>
             </TouchableOpacity>
@@ -959,7 +950,7 @@ export default function AddPacienteScreen() {
         {/* Card — Información clínica */}
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <View style={styles.summaryHeader}>
-            <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Información clínica</Text>
+            <DisplayText style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Información clínica</DisplayText>
             <TouchableOpacity onPress={() => setCurrentStep(3)}>
               <Text style={{ color: colors.primary, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold }}>Editar</Text>
             </TouchableOpacity>
@@ -1140,7 +1131,7 @@ const styles = StyleSheet.create({
 
   // Cards
   card: { borderRadius: RADIUS.lg, padding: SPACING.lg, gap: SPACING.xs },
-  cardTitle: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.bold, marginBottom: SPACING.xs },
+  cardTitle: { fontSize: 24, fontWeight: '600', marginBottom: SPACING.xs },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.sm },
   cardIcon: { width: 32, height: 32, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center' },
 
@@ -1156,17 +1147,17 @@ const styles = StyleSheet.create({
 
   // Species / Sex pills
   speciesRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.xs },
-  speciesPill: { flex: 1, borderRadius: RADIUS.full, paddingVertical: SPACING.xs, borderWidth: 1.5 },
+  speciesPill: { flex: 1, borderRadius: RADIUS.sm, paddingVertical: SPACING.xs, borderWidth: 1.5 },
   speciesPillLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold },
   sexRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.xs },
-  sexPill: { flex: 1, borderRadius: RADIUS.full, paddingVertical: SPACING.xs, borderWidth: 1.5 },
+  sexPill: { flex: 1, borderRadius: RADIUS.sm, paddingVertical: SPACING.xs, borderWidth: 1.5 },
 
   // Chips
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.xs },
   tempChip: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.full, borderWidth: 1,
+    borderRadius: RADIUS.sm, borderWidth: 1,
   },
   tempChipText: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold },
 
@@ -1194,7 +1185,7 @@ const styles = StyleSheet.create({
   summaryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm },
   summaryPhoto: { width: 80, height: 80, borderRadius: RADIUS.lg, marginBottom: SPACING.sm },
   summaryGrid: { gap: SPACING.sm },
-  summaryItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: SPACING.xs, borderBottomWidth: 1 },
+  summaryItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: SPACING.xs },
   summaryLabel: { fontSize: TYPOGRAPHY.sizes.sm },
   summaryValue: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, flex: 1, textAlign: 'right', marginLeft: SPACING.md },
 
@@ -1204,7 +1195,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.md,
-    borderTopWidth: 1,
   },
   navBarMobile: {
     paddingHorizontal: SPACING.md,
@@ -1228,7 +1218,6 @@ const styles = StyleSheet.create({
   breedOption: {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm + 2,
-    borderBottomWidth: 1,
   },
   breedOptionText: {
     fontSize: TYPOGRAPHY.sizes.sm,
@@ -1244,7 +1233,7 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs + 2,
-    borderRadius: RADIUS.full,
+    borderRadius: RADIUS.sm,
     borderWidth: 1.5,
   },
   chipText: {

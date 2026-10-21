@@ -19,6 +19,8 @@ interface AgendaSidebarProps {
   veterinarians: string[];
   appointmentTypes: string[];
   statuses: string[];
+  /** Rendered at the end of the scroll so the day summary never squeezes the filters */
+  children?: React.ReactNode;
 }
 
 function getDaysInMonth(year: number, month: number): number {
@@ -46,6 +48,7 @@ export default function AgendaSidebar({
   veterinarians,
   appointmentTypes,
   statuses,
+  children,
 }: AgendaSidebarProps) {
   const { colors, onPrimaryText } = useTheme();
   const year = selectedDate.getFullYear();
@@ -69,7 +72,7 @@ export default function AgendaSidebar({
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.surface, borderLeftColor: colors.border }]} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.surface }]} showsVerticalScrollIndicator={false}>
       {/* Mini calendar */}
       <View style={styles.calendarSection}>
         <View style={styles.calendarHeader}>
@@ -98,8 +101,8 @@ export default function AgendaSidebar({
                 key={day}
                 style={[
                   styles.dayCell,
-                  isSelected && { backgroundColor: colors.primary, borderRadius: 14 },
-                  isToday && !isSelected && { borderColor: colors.primary, borderWidth: 1, borderRadius: 14 },
+                  isSelected && { backgroundColor: colors.primary, borderRadius: RADIUS.sm },
+                  isToday && !isSelected && { borderColor: colors.primary, borderWidth: 1, borderRadius: RADIUS.sm },
                 ]}
                 onPress={() => onDateSelect(new Date(year, month, day))}
               >
@@ -121,7 +124,7 @@ export default function AgendaSidebar({
       </View>
 
       {/* Filters */}
-      <View style={[styles.filterSection, { borderTopColor: colors.border }]}>
+      <View style={styles.filterSection}>
         <Text style={[styles.filterTitle, { color: colors.text }]}>Filtros</Text>
 
         {/* Vet filter */}
@@ -180,6 +183,7 @@ export default function AgendaSidebar({
           </View>
         </View>
       </View>
+      {children}
     </ScrollView>
   );
 }
@@ -187,7 +191,6 @@ export default function AgendaSidebar({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    borderLeftWidth: 1,
   },
   calendarSection: {
     padding: SPACING.md,
@@ -232,7 +235,6 @@ const styles = StyleSheet.create({
   filterSection: {
     padding: SPACING.md,
     paddingTop: SPACING.sm,
-    borderTopWidth: 1,
   },
   filterTitle: {
     fontSize: TYPOGRAPHY.sizes.sm,
@@ -257,7 +259,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 999,
+    borderRadius: RADIUS.sm,
     borderWidth: 1,
     gap: 4,
   },

@@ -4,6 +4,7 @@ import { Text, TextInput, Button, SegmentedButtons, Menu, Switch, Dialog, Portal
 import { useRouter } from 'expo-router';
 import DynamicIcon from '../../components/ui/DynamicIcon';
 import { useTheme } from '../../contexts/ThemeContext';
+import PageHeader from '../../components/ui/PageHeader';
 import { api } from '../../services/directus';
 import { DISEASE_CATEGORIES, DiseaseCategoryKey, PROGNOSIS_LABELS, LIFE_STAGE_LABELS } from '../../constants/diseaseMeta';
 import { TYPOGRAPHY } from '../../constants/tokens';
@@ -112,6 +113,7 @@ export default function AddDiseaseScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
     >
+      <PageHeader title="Nueva enfermedad" subtitle="Se guarda como ficha de tu clínica; solo tu equipo la ve y puede editarla" />
       {/* ── Section: Datos Generales ── */}
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Datos generales</Text>

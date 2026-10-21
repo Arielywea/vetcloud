@@ -4,6 +4,7 @@ import { Text } from 'react-native-paper';
 import { Search, Scissors, ChevronDown, ChevronUp, BookOpen } from 'lucide-react-native';
 import { useSurgeries } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
+import PageHeader from '../../components/ui/PageHeader';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
 import VEmptyState from '../../components/ui/EmptyState';
 import { SkeletonList } from '../../components/ui/Skeleton';
@@ -29,16 +30,7 @@ export default function SurgeriesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <Scissors size={20} color={colors.primary} />
-          <DisplayText style={[styles.headerTitle, { color: colors.text }]}>Biblioteca de cirugías</DisplayText>
-        </View>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          {surgeries.length} procedimientos quirúrgicos
-        </Text>
-      </View>
+      <PageHeader title="Cirugías" subtitle={`Biblioteca de ${surgeries.length} procedimientos quirúrgicos`} />
 
       {/* Search */}
       <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -81,15 +73,12 @@ function SurgeryCard({ surgery, index, colors }: { surgery: Surgery; index: numb
 
   return (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      style={[styles.card, { backgroundColor: colors.surface }]}
       onPress={() => setExpanded(!expanded)}
       activeOpacity={0.7}
     >
       <View style={styles.cardHeader}>
         <View style={styles.cardTitleRow}>
-          <View style={[styles.cardIcon, { backgroundColor: colors.primaryLight || colors.primary + '20' }]}>
-            <Scissors size={16} color={colors.primary} />
-          </View>
           <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={2}>
             {surgery.nombre_cirugia}
           </Text>
@@ -108,7 +97,7 @@ function SurgeryCard({ surgery, index, colors }: { surgery: Surgery; index: numb
       )}
 
       {expanded && (
-        <View style={[styles.cardDetails, { borderTopColor: colors.border }]}>
+        <View style={styles.cardDetails}>
           {surgery.tecnica_quirurgica && (
             <DetailSection title="Técnica quirúrgica" content={surgery.tecnica_quirurgica} colors={colors} />
           )}
@@ -131,7 +120,7 @@ function SurgeryCard({ surgery, index, colors }: { surgery: Surgery; index: numb
             <DetailSection title="Comorbilidades" content={surgery.consideraciones_comorbilidades} colors={colors} />
           )}
           {surgery.fuente && (
-            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: SPACING.md, paddingTop: SPACING.sm, borderTopWidth: 1, borderTopColor: colors.border }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: SPACING.lg }}>
               <BookOpen size={13} color={colors.textLight} style={{ marginTop: 2 }} />
               <Text style={[styles.fuente, { color: colors.textLight, flex: 1 }]}>{surgery.fuente}</Text>
             </View>

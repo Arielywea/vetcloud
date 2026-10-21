@@ -1,38 +1,32 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
-import DynamicIcon from '../ui/DynamicIcon';
 import { DirectusPet } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
-import { calculateAge } from '../../utils/age';
+import { SPACING, TYPOGRAPHY } from '../../constants/tokens';
 
 interface InfoPillsProps {
   pet: DirectusPet;
 }
 
+// Facts the header doesn't already show (breed, age and sex live there):
+// label over value, no pills, icons or shadows.
 export default function InfoPills({ pet }: InfoPillsProps) {
   const { colors } = useTheme();
 
-  const pills = [
-    { icon: 'paw', label: 'Especie', value: pet.species === 'dog' ? 'Canino' : 'Felino' },
-    { icon: 'shape', label: 'Raza', value: pet.breed || 'N/D' },
-    ...(pet.sex ? [{ icon: pet.sex === 'macho' ? 'gender-male' : 'gender-female', label: 'Sexo', value: pet.sex === 'macho' ? 'Macho' : 'Hembra' }] : []),
-    { icon: 'palette', label: 'Color', value: pet.color || 'N/D' },
-    ...((pet.weight ?? 0) > 0 ? [{ icon: 'weight', label: 'Peso', value: `${pet.weight} kg` }] : []),
-    { icon: 'calendar', label: 'Edad', value: calculateAge(pet.birth_date) },
-    ...(pet.id_number ? [{ icon: 'barcode', label: 'Microchip', value: pet.id_number }] : []),
+  const facts = [
+    { label: 'Especie', value: pet.species === 'dog' ? 'Canino' : 'Felino' },
+    ...((pet.weight ?? 0) > 0 ? [{ label: 'Peso', value: `${pet.weight} kg` }] : []),
+    ...(pet.color ? [{ label: 'Color', value: pet.color }] : []),
+    ...(pet.id_number ? [{ label: 'Microchip', value: pet.id_number }] : []),
   ];
 
   return (
     <View style={styles.container}>
-      {pills.map((pill, i) => (
-        <View key={i} style={[styles.pill, { backgroundColor: colors.primaryContainer, borderColor: colors.border }]}>
-            <View style={[styles.iconCircle, { backgroundColor: alpha(colors.accent, 0.12) }]}>
-              <DynamicIcon name={pill.icon as any} size={13} color={colors.accent} />
-            </View>
-            <Text style={[styles.pillLabel, { color: colors.textSecondary }]}>{pill.label}:</Text>
-            <Text style={[styles.pillValue, { color: colors.primary }]}>{pill.value}</Text>
+      {facts.map((fact) => (
+        <View key={fact.label} style={styles.fact}>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>{fact.label}</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{fact.value}</Text>
         </View>
       ))}
     </View>
@@ -43,32 +37,11 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: SPACING.sm,
+    columnGap: SPACING['2xl'],
+    rowGap: SPACING.md,
     marginTop: SPACING.lg,
-    paddingTop: SPACING.lg,
   },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.full,
-    borderWidth: 1,
-    ...SHADOWS.sm,
-  },
-  iconCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pillLabel: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-  },
-  pillValue: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
+  fact: { minWidth: 96 },
+  label: { fontSize: TYPOGRAPHY.sizes.sm },
+  value: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: TYPOGRAPHY.weights.semibold, marginTop: 2 },
 });

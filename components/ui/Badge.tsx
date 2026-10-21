@@ -49,7 +49,8 @@ export default function VBadge({
     md: { paddingVertical: SPACING.xs + 1, paddingHorizontal: SPACING.md },
   };
   const box: ViewStyle = {
-    borderRadius: RADIUS.full,
+    // A badge is a seal (round); a pressable one is a control, so it gets square corners
+    borderRadius: onPress ? RADIUS.sm : RADIUS.full,
     alignSelf: 'flex-start',
     ...sizes[size],
     ...(kind === 'filled'

@@ -3,6 +3,7 @@ import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
 import { BedDouble, Clock, Stethoscope, CheckCircle, Plus, AlertTriangle } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import PageHeader from '../../components/ui/PageHeader';
 import { SPACING, TYPOGRAPHY, alpha } from '../../constants/tokens';
 import { useHospitalizations, usePets } from '../../hooks/useDirectus';
 import VCard from '../../components/ui/Card';
@@ -34,7 +35,7 @@ const FILTERS = [
 ];
 
 export default function HospitalizacionScreen() {
-  const { colors } = useTheme();
+  const { colors, onAccentText } = useTheme();
   const { confirm } = useConfirm();
   const toast = useToast();
   const [filter, setFilter] = useState('todos');
@@ -108,18 +109,11 @@ export default function HospitalizacionScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={styles.content} refreshControl={<VRefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
-        <View style={styles.header}>
-          {/* minWidth + wrap: on phones the button drops below instead of splitting the word "Hospitalizaci/ón" */}
-          <View style={{ flexGrow: 1, flexShrink: 1, minWidth: 220 }}>
-            <DisplayText style={[styles.title, { color: colors.text }]}>Hospitalización</DisplayText>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              {loading ? ' ' : `${filtered.length} paciente${filtered.length !== 1 ? 's' : ''}`}
-            </Text>
-          </View>
-          <VButton onPress={() => { resetForm(); setShowForm(true); }} icon={<Plus size={18} color={colors.primary} />} variant="accent">
-            Internar paciente
-          </VButton>
-        </View>
+        <PageHeader
+          title="Hospitalización"
+          subtitle={loading ? ' ' : `${filtered.length} paciente${filtered.length !== 1 ? 's' : ''}`}
+          actions={<VButton onPress={() => { resetForm(); setShowForm(true); }} icon={<Plus size={16} color={onAccentText.default} />}>Internar paciente</VButton>}
+        />
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
           {FILTERS.map(f => (

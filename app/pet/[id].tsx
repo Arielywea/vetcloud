@@ -417,7 +417,7 @@ export default function PetDetailScreen() {
                 <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>Edad: {calculateAge(pet.birth_date)}</Text>
               </View>
               <View style={styles.rxInfoCol}>
-                <Text style={[styles.rxInfoSectionTitle, { color: colors.primary }]}>Propietario</Text>
+                <Text style={[styles.rxInfoSectionTitle, { color: colors.primary }]}>Tutor</Text>
                 <Text style={[styles.rxInfoName, { color: colors.text }]}>{pet.tutor_name || 'N/D'}</Text>
                 {pet.email && <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>{pet.email}</Text>}
                 {pet.phone && <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>{pet.phone}</Text>}
@@ -481,7 +481,7 @@ export default function PetDetailScreen() {
                     <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>{pet.species === 'dog' ? 'Canino' : 'Felino'} - {pet.breed || 'N/D'}</Text>
                   </View>
                   <View style={styles.rxInfoCol}>
-                    <Text style={[styles.rxInfoSectionTitle, { color: colors.primary }]}>Propietario</Text>
+                    <Text style={[styles.rxInfoSectionTitle, { color: colors.primary }]}>Tutor</Text>
                     <Text style={[styles.rxInfoName, { color: colors.text }]}>{pet.tutor_name || 'N/D'}</Text>
                     {pet.phone && <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>{pet.phone}</Text>}
                   </View>

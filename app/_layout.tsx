@@ -1,9 +1,11 @@
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StyleSheet, ActivityIndicator, View, Text } from 'react-native';
+import { StyleSheet, ActivityIndicator, View, Text, Pressable } from 'react-native';
+import { ChevronLeft } from 'lucide-react-native';
+import DisplayText from '../components/ui/DisplayText';
 import React from 'react';
 import { AuthProvider, useAuth } from '../hooks/useAuth';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
@@ -80,7 +82,8 @@ function AppContent() {
           headerStyle: { backgroundColor: colors.chrome },
           headerTintColor: onChromeText.default,
           headerShadowVisible: false,
-          headerTitle: 'Enfermedad',
+          headerTitle: () => <ChromeTitle>Enfermedad</ChromeTitle>,
+          headerLeft: () => <ChromeBack fallback="/(drawer)/diseases" />,
         }}
       />
       <Stack.Screen
@@ -90,10 +93,32 @@ function AppContent() {
           headerStyle: { backgroundColor: colors.chrome },
           headerTintColor: onChromeText.default,
           headerShadowVisible: false,
-          headerTitle: 'Ficha clínica',
+          headerTitle: () => <ChromeTitle>Ficha clínica</ChromeTitle>,
+          headerLeft: () => <ChromeBack fallback="/(drawer)/pacientes" />,
         }}
       />
     </Stack>
+  );
+}
+
+// Detail screens: the chrome bar's title in Cormorant like every page title, and a back arrow that
+// still works after a reload (no history), when the stack's own arrow disappeared.
+function ChromeTitle({ children }: { children: string }) {
+  const { onChromeText } = useTheme();
+  return <DisplayText style={{ fontSize: 24, fontWeight: '600', color: onChromeText.default }}>{children}</DisplayText>;
+}
+function ChromeBack({ fallback }: { fallback: string }) {
+  const router = useRouter();
+  const { onChromeText } = useTheme();
+  return (
+    <Pressable
+      onPress={() => (router.canGoBack() ? router.back() : router.replace(fallback as any))}
+      accessibilityRole="button"
+      accessibilityLabel="Volver"
+      style={({ pressed }) => ({ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: 4, opacity: pressed ? 0.7 : 1 })}
+    >
+      <ChevronLeft size={24} color={onChromeText.default} />
+    </Pressable>
   );
 }
 
@@ -129,10 +154,25 @@ function ThemedStatusBar() {
 function ThemedPaperProvider({ children }: { children: React.ReactNode }) {
   const { colors, isDark } = useTheme();
 
+  const base = isDark ? MD3DarkTheme : MD3LightTheme;
   const paperTheme = {
-    ...(isDark ? MD3DarkTheme : MD3LightTheme),
+    ...base,
+    // Square corners like the rest of the system: Paper derives button, segmented-button and
+    // input radii from this (MD3 multiplies it by up to 5; the default 4 gave 20px pills)
+    roundness: 0.5,
     colors: {
-      ...(isDark ? MD3DarkTheme.colors : MD3LightTheme.colors),
+      ...base.colors,
+      // MD3's lavender (secondaryContainer, the elevation tint) was never part of Saber or Alter
+      secondaryContainer: colors.primaryContainer,
+      onSecondaryContainer: colors.text,
+      elevation: {
+        level0: 'transparent',
+        level1: colors.surface,
+        level2: colors.surface,
+        level3: colors.surface,
+        level4: colors.surface,
+        level5: colors.surface,
+      },
       primary: colors.primary,
       secondary: colors.accent,
       onSecondary: getTextOnPrimary(colors.accent).default,

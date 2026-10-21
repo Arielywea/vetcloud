@@ -114,7 +114,7 @@ export default function PatientSidePanel({ patient, visible, onClose }: PatientS
 
           {(patient.tutor_name || patient.phone || patient.email) && (
             <>
-              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Propietario</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Tutor</Text>
               {patient.tutor_name && (
                 <Text style={[styles.ownerName, { color: colors.text }]}>{patient.tutor_name}</Text>
               )}

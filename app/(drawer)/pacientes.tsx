@@ -5,6 +5,8 @@ import { Plus } from 'lucide-react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { usePets } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
+import PageHeader from '../../components/ui/PageHeader';
+import VButton from '../../components/ui/Button';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import { exportCsv } from '../../utils/exportCsv';
 import { isActive, filterByStatus, StatusFilter } from '../../utils/patientFilters';
@@ -21,7 +23,7 @@ const ITEMS_PER_PAGE = 10;
 export default function PacientesScreen() {
   const router = useRouter();
   const { pets, loading, removePet } = usePets();
-  const { colors, onPrimaryText } = useTheme();
+  const { colors, onPrimaryText, onAccentText } = useTheme();
 
   const { q: initialQuery } = useLocalSearchParams<{ q?: string }>();
   const [searchQuery, setSearchQuery] = useState(typeof initialQuery === 'string' ? initialQuery : '');
@@ -157,23 +159,12 @@ export default function PacientesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
-        <View style={styles.headerTextWrap}>
-          <DisplayText style={[styles.title, { color: colors.text }]}>Pacientes</DisplayText>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {loading ? '' : `${filteredPatients.length} paciente${filteredPatients.length !== 1 ? 's' : ''}`}
-          </Text>
-        </View>
-        <Button
-          mode="contained"
-          onPress={() => router.push('/(drawer)/add-paciente')}
-          style={[styles.newButton, { backgroundColor: colors.primary }]}
-          labelStyle={[styles.newButtonText, { color: onPrimaryText.default }]}
-          contentStyle={styles.newButtonContent}
-        >
-          <Plus size={16} color={onPrimaryText.default} />
-          Nuevo paciente
-        </Button>
+      <View style={styles.pageHeaderWrap}>
+        <PageHeader
+          title="Pacientes"
+          subtitle={loading ? ' ' : `${filteredPatients.length} paciente${filteredPatients.length !== 1 ? 's' : ''}`}
+          actions={<VButton onPress={() => router.push('/(drawer)/add-paciente')} icon={<Plus size={16} color={onAccentText.default} />}>Nuevo paciente</VButton>}
+        />
       </View>
 
       <View style={styles.content}>
@@ -252,6 +243,7 @@ export default function PacientesScreen() {
 }
 
 const styles = StyleSheet.create({
+  pageHeaderWrap: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.xl },
   container: {
     flex: 1,
   },

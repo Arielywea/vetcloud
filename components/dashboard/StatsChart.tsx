@@ -59,12 +59,16 @@ export default function StatsChart({ days, summary, pacientesNuevos, hospitaliza
 
       <View style={styles.mainStat}>
         <Text style={[styles.mainStatLabel, { color: colors.textSecondary }]}>Fichas registradas</Text>
-        <Text {...({ dataSet: { numeric: 'tabular' } } as any)} style={[styles.mainStatValue, { color: colors.text }]}>
-          {loading ? '—' : summary?.total ?? 0}
-        </Text>
+        <DisplayText accessibilityRole="text" style={[styles.mainStatValue, { color: colors.text }]}>
+          {loading ? '—' : String(summary?.total ?? 0)}
+        </DisplayText>
         {!loading && summary && <Trend current={summary.total} previous={summary.previousTotal} />}
       </View>
 
+      {/* A quiet week is said in words; seven empty bars on a grey block said nothing */}
+      {!loading && days.length > 0 && days.every((d) => d.count === 0) ? (
+        <Text style={[styles.emptyWeek, { color: colors.textSecondary }]}>Sin fichas registradas en los últimos 7 días.</Text>
+      ) : (
       <View
         style={[styles.chart, { backgroundColor: colors.surfaceVariant }]}
         accessibilityRole="image"
@@ -87,12 +91,12 @@ export default function StatsChart({ days, summary, pacientesNuevos, hospitaliza
           </View>
         ))}
       </View>
+      )}
 
       <View style={styles.subStats}>
         <SubStat label="Consultas" value={summary?.consultas ?? 0} loading={loading} />
         <SubStat label="Vacunas" value={summary?.vacunas ?? 0} loading={loading} />
         <SubStat label="Pacientes nuevos (mes)" value={pacientesNuevos} loading={loading} />
-        <SubStat label="Hospitalizados" value={hospitalizados} loading={loading} />
       </View>
     </View>
   );
@@ -102,7 +106,7 @@ function SubStat({ label, value, loading }: { label: string; value: number; load
   const { colors } = useTheme();
   return (
     <View style={styles.subStat}>
-      <Text {...({ dataSet: { numeric: 'tabular' } } as any)} style={[styles.subStatValue, { color: colors.text }]}>{loading ? '—' : value}</Text>
+      <DisplayText accessibilityRole="text" style={[styles.subStatValue, { color: colors.text }]}>{loading ? '—' : String(value)}</DisplayText>
       <Text style={[styles.subStatLabel, { color: colors.textSecondary }]}>{label}</Text>
     </View>
   );
@@ -116,7 +120,7 @@ const styles = StyleSheet.create({
   periodText: { fontSize: 12 },
   mainStat: { marginBottom: SPACING.lg },
   mainStatLabel: { fontSize: TYPOGRAPHY.sizes.sm },
-  mainStatValue: { fontSize: TYPOGRAPHY.sizes['3xl'], fontWeight: TYPOGRAPHY.weights.bold, marginTop: SPACING.xs },
+  mainStatValue: { fontSize: 44, lineHeight: 48, fontWeight: '600', marginTop: SPACING.xs },
   trendRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: SPACING.xs },
   trendText: { fontSize: TYPOGRAPHY.sizes.sm },
   chart: { flexDirection: 'row', justifyContent: 'space-between', gap: SPACING.xs, height: 104, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.lg },
@@ -124,9 +128,10 @@ const styles = StyleSheet.create({
   barTrack: { flex: 1, width: '100%', maxWidth: 22, justifyContent: 'flex-end' },
   bar: { width: '100%', borderRadius: 4 },
   barLabel: { fontSize: 12 },
+  emptyWeek: { fontSize: TYPOGRAPHY.sizes.base, paddingVertical: SPACING.lg },
   subStats: { flexDirection: 'row', flexWrap: 'wrap', paddingTop: SPACING.lg, rowGap: SPACING.md },
   subStat: { flex: 1, minWidth: 72, alignItems: 'center' },
   divider: { width: 1, alignSelf: 'stretch', marginHorizontal: SPACING.xs },
-  subStatValue: { fontSize: TYPOGRAPHY.sizes.xl, fontWeight: TYPOGRAPHY.weights.bold },
+  subStatValue: { fontSize: 30, lineHeight: 34, fontWeight: '600' },
   subStatLabel: { fontSize: 12, textAlign: 'center', marginTop: 2 },
 });

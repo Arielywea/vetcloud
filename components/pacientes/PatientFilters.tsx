@@ -155,9 +155,9 @@ export default function PatientFilters({
       {showMoreFilters && (
         <View style={[styles.moreFilters, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.moreFiltersTitle, { color: colors.text }]}>Filtros adicionales</Text>
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Propietario</Text>
+          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Tutor</Text>
           <TextInput
-            placeholder="Nombre del propietario"
+            placeholder="Nombre del tutor"
             placeholderTextColor={colors.textLight}
             value={ownerFilter}
             onChangeText={onOwnerFilterChange}

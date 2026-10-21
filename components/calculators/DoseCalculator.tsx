@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Text, TextInput, SegmentedButtons } from 'react-native-paper';
 import { Search, Calculator, AlertTriangle, BookOpen } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import PageHeader from '../ui/PageHeader';
 import { useMedications } from '../../hooks/useDirectus';
 import { SPACING, RADIUS, TYPOGRAPHY, alpha } from '../../constants/tokens';
 import { Medication } from '../../services/directus';
@@ -49,7 +50,7 @@ export default function DoseCalculator({ initialWeight, initialSpecies }: { init
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <DisplayText style={[styles.title, { color: colors.text }]}>Calculadora de dosis</DisplayText>
+      <PageHeader title="Calculadora de dosis" subtitle="Dosis por kilo según la especie, con el volumen a administrar" />
 
       <View style={styles.row}>
         <View style={[styles.inputGroup, { flex: 1 }]}>

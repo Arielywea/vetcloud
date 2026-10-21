@@ -208,7 +208,8 @@ function AppointmentCard({
       {/* Info */}
       <View style={styles.info}>
         <View style={styles.topRow}>
-          <Text style={[styles.time, { color }]} numberOfLines={1}>
+          {/* Ink, not the type colour: the colour is in the strip and the tint (2.0:1 as text) */}
+          <Text style={[styles.time, { color: colors.text }]} numberOfLines={1}>
             {formatTimeRange(appointment.start_time, appointment.end_time)}
           </Text>
           <View style={[styles.statusDot, { backgroundColor: status.dot }]} />
@@ -366,7 +367,7 @@ const quickStyles = StyleSheet.create({
   btn: {
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: RADIUS.full,
+    borderRadius: RADIUS.sm,
     borderWidth: 1,
     marginLeft: 4,
   },

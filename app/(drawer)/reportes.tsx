@@ -3,6 +3,7 @@ import { View, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { Text } from 'react-native-paper';
 import { BarChart3, PawPrint, Calendar, Package } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import PageHeader from '../../components/ui/PageHeader';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import { TEXT_ON_PRIMARY, RECORD_TYPE_COLORS } from '../../constants/colors';
 import VCard from '../../components/ui/Card';
@@ -17,6 +18,14 @@ interface DashboardStats {
   todayAppointments: number;
   totalRecords: number;
   lowStockAlerts: number;
+}
+
+// /reports/summary: this month's book (revenue and visits were computed but never shown)
+interface MonthSummary {
+  patients: number;
+  appointments: { total: number; completed: number };
+  revenue: { total: number | string; count: number };
+  records: number;
 }
 
 interface WeeklyData {
@@ -37,15 +46,18 @@ export default function ReportesScreen() {
   const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
   const [recordTypes, setRecordTypes] = useState<RecordTypeData[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [month, setMonth] = useState<MonthSummary | null>(null);
 
   const loadData = useCallback(async () => {
     try {
-      const [stats, weekly, records] = await Promise.all([
+      const [stats, weekly, records, summary] = await Promise.all([
         api.stats.dashboard(),
         api.stats.weekly(),
         api.stats.recordTypes(),
+        api.reports.summary(),
       ]);
       setDashboardStats(stats);
+      setMonth(summary as MonthSummary);
       setWeeklyData(weekly?.days || []);
       setRecordTypes(records || []);
       setLoadError(null);
@@ -72,6 +84,13 @@ export default function ReportesScreen() {
     );
   }
 
+  const revenue = Number(month?.revenue.total ?? 0);
+  const ledger = [
+    { label: `Ingresos (${month?.revenue.count ?? 0} cobros)`, value: revenue.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }) },
+    { label: `Citas atendidas de ${month?.appointments.total ?? 0}`, value: String(month?.appointments.completed ?? 0) },
+    { label: 'Fichas clínicas del mes', value: String(month?.records ?? 0) },
+    { label: 'Pacientes en total', value: String(month?.patients ?? dashboardStats?.totalPets ?? 0) },
+  ];
   const stats = [
     { label: 'Pacientes', value: String(dashboardStats?.totalPets ?? 0), icon: <PawPrint size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.info },
     { label: 'Citas (Hoy)', value: String(dashboardStats?.todayAppointments ?? 0), icon: <Calendar size={20} color={TEXT_ON_PRIMARY.light.default} />, color: colors.success },
@@ -85,12 +104,7 @@ export default function ReportesScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} refreshControl={<VRefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
-      <View style={styles.header}>
-        <DisplayText style={[styles.title, { color: colors.text }]}>Reportes</DisplayText>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Resumen y estadísticas de la clínica
-        </Text>
-      </View>
+      <PageHeader title="Reportes" subtitle="Resumen y estadísticas de la clínica" />
 
       {loadError && (
         <View accessibilityRole="alert" style={[styles.errorBanner, { borderColor: colors.error, backgroundColor: colors.surface }]}>
@@ -99,23 +113,27 @@ export default function ReportesScreen() {
         </View>
       )}
 
-      <View style={styles.statsGrid}>
-        {stats.map(stat => (
-          <View key={stat.label} style={styles.statWrapper}>
-            <VStatCard
-              label={stat.label}
-              value={stat.value}
-              icon={<View style={[styles.statIcon, { backgroundColor: stat.color }]}>
-                {stat.icon}
-              </View>}
-              color={stat.color}
-            />
-          </View>
-        ))}
+      {/* The month's book: figures in Cormorant like the dashboard ledger, no icon tiles */}
+      <View style={[styles.ledger, { backgroundColor: colors.surface }]}>
+        <DisplayText style={[styles.cardTitleDisplay, { color: colors.text }]}>
+          {new Date().toLocaleDateString('es-CL', { month: 'long', year: 'numeric' }).replace(/^./, (c) => c.toUpperCase())}
+        </DisplayText>
+        <View style={styles.ledgerRow}>
+          {ledger.map((item) => (
+            <View key={item.label} style={styles.ledgerItem}>
+              <DisplayText accessibilityRole="text" style={[styles.ledgerValue, { color: colors.text }]}>{item.value}</DisplayText>
+              <Text style={[styles.ledgerLabel, { color: colors.textSecondary }]}>{item.label}</Text>
+            </View>
+          ))}
+        </View>
       </View>
 
       <VCard style={styles.card}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>Actividad de la semana</Text>
+        <DisplayText style={[styles.cardTitleDisplay, { color: colors.text }]}>Actividad de la semana</DisplayText>
+        {/* An all-zero week is a sentence, not seven empty bars */}
+        {weeklyData.every((d) => d.count === 0) ? (
+          <Text style={[styles.emptyWeek, { color: colors.textSecondary }]}>No se registraron fichas en los últimos 7 días.</Text>
+        ) : (
         <View style={styles.chart}>
           {weeklyData.map((day, idx) => {
             const heightPct = (day.count / maxWeekly) * 120;
@@ -128,10 +146,11 @@ export default function ReportesScreen() {
             );
           })}
         </View>
+        )}
       </VCard>
 
       <VCard style={styles.card}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>Tipos de fichas</Text>
+        <DisplayText style={[styles.cardTitleDisplay, { color: colors.text }]}>Tipos de fichas</DisplayText>
         {recordTypes.map(record => {
           const recordColor = RECORD_TYPE_COLORS[record.record_type.toLowerCase()] || colors.primary;
           const pct = totalRecords > 0 ? Math.round((record.count / totalRecords) * 100) : 0;
@@ -139,7 +158,7 @@ export default function ReportesScreen() {
             <View key={record.record_type} style={styles.recordRow}>
               <View style={styles.recordInfo}>
                 <View style={[styles.recordDot, { backgroundColor: recordColor }]} />
-                <Text style={[styles.recordType, { color: colors.text }]}>{record.record_type}</Text>
+                <Text style={[styles.recordType, { color: colors.text }]}>{RECORD_TYPE_LABELS[record.record_type] || record.record_type}</Text>
               </View>
               <View style={styles.recordStats}>
                 <Text style={[styles.recordCount, { color: colors.text }]}>{record.count}</Text>
@@ -156,6 +175,8 @@ export default function ReportesScreen() {
   );
 }
 
+const RECORD_TYPE_LABELS: Record<string, string> = { consulta: 'Consultas', vacuna: 'Vacunas', cirugia: 'Cirugías', control: 'Controles' };
+
 const styles = StyleSheet.create({
   errorBanner: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, padding: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1, marginBottom: SPACING.lg },
   container: { flex: 1 },
@@ -164,6 +185,13 @@ const styles = StyleSheet.create({
   header: { marginBottom: SPACING.xl },
   title: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.bold },
   subtitle: { fontSize: TYPOGRAPHY.sizes.md, marginTop: SPACING.sm },
+  ledger: { padding: SPACING.xl, marginBottom: SPACING.xl },
+  ledgerRow: { flexDirection: 'row', flexWrap: 'wrap', columnGap: SPACING['3xl'], rowGap: SPACING.lg, marginTop: SPACING.md },
+  ledgerItem: { minWidth: 160 },
+  ledgerValue: { fontSize: 44, lineHeight: 48, fontWeight: '600' },
+  ledgerLabel: { fontSize: TYPOGRAPHY.sizes.sm, marginTop: 2 },
+  emptyWeek: { fontSize: TYPOGRAPHY.sizes.base, paddingVertical: SPACING.lg },
+  cardTitleDisplay: { fontSize: 24, fontWeight: '600', marginBottom: SPACING.md },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

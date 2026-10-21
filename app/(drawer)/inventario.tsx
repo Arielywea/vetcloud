@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TextInput as RNTextInput, TouchableOpacity } from 'react-native';
 import { Text, Modal, Portal, Menu } from 'react-native-paper';
-import { Package, Pill, Syringe, Scissors, AlertTriangle, Pencil, Trash2, Plus, X } from 'lucide-react-native';
+import { Package, AlertTriangle, Pencil, Trash2, Plus, X } from 'lucide-react-native';
 import { useInventory } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FAB } from '../../constants/tokens';
 import { parseLocaleNumber } from '../../utils/parseNumber';
 import VCard from '../../components/ui/Card';
 import VButton from '../../components/ui/Button';
+import PageHeader from '../../components/ui/PageHeader';
+import VModal from '../../components/ui/VModal';
 import VEmptyState from '../../components/ui/EmptyState';
 import VRefreshControl from '../../components/ui/VRefreshControl';
 import { SkeletonList } from '../../components/ui/Skeleton';
@@ -21,15 +23,8 @@ const CATEGORY_OPTIONS = [
 
 const UNIT_OPTIONS = ['unidades', 'ml', 'mg', 'cajas', 'frascos', 'ampollas', 'tubos'];
 
-const CATEGORY_ICONS: Record<string, typeof Pill> = {
-  medicamento: Pill,
-  vacuna: Syringe,
-  material: Scissors,
-  insumo: Package,
-};
-
 export default function InventarioScreen() {
-  const { colors, onPrimaryText } = useTheme();
+  const { colors, onPrimaryText, onAccentText } = useTheme();
   const { items, lowStockItems, loading, addItem, updateItem, removeItem, refresh } = useInventory();
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -94,16 +89,12 @@ export default function InventarioScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {lowStockItems.length > 0 && (
-        <View style={[styles.alertCard, { backgroundColor: colors.error + '15', borderColor: colors.error }]}>
-          <AlertTriangle size={20} color={colors.error} />
-          <Text style={[styles.alertText, { color: colors.error }]}>
-            {lowStockItems.length} item{lowStockItems.length !== 1 ? 's' : ''} con stock bajo
-          </Text>
-        </View>
-      )}
-
       <ScrollView contentContainerStyle={styles.listContent} refreshControl={<VRefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
+        <PageHeader
+          title="Inventario"
+          subtitle={loading ? ' ' : `${items.length} ${items.length === 1 ? 'producto' : 'productos'}${lowStockItems.length ? ` · ${lowStockItems.length} bajo el mínimo` : ''}`}
+          actions={<VButton onPress={() => { resetForm(); setShowModal(true); }} icon={<Plus size={16} color={onAccentText.default} />}>Nuevo producto</VButton>}
+        />
         {loading ? (
           <SkeletonList count={4} />
         ) : items.length === 0 ? (
@@ -117,13 +108,9 @@ export default function InventarioScreen() {
           items.map(item => {
             const stockColor = getStockColor(item.current_stock, item.min_stock);
             const stockPercent = item.min_stock > 0 ? Math.min((item.current_stock / item.min_stock) * 100, 100) : 100;
-            const CategoryIcon = CATEGORY_ICONS[item.category] || Package;
             return (
-              <VCard key={item.id} style={styles.itemCard}>
+              <VCard key={item.id} style={styles.itemCard} padding={SPACING.lg}>
                 <View style={styles.itemRow}>
-                  <View style={[styles.itemIcon, { backgroundColor: stockColor + '18' }]}>
-                    <CategoryIcon size={20} color={stockColor} />
-                  </View>
                   <View style={styles.itemInfo}>
                     <Text variant="titleSmall" style={[styles.itemName, { color: colors.text }]}>{item.name}</Text>
                     <Text style={[styles.itemCategory, { color: colors.textSecondary }]}>
@@ -141,7 +128,7 @@ export default function InventarioScreen() {
                   </View>
                   <View style={styles.itemActions}>
                     <TouchableOpacity onPress={() => openEdit(item)} style={{ padding: 8 }} hitSlop={4} accessibilityRole="button" accessibilityLabel={`Editar ${item.name}`}><Pencil size={18} color={colors.primary} /></TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDelete(item)} style={{ padding: 8 }} hitSlop={4} accessibilityRole="button" accessibilityLabel={`Eliminar ${item.name}`}><Trash2 size={18} color={colors.error} /></TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleDelete(item)} style={{ padding: 8 }} hitSlop={4} accessibilityRole="button" accessibilityLabel={`Eliminar ${item.name}`}><Trash2 size={18} color={colors.textSecondary} /></TouchableOpacity>
                   </View>
                 </View>
               </VCard>
@@ -150,14 +137,8 @@ export default function InventarioScreen() {
         )}
       </ScrollView>
 
-      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Nuevo producto" style={[styles.fab, { backgroundColor: colors.primary, ...SHADOWS.lg }]} onPress={() => { resetForm(); setShowModal(true); }}>
-        <Plus size={24} color={onPrimaryText.default} />
-      </TouchableOpacity>
-
-      <Portal>
-        <Modal visible={showModal} onDismiss={() => { setShowModal(false); resetForm(); }} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>
+      <VModal visible={showModal} onDismiss={() => { setShowModal(false); resetForm(); }} title={editingItem ? 'Editar producto' : 'Nuevo producto'}>
           <ScrollView>
-            <Text variant="titleMedium" style={[styles.modalTitle, { color: colors.text }]}>{editingItem ? 'Editar producto' : 'Nuevo producto'}</Text>
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Nombre *</Text>
             <RNTextInput style={[styles.input, { borderColor: colors.border, color: colors.text }]} value={itemName} onChangeText={setItemName} placeholder="Nombre del item" placeholderTextColor={colors.textLight} />
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Categoría</Text>
@@ -195,8 +176,7 @@ export default function InventarioScreen() {
               <VButton variant="primary" onPress={handleSave} loading={saving} disabled={saving}>Guardar</VButton>
             </View>
           </ScrollView>
-        </Modal>
-      </Portal>
+      </VModal>
 
       <Portal>
         <Modal visible={!!errorDialog} onDismiss={() => setErrorDialog(null)} contentContainerStyle={[styles.dialogModal, { backgroundColor: colors.surface }]}>
@@ -236,7 +216,7 @@ const styles = StyleSheet.create({
   itemCard: { marginBottom: SPACING.md, borderRadius: RADIUS.lg },
   itemRow: { flexDirection: 'row', alignItems: 'center' },
   itemIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  itemInfo: { flex: 1, marginLeft: SPACING.md },
+  itemInfo: { flex: 1 },
   itemName: { fontWeight: TYPOGRAPHY.weights.bold },
   itemCategory: { fontSize: TYPOGRAPHY.sizes.xs, marginTop: 2 },
   stockSection: { alignItems: 'flex-end', minWidth: 70 },

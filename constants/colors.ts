@@ -150,12 +150,15 @@ export function getTextOnPrimary(primaryColor: string): { default: string; muted
 // ─────────────────────────────────────────────────────────
 // Record type colors — centralized
 // ─────────────────────────────────────────────────────────
+// Type and status colours are drawn from the crest's own world (royal blue, field green, gold,
+// crimson, umber) instead of Tailwind's blue/emerald/cyan. They mark strips, tints, dots and icons;
+// text stays in the ink colour, so they never carry small type on either theme.
 export const RECORD_TYPE_COLORS: Record<string, string> = {
-  consulta: '#3B82F6',
-  vacuna: '#10B981',
-  cirugia: '#EF4444',
-  control: '#F59E0B',
-  terreno: '#8D6E63',
+  consulta: '#2F5EA8',
+  vacuna: '#2E7D5B',
+  cirugia: '#B42318',
+  control: '#A8842A',
+  terreno: '#7B5E4A',
 };
 
 
@@ -167,13 +170,13 @@ export const APPOINTMENT_TYPE_LABELS: Record<string, string> = {
 
 // Appointment type colors — centralized (used in agenda.tsx, HistoryTimeline)
 export const APPOINTMENT_TYPE_COLORS: Record<string, string> = {
-  consulta: '#3B82F6',
-  vacuna: '#10B981',
-  examenes: '#8B5CF6',
-  cirugia: '#F59E0B',
-  hospitalizacion: '#EC407A',
-  control: '#06B6D4',
-  terreno: '#8D6E63',
+  consulta: '#2F5EA8',
+  vacuna: '#2E7D5B',
+  examenes: '#1F7A80',
+  cirugia: '#B42318',
+  hospitalizacion: '#B25E09',
+  control: '#A8842A',
+  terreno: '#7B5E4A',
 };
 
 // ─────────────────────────────────────────────────────────
@@ -183,14 +186,14 @@ export const APPOINTMENT_TYPE_COLORS: Record<string, string> = {
 // Appointment status colors — centralized (used in agenda components)
 // ─────────────────────────────────────────────────────────
 export const APPOINTMENT_STATUS_COLORS: Record<string, { color: string; label: string; dot: string }> = {
-  programada:   { color: '#3B82F6', label: 'Programada',   dot: '#3B82F6' },
-  confirmada:   { color: '#10B981', label: 'Confirmada',   dot: '#10B981' },
-  en_espera:    { color: '#F59E0B', label: 'En espera',    dot: '#F59E0B' },
-  en_consulta:  { color: '#10B981', label: 'En consulta',  dot: '#10B981' },
-  completada:   { color: '#6B7280', label: 'Finalizada',   dot: '#6B7280' },
-  pendiente:    { color: '#F59E0B', label: 'Pendiente',    dot: '#F59E0B' },
-  cancelada:    { color: '#EF4444', label: 'Cancelada',    dot: '#EF4444' },
-  ausente:      { color: '#9CA3AF', label: 'Ausente',      dot: '#9CA3AF' },
+  programada:   { color: '#2F5EA8', label: 'Programada',   dot: '#2F5EA8' },
+  confirmada:   { color: '#2E7D5B', label: 'Confirmada',   dot: '#2E7D5B' },
+  en_espera:    { color: '#B25E09', label: 'En espera',    dot: '#B25E09' },
+  en_consulta:  { color: '#1F7A80', label: 'En consulta',  dot: '#1F7A80' },
+  completada:   { color: '#7A7468', label: 'Finalizada',   dot: '#7A7468' },
+  pendiente:    { color: '#B25E09', label: 'Pendiente',    dot: '#B25E09' },
+  cancelada:    { color: '#B42318', label: 'Cancelada',    dot: '#B42318' },
+  ausente:      { color: '#8A8478', label: 'Ausente',      dot: '#8A8478' },
 };
 
 export const APPOINTMENT_STATUS_LIST = Object.entries(APPOINTMENT_STATUS_COLORS).map(([key, val]) => ({

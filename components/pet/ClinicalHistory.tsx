@@ -224,7 +224,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
 const styles = StyleSheet.create({
   container: {
     marginHorizontal: SPACING.xl,
-    borderRadius: RADIUS.lg,
+    marginBottom: SPACING.xl,
     padding: SPACING.xl,
   },
   sectionHeader: {

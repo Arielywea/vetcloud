@@ -18,7 +18,7 @@ import VCard from '../../components/ui/Card';
 import VBadge from '../../components/ui/Badge';
 import VButton from '../../components/ui/Button';
 import DisplayText from '../../components/ui/DisplayText';
-import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, alpha } from '../../constants/tokens';
 
 type TabKey = 'signs' | 'diagnosis' | 'treatment' | 'prevention';
 const TABS: { key: TabKey; label: string; Icon: typeof Pill }[] = [
@@ -157,7 +157,10 @@ export default function DiseaseDetailScreen() {
         const [title, detail] = splitItem(raw);
         return (
           <View key={i} style={styles.listItem}>
-            <Icon size={16} color={iconColor} style={{ marginTop: 2 }} />
+            {/* Plain items get a small lozenge: hollow circles read as unchecked radio buttons */}
+            {Icon === Circle
+              ? <View style={[styles.lozenge, { backgroundColor: iconColor }]} />
+              : <Icon size={16} color={iconColor} style={{ marginTop: 2 }} />}
             <Text style={[styles.listItemText, { color: colors.text }]}>
               {detail ? <Text style={{ fontWeight: TYPOGRAPHY.weights.semibold }}>{title}: </Text> : null}
               {detail || title}
@@ -169,10 +172,11 @@ export default function DiseaseDetailScreen() {
   );
 
   const Section = ({ title, Icon, children, tone }: { title: string; Icon?: typeof Pill; children: React.ReactNode; tone?: string }) => (
-    <VCard style={[styles.sectionCard, tone ? { borderColor: tone } : null] as any} padding={SPACING.lg}>
+    <VCard style={[styles.sectionCard, tone ? { backgroundColor: alpha(tone, 0.06) } : null] as any} padding={SPACING.lg}>
       <View style={styles.sectionHeader}>
-        {Icon ? <Icon size={18} color={tone || colors.textSecondary} /> : null}
-        <Text accessibilityRole="header" style={[styles.sectionTitle, { color: tone || colors.text }]}>{title}</Text>
+        {/* Titles read as chapter headings; only the emergency keeps its warning icon */}
+        {Icon && tone ? <Icon size={20} color={tone} /> : null}
+        <DisplayText style={[styles.sectionTitle, { color: tone || colors.text }]}>{title}</DisplayText>
       </View>
       {children}
     </VCard>
@@ -232,7 +236,7 @@ export default function DiseaseDetailScreen() {
         </View>
 
         {disease.prognosis ? (
-          <View style={[styles.prognosisRow, { borderTopColor: colors.border }]}>
+          <View style={styles.prognosisRow}>
             <TrendingUp size={16} color={colors.textSecondary} />
             <Text style={{ color: colors.textSecondary }}>Pronóstico:</Text>
             <Text style={{ color: colors.text, fontWeight: TYPOGRAPHY.weights.semibold }}>
@@ -440,10 +444,11 @@ const styles = StyleSheet.create({
   metaPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: SPACING.sm, paddingVertical: 4, borderRadius: RADIUS.full, borderWidth: 1 },
   metaPillText: { fontSize: TYPOGRAPHY.sizes.sm },
   categoryDot: { width: 8, height: 8, borderRadius: 4 },
-  prognosisRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: SPACING.md, paddingTop: SPACING.md, borderTopWidth: 1 },
+  prognosisRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: SPACING.lg },
   diseasePhoto: { width: '100%', height: 220, borderRadius: RADIUS.md, marginTop: SPACING.md },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.md },
-  sectionTitle: { fontWeight: TYPOGRAPHY.weights.bold, fontSize: TYPOGRAPHY.sizes.base },
+  sectionTitle: { fontWeight: '600', fontSize: 22 },
+  lozenge: { width: 6, height: 6, transform: [{ rotate: '45deg' }], marginTop: 8, marginHorizontal: 5 },
   body: { lineHeight: 22, fontSize: TYPOGRAPHY.sizes.md },
   tabBar: { flexDirection: 'row', marginBottom: SPACING.md, borderRadius: RADIUS.lg, borderWidth: 1, padding: 4 },
   tab: { flex: 1, alignItems: 'center', paddingVertical: SPACING.sm, borderRadius: RADIUS.md, gap: 4, minHeight: 52, justifyContent: 'center' },
@@ -460,6 +465,6 @@ const styles = StyleSheet.create({
   editLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, marginBottom: 6 },
   editInput: { borderWidth: 1, borderRadius: RADIUS.md, padding: SPACING.sm + 2, fontSize: TYPOGRAPHY.sizes.md },
   editTextarea: { minHeight: 80, textAlignVertical: 'top' },
-  editSection: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: TYPOGRAPHY.weights.bold, marginTop: SPACING.lg, marginBottom: SPACING.sm, paddingBottom: 6, borderBottomWidth: 1 },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: SPACING.md, marginTop: SPACING.lg, paddingTop: SPACING.lg, borderTopWidth: 1 },
+  editSection: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: TYPOGRAPHY.weights.bold, marginTop: SPACING.lg, marginBottom: SPACING.sm },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: SPACING.md, marginTop: SPACING.xl },
 });

@@ -3,6 +3,7 @@ import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
 import { FlaskConical, Plus, AlertTriangle, CheckCircle } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import PageHeader from '../../components/ui/PageHeader';
 import { SPACING, TYPOGRAPHY, alpha } from '../../constants/tokens';
 import VCard from '../../components/ui/Card';
 import VButton from '../../components/ui/Button';
@@ -31,7 +32,7 @@ const EXAM_TYPE_LABELS = Object.fromEntries(EXAM_TYPES.map(t => [t.key, t.label]
 const SPECIES_LABELS: Record<string, string> = { dog: 'Canino', cat: 'Felino' };
 
 export default function LaboratorioScreen() {
-  const { colors } = useTheme();
+  const { colors, onAccentText } = useTheme();
   const toast = useToast();
   const { pets } = usePets();
   const [exams, setExams] = useState<DirectusLabExam[]>([]);
@@ -110,13 +111,11 @@ export default function LaboratorioScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={styles.content} refreshControl={<VRefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
-        <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <DisplayText style={[styles.title, { color: colors.text }]}>Laboratorio</DisplayText>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Exámenes solicitados y sus resultados</Text>
-          </View>
-          <VButton variant="accent" onPress={openCreate} icon={<Plus size={18} color={colors.primary} />}>Solicitar examen</VButton>
-        </View>
+        <PageHeader
+          title="Laboratorio"
+          subtitle="Exámenes solicitados y sus resultados"
+          actions={<VButton onPress={openCreate} icon={<Plus size={16} color={onAccentText.default} />}>Solicitar examen</VButton>}
+        />
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
           {[
@@ -214,7 +213,7 @@ const styles = StyleSheet.create({
   examName: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.semibold },
   examPet: { fontSize: TYPOGRAPHY.sizes.sm, marginTop: SPACING.xs },
   examResult: { fontSize: TYPOGRAPHY.sizes.base, lineHeight: 22, marginBottom: SPACING.md },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: SPACING.sm, paddingTop: SPACING.md, borderTopWidth: 1 },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: SPACING.sm, paddingTop: SPACING.md },
   examDate: { fontSize: TYPOGRAPHY.sizes.sm, flexShrink: 1 },
   errorBox: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, padding: SPACING.md, borderRadius: 2, borderWidth: 1 },
   fieldLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, marginBottom: SPACING.sm },

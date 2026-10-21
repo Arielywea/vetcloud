@@ -15,10 +15,12 @@ interface TopBarProps {
   onMenuPress?: () => void;
   onSearchPress?: () => void;
   title?: string;
+  /** Hide the global "Nuevo paciente" where the page itself offers it */
+  hideCta?: boolean;
   rightContent?: React.ReactNode;
 }
 
-export default function TopBar({ onMenuPress, onSearchPress, title, rightContent }: TopBarProps) {
+export default function TopBar({ onMenuPress, onSearchPress, title, rightContent, hideCta }: TopBarProps) {
   const router = useRouter();
   const { colors, onAccentText } = useTheme();
   const { isMobile } = useResponsive();
@@ -46,7 +48,7 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
         >
           <Search size={16} color={colors.textLight} />
           <Text style={[styles.searchPlaceholder, { color: colors.textSecondary }]}>
-            Buscar pacientes, propietarios, citas...
+            Buscar pacientes, tutores o pantallas…
           </Text>
           <View style={[styles.shortcut, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             {IS_MAC ? <Command size={12} color={colors.textSecondary} /> : null}
@@ -74,7 +76,7 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
             <Calendar size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         )}
-        {!isMobile && (
+        {!isMobile && !hideCta && (
           <TouchableOpacity
             style={[styles.newPatientBtn, { backgroundColor: colors.accent }]}
             onPress={() => router.push('/(drawer)/add-paciente')}

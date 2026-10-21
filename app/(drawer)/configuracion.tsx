@@ -4,6 +4,7 @@ import { Text } from 'react-native-paper';
 import { User, Palette, Bell, Shield, Check, AlertCircle, Eye, EyeOff, Sun, Moon, Building2 } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
+import PageHeader from '../../components/ui/PageHeader';
 import { apiAuthChangePassword } from '../../services/auth';
 import { passwordPolicyError, PASSWORD_HINT } from '../../utils/password';
 import { SPACING, RADIUS, TYPOGRAPHY, alpha } from '../../constants/tokens';
@@ -159,15 +160,12 @@ export default function ConfiguracionScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <DisplayText style={[styles.title, { color: colors.text }]}>Configuración</DisplayText>
-      </View>
+      <PageHeader title="Configuración" subtitle="Tu cuenta, la clínica y las preferencias de la app" />
 
       {/* Datos personales */}
       <VCard style={styles.card}>
         <View style={styles.cardHeader}>
-          <User size={20} color={colors.primary} />
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Datos personales</Text>
+          <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Datos personales</DisplayText>
         </View>
         <VInput label="Nombre" value={name} onChangeText={setName} />
         <VInput label="Correo electrónico" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
@@ -178,7 +176,7 @@ export default function ConfiguracionScreen() {
       <VCard style={styles.card}>
         <View style={styles.cardHeader}>
           <Building2 size={20} color={colors.primary} />
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Clínica</Text>
+          <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Clínica</DisplayText>
         </View>
         <Text style={[styles.cardHint, { color: colors.textSecondary }]}>
           Aparece en el encabezado de las recetas en PDF y en los correos a los tutores.
@@ -197,8 +195,7 @@ export default function ConfiguracionScreen() {
       {/* Apariencia */}
       <VCard style={styles.card}>
         <View style={styles.cardHeader}>
-          <Palette size={20} color={colors.primary} />
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Apariencia</Text>
+          <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Apariencia</DisplayText>
         </View>
         <View style={styles.modeRow} accessibilityRole="radiogroup">
           {modeButton(false)}
@@ -212,15 +209,14 @@ export default function ConfiguracionScreen() {
       {/* Notificaciones */}
       <VCard style={styles.card}>
         <View style={styles.cardHeader}>
-          <Bell size={20} color={colors.primary} />
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Notificaciones</Text>
+          <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Notificaciones</DisplayText>
         </View>
         {([
           ['Recordatorios por correo', notiEmail, setNotiEmail, 'notification_email_reminders'],
           ['Citas próximas', notiCitas, setNotiCitas, 'notification_upcoming_appointments'],
           ['Notificaciones push', notiPush, setNotiPush, 'notification_push'],
         ] as const).map(([label, value, setter, field], i, all) => (
-          <View key={field} style={[styles.notiRow, i < all.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+          <View key={field} style={[styles.notiRow]}>
             <Text style={[styles.notiLabel, { color: colors.text }]}>{label}</Text>
             <Switch
               value={value}
@@ -236,8 +232,7 @@ export default function ConfiguracionScreen() {
       {/* Seguridad */}
       <VCard style={styles.card}>
         <View style={styles.cardHeader}>
-          <Shield size={20} color={colors.primary} />
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Cambiar contraseña</Text>
+          <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Cambiar contraseña</DisplayText>
         </View>
         <VInput
           label="Contraseña actual"
@@ -287,7 +282,7 @@ const styles = StyleSheet.create({
   title: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.bold },
   card: { marginBottom: SPACING.md, borderRadius: RADIUS.lg },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.md },
-  cardTitle: { fontWeight: TYPOGRAPHY.weights.bold, fontSize: TYPOGRAPHY.sizes.lg },
+  cardTitle: { fontSize: 24, fontWeight: '600' },
   cardHint: { fontSize: TYPOGRAPHY.sizes.sm, marginTop: -SPACING.xs, marginBottom: SPACING.md },
   modeRow: { flexDirection: 'row', gap: 10 },
   modeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 44, borderRadius: RADIUS.md, borderWidth: 1 },

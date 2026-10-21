@@ -161,7 +161,7 @@ export default function AppointmentDetailModal({
                     >
                       <View style={styles.statusBadge}>
                         <View style={[styles.statusDot, { backgroundColor: status.color }]} />
-                        <Text style={[styles.rowValue, { color: status.color }]} numberOfLines={1}>{status.label}</Text>
+                        <Text style={[styles.rowValue, { color: colors.text }]} numberOfLines={1}>{status.label}</Text>
                       </View>
                       <ChevronDown size={16} color={status.color} style={{ transform: [{ rotate: statusDropdownOpen ? '180deg' : '0deg' }] }} />
                     </TouchableOpacity>
@@ -193,7 +193,7 @@ export default function AppointmentDetailModal({
                 ) : (
                   <View style={styles.statusBadge}>
                     <View style={[styles.statusDot, { backgroundColor: status.color }]} />
-                    <Text style={[styles.rowValue, { color: status.color }]} numberOfLines={1}>{status.label}</Text>
+                    <Text style={[styles.rowValue, { color: colors.text }]} numberOfLines={1}>{status.label}</Text>
                   </View>
                 )}
               </View>

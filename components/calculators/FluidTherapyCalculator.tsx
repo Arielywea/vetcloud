@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Text, TextInput, SegmentedButtons } from 'react-native-paper';
 import { AlertTriangle, CheckCircle, Calculator } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import PageHeader from '../ui/PageHeader';
 import { SPACING, RADIUS, TYPOGRAPHY, alpha } from '../../constants/tokens';
 import { parseNumberInRange } from '../../utils/parseNumber';
 
@@ -77,7 +78,7 @@ export default function FluidTherapyCalculator({ initialWeight, initialSpecies }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={[styles.title, { color: colors.text }]}>Calculadora de fluidoterapia</Text>
+      <PageHeader title="Fluidoterapia" subtitle="Mantención, déficit y pérdidas, en mL/h y gotas por minuto" />
 
       {/* Inputs */}
       <View style={styles.inputGroup}>

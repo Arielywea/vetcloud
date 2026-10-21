@@ -72,7 +72,7 @@ export default function PatientTable({
           <Text style={[styles.headerText, { color: colors.textSecondary }]}>Raza</Text>
         </View>
         <View style={styles.cellWideHeader}>
-          <Text style={[styles.headerText, { color: colors.textSecondary }]}>Propietario</Text>
+          <Text style={[styles.headerText, { color: colors.textSecondary }]}>Tutor</Text>
         </View>
         <View style={styles.cellHeader}>
           <Text style={[styles.headerText, { color: colors.textSecondary }]}>Última visita</Text>

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, ScrollView, Text, useWindowDimensions, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, useWindowDimensions, TouchableOpacity, Pressable } from 'react-native';
 import { Plus } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import TimeGrid, { HOUR_HEIGHT, HOURS } from './TimeGrid';
@@ -167,16 +167,19 @@ export default function WeekView({
                     {onSlotPress && (
                       // The whole empty hour is the target (it was a 14px "+", and hitSlop does nothing on web);
                       // appointments render after it, so they stay on top
-                      <TouchableOpacity
+                      <Pressable
                         style={[styles.addSlot, { height: HOUR_HEIGHT }]}
                         onPress={() => onSlotPress(day, hour)}
                         accessibilityRole="button"
                         accessibilityLabel={`Nueva cita el ${day.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric' })} a las ${hour}:00`}
                       >
-                        <View style={[styles.addBtn, { backgroundColor: colors.surfaceVariant }]}>
-                          <Plus size={10} color={colors.textSecondary} />
-                        </View>
-                      </TouchableOpacity>
+                        {/* The "+" shows under the pointer only: drawn in every cell it turned the grid into a field of crosses */}
+                        {({ hovered }: any) => (hovered ? (
+                          <View style={[styles.addBtn, { backgroundColor: colors.surfaceVariant }]}>
+                            <Plus size={10} color={colors.textSecondary} />
+                          </View>
+                        ) : null)}
+                      </Pressable>
                     )}
                   </View>
                 ))}

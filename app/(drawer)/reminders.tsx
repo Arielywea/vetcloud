@@ -4,6 +4,7 @@ import { Text, Modal, Portal } from 'react-native-paper';
 import { Bell, BellOff, Syringe, Bug, CalendarClock, BriefcaseMedical, ClipboardCheck, Plus, Wand2, Send, Check, X, Trash2, Dog, Cat, CheckCircle, AlertTriangle } from 'lucide-react-native';
 import { useReminders } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
+import PageHeader from '../../components/ui/PageHeader';
 import { usePets } from '../../hooks/useDirectus';
 import { Reminder } from '../../services/directus';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
@@ -78,10 +79,16 @@ export default function RemindersScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} refreshControl={<VRefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
-      <View style={styles.actions}>
-        <VButton variant="primary" onPress={() => setShowCreateModal(true)} icon={<Plus size={16} color={onAccentText.default} />}>Nuevo</VButton>
-        <VButton variant="accent" onPress={() => setShowAutoModal(true)} icon={<Wand2 size={16} />}>Auto</VButton>
-        <VButton variant="secondary" onPress={handleSendPending} icon={<Send size={16} />} loading={saving}>Enviar</VButton>
+      <View style={styles.pageHeaderWrap}>
+        <PageHeader
+          title="Recordatorios"
+          subtitle="Avisos por correo a los tutores: vacunas, controles y desparasitaciones"
+          actions={<>
+            <VButton variant="secondary" onPress={handleSendPending} icon={<Send size={16} color={colors.primary} />} loading={saving}>Enviar pendientes</VButton>
+            <VButton variant="secondary" onPress={() => setShowAutoModal(true)} icon={<Wand2 size={16} color={colors.primary} />}>Generar desde fichas</VButton>
+            <VButton variant="primary" onPress={() => setShowCreateModal(true)} icon={<Plus size={16} color={onAccentText.default} />}>Nuevo recordatorio</VButton>
+          </>}
+        />
       </View>
 
       <View style={styles.filters}>
@@ -202,6 +209,7 @@ export default function RemindersScreen() {
 }
 
 const styles = StyleSheet.create({
+  pageHeaderWrap: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.xl },
   container: { flex: 1, padding: SPACING.lg },
   actions: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.md },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: SPACING.lg },

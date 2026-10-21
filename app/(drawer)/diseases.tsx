@@ -6,10 +6,13 @@ import { Search, SlidersHorizontal, Plus, BriefcaseMedical, Dog, Cat, PawPrint, 
 import { useDiseases } from '../../hooks/useDirectus';
 import { SEVERITY_LABELS, SEVERITY_TONE } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
+import DisplayText from '../../components/ui/DisplayText';
 import { DISEASE_CATEGORIES, DiseaseCategoryKey, SPECIES_LABELS, categoryLabel, normalizeSearch, signTitle } from '../../constants/diseaseMeta';
 import { DirectusDisease } from '../../services/directus';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FAB } from '../../constants/tokens';
 import VCard from '../../components/ui/Card';
+import PageHeader from '../../components/ui/PageHeader';
+import VButton from '../../components/ui/Button';
 import VBadge from '../../components/ui/Badge';
 import VEmptyState from '../../components/ui/EmptyState';
 import { SkeletonList } from '../../components/ui/Skeleton';
@@ -42,7 +45,7 @@ function toggle<T>(list: T[], value: T): T[] {
 export default function DiseasesScreen() {
   const router = useRouter();
   const { diseases, loading } = useDiseases();
-  const { colors, onPrimaryText } = useTheme();
+  const { colors, onPrimaryText, onAccentText } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [species, setSpecies] = useState<'dog' | 'cat' | 'all'>('all');
   const [categories, setCategories] = useState<string[]>([]);
@@ -181,6 +184,11 @@ export default function DiseasesScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]} onLayout={onLayout}>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <PageHeader
+          title="Enfermedades"
+          subtitle="Fichas de referencia para perros y gatos, con contexto chileno"
+          actions={<VButton onPress={() => router.push('/(drawer)/add-disease')} icon={<Plus size={16} color={onAccentText.default} />}>Nueva enfermedad</VButton>}
+        />
         {/* Search + species */}
         <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Search size={18} color={colors.textSecondary} />
@@ -289,19 +297,18 @@ export default function DiseasesScreen() {
                 {g.title ? (
                   collapsible ? (
                     <TouchableOpacity
-                      style={[styles.groupHeader, { borderBottomColor: colors.border }]}
+                      style={styles.groupHeader}
                       onPress={() => setCollapsed(prev => { const n = new Set(prev); n.has(g.key) ? n.delete(g.key) : n.add(g.key); return n; })}
                       accessibilityRole="button"
                       aria-expanded={!isCollapsed}
                     >
-                      <Baby size={16} color={colors.textSecondary} />
-                      <Text style={[styles.groupTitle, { color: colors.text }]}>{g.title}</Text>
+                      <DisplayText style={[styles.groupTitle, { color: colors.text }]}>{g.title}</DisplayText>
                       <Text style={[styles.groupCount, { color: colors.textSecondary }]}>{g.items.length}</Text>
                       <ChevronDown size={16} color={colors.textSecondary} style={{ transform: [{ rotate: isCollapsed ? '-90deg' : '0deg' }] }} />
                     </TouchableOpacity>
                   ) : (
-                    <View style={[styles.groupHeader, { borderBottomColor: colors.border }]} accessibilityRole="header">
-                      <Text style={[styles.groupTitle, { color: colors.text }]}>{g.title}</Text>
+                    <View style={styles.groupHeader} accessibilityRole="header">
+                      <DisplayText style={[styles.groupTitle, { color: colors.text }]}>{g.title}</DisplayText>
                       <Text style={[styles.groupCount, { color: colors.textSecondary }]}>{g.items.length}</Text>
                     </View>
                   )
@@ -313,9 +320,6 @@ export default function DiseasesScreen() {
         )}
       </ScrollView>
 
-      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Nueva enfermedad" style={[styles.fab, { backgroundColor: colors.primary, ...SHADOWS.lg }]} onPress={() => router.push('/(drawer)/add-disease')}>
-        <Plus size={24} color={onPrimaryText.default} />
-      </TouchableOpacity>
     </View>
   );
 }
@@ -333,12 +337,13 @@ const styles = StyleSheet.create({
   filterGroup: { gap: SPACING.xs },
   filterTitle: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.semibold},
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: SPACING.md, borderRadius: RADIUS.full, borderWidth: 1, minHeight: 36 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: SPACING.md, borderRadius: RADIUS.sm, borderWidth: 1, minHeight: 36 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   resultsRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.md, marginBottom: SPACING.sm },
   group: { marginTop: SPACING.sm },
-  groupHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: SPACING.sm, borderBottomWidth: 1, marginBottom: SPACING.md, minHeight: 44 },
-  groupTitle: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: TYPOGRAPHY.weights.bold, flex: 1 },
+  // Group names as chapter headings; space below instead of a rule
+  groupHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: SPACING.sm, marginBottom: SPACING.sm, minHeight: 44 },
+  groupTitle: { fontSize: 24, fontWeight: '600', flex: 1 },
   groupCount: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold },
   grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -SPACING.sm / 2 },
   cell: { paddingHorizontal: SPACING.sm / 2, marginBottom: SPACING.sm },

@@ -5,6 +5,7 @@ import { StickyNote, Pencil, Trash2, Plus, AlertTriangle } from 'lucide-react-na
 import { useNotes } from '../../hooks/useDirectus';
 import { DirectusNote, api } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
+import PageHeader from '../../components/ui/PageHeader';
 import { TYPOGRAPHY, SPACING, RADIUS, SHADOWS, FAB } from '../../constants/tokens';
 import VCard from '../../components/ui/Card';
 import VButton from '../../components/ui/Button';
@@ -14,7 +15,7 @@ import { useToast } from '../../components/ui/VToast';
 
 export default function NotesScreen() {
   const { notes, loading, addNote, updateNote, refresh } = useNotes();
-  const { colors, onPrimaryText } = useTheme();
+  const { colors, onPrimaryText, onAccentText } = useTheme();
   const toast = useToast();
   const [showModal, setShowModal] = useState(false);
   const [editingNote, setEditingNote] = useState<DirectusNote | null>(null);
@@ -100,6 +101,13 @@ export default function NotesScreen() {
         extraData={refreshKey}
         contentContainerStyle={styles.listContent}
         refreshControl={<VRefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        ListHeaderComponent={
+          <PageHeader
+            title="Notas personales"
+            subtitle="Protocolos, recordatorios y observaciones propias"
+            actions={<VButton onPress={() => { resetForm(); setShowModal(true); }} icon={<Plus size={16} color={onAccentText.default} />}>Nueva nota</VButton>}
+          />
+        }
         ListEmptyComponent={
           <VEmptyState
             icon={<StickyNote size={32} color={colors.textLight} />}
@@ -109,9 +117,6 @@ export default function NotesScreen() {
           />
         }
       />
-      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Nueva nota" style={[styles.fab, { backgroundColor: colors.primary, ...SHADOWS.lg }]} onPress={() => { resetForm(); setShowModal(true); }}>
-        <Plus size={24} color={onPrimaryText.default} />
-      </TouchableOpacity>
 
       <Portal>
         <Modal visible={showModal} onDismiss={() => { setShowModal(false); resetForm(); }} contentContainerStyle={[styles.modal, { backgroundColor: colors.surface }]}>

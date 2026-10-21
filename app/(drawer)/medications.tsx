@@ -7,6 +7,7 @@ import {
 } from 'lucide-react-native';
 import { useMedications } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
+import PageHeader from '../../components/ui/PageHeader';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
 import VEmptyState from '../../components/ui/EmptyState';
 import { SkeletonList } from '../../components/ui/Skeleton';
@@ -89,6 +90,9 @@ export default function MedicationsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.pageHeader}>
+        <PageHeader title="Vademécum" subtitle="Dosis por especie, presentaciones y vías" />
+      </View>
       {/* Scrollable Specialty Tabs */}
       <View style={styles.tabsContainer}>
         <View style={styles.tabsRow}>
@@ -162,6 +166,7 @@ export default function MedicationsScreen() {
 }
 
 const styles = StyleSheet.create({
+  pageHeader: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.xl, marginBottom: -SPACING.md },
   container: {
     flex: 1,
   },

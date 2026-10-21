@@ -43,9 +43,8 @@ export default function ActivityFeed({ items = [] }: ActivityFeedProps) {
               styles.activityRow,
             ]}
           >
-            <View style={[styles.activityIcon, { backgroundColor: item.iconBg }]}>
-              {item.icon}
-            </View>
+            {/* A lozenge in the event's colour, like the marks of a chronicle (was an icon on a tinted tile) */}
+            <View style={[styles.lozenge, { backgroundColor: item.iconColor }]} />
             <Text style={[styles.activityText, { color: colors.text }]} numberOfLines={2}>
               {item.text}
             </Text>
@@ -58,6 +57,7 @@ export default function ActivityFeed({ items = [] }: ActivityFeedProps) {
 }
 
 const styles = StyleSheet.create({
+  lozenge: { width: 7, height: 7, transform: [{ rotate: '45deg' }], marginHorizontal: 4 },
   card: {
     borderRadius: RADIUS.lg,
     padding: SPACING.xl,

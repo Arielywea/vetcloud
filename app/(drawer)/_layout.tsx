@@ -68,7 +68,8 @@ const SCREEN_TITLES: Record<string, string> = {
 };
 
 // Screens that draw their own DisplayText heading; the rest get it in the top bar
-const OWN_HEADING = new Set(['/', '/pacientes', '/add-paciente', '/hospitalizacion', '/laboratorio', '/reportes', '/configuracion', '/surgeries']);
+// Every page draws its own PageHeader except the agenda, a dense tool whose toolbar is its heading
+const OWN_HEADING = new Set(['/', '/pacientes', '/add-paciente', '/hospitalizacion', '/laboratorio', '/reportes', '/configuracion', '/surgeries', '/inventario', '/diseases', '/add-disease', '/medications', '/notes', '/reminders', '/fluidoterapia', '/dosis']);
 
 export default function DrawerLayout() {
   const { colors, isDark } = useTheme();
@@ -115,6 +116,7 @@ export default function DrawerLayout() {
           onSearchPress={openCmd}
           onMenuPress={isMobile ? () => setSidebarOpen(true) : undefined}
           title={OWN_HEADING.has(pathname) ? undefined : pageTitle}
+          hideCta={pathname !== '/'}
         />
         <View style={styles.screenArea}>
           <ErrorBoundary colors={{ text: colors.text, textSecondary: colors.textSecondary, error: colors.error }}>

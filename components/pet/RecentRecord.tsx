@@ -1,11 +1,10 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Button } from 'react-native-paper';
-import DynamicIcon from '../ui/DynamicIcon';
 import { ClinicalRecord } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import DisplayText from '../ui/DisplayText';
-import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { SPACING, TYPOGRAPHY } from '../../constants/tokens';
 import { RECORD_TYPE_CONFIG } from '../../constants/icons';
 
 interface RecentRecordProps {
@@ -22,15 +21,21 @@ export default function RecentRecord({ record, onView, onGenerateRx }: RecentRec
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
       <View style={styles.header}>
         <DisplayText style={[styles.title, { color: colors.text }]}>Última consulta</DisplayText>
-        <Button compact mode="text" onPress={onView} labelStyle={{ color: colors.primary }}>
-          Ver todo
-        </Button>
+        {/* "Ver todo" and "Detalle" opened the same thing; two quiet text actions instead of three buttons */}
+        <View style={styles.headerActions}>
+          <Button compact mode="text" onPress={onGenerateRx} labelStyle={[styles.actionLabel, { color: colors.primary }]}>
+            Generar receta
+          </Button>
+          <Button compact mode="text" onPress={onView} labelStyle={[styles.actionLabel, { color: colors.primary }]}>
+            Ver detalle
+          </Button>
+        </View>
       </View>
 
       <View style={styles.metaRow}>
-        <View style={[styles.typeBadge, { backgroundColor: config.bgColor }]}>
-          <DynamicIcon name={config.icon as any} size={12} color={config.color} />
-          <Text style={[styles.typeText, { color: config.color }]}>{config.label}</Text>
+        <View style={styles.typeMark}>
+          <View style={[styles.lozenge, { backgroundColor: config.color }]} />
+          <Text style={[styles.typeText, { color: colors.text }]}>{config.label}</Text>
         </View>
         <Text style={[styles.date, { color: colors.textSecondary }]}>
           {new Date(record.date).toLocaleDateString('es-CL')}
@@ -40,25 +45,25 @@ export default function RecentRecord({ record, onView, onGenerateRx }: RecentRec
       <View style={styles.fields}>
         {record.veterinarian && (
           <View style={styles.field}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Veterinario:</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Veterinario</Text>
             <Text style={[styles.fieldValue, { color: colors.text }]}>{record.veterinarian}</Text>
           </View>
         )}
         {record.details?.weight && (
           <View style={styles.field}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Peso:</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Peso</Text>
             <Text style={[styles.fieldValue, { color: colors.text }]}>{record.details.weight} kg</Text>
           </View>
         )}
         {record.details?.motivo_consulta && (
           <View style={styles.field}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Motivo:</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Motivo</Text>
             <Text style={[styles.fieldValue, { color: colors.text }]} numberOfLines={2}>{record.details.motivo_consulta}</Text>
           </View>
         )}
         {record.details?.vital_signs && (
           <View style={styles.field}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Constantes:</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Constantes</Text>
             <Text style={[styles.fieldValue, { color: colors.text }]} numberOfLines={1}>
               {[
                 record.details.vital_signs.temperature != null && `Temp: ${record.details.vital_signs.temperature}C`,
@@ -70,14 +75,6 @@ export default function RecentRecord({ record, onView, onGenerateRx }: RecentRec
         )}
       </View>
 
-      <View style={styles.actions}>
-        <Button compact mode="outlined" onPress={onView} style={[styles.actionBtn, { borderColor: colors.border }]} labelStyle={[styles.actionLabel, { color: colors.primary }]}>
-          Detalle
-        </Button>
-        <Button compact mode="outlined" onPress={onGenerateRx} style={[styles.actionBtn, { borderColor: colors.border }]} labelStyle={[styles.actionLabel, { color: colors.primary }]}>
-          Generar Receta
-        </Button>
-      </View>
     </View>
   );
 }
@@ -85,7 +82,6 @@ export default function RecentRecord({ record, onView, onGenerateRx }: RecentRec
 const styles = StyleSheet.create({
   container: {
     marginHorizontal: SPACING.xl,
-    borderRadius: RADIUS.lg,
     padding: SPACING.xl,
   },
   header: {
@@ -104,17 +100,12 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
     marginBottom: SPACING.md,
   },
-  typeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING['2xs'],
-    borderRadius: RADIUS.full,
-  },
+  headerActions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end' },
+  typeMark: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  lozenge: { width: 7, height: 7, transform: [{ rotate: '45deg' }] },
   typeText: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: TYPOGRAPHY.weights.bold,
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   date: {
     fontSize: TYPOGRAPHY.sizes.sm,
@@ -127,22 +118,12 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   fieldLabel: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+    fontSize: TYPOGRAPHY.sizes.sm,
     minWidth: 90,
   },
   fieldValue: {
     fontSize: TYPOGRAPHY.sizes.sm,
     flex: 1,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-    marginTop: SPACING.md,
-  },
-  actionBtn: {
-    flex: 1,
-    borderRadius: RADIUS.md,
   },
   actionLabel: {
     fontSize: TYPOGRAPHY.sizes.sm,

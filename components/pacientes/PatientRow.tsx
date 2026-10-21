@@ -91,7 +91,7 @@ export default function PatientRow({ patient, isSelected, onSelect, onClick, onD
 
       <View style={styles.cellWide}>
         <Text style={[styles.cellText, { color: colors.text }]} numberOfLines={1}>
-          {patient.tutor_name || 'Sin propietario'}
+          {patient.tutor_name || 'Sin tutor'}
         </Text>
       </View>
 

@@ -32,7 +32,7 @@ import { APP_COLORS } from '../../constants/colors';
 
 // API
 import { api } from '../../services/directus';
-import { BREAKPOINTS, SHADOWS } from '../../constants/tokens';
+import { BREAKPOINTS, SHADOWS, SPACING } from '../../constants/tokens';
 
 type ViewMode = 'week' | 'day' | 'month';
 
@@ -259,7 +259,7 @@ function AgendaContent() {
           )}
         </View>
         {showSidebar && (
-          <View style={[styles.sidebar, { width: sidebarWidth, borderLeftColor: colors.border }]}>
+          <View style={[styles.sidebar, { width: sidebarWidth }]}>
             <AgendaSidebar
               selectedDate={selectedDate}
               onDateSelect={setSelectedDate}
@@ -268,12 +268,13 @@ function AgendaContent() {
               veterinarians={veterinarians}
               appointmentTypes={['consulta', 'vacuna', 'cirugia', 'control', 'terreno', 'examenes', 'hospitalizacion']}
               statuses={['programada', 'confirmada', 'en_espera', 'en_consulta', 'completada', 'cancelada', 'ausente']}
-            />
-            {summary && (
-              <View style={styles.summaryContainer}>
-                <DaySummary summary={summary} />
-              </View>
-            )}
+            >
+              {summary && (
+                <View style={styles.summaryContainer}>
+                  <DaySummary summary={summary} />
+                </View>
+              )}
+            </AgendaSidebar>
           </View>
         )}
       </View>
@@ -342,12 +343,13 @@ function AgendaContent() {
               veterinarians={veterinarians}
               appointmentTypes={['consulta', 'vacuna', 'cirugia', 'control', 'terreno', 'examenes', 'hospitalizacion']}
               statuses={['programada', 'confirmada', 'en_espera', 'en_consulta', 'completada', 'cancelada', 'ausente']}
-            />
-            {summary && (
-              <View style={styles.summaryContainer}>
-                <DaySummary summary={summary} />
-              </View>
-            )}
+            >
+              {summary && (
+                <View style={styles.summaryContainer}>
+                  <DaySummary summary={summary} />
+                </View>
+              )}
+            </AgendaSidebar>
           </View>
         </View>
       )}
@@ -385,10 +387,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   sidebar: {
-    borderLeftWidth: 1,
+    flexShrink: 0,
   },
   summaryContainer: {
-    padding: 12,
+    paddingTop: SPACING.md,
   },
   sidebarOverlay: {
     ...StyleSheet.absoluteFillObject,

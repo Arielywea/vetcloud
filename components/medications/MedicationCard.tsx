@@ -59,7 +59,7 @@ export default function MedicationCard({ medication, onPress, index = 0 }: Medic
 
       <View style={styles.dosisRow}>
         {medication.dosis_perro && (
-          <View style={[styles.dosisBadge, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+          <View style={[styles.dosisBadge, { backgroundColor: colors.surfaceVariant }]}>
             <Text style={[styles.dosisLabel, { color: colors.textSecondary }]}>Perro</Text>
             <Text style={[styles.dosisValue, { color: colors.text }]} numberOfLines={1}>
               {medication.dosis_perro}
@@ -67,7 +67,7 @@ export default function MedicationCard({ medication, onPress, index = 0 }: Medic
           </View>
         )}
         {medication.dosis_gato && (
-          <View style={[styles.dosisBadge, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+          <View style={[styles.dosisBadge, { backgroundColor: colors.surfaceVariant }]}>
             <Text style={[styles.dosisLabel, { color: colors.textSecondary }]}>Gato</Text>
             <Text style={[styles.dosisValue, { color: colors.text }]} numberOfLines={1}>
               {medication.dosis_gato}
@@ -129,7 +129,6 @@ const styles = StyleSheet.create({
   dosisBadge: {
     flex: 1,
     borderRadius: RADIUS.sm,
-    borderWidth: 1,
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
   },
