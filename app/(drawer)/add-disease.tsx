@@ -410,15 +410,9 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
   card: {
-    borderRadius: 12,
-    borderLeftWidth: 3,
+    borderRadius: 2,
     padding: 16,
     marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
   },
   sectionTitle: {
     fontWeight: TYPOGRAPHY.weights.bold,

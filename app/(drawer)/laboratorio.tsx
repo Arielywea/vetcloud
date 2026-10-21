@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   examResult: { fontSize: TYPOGRAPHY.sizes.base, lineHeight: 22, marginBottom: SPACING.md },
   cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: SPACING.sm, paddingTop: SPACING.md, borderTopWidth: 1 },
   examDate: { fontSize: TYPOGRAPHY.sizes.sm, flexShrink: 1 },
-  errorBox: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, padding: SPACING.md, borderRadius: 10, borderWidth: 1 },
+  errorBox: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, padding: SPACING.md, borderRadius: 2, borderWidth: 1 },
   fieldLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, marginBottom: SPACING.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.lg },
 });

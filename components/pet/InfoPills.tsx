@@ -25,7 +25,7 @@ export default function InfoPills({ pet }: InfoPillsProps) {
   ];
 
   return (
-    <View style={[styles.container, { borderTopColor: colors.border }]}>
+    <View style={styles.container}>
       {pills.map((pill, i) => (
         <View key={i} style={[styles.pill, { backgroundColor: colors.primaryContainer, borderColor: colors.border }]}>
             <View style={[styles.iconCircle, { backgroundColor: alpha(colors.accent, 0.12) }]}>
@@ -46,7 +46,6 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
     marginTop: SPACING.lg,
     paddingTop: SPACING.lg,
-    borderTopWidth: 1,
   },
   pill: {
     flexDirection: 'row',
@@ -61,7 +60,7 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },

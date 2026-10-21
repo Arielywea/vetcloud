@@ -204,7 +204,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    letterSpacing: 0.5, textTransform: 'uppercase',
     marginBottom: SPACING.xs,
   },
   grid: {

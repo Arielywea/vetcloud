@@ -11,6 +11,7 @@ import { TEXT_ON_PRIMARY, getTextOnPrimary } from '../../constants/colors';
 import BeagleLogo from '../BeagleLogo';
 import VetCloudIcon, { VetCloudIconName } from '../icons/VetCloudIcon';
 import DisplayText from '../ui/DisplayText';
+import Escutcheon from '../icons/Escutcheon';
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -20,7 +21,7 @@ interface SidebarProps {
 
 const NAV_SECTIONS = [
   {
-    title: 'CLÍNICA',
+    title: 'Clínica',
     items: [
       { label: 'Inicio', iconName: 'dashboard' as VetCloudIconName, route: '/(drawer)' },
       { label: 'Pacientes', iconName: 'pacientes' as VetCloudIconName, route: '/(drawer)/pacientes' },
@@ -30,7 +31,7 @@ const NAV_SECTIONS = [
     ],
   },
   {
-    title: 'GESTIÓN',
+    title: 'Gestión',
     items: [
       { label: 'Agenda', iconName: 'agenda' as VetCloudIconName, route: '/(drawer)/agenda' },
       { label: 'Hospitalización', iconName: 'hospitalizacion' as VetCloudIconName, route: '/(drawer)/hospitalizacion' },
@@ -39,20 +40,20 @@ const NAV_SECTIONS = [
     ],
   },
   {
-    title: 'HERRAMIENTAS',
+    title: 'Herramientas',
     items: [
       { label: 'Fluidoterapia', iconName: 'fluidoterapia' as VetCloudIconName, route: '/(drawer)/fluidoterapia' },
       { label: 'Calculadora dosis', iconName: 'dosis' as VetCloudIconName, route: '/(drawer)/dosis' },
     ],
   },
   {
-    title: 'ANÁLISIS',
+    title: 'Análisis',
     items: [
       { label: 'Reportes', iconName: 'reportes' as VetCloudIconName, route: '/(drawer)/reportes' },
     ],
   },
   {
-    title: 'PERSONAL',
+    title: 'Personal',
     items: [
       { label: 'Notas', iconName: 'notas' as VetCloudIconName, route: '/(drawer)/notes' },
       { label: 'Recordatorios', iconName: 'recordatorios' as VetCloudIconName, route: '/(drawer)/reminders' },
@@ -113,7 +114,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
   return (
     <View style={[styles.container, { backgroundColor: colors.chrome, width: collapsed ? 64 : 240 }]}>
       {/* Crest + wordmark */}
-      <View style={[styles.logoSection, { borderBottomColor: alpha(colors.onChrome, 0.08) }, collapsed && styles.logoSectionCollapsed]}>
+      <View style={[styles.logoSection, collapsed && styles.logoSectionCollapsed]}>
         <BeagleLogo size={collapsed ? 32 : 36} />
         {!collapsed && (
           <DisplayText style={[styles.wordmark, { color: onChromeText.default }]}>
@@ -131,22 +132,20 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
         {NAV_SECTIONS.map((section) => (
           <View key={section.title} style={styles.section}>
             {!collapsed && (
-              <Text style={[styles.sectionTitle, { color: onChromeText.subtle }]}>{section.title}</Text>
+              // Rubrics, as in a manuscript: the gold italic heading replaces tiny grey capitals
+              <DisplayText accessibilityRole="header" style={[styles.sectionTitle, { color: isDark ? colors.primary : colors.accent }]}>{section.title}</DisplayText>
             )}
             {section.items.map(renderItem)}
           </View>
         ))}
       </ScrollView>
 
-      <View style={[styles.bottomSection, { borderTopColor: alpha(colors.onChrome, 0.08) }]}>
+      <View style={[styles.bottomSection, { backgroundColor: alpha(colors.onChrome, 0.04) }]}>
         {BOTTOM_ITEMS.map(renderItem)}
 
         <View style={[styles.userSection, collapsed && styles.userSectionCollapsed]}>
-          <View style={[styles.avatar, { borderColor: alpha(activeIcon, 0.55) }]}>
-            <Text style={[styles.avatarText, { color: onChromeText.default }]}>
-              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-            </Text>
-          </View>
+          {/* The vet's own arms: a shield with their initial instead of a round avatar */}
+          <Escutcheon size={34} color={activeIcon} initial={user?.name?.charAt(0)?.toUpperCase() || 'U'} initialColor={onChromeText.default} />
           {!collapsed && (
             <View style={styles.userInfo}>
               <Text style={[styles.userName, { color: onChromeText.default }]} numberOfLines={1}>
@@ -177,7 +176,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
     height: 72,
-    borderBottomWidth: 1,
     gap: SPACING.sm + 2,
   },
   logoSectionCollapsed: {
@@ -201,13 +199,12 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   sectionTitle: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+    fontSize: 16,
+    fontStyle: 'italic',
+    fontWeight: '600',
     paddingHorizontal: SPACING.xl,
     paddingTop: SPACING.sm,
     paddingBottom: SPACING.xs + 2,
-    letterSpacing: 1.1,
-    textTransform: 'uppercase',
   },
   navItem: {
     flexDirection: 'row',
@@ -234,8 +231,8 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: TYPOGRAPHY.sizes.md,
   },
+  // Set apart by a step in tone, not a rule
   bottomSection: {
-    borderTopWidth: 1,
     paddingTop: SPACING.sm,
   },
   userSection: {
@@ -248,18 +245,6 @@ const styles = StyleSheet.create({
   userSectionCollapsed: {
     justifyContent: 'center',
     paddingHorizontal: 0,
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: RADIUS.full,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.semibold,
   },
   userInfo: {
     flex: 1,

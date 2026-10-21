@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import { Clock } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import DisplayText from '../ui/DisplayText';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 
 interface ActivityItem {
@@ -25,8 +26,8 @@ export default function ActivityFeed({ items = [] }: ActivityFeedProps) {
     <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.xs]}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Clock size={18} color={colors.accent} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Actividad reciente</Text>
+          {/* Panel titles read like chapter headings of a codex */}
+          <DisplayText style={[styles.headerTitle, { color: colors.text }]}>Actividad reciente</DisplayText>
         </View>
       </View>
 
@@ -40,7 +41,6 @@ export default function ActivityFeed({ items = [] }: ActivityFeedProps) {
             key={item.id}
             style={[
               styles.activityRow,
-              idx < items.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
             ]}
           >
             <View style={[styles.activityIcon, { backgroundColor: item.iconBg }]}>
@@ -76,10 +76,7 @@ const styles = StyleSheet.create({
   headerEmoji: {
     fontSize: TYPOGRAPHY.sizes.lg,
   },
-  headerTitle: {
-    fontSize: TYPOGRAPHY.sizes.md,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
+  headerTitle: { fontSize: 22, fontWeight: '600' },
   activityRow: {
     flexDirection: 'row',
     alignItems: 'center',

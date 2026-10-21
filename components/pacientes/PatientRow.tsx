@@ -58,7 +58,7 @@ export default function PatientRow({ patient, isSelected, onSelect, onClick, onD
 
       {compact ? (
         <View style={styles.compactCell}>
-          <VAvatar name={patient.name} size={36} style={{ backgroundColor: colors.primaryContainer }} />
+          <VAvatar name={patient.name} size={36} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[styles.patientName, { color: colors.text }]} numberOfLines={1}>{patient.name}</Text>
             <Text style={[styles.cellText, { color: colors.textSecondary }]} numberOfLines={1}>
@@ -71,7 +71,7 @@ export default function PatientRow({ patient, isSelected, onSelect, onClick, onD
         </View>
       ) : (<>
       <View style={styles.patientCell}>
-        <VAvatar name={patient.name} size={32} style={{ backgroundColor: colors.primaryContainer }} />
+        <VAvatar name={patient.name} size={32} />
         <Text style={[styles.patientName, { color: colors.text }]} numberOfLines={1}>
           {patient.name}
         </Text>
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   cell: { flex: 1, minWidth: 90, paddingHorizontal: SPACING.xs },
   cellWide: { flex: 1.2, minWidth: 120, paddingHorizontal: SPACING.xs },
   cellText: { fontSize: TYPOGRAPHY.sizes.sm },
-  badge: { paddingHorizontal: SPACING.sm, paddingVertical: 3, borderRadius: 12, alignSelf: 'flex-start' },
+  badge: { paddingHorizontal: SPACING.sm, paddingVertical: 3, borderRadius: 999, alignSelf: 'flex-start' },
   badgeText: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.semibold },
   actionsCell: { width: 40, alignItems: 'center', justifyContent: 'center', position: 'relative' },
   menuBtn: { padding: SPACING.xs },

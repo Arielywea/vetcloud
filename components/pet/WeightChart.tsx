@@ -4,6 +4,7 @@ import { Text } from 'react-native-paper';
 import Svg, { Circle, Line, Path, Polyline, Text as SvgText } from 'react-native-svg';
 import { Weight, LineChart as LineChartIcon, TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import DisplayText from '../ui/DisplayText';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
 import { api, ClinicalRecord } from '../../services/directus';
 import { useRefreshOn } from '../../hooks/useDirectus';
@@ -115,8 +116,7 @@ export default function WeightChart({ records, petId }: WeightChartProps) {
 
   const header = (badge?: React.ReactNode) => (
     <View style={styles.header}>
-      <Weight size={18} color={colors.primary} />
-      <Text style={[styles.headerTitle, { color: colors.text }]}>Evolución del peso</Text>
+      <DisplayText style={[styles.headerTitle, { color: colors.text }]}>Evolución del peso</DisplayText>
       {badge}
     </View>
   );
@@ -215,8 +215,8 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
   headerTitle: {
-    fontSize: TYPOGRAPHY.sizes.md,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+    fontSize: 24,
+    fontWeight: '600',
     flex: 1,
   },
   chart: {

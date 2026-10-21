@@ -511,8 +511,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
     marginBottom: 6,
   },
   input: {

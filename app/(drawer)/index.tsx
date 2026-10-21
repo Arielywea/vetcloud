@@ -1,7 +1,6 @@
 import React, { useMemo, useEffect, useRef, useState, useCallback } from 'react';
-import { View, ScrollView, StyleSheet, Pressable, Image, ImageStyle, useWindowDimensions, Animated } from 'react-native';
+import { View, ScrollView, StyleSheet, Pressable, Image, ImageStyle, useWindowDimensions } from 'react-native';
 import { Text } from 'react-native-paper';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar, CheckCircle, User, CalendarDays, ChevronRight, Users, AlertTriangle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
@@ -11,7 +10,7 @@ import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, ANIMATION, BREAKPOINTS, alpha } f
 import VetCloudIcon from '../../components/icons/VetCloudIcon';
 import CrestStar from '../../components/icons/CrestStar';
 import DisplayText from '../../components/ui/DisplayText';
-import NextAppointmentCard from '../../components/dashboard/NextAppointmentCard';
+import TodayTable from '../../components/dashboard/TodayTable';
 import PatientList from '../../components/dashboard/PatientList';
 import StatsChart, { WeeklyDay, WeeklySummary } from '../../components/dashboard/StatsChart';
 import { api } from '../../services/directus';
@@ -24,20 +23,8 @@ function firstName(name?: string | null) {
   return words.find((w) => !HONORIFICS.test(w)) || words[0] || '';
 }
 
-import { APPOINTMENT_TYPE_LABELS } from '../../constants/colors';
-import QuickActions from '../../components/dashboard/QuickActions';
 import InventoryBar from '../../components/dashboard/InventoryBar';
 import ActivityFeed from '../../components/dashboard/ActivityFeed';
-
-function calculateAge(birthDate: string): string {
-  const birth = new Date(birthDate);
-  const now = new Date();
-  const years = now.getFullYear() - birth.getFullYear();
-  const months = now.getMonth() - birth.getMonth();
-  if (years > 0) return `${years} año${years > 1 ? 's' : ''}`;
-  if (months > 0) return `${months} mes${months > 1 ? 'es' : ''}`;
-  return '< 1 mes';
-}
 
 function relativeTime(dateStr: string): string {
   if (!dateStr) return '';
@@ -63,12 +50,14 @@ function getGreeting(): string {
 }
 
 
+// The crest artwork, whole (contain, not cropped), sitting in the chief like a charge on a shield
 function BannerIllustration({ isMobile }: { isMobile: boolean }) {
   return (
     <Image
       source={require('../../assets/banner.png')}
-      style={{ width: isMobile ? 140 : 280, height: isMobile ? 140 : 280, position: 'absolute', right: 0, bottom: 0 } as ImageStyle}
-      resizeMode="cover"
+      style={{ width: isMobile ? 160 : 340, height: isMobile ? 120 : 254, position: 'absolute', right: SPACING.lg, bottom: 0 } as ImageStyle}
+      resizeMode="contain"
+      accessibilityIgnoresInvertColors
     />
   );
 }
@@ -86,7 +75,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { colors, isDark, onChromeText } = useTheme();
-  const iconTint = colors.primary;
+  const gold = isDark ? colors.primary : colors.accent;
   const { width } = useWindowDimensions();
   const isMobile = width < BREAKPOINTS.sm;
   const { pets, loading: loadingPets, error: petsError, refresh: refreshPets } = usePets();
@@ -123,58 +112,12 @@ export default function DashboardScreen() {
   useEffect(() => { loadStats(); }, [loadStats]);
   useRefreshOn(['appointments', 'clinical_records', 'pets', 'hospitalizations'], loadStats);
 
-  // ─── Layout values (static) ───────────────────────────
-  // No entrance fade: this screen opens many times a day, and gating the whole
-  // dashboard's visibility on an animation left it blank when rAF was paused.
-  const contentOpacity = useRef(new Animated.Value(1)).current;
-  const heroOpacity = contentOpacity;
-  const heroY = useRef(new Animated.Value(0)).current;
-  const statCardAnims = useRef(
-    Array.from({ length: 4 }, () => ({
-      opacity: contentOpacity,
-      translateY: new Animated.Value(0),
-    }))
-  ).current;
-  const row3Opacity = contentOpacity;
-  const row3Y = useRef(new Animated.Value(0)).current;
-  const row4Opacity = contentOpacity;
-  const row4Y = useRef(new Animated.Value(0)).current;
-
-
 
   const todayStr = new Date().toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
 
-  // "Today" in local time (toISOString is UTC: after ~20:00 in Chile it was already tomorrow)
-  const todayAppointments = useMemo(
-    () => appointments.filter(a => a.start_time && isSameLocalDay(a.start_time) && !['cancelada', 'ausente'].includes(a.status as string)),
-    [appointments],
-  );
 
-  // Late = time passed 10+ min ago and the patient hasn't arrived or been seen
-  const lateCount = useMemo(() => {
-    const cutoff = Date.now() - 10 * 60 * 1000;
-    return todayAppointments.filter(a => ['programada', 'confirmada', 'pendiente'].includes(a.status as string) && new Date(a.start_time).getTime() < cutoff).length;
-  }, [todayAppointments]);
-
-  // Next appointment = the earliest one today that hasn't finished yet
-  const nextAppointment = useMemo(() => {
-    const cutoff = Date.now() - 30 * 60 * 1000;
-    const upcoming = todayAppointments
-      .filter(a => !['completada'].includes(a.status as string) && new Date(a.start_time).getTime() >= cutoff)
-      .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
-    const apt = upcoming[0];
-    if (!apt) return { hasAppointment: false, petName: '', petBreed: '', petAge: '', time: '', type: '', petId: null as string | null };
-    const matchedPet = apt.pet_id ? pets.find(p => p.id === apt.pet_id) : null;
-    return {
-      hasAppointment: true,
-      petName: apt.patient_name || 'Sin nombre',
-      petBreed: matchedPet?.breed || '',
-      petAge: matchedPet?.birth_date ? calculateAge(matchedPet.birth_date) : '',
-      time: new Date(apt.start_time).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }),
-      type: APPOINTMENT_TYPE_LABELS[apt.appointment_type as string] || 'Consulta',
-      petId: (apt.pet_id as string) || null,
-    };
-  }, [todayAppointments, pets]);
+  // Every appointment of the day, cancelled ones included (they sit faint at the table)
+  const todayAll = useMemo(() => appointments.filter(a => a.start_time && isSameLocalDay(a.start_time)), [appointments]);
 
   const lastRecordByPet = useMemo(() => new Map(Object.entries(dash.lastVisitByPet)), [dash.lastVisitByPet]);
 
@@ -299,79 +242,55 @@ export default function DashboardScreen() {
         </View>
       )}
 
-      {/* Row 1: Hero + Próxima Cita */}
-      <Animated.View style={[styles.topRow, isMobile && styles.topRowMobile, { opacity: heroOpacity, transform: [{ translateY: heroY }] }]}>
-        <LinearGradient
-          colors={[colors.chrome, colors.chromeSoft]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.hero, { backgroundColor: colors.chrome }, isMobile && styles.heroMobile]}
-        >
-          <View style={styles.heroContent}>
-            <View style={styles.heroGreetingRow}>
-              <CrestStar size={12} color={isDark ? colors.primary : colors.accent} />
-              <Text style={[styles.heroGreeting, { color: onChromeText.muted }]}>{getGreeting()}</Text>
-            </View>
-            <DisplayText style={[styles.heroName, { color: onChromeText.default }, isMobile && styles.heroNameMobile]}>
-              {firstName(user?.name) ? `Hola, ${firstName(user?.name)}` : 'Hola'}
-            </DisplayText>
-            <View style={styles.heroStatsRow}>
-              <View style={styles.heroStatBadge}>
-                <CalendarDays size={12} color={onChromeText.default} />
-                <Text style={[styles.heroStatText, { color: onChromeText.default }]}>{todayAppointments.length} citas hoy</Text>
-              </View>
-              <View style={styles.heroStatBadge}>
-                <Users size={12} color={onChromeText.default} />
-                <Text style={[styles.heroStatText, { color: onChromeText.default }]}>{pets.length} pacientes</Text>
-              </View>
-            </View>
-            <Pressable
-              onPress={() => router.push('/(drawer)/agenda')}
-              style={[styles.heroButton, { backgroundColor: alpha(colors.onChrome, 0.12), borderColor: alpha(colors.onChrome, 0.25) }, isMobile && styles.heroButtonMobile]}
-            >
-              <CalendarDays size={14} color={onChromeText.default} />
-              <Text style={[styles.heroButtonText, { color: onChromeText.default }]}>Ver agenda del día</Text>
-              <ChevronRight size={14} color={onChromeText.muted} />
-            </Pressable>
-          </View>
-          <BannerIllustration isMobile={isMobile} />
-        </LinearGradient>
-        <NextAppointmentCard
-          {...nextAppointment}
-          emptyMessage={todayAppointments.length ? 'No quedan citas por hoy' : 'Sin citas programadas para hoy'}
-          lateCount={lateCount}
-          onViewDetails={() => router.push('/(drawer)/agenda')}
-          onStartConsult={() => nextAppointment.petId ? router.push(`/pet/${nextAppointment.petId}` as any) : router.push('/(drawer)/agenda')}
-        />
-      </Animated.View>
+      {/* The chief: a flat navy band, as on a shield, with the day and the clinic's ledger */}
+      <View style={[styles.chief, { backgroundColor: colors.chrome }, isMobile && styles.chiefMobile]}>
+        <View style={styles.chiefText}>
+          <Text style={[styles.greeting, { color: onChromeText.muted }]}>{getGreeting()},</Text>
+          <DisplayText style={[styles.name, { color: onChromeText.default }, isMobile && styles.nameMobile]} numberOfLines={1}>
+            {firstName(user?.name) || 'bienvenida'}
+          </DisplayText>
+          <Text style={[styles.date, { color: onChromeText.muted }]}>{todayStr.charAt(0).toUpperCase() + todayStr.slice(1)}</Text>
 
-      {/* Row 2: Stats Cards */}
-      <View style={[styles.statsRow, isMobile && styles.statsRowMobile]}>
-        {[{ icon: 'pacientes' as const, color: iconTint, bg: colors.primaryContainer, value: pets.length, label: 'Pacientes', anim: statCardAnims[0] },
-          { icon: 'agenda' as const, color: iconTint, bg: colors.primaryContainer, value: todayAppointments.length, label: 'Citas hoy', anim: statCardAnims[1] },
-          { icon: 'fichas' as const, color: iconTint, bg: colors.primaryContainer, value: dash.totalRecords, label: 'Fichas clínicas', anim: statCardAnims[2] },
-          { icon: 'inventario' as const, color: lowStockItems.length ? colors.warning : iconTint, bg: lowStockItems.length ? colors.warning + '18' : colors.primaryContainer, value: lowStockItems.length, label: 'Alertas stock', anim: statCardAnims[3] }
-        ].map((stat, i) => (
-          <Animated.View key={i} style={[styles.statCard, { backgroundColor: colors.surface }, SHADOWS.xs, isMobile && styles.statCardMobile, { opacity: stat.anim.opacity, transform: [{ translateY: stat.anim.translateY }] }]}>
-            <View style={[styles.statIcon, { backgroundColor: stat.bg }]}>
-              <VetCloudIcon name={stat.icon} size={24} color={stat.color} />
-            </View>
-            <Text {...({ dataSet: { numeric: "tabular" } } as any)} style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{stat.label}</Text>
-          </Animated.View>
-        ))}
+          {/* Ledger: the clinic's figures in Cormorant numerals, each one opening its book */}
+          <View style={styles.ledger}>
+            {[
+              { value: pets.length, label: 'Pacientes', route: '/(drawer)/pacientes' },
+              { value: dash.totalRecords, label: 'Fichas clínicas', route: '/(drawer)/pacientes' },
+              { value: dash.activeHospitalizations, label: 'Hospitalizados', route: '/(drawer)/hospitalizacion' },
+              { value: lowStockItems.length, label: 'Stock bajo', route: '/(drawer)/inventario', alert: lowStockItems.length > 0 },
+            ].map((item) => (
+              <Pressable
+                key={item.label}
+                onPress={() => router.push(item.route as any)}
+                accessibilityRole="link"
+                accessibilityLabel={`${item.value} ${item.label}`}
+                style={({ pressed }) => [styles.ledgerItem, isMobile && styles.ledgerItemMobile, { opacity: pressed ? 0.75 : 1 }]}
+              >
+                <DisplayText accessibilityRole="text" style={[styles.ledgerValue, { color: item.alert ? colors.warning : gold }]}>
+                  {statsLoading && item.label !== 'Pacientes' && item.label !== 'Stock bajo' ? '—' : String(item.value)}
+                </DisplayText>
+                <Text style={[styles.ledgerLabel, { color: onChromeText.muted }]}>{item.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+        {!isMobile ? <BannerIllustration isMobile={false} /> : null}
       </View>
 
-      {/* Row 3: Pacientes + Estadísticas + Acciones */}
-      <Animated.View style={[styles.threeColRow, isMobile && styles.threeColRowMobile, { opacity: row3Opacity, transform: [{ translateY: row3Y }] }]}>
-        <View style={[styles.colLeft, isMobile && styles.colMobile]}>
+      {/* The day as the Round Table */}
+      <View style={[styles.section, isMobile && styles.sectionMobile]}>
+        <TodayTable appointments={todayAll as any} />
+      </View>
+
+      <View style={[styles.split, isMobile && styles.splitMobile]}>
+        <View style={styles.splitCol}>
           <PatientList
             patients={recentPatients}
             onViewAll={() => router.push('/(drawer)/pacientes')}
             onPatientPress={(id: string) => router.push(`/pet/${id}` as any)}
           />
         </View>
-        <View style={[styles.colCenter, isMobile && styles.colMobile]}>
+        <View style={styles.splitCol}>
           <StatsChart
             days={weekly.days}
             summary={weekly.summary}
@@ -380,20 +299,16 @@ export default function DashboardScreen() {
             loading={statsLoading}
           />
         </View>
-        <View style={[styles.colRight, isMobile && styles.colMobile]}>
-          <QuickActions />
-        </View>
-      </Animated.View>
+      </View>
 
-      {/* Row 4: Inventario + Actividad */}
-      <Animated.View style={[styles.twoColRow, isMobile && styles.twoColRowMobile, { opacity: row4Opacity, transform: [{ translateY: row4Y }] }]}>
-        <View style={[styles.colHalf, isMobile && styles.colMobile]}>
+      <View style={[styles.split, isMobile && styles.splitMobile]}>
+        <View style={styles.splitCol}>
           <InventoryBar items={groupedInventory} />
         </View>
-        <View style={[styles.colHalf, isMobile && styles.colMobile]}>
+        <View style={styles.splitCol}>
           <ActivityFeed items={activityItems} />
         </View>
-      </Animated.View>
+      </View>
     </ScrollView>
   );
 }
@@ -401,143 +316,36 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingBottom: SPACING['4xl'] },
-  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginHorizontal: SPACING.xl, marginTop: SPACING.lg, padding: SPACING.md, borderRadius: 10, borderWidth: 1 },
+  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginHorizontal: SPACING.xl, marginTop: SPACING.lg, padding: SPACING.md, borderRadius: 2, borderWidth: 1 },
   retryBtn: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs + 2, borderRadius: RADIUS.md, borderWidth: 1 },
 
-  topRow: {
-    flexDirection: 'row',
-    paddingHorizontal: SPACING.xl,
+  chief: {
+    marginHorizontal: SPACING.xl,
     marginTop: SPACING.xl,
-    gap: SPACING.lg,
-  },
-  topRowMobile: {
-    flexDirection: 'column',
-    paddingHorizontal: SPACING.md,
-  },
-  hero: {
-    flex: 1.5,
-    borderRadius: RADIUS.xl,
-    padding: SPACING['2xl'],
+    paddingHorizontal: SPACING['2xl'],
+    paddingTop: SPACING['2xl'],
+    paddingBottom: SPACING.xl,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-end',
     overflow: 'hidden',
-    position: 'relative',
+    minHeight: 280,
   },
-  heroMobile: {
-    padding: SPACING.lg,
-    minHeight: 200,
-  },
-  heroContent: {
-    flex: 1,
-    gap: SPACING.sm,
-  },
-  heroGreetingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-    marginBottom: SPACING.xs,
-  },
-  heroGreeting: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.regular,
-  },
-  heroName: { fontSize: 28, fontWeight: '600' },
-  heroNameMobile: { fontSize: TYPOGRAPHY.sizes.xl },
-  heroStatsRow: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-    marginTop: SPACING.sm,
-  },
-  heroStatBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-    paddingHorizontal: SPACING.sm + 2,
-    paddingVertical: SPACING.xs + 1,
-    borderRadius: RADIUS.full,
-  },
-  heroStatText: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  heroButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm + 2,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    gap: SPACING.sm,
-    marginTop: SPACING.md,
-  },
-  heroButtonMobile: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-  },
-  heroButtonText: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
+  chiefMobile: { marginHorizontal: 0, marginTop: 0, paddingHorizontal: SPACING.lg, paddingTop: SPACING.xl, minHeight: 0 },
+  chiefText: { flex: 1, zIndex: 1 },
+  greeting: { fontSize: TYPOGRAPHY.sizes.base },
+  name: { fontSize: 56, lineHeight: 60, fontWeight: '600', letterSpacing: -0.5 },
+  nameMobile: { fontSize: 40, lineHeight: 44 },
+  date: { fontSize: TYPOGRAPHY.sizes.base, marginTop: SPACING.xs },
+  ledger: { flexDirection: 'row', flexWrap: 'wrap', columnGap: SPACING['2xl'], rowGap: SPACING.md, marginTop: SPACING['2xl'] },
+  ledgerItem: { minWidth: 96, paddingVertical: SPACING.xs },
+  // Phones: a 2 × 2 ledger instead of 3 + 1
+  ledgerItemMobile: { width: '42%', minWidth: 0 },
+  ledgerValue: { fontSize: 40, lineHeight: 44, fontWeight: '600' },
+  ledgerLabel: { fontSize: TYPOGRAPHY.sizes.sm, marginTop: 2 },
 
-  statsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: SPACING.xl,
-    marginTop: SPACING.xl,
-    gap: SPACING.lg,
-  },
-  statsRowMobile: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: SPACING.md,
-    gap: SPACING.sm,
-  },
-  statCard: {
-    flex: 1,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.xl,
-    alignItems: 'center',
-  },
-  statCardMobile: {
-    flexBasis: '48%',
-    padding: SPACING.md,
-  },
-  statIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: RADIUS.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SPACING.md,
-  },
-  statValue: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.bold },
-  statLabel: { fontSize: TYPOGRAPHY.sizes.xs, marginTop: SPACING.xs, fontWeight: TYPOGRAPHY.weights.semibold },
-
-  threeColRow: {
-    flexDirection: 'row',
-    paddingHorizontal: SPACING.xl,
-    marginTop: SPACING.xl,
-    gap: SPACING.lg,
-  },
-  threeColRowMobile: {
-    flexDirection: 'column',
-    paddingHorizontal: SPACING.md,
-  },
-  colLeft: { flex: 1 },
-  colCenter: { flex: 1 },
-  colRight: { flex: 1 },
-  colMobile: { flex: undefined },
-
-  twoColRow: {
-    flexDirection: 'row',
-    paddingHorizontal: SPACING.xl,
-    marginTop: SPACING.xl,
-    gap: SPACING.lg,
-  },
-  twoColRowMobile: {
-    flexDirection: 'column',
-    paddingHorizontal: SPACING.md,
-  },
-  colHalf: { flex: 1 },
+  section: { marginHorizontal: SPACING.xl, marginTop: SPACING.xl },
+  sectionMobile: { marginHorizontal: 0, marginTop: SPACING.sm },
+  split: { flexDirection: 'row', gap: SPACING.xl, marginHorizontal: SPACING.xl, marginTop: SPACING.xl },
+  splitMobile: { flexDirection: 'column', gap: SPACING.sm, marginHorizontal: 0, marginTop: SPACING.sm },
+  splitCol: { flex: 1, minWidth: 0 },
 });

@@ -32,7 +32,7 @@ import { APP_COLORS } from '../../constants/colors';
 
 // API
 import { api } from '../../services/directus';
-import { BREAKPOINTS } from '../../constants/tokens';
+import { BREAKPOINTS, SHADOWS } from '../../constants/tokens';
 
 type ViewMode = 'week' | 'day' | 'month';
 
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 8,
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 2,
     borderWidth: 1,
   },
   sidebar: {
@@ -402,11 +402,7 @@ const styles = StyleSheet.create({
   mobileSidebar: {
     width: 320,
     height: '100%',
-    borderLeftWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: -2, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
+    // Floats over the agenda: one soft shadow, no border on top of it
+    ...SHADOWS.lg,
   },
 });

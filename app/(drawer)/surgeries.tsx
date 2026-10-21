@@ -238,8 +238,6 @@ const styles = StyleSheet.create({
   detailTitle: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.bold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
     marginBottom: SPACING.xs,
   },
   detailContent: {

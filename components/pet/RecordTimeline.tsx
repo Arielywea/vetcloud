@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     top: 12,
     width: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -198,7 +198,5 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 9,
     fontWeight: TYPOGRAPHY.weights.bold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
 });

@@ -69,7 +69,7 @@ export default function PatientSidePanel({ patient, visible, onClose }: PatientS
         ]}
       >
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <VAvatar name={patient.name} size={48} style={{ backgroundColor: colors.primaryContainer }} />
+          <VAvatar name={patient.name} size={48} />
           <View style={styles.headerInfo}>
             <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
               {patient.name}
@@ -213,8 +213,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
   ownerName: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.semibold },
   contactRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },

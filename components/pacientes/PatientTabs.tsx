@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
-    borderRadius: 10,
+    borderRadius: 2,
     borderWidth: 1,
     gap: SPACING.xs,
   },

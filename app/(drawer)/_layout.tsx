@@ -9,7 +9,7 @@ import VetAssistantWidget from '../../components/VetAssistantWidget';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useResponsive } from '../../hooks/useResponsive';
-import { SPACING } from '../../constants/tokens';
+import { SPACING, SHADOWS } from '../../constants/tokens';
 import { APP_COLORS } from '../../constants/colors';
 
 class ErrorBoundary extends Component<{ children: ReactNode; colors?: { text: string; textSecondary: string; error: string } }, { error: Error | null }> {
@@ -176,11 +176,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: 280,
     zIndex: 100,
+    ...SHADOWS.lg,
     elevation: 100,
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
   },
   content: {
     flex: 1,

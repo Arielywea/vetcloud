@@ -97,7 +97,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  dialog: { maxWidth: 440, width: '92%', alignSelf: 'center', borderRadius: 14 },
+  dialog: { maxWidth: 440, width: '92%', alignSelf: 'center', borderRadius: 4 },
   title: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.semibold },
   message: { fontSize: TYPOGRAPHY.sizes.base, lineHeight: 22 },
   actions: { flexDirection: 'row', gap: SPACING.sm, justifyContent: 'flex-end', flexWrap: 'wrap' },

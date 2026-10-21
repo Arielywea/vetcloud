@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 2,
     right: 2,
-    borderRadius: 6,
+    borderRadius: 2,
     borderLeftWidth: 3,
     paddingHorizontal: 6,
     paddingVertical: 4,
@@ -316,12 +316,12 @@ const styles = StyleSheet.create({
   photo: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 999,
   },
   photoPlaceholder: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -373,8 +373,6 @@ const quickStyles = StyleSheet.create({
   label: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.bold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
   },
 });
 

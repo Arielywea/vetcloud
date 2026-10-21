@@ -15,7 +15,7 @@ export const APP_COLORS = {
   onChrome: '#F3EFE4',
   accent: '#A8842A',         // antique gold: marks, active indicators, primary buttons
   success: '#2E7D5B',
-  background: '#F5F2EA',
+  background: '#ECE7DA', // vellum ground: panels (surface) read as leaves on it by tone alone, without borders or shadows
   surface: '#FFFDF8',
   surfaceVariant: '#EEE9DD',
   text: '#141C33',

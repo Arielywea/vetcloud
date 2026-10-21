@@ -18,13 +18,16 @@ export const SPACING = {
 } as const;
 
 // Border Radius — Cards use 16-20px (lg=18), buttons 10px (md), badges pill (full)
+// Square corners, like stone, vellum and a shield's edge: the 8-20px "soft" radius read as a
+// template. A hair of rounding (2-4px) keeps edges from looking cut. Circles (full) are kept
+// for what is really round: the Round Table dial, status seals, avatars and the assistant.
 export const RADIUS = {
   none: 0,
-  sm: 8,
-  md: 10,
-  lg: 18,
-  xl: 20,
-  '2xl': 24,
+  sm: 2,
+  md: 2,
+  lg: 3,
+  xl: 4,
+  '2xl': 4,
   full: 9999,
 } as const;
 
@@ -61,9 +64,17 @@ export const TYPOGRAPHY = {
   },
 } as const;
 
-// Shadows — soft, warm-ink, low opacity. Elevation is declared once
-// (shadow OR border), never a hard drop shadow under a bordered card.
+// Shadows only for what truly floats (menus, dialogs, sheets, toasts, the assistant button):
+// lg and xl. Things at rest (xs, sm, md) carry none; panels are told apart from the ground by a
+// step in tone, like leaves of vellum on a lectern. The keys stay so call sites keep compiling.
 const INK = '#1B1606';
+const FLAT = {
+  shadowColor: 'transparent',
+  shadowOffset: { width: 0, height: 0 },
+  shadowOpacity: 0,
+  shadowRadius: 0,
+  elevation: 0,
+};
 export const SHADOWS = {
   none: {
     shadowColor: 'transparent',
@@ -72,27 +83,9 @@ export const SHADOWS = {
     shadowRadius: 0,
     elevation: 0,
   },
-  xs: {
-    shadowColor: INK,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  sm: {
-    shadowColor: INK,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  md: {
-    shadowColor: INK,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
-  },
+  xs: FLAT,
+  sm: FLAT,
+  md: FLAT,
   lg: {
     shadowColor: INK,
     shadowOffset: { width: 0, height: 12 },

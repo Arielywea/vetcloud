@@ -8,7 +8,8 @@ interface VCardProps {
   onPress?: () => void;
   padding?: number;
   style?: ViewStyle;
-  /** Elevation is declared once: a border (default/outlined) or a shadow (elevated), never both */
+  /** Panels are set apart from the ground by tone alone (default). `outlined` adds a border where a
+   *  panel sits on a surface of the same tone; `elevated` is only for things that float. */
   variant?: 'default' | 'outlined' | 'elevated';
   accessibilityLabel?: string;
 }
@@ -29,7 +30,7 @@ export default function VCard({
     backgroundColor: colors.surface,
     borderRadius: RADIUS.lg,
     padding,
-    ...(variant === 'elevated' ? SHADOWS.sm : { borderWidth: 1, borderColor: colors.border }),
+    ...(variant === 'elevated' ? SHADOWS.lg : variant === 'outlined' ? { borderWidth: 1, borderColor: colors.border } : null),
   };
 
   if (onPress) {

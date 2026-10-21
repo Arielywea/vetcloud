@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   recordDate: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.semibold, marginBottom: SPACING.sm },
   recordNotes: { fontSize: TYPOGRAPHY.sizes.xs, marginTop: SPACING.xs, fontStyle: 'italic' },
   vitalCard: { flex: 1, alignItems: 'center', padding: SPACING.sm, borderRadius: RADIUS.md, gap: 2 },
-  vitalLabel: { fontSize: 10, fontWeight: TYPOGRAPHY.weights.semibold, textTransform: 'uppercase' },
+  vitalLabel: { fontSize: 10, fontWeight: TYPOGRAPHY.weights.semibold },
   vitalValue: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.bold },
   emptyState: { alignItems: 'center', marginTop: 60, gap: SPACING.md },
   emptyText: { fontSize: TYPOGRAPHY.sizes.sm },

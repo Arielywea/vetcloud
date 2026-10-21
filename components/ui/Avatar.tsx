@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, StyleSheet, Image, ImageStyle, ViewStyle } from 'react-native';
-import { Text } from 'react-native-paper';
+import { View, Image, ImageStyle, ViewStyle } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
-import { RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { RADIUS } from '../../constants/tokens';
+import Escutcheon from '../icons/Escutcheon';
 
 interface VAvatarProps {
   source?: { uri: string } | number;
@@ -11,69 +11,24 @@ interface VAvatarProps {
   style?: ViewStyle;
 }
 
+// A patient's mark: their photo when there is one, otherwise a shield bearing their initial
+// (the round initial avatar was the template default; the shield belongs to this clinic's crest).
 export default function VAvatar({ source, name, size = 40, style }: VAvatarProps) {
   const { colors } = useTheme();
-
-  const getInitials = () => {
-    if (!name) return '?';
-    return name
-      .split(' ')
-      .map((w) => w[0])
-      .slice(0, 2)
-      .join('')
-      .toUpperCase();
-  };
 
   if (source) {
     return (
       <Image
         source={source}
-        style={[
-          {
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-          } as ImageStyle,
-          style as ImageStyle,
-        ]}
+        style={[{ width: size, height: size, borderRadius: RADIUS.sm } as ImageStyle, style as ImageStyle]}
       />
     );
   }
 
+  const initial = (name || '?').trim().charAt(0).toUpperCase();
   return (
-    <View
-      style={[
-        styles.fallback,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: colors.primaryContainer,
-        },
-        style,
-      ]}
-    >
-      <Text
-        style={[
-          styles.initials,
-          {
-            color: colors.primary,
-            fontSize: size * 0.35,
-          },
-        ]}
-      >
-        {getInitials()}
-      </Text>
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }} accessibilityElementsHidden>
+      <Escutcheon size={size} color={colors.primary} initial={initial} initialColor={colors.primary} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  fallback: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  initials: {
-    fontWeight: TYPOGRAPHY.weights.bold,
-  },
-});

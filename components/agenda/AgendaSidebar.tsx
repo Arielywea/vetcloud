@@ -246,8 +246,6 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
     marginBottom: 4,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
   filterChips: {
     flexDirection: 'row',
@@ -259,7 +257,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 999,
     borderWidth: 1,
     gap: 4,
   },

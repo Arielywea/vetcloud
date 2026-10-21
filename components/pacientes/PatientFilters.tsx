@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm + 2,
-    borderRadius: 10,
+    borderRadius: 2,
     borderWidth: 1,
     gap: SPACING.xs,
   },
@@ -248,8 +248,6 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
     marginTop: SPACING.xs,
   },
   fieldInput: { borderRadius: RADIUS.sm, fontSize: TYPOGRAPHY.sizes.sm, minHeight: 36 },
@@ -257,7 +255,7 @@ const styles = StyleSheet.create({
   statusOption: {
     flex: 1,
     paddingVertical: SPACING.sm,
-    borderRadius: 10,
+    borderRadius: 2,
     borderWidth: 1,
     alignItems: 'center',
   },

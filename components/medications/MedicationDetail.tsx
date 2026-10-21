@@ -173,8 +173,6 @@ const styles = StyleSheet.create({
   funcionLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
     marginBottom: SPACING.xs,
   },
   funcionText: {
@@ -195,8 +193,6 @@ const styles = StyleSheet.create({
   dosisSpecies: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.bold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
     marginBottom: SPACING.xs,
   },
   dosisValue: {
@@ -209,8 +205,6 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
     marginBottom: SPACING.xs,
   },
   sectionValue: {
@@ -240,8 +234,6 @@ const styles = StyleSheet.create({
   notasLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
     marginBottom: SPACING.xs,
   },
   notasText: {

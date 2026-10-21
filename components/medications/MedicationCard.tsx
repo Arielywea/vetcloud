@@ -136,7 +136,6 @@ const styles = StyleSheet.create({
   dosisLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
     marginBottom: 2,
   },
   dosisValue: {

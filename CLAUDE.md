@@ -27,10 +27,14 @@ Software de gestión clínica veterinaria. Expo 52 (React Native Web, expo-route
   - texto sobre `colors.accent` (botón primario) → `onAccentText.default`
   - barra lateral, encabezados, hero → fondo `colors.chrome`, texto `onChromeText`
 - El dorado (`accent` en Saber) no se usa para texto pequeño (contraste 3.4:1): solo iconos, líneas y botones.
-- Tipografía: Inter para toda la interfaz (se carga en `utils/webFonts.ts`). `components/ui/DisplayText.tsx` (Cormorant Garamond) **solo** para títulos de página, el logotipo y el nombre del paciente; nunca en etiquetas, botones o datos.
+- Tipografía: Inter para toda la interfaz (se carga en `utils/webFonts.ts`). `components/ui/DisplayText.tsx` (Cormorant Garamond) para títulos de página y de panel (como capítulos de un códice), el logotipo, el nombre del paciente, las cifras del registro del dashboard y las rúbricas de la barra lateral; nunca en etiquetas, botones, tablas ni datos de formulario.
+- Sin mayúsculas espaciadas (`textTransform: 'uppercase'` + `letterSpacing`) en rótulos: texto normal a tamaño legible.
 - Iconos: `components/icons/VetCloudIcon.tsx` para navegación (trazo 1.75), `lucide-react-native` para el resto, `SpeciesIcon` para perro/gato. Sin emojis como iconos. `CrestStar` es el único ornamento; úsalo con moderación.
 - Movimiento: ≤250 ms, curva ease-out fuerte, solo `transform`/`opacity`. Sin animaciones de entrada coreografiadas en pantallas que se abren a diario. Botones: escala 0.97 al presionar, nada más.
-- Sombras: suaves (`SHADOWS` en `constants/tokens.ts`). Declara la elevación una vez: sombra **o** borde, no ambos.
+- Esquinas rectas (`RADIUS` 2–4 px), como piedra, pergamino y escudo. El círculo (`RADIUS.full`) solo para lo que es redondo: la Mesa Redonda, sellos de estado (badges), botones de ícono y fotos de perfil. Nada de radios "suaves" de 8–20 px.
+- Elevación: lo que está en reposo no lleva sombra ni borde; los paneles (`surface`) se distinguen del fondo pergamino (`background`) solo por tono. Sombras (`SHADOWS.lg`/`xl`) solo para lo que flota: menús, modales, hojas, toasts y botones flotantes. Bordes solo en campos de formulario, tablas y `VCard variant="outlined"`.
+- Sin líneas finas decorativas (divisores, filetes junto a un texto, separadores entre filas de listas que no son tablas): espacio o un cambio de tono. Sin degradados.
+- Marcas heráldicas: `components/icons/Escutcheon.tsx` (escudo con inicial) en lugar de avatares redondos para pacientes y usuarios; `components/dashboard/RoundTable.tsx` es la vista del día (las citas como asientos de la Mesa Redonda, de 08:00 a 20:00).
 
 ## Datos sensibles
 

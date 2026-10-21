@@ -297,8 +297,6 @@ const styles = StyleSheet.create({
   cirugiaLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.bold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
     marginBottom: 4,
   },
   cirugiaValue: {

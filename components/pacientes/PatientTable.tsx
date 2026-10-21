@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   cellHeader: { flex: 1, minWidth: 90 },
   cellWideHeader: { flex: 1.2, minWidth: 120 },
   actionsHeader: { width: 40 },
-  headerText: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.semibold, textTransform: 'uppercase', letterSpacing: 0.5 },
+  headerText: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.semibold},
   tableBody: { flex: 1 },
   skeletonRow: { flexDirection: 'row', alignItems: 'center', padding: SPACING.md, borderBottomWidth: 1, gap: SPACING.md, minHeight: 56 },
   skeleton: { height: 14, borderRadius: 7 },

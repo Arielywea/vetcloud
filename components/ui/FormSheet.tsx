@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   overlayDesktop: { justifyContent: 'center', alignItems: 'center', padding: SPACING.xl },
   sheet: { maxHeight: '90%' },
   sheetMobile: { borderTopLeftRadius: RADIUS['2xl'], borderTopRightRadius: RADIUS['2xl'], width: '100%' },
-  sheetDesktop: { borderRadius: 14, width: '100%', maxWidth: 560 },
+  sheetDesktop: { borderRadius: 4, width: '100%', maxWidth: 560 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.lg, borderBottomWidth: 1 },
   title: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.semibold },
   close: { padding: SPACING.xs },

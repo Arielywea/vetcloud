@@ -4,6 +4,7 @@ import { Text, Button } from 'react-native-paper';
 import DynamicIcon from '../ui/DynamicIcon';
 import { ClinicalRecord } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
+import DisplayText from '../ui/DisplayText';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 import { RECORD_TYPE_CONFIG } from '../../constants/icons';
 
@@ -20,7 +21,7 @@ export default function RecentRecord({ record, onView, onGenerateRx }: RecentRec
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Última consulta</Text>
+        <DisplayText style={[styles.title, { color: colors.text }]}>Última consulta</DisplayText>
         <Button compact mode="text" onPress={onView} labelStyle={{ color: colors.primary }}>
           Ver todo
         </Button>
@@ -94,8 +95,8 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   title: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: TYPOGRAPHY.weights.bold,
+    fontSize: 24,
+    fontWeight: '600',
   },
   metaRow: {
     flexDirection: 'row',

@@ -299,8 +299,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
     paddingTop: SPACING.md,
     paddingBottom: SPACING.sm,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
   item: {
     flexDirection: 'row',

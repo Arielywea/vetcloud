@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   toolButtonText: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold },
   filterPanel: { marginTop: SPACING.md, padding: SPACING.lg, borderRadius: RADIUS.lg, borderWidth: 1, gap: SPACING.md },
   filterGroup: { gap: SPACING.xs },
-  filterTitle: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.semibold, textTransform: 'uppercase', letterSpacing: 0.5 },
+  filterTitle: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.semibold},
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: SPACING.md, borderRadius: RADIUS.full, borderWidth: 1, minHeight: 36 },
   dot: { width: 8, height: 8, borderRadius: 4 },

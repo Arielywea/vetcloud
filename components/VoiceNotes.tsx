@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   unsupported: { alignItems: 'center', padding: SPACING.lg },
   unsupportedText: { marginTop: SPACING.sm, fontSize: TYPOGRAPHY.sizes.sm, textAlign: 'center' },
   controls: { alignItems: 'center' },
-  recordButton: { borderRadius: 24, paddingHorizontal: 24 },
+  recordButton: { borderRadius: 2, paddingHorizontal: 24 },
   activeControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
   recordingIndicator: { flexDirection: 'row', alignItems: 'center', marginRight: 8 },
   recordingDot: { width: 10, height: 10, borderRadius: 5, marginRight: 6 },
@@ -211,6 +211,6 @@ const styles = StyleSheet.create({
   soapContainer: { marginTop: SPACING.md, borderRadius: RADIUS.md, padding: SPACING.md, borderWidth: 1 },
   soapTitle: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.bold, marginBottom: SPACING.sm },
   soapField: { marginBottom: SPACING.sm },
-  soapFieldLabel: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.semibold, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 2 },
+  soapFieldLabel: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.semibold, marginBottom: 2 },
   soapFieldValue: { fontSize: TYPOGRAPHY.sizes.sm, lineHeight: 18 },
 });

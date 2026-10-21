@@ -4,6 +4,7 @@ import { Text } from 'react-native-paper';
 import DynamicIcon from '../ui/DynamicIcon';
 import { DirectusPet } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
+import DisplayText from '../ui/DisplayText';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import RoundTableIcon from '../icons/RoundTableIcon';
 
@@ -55,11 +56,11 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
       {/* Section header */}
       <TouchableOpacity onPress={() => setExpanded(!expanded)} style={styles.sectionHeader}>
         <View style={styles.sectionTitleRow}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Historia clínica inicial</Text>
+          <DisplayText style={[styles.sectionTitle, { color: colors.text }]}>Historia clínica inicial</DisplayText>
           {fieldCount > 0 && (
             <View style={[styles.countBadge, { backgroundColor: colors.primaryContainer }]}>
               <Text style={[styles.countText, { color: colors.primary }]}>{fieldCount}</Text>
@@ -225,8 +226,6 @@ const styles = StyleSheet.create({
     marginHorizontal: SPACING.xl,
     borderRadius: RADIUS.lg,
     padding: SPACING.xl,
-    borderWidth: 1,
-    ...SHADOWS.md,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -239,8 +238,8 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   sectionTitle: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: TYPOGRAPHY.weights.bold,
+    fontSize: 24,
+    fontWeight: '600',
   },
   countBadge: {
     borderRadius: RADIUS.full,
@@ -267,8 +266,6 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
   fieldValue: {
     fontSize: TYPOGRAPHY.sizes.sm,

@@ -79,7 +79,7 @@ export default function LoginScreen() {
         </View>
 
         <ScrollView style={styles.formSection} contentContainerStyle={styles.formContent}>
-          <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.lg]}>
+          <View style={[styles.card, { backgroundColor: colors.surface }]}>
             <VInput label="Usuario *" placeholder="mi.usuario" value={regUsername} onChangeText={setRegUsername} leftIcon={<User size={18} color={colors.primary} />} autoCapitalize="none" />
             <VInput label="Correo electrónico *" placeholder="correo@ejemplo.com" value={regEmail} onChangeText={setRegEmail} leftIcon={<Mail size={18} color={colors.primary} />} keyboardType="email-address" autoCapitalize="none" />
             <VInput label="Contraseña *" autoComplete="new-password" hint={PASSWORD_HINT} value={regPassword} onChangeText={setRegPassword} secureTextEntry={!showPassword} leftIcon={<Lock size={18} color={colors.primary} />}
@@ -133,15 +133,13 @@ export default function LoginScreen() {
           Vet<Text style={{ color: isDark ? colors.primary : colors.accent }}>Cloud</Text>
         </DisplayText>
         <View style={styles.taglineRow}>
-          <View style={[styles.rule, { backgroundColor: alpha(colors.onChrome, 0.25) }]} />
           <Text style={[styles.logoSubtitle, { color: onChromeText.muted }]}>Gestión clínica veterinaria</Text>
-          <View style={[styles.rule, { backgroundColor: alpha(colors.onChrome, 0.25) }]} />
         </View>
       </View>
 
       <View style={styles.formSection}>
-        <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.lg]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Iniciar sesión</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface }]}>
+          <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Iniciar sesión</DisplayText>
           <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>Ingresa tus credenciales para acceder</Text>
 
           <VInput label="Usuario o correo" autoComplete="username" returnKeyType="next" placeholder="usuario o correo@ejemplo.com" value={identifier} onChangeText={setIdentifier} leftIcon={<User size={18} color={colors.primary} />} autoCapitalize="none" keyboardType="email-address" />
@@ -182,7 +180,6 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   taglineRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
-  rule: { width: 28, height: 1 },
   logoCircle: {
     width: 96,
     height: 96,
@@ -196,12 +193,12 @@ const styles = StyleSheet.create({
   formSection: { flex: 1, paddingHorizontal: SPACING.lg, marginTop: -56, width: '100%', maxWidth: 440, alignSelf: 'center' },
   formContent: { paddingTop: SPACING.xl, paddingBottom: SPACING['2xl'] },
   card: {
-    borderRadius: 14,
+    borderRadius: 3,
     padding: SPACING['2xl'],
   },
   cardTitle: {
-    fontSize: TYPOGRAPHY.sizes.xl,
-    fontWeight: TYPOGRAPHY.weights.bold,
+    fontSize: 30,
+    fontWeight: '600',
     marginBottom: SPACING.xs,
   },
   cardSubtitle: {
@@ -213,8 +210,6 @@ const styles = StyleSheet.create({
     fontWeight: TYPOGRAPHY.weights.semibold,
     marginBottom: SPACING.sm,
     marginTop: SPACING.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   orgTypeRow: {
     flexDirection: 'row',

@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
+import DisplayText from '../ui/DisplayText';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import VetCloudIcon from '../icons/VetCloudIcon';
 import DynamicIcon from '../ui/DynamicIcon';
@@ -31,8 +32,8 @@ export default function InventoryBar({ items = [] }: InventoryBarProps) {
     <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.xs]}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <VetCloudIcon name="inventario" size={18} color={colors.accent} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Inventario</Text>
+          {/* Panel titles read like chapter headings of a codex */}
+          <DisplayText style={[styles.headerTitle, { color: colors.text }]}>Inventario</DisplayText>
         </View>
         <TouchableOpacity
           onPress={() => router.push('/(drawer)/inventario')}
@@ -93,10 +94,7 @@ const styles = StyleSheet.create({
   headerEmoji: {
     fontSize: TYPOGRAPHY.sizes.lg,
   },
-  headerTitle: {
-    fontSize: TYPOGRAPHY.sizes.md,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
+  headerTitle: { fontSize: 22, fontWeight: '600' },
   viewAll: {
     fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: TYPOGRAPHY.weights.semibold,

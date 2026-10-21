@@ -24,7 +24,7 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
   const { isMobile } = useResponsive();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface, borderBottomColor: colors.border }, SHADOWS.xs, isMobile && styles.containerMobile]}>
+    <View style={[styles.container, { backgroundColor: colors.surface }, isMobile && styles.containerMobile]}>
       {/* Left: hamburger (mobile) or nothing */}
       <View style={styles.left}>
         {onMenuPress && (
@@ -97,7 +97,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.xl,
-    borderBottomWidth: 1,
     gap: SPACING.lg,
   },
   containerMobile: {
@@ -125,7 +124,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: 40,
-    borderRadius: RADIUS.full,
+    borderRadius: RADIUS.md,
     paddingHorizontal: SPACING.lg,
     borderWidth: 1,
     gap: SPACING.sm,

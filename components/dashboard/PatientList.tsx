@@ -4,6 +4,8 @@ import { Text } from 'react-native-paper';
 import { ArrowRight, Dog, Cat, PawPrint } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
+import VAvatar from '../ui/Avatar';
+import DisplayText from '../ui/DisplayText';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import VetCloudIcon from '../icons/VetCloudIcon';
 
@@ -39,8 +41,8 @@ export default function PatientList({ patients = [], onViewAll, onPatientPress }
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <VetCloudIcon name="pacientes" size={18} color={colors.accent} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Pacientes recientes</Text>
+          {/* Panel titles read like chapter headings of a codex */}
+          <DisplayText style={[styles.headerTitle, { color: colors.text }]}>Pacientes recientes</DisplayText>
         </View>
         <TouchableOpacity onPress={onViewAll} activeOpacity={0.7} accessibilityRole="link" hitSlop={8}>
           <Text style={[styles.viewAll, { color: colors.primary }]}>Ver todos</Text>
@@ -60,14 +62,9 @@ export default function PatientList({ patients = [], onViewAll, onPatientPress }
             activeOpacity={0.7}
             accessibilityRole="link"
             accessibilityLabel={`Abrir ficha de ${patient.name}`}
-            style={[
-              styles.patientRow,
-              idx < patients.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
-            ]}
+            style={styles.patientRow}
           >
-            <View style={[styles.avatar, { backgroundColor: colors.primaryContainer }]}>
-              {getSpeciesIcon(patient.species)}
-            </View>
+            <VAvatar name={patient.name} size={36} />
             <View style={styles.patientInfo}>
               <Text style={[styles.patientName, { color: colors.text }]} numberOfLines={1}>{patient.name}</Text>
               <Text style={[styles.patientDetail, { color: colors.textSecondary }]}>
@@ -98,10 +95,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.sm,
   },
-  headerTitle: {
-    fontSize: TYPOGRAPHY.sizes.md,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
+  headerTitle: { fontSize: 22, fontWeight: '600' },
   viewAll: {
     fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: TYPOGRAPHY.weights.semibold,

@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   container: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: SPACING.md, paddingHorizontal: SPACING.md },
   info: { fontSize: TYPOGRAPHY.sizes.sm },
   pages: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
-  pageBtn: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  pageBtn: { width: 32, height: 32, borderRadius: 2, alignItems: 'center', justifyContent: 'center' },
   pageNum: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.medium },
   dots: { fontSize: TYPOGRAPHY.sizes.sm, paddingHorizontal: 4 },
 });

@@ -343,8 +343,6 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontSize: TYPOGRAPHY.sizes.xs,
     fontWeight: TYPOGRAPHY.weights.semibold,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
   rowValue: {
     fontSize: TYPOGRAPHY.sizes.md,

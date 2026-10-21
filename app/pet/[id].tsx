@@ -27,6 +27,7 @@ import VoiceNotes from '../../components/VoiceNotes';
 import DynamicIcon from '../../components/ui/DynamicIcon';
 import { useToast } from '../../components/ui/VToast';
 import VModal from '../../components/ui/VModal';
+import DisplayText from '../../components/ui/DisplayText';
 import VButton from '../../components/ui/Button';
 import { Plus, FileText, Wallet, HeartPulse, Download } from 'lucide-react-native';
 
@@ -300,7 +301,7 @@ export default function PetDetailScreen() {
       <WeightChart records={records} petId={id || undefined} />
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Historial completo</Text>
+          <DisplayText style={[styles.sectionTitle, { color: colors.text }]}>Historial completo</DisplayText>
         </View>
         <ClinicalTabs activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
         {activeTab === 'recetas' ? (
@@ -531,7 +532,7 @@ const styles = StyleSheet.create({
   loadingText: { textAlign: 'center', marginTop: 40 },
   section: { marginHorizontal: 16, marginTop: 16 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionTitle: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.bold },
+  sectionTitle: { fontSize: 24, fontWeight: '600' },
   actionBar: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: SPACING.sm, marginHorizontal: SPACING.xl, marginTop: SPACING.md, marginBottom: SPACING.md },
   typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   typeBtn: { flex: 1, minWidth: 60 },
@@ -545,7 +546,7 @@ const styles = StyleSheet.create({
   detailActions: { marginTop: 12 },
   rxInfoRow: { flexDirection: 'row', gap: 16, marginBottom: 12 },
   rxInfoCol: { flex: 1 },
-  rxInfoSectionTitle: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.bold, letterSpacing: 0.5, marginBottom: 4, textTransform: 'uppercase' },
+  rxInfoSectionTitle: { fontSize: TYPOGRAPHY.sizes.xs, fontWeight: TYPOGRAPHY.weights.bold, marginBottom: 4 },
   rxInfoName: { fontWeight: TYPOGRAPHY.weights.bold, fontSize: TYPOGRAPHY.sizes.base, marginBottom: 2 },
   rxInfoDetail: { fontSize: TYPOGRAPHY.sizes.xs, lineHeight: 18 },
   rxDivider: { marginVertical: 12 },
@@ -558,9 +559,9 @@ const styles = StyleSheet.create({
   rxInput: { marginBottom: 8 },
   rxBodyInput: { marginBottom: 12, minHeight: 200 },
   rxActionRow: { flexDirection: 'row', marginTop: 12 },
-  rxBodyCard: { marginTop: 8, marginBottom: 8, borderRadius: 8, borderWidth: 1, padding: 12 },
+  rxBodyCard: { marginTop: 8, marginBottom: 8, borderRadius: 2, borderWidth: 1, padding: 12 },
   emailHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
-  emailPreviewCard: { marginBottom: 12, borderRadius: 8, borderWidth: 1, padding: 12 },
+  emailPreviewCard: { marginBottom: 12, borderRadius: 2, borderWidth: 1, padding: 12 },
   fileChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.sm, borderWidth: 1 },
   fileThumb: { width: 32, height: 32, borderRadius: 4 },
   fileUploadBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, borderRadius: RADIUS.sm, borderWidth: 1, borderStyle: 'dashed' },

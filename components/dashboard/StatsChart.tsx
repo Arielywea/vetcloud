@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import DisplayText from '../ui/DisplayText';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import VetCloudIcon from '../icons/VetCloudIcon';
 
@@ -50,8 +51,8 @@ export default function StatsChart({ days, summary, pacientesNuevos, hospitaliza
     <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.xs]}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <VetCloudIcon name="reportes" size={18} color={colors.accent} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Actividad clínica</Text>
+          {/* Panel titles read like chapter headings of a codex */}
+          <DisplayText style={[styles.headerTitle, { color: colors.text }]}>Actividad clínica</DisplayText>
         </View>
         <Text style={[styles.periodText, { color: colors.textSecondary }]}>Últimos 7 días</Text>
       </View>
@@ -87,13 +88,10 @@ export default function StatsChart({ days, summary, pacientesNuevos, hospitaliza
         ))}
       </View>
 
-      <View style={[styles.subStats, { borderTopColor: colors.border }]}>
+      <View style={styles.subStats}>
         <SubStat label="Consultas" value={summary?.consultas ?? 0} loading={loading} />
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
         <SubStat label="Vacunas" value={summary?.vacunas ?? 0} loading={loading} />
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
         <SubStat label="Pacientes nuevos (mes)" value={pacientesNuevos} loading={loading} />
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
         <SubStat label="Hospitalizados" value={hospitalizados} loading={loading} />
       </View>
     </View>
@@ -114,7 +112,7 @@ const styles = StyleSheet.create({
   card: { borderRadius: RADIUS.lg, padding: SPACING.xl },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg, gap: SPACING.sm },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  headerTitle: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.semibold },
+  headerTitle: { fontSize: 22, fontWeight: '600' },
   periodText: { fontSize: 12 },
   mainStat: { marginBottom: SPACING.lg },
   mainStatLabel: { fontSize: TYPOGRAPHY.sizes.sm },
@@ -126,7 +124,7 @@ const styles = StyleSheet.create({
   barTrack: { flex: 1, width: '100%', maxWidth: 22, justifyContent: 'flex-end' },
   bar: { width: '100%', borderRadius: 4 },
   barLabel: { fontSize: 12 },
-  subStats: { flexDirection: 'row', flexWrap: 'wrap', borderTopWidth: 1, paddingTop: SPACING.lg, rowGap: SPACING.md },
+  subStats: { flexDirection: 'row', flexWrap: 'wrap', paddingTop: SPACING.lg, rowGap: SPACING.md },
   subStat: { flex: 1, minWidth: 72, alignItems: 'center' },
   divider: { width: 1, alignSelf: 'stretch', marginHorizontal: SPACING.xs },
   subStatValue: { fontSize: TYPOGRAPHY.sizes.xl, fontWeight: TYPOGRAPHY.weights.bold },
