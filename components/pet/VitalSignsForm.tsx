@@ -10,6 +10,7 @@ import VButton from '../../components/ui/Button';
 import DisplayText from '../ui/DisplayText';
 import { useToast } from '../ui/VToast';
 import { parseVitals } from '../../utils/vitals';
+import ModalEnter, { modalAnimation } from '../ui/ModalEnter';
 
 interface VitalSignsProps {
   petId: string;
@@ -101,7 +102,8 @@ export default function VitalSignsForm({ petId, visible, onClose }: VitalSignsPr
   );
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+    <Modal visible={visible} animationType={modalAnimation('slide')} presentationStyle="pageSheet">
+      <ModalEnter>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.chrome, borderBottomColor: colors.border }]}>
           <DisplayText style={[styles.headerTitle, { color: onChromeText.default }]}>Signos vitales</DisplayText>
@@ -181,6 +183,7 @@ export default function VitalSignsForm({ petId, visible, onClose }: VitalSignsPr
           </ScrollView>
         )}
       </View>
+      </ModalEnter>
     </Modal>
   );
 }

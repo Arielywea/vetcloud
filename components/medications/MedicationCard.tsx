@@ -6,7 +6,7 @@ import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../../constants/tokens';
 import VCard from '../ui/Card';
 import VBadge from '../ui/Badge';
 import { Medication } from '../../services/directus';
-import { FAMILIA_COLORS, getEspecialidadByKey } from '../../constants/medications';
+import { FAMILIA_COLORS, getEspecialidadByKey, stripSpeciesLabel } from '../../constants/medications';
 
 interface MedicationCardProps {
   medication: Medication;
@@ -17,7 +17,6 @@ interface MedicationCardProps {
 export default function MedicationCard({ medication, onPress, index = 0 }: MedicationCardProps) {
   const { colors } = useTheme();
   const familiaColor = FAMILIA_COLORS[medication.familia || ''] || colors.primary;
-  const especialidad = medication.especialidad ? getEspecialidadByKey(medication.especialidad) : null;
 
   return (
     <VCard onPress={onPress} accessibilityLabel={medication.nombre} style={{ marginBottom: SPACING.md }}>
@@ -26,11 +25,10 @@ export default function MedicationCard({ medication, onPress, index = 0 }: Medic
           {medication.nombre}
         </Text>
         <View style={styles.badgesRow}>
-          {especialidad && (
-            <VBadge color={especialidad.color} size="sm">
-              {especialidad.label}
-            </VBadge>
-          )}
+          {(medication.especialidades?.length ? medication.especialidades : medication.especialidad ? [medication.especialidad] : []).map((key) => {
+            const esp = getEspecialidadByKey(key);
+            return esp ? <VBadge key={key} color={esp.color} size="sm">{esp.label}</VBadge> : null;
+          })}
           <VBadge color={familiaColor} size="sm">
             {medication.familia || 'N/D'}
           </VBadge>
@@ -62,7 +60,7 @@ export default function MedicationCard({ medication, onPress, index = 0 }: Medic
           <View style={[styles.dosisBadge, { backgroundColor: colors.surfaceVariant }]}>
             <Text style={[styles.dosisLabel, { color: colors.textSecondary }]}>Perro</Text>
             <Text style={[styles.dosisValue, { color: colors.text }]} numberOfLines={1}>
-              {medication.dosis_perro}
+              {stripSpeciesLabel(medication.dosis_perro)}
             </Text>
           </View>
         )}
@@ -70,7 +68,7 @@ export default function MedicationCard({ medication, onPress, index = 0 }: Medic
           <View style={[styles.dosisBadge, { backgroundColor: colors.surfaceVariant }]}>
             <Text style={[styles.dosisLabel, { color: colors.textSecondary }]}>Gato</Text>
             <Text style={[styles.dosisValue, { color: colors.text }]} numberOfLines={1}>
-              {medication.dosis_gato}
+              {stripSpeciesLabel(medication.dosis_gato)}
             </Text>
           </View>
         )}

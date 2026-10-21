@@ -5,6 +5,7 @@ import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import { APPOINTMENT_TYPE_COLORS, APPOINTMENT_STATUS_COLORS } from '../../constants/colors';
 import SpeciesIcon from '../ui/SpeciesIcon';
 import { X, Calendar, Stethoscope, Flag, User, Phone, FileText, AlertTriangle, FolderOpen, UserPlus, ChevronDown, Check } from 'lucide-react-native';
+import ModalEnter, { modalAnimation } from '../ui/ModalEnter';
 
 const TYPE_LABELS: Record<string, string> = {
   consulta: 'Consulta',
@@ -86,7 +87,8 @@ export default function AppointmentDetailModal({
   const canChangeStatus = validStatuses.length > 0 && onStatusChange;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType={modalAnimation('fade')} onRequestClose={onClose}>
+      <ModalEnter>
       <TouchableOpacity style={[styles.overlay, { backgroundColor: colors.overlay }]} activeOpacity={1} onPress={onClose} accessibilityLabel="Cerrar">
         <TouchableOpacity activeOpacity={1} style={[styles.container, { backgroundColor: colors.surface }]} onPress={() => {}}>
           {/* Header */}
@@ -268,6 +270,7 @@ export default function AppointmentDetailModal({
           </View>
         </TouchableOpacity>
       </TouchableOpacity>
+      </ModalEnter>
     </Modal>
   );
 }

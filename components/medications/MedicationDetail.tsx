@@ -6,7 +6,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, alpha } from '../../constants/tokens';
 import VBadge from '../ui/Badge';
 import { Medication } from '../../services/directus';
-import { FAMILIA_COLORS, getEspecialidadByKey } from '../../constants/medications';
+import { FAMILIA_COLORS, getEspecialidadByKey, stripSpeciesLabel } from '../../constants/medications';
+import ModalEnter, { modalAnimation } from '../ui/ModalEnter';
 
 interface MedicationDetailProps {
   medication: Medication | null;
@@ -39,7 +40,8 @@ export default function MedicationDetail({ medication, visible, onClose }: Medic
   );
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType={modalAnimation('slide')} onRequestClose={onClose}>
+      <ModalEnter>
       <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
           {/* Header */}
@@ -62,10 +64,10 @@ export default function MedicationDetail({ medication, visible, onClose }: Medic
           <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
             {/* Badges */}
             <View style={styles.badges}>
-              {medication.especialidad && (() => {
-                const esp = getEspecialidadByKey(medication.especialidad);
-                return esp ? <VBadge color={esp.color}>{esp.label}</VBadge> : null;
-              })()}
+              {(medication.especialidades?.length ? medication.especialidades : medication.especialidad ? [medication.especialidad] : []).map((key) => {
+                const esp = getEspecialidadByKey(key);
+                return esp ? <VBadge key={key} color={esp.color}>{esp.label}</VBadge> : null;
+              })}
               <VBadge color={familiaColor}>{medication.familia || 'N/D'}</VBadge>
               <VBadge color={colors.primary}>{medication.presentacion || 'N/D'}</VBadge>
               {isReceta && <VBadge variant="warning">Receta</VBadge>}
@@ -84,13 +86,13 @@ export default function MedicationDetail({ medication, visible, onClose }: Medic
               {medication.dosis_perro && (
                 <View style={[styles.dosisCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
                   <Text style={[styles.dosisSpecies, { color: colors.textSecondary }]}>Perro</Text>
-                  <Text style={[styles.dosisValue, { color: colors.text }]}>{medication.dosis_perro}</Text>
+                  <Text style={[styles.dosisValue, { color: colors.text }]}>{stripSpeciesLabel(medication.dosis_perro)}</Text>
                 </View>
               )}
               {medication.dosis_gato && (
                 <View style={[styles.dosisCard, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
                   <Text style={[styles.dosisSpecies, { color: colors.textSecondary }]}>Gato</Text>
-                  <Text style={[styles.dosisValue, { color: colors.text }]}>{medication.dosis_gato}</Text>
+                  <Text style={[styles.dosisValue, { color: colors.text }]}>{stripSpeciesLabel(medication.dosis_gato)}</Text>
                 </View>
               )}
             </View>
@@ -114,6 +116,7 @@ export default function MedicationDetail({ medication, visible, onClose }: Medic
           </ScrollView>
         </View>
       </View>
+      </ModalEnter>
     </Modal>
   );
 }

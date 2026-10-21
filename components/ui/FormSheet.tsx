@@ -5,6 +5,7 @@ import { X } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, BREAKPOINTS } from '../../constants/tokens';
 import VButton from './Button';
+import ModalEnter, { modalAnimation } from './ModalEnter';
 
 interface FormSheetProps {
   visible: boolean;
@@ -25,7 +26,8 @@ export default function FormSheet({ visible, title, onClose, onSubmit, submitLab
   const isMobile = width < BREAKPOINTS.md;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType={modalAnimation('fade')} onRequestClose={onClose}>
+      <ModalEnter>
       <View style={[styles.overlay, { backgroundColor: colors.overlay }, isMobile ? styles.overlayMobile : styles.overlayDesktop]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Cerrar formulario" />
         <View
@@ -53,6 +55,7 @@ export default function FormSheet({ visible, title, onClose, onSubmit, submitLab
           </View>
         </View>
       </View>
+      </ModalEnter>
     </Modal>
   );
 }

@@ -110,6 +110,8 @@ export interface Medication {
   concentracion_mg_ml: number | null;
   frecuencia_horas: number | null;
   especialidad: string | null;
+  /** Client-only: every specialty when the same drug is catalogued more than once */
+  especialidades?: string[];
   created_at: string;
 }
 

@@ -8,6 +8,7 @@ import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import VInput from '../../components/ui/Input';
 import VButton from '../../components/ui/Button';
 import { parseCLP } from '../../utils/parseNumber';
+import ModalEnter, { modalAnimation } from '../ui/ModalEnter';
 
 interface PaymentFormProps {
   visible: boolean;
@@ -61,7 +62,8 @@ export default function PaymentForm({ visible, onClose, onPaid, appointmentId, p
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
+      <ModalEnter>
       <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
         <View style={[styles.sheet, { backgroundColor: colors.surface }]}>
           <View style={styles.sheetHeader}>
@@ -93,6 +95,7 @@ export default function PaymentForm({ visible, onClose, onPaid, appointmentId, p
           </View>
         </View>
       </View>
+      </ModalEnter>
     </Modal>
   );
 }

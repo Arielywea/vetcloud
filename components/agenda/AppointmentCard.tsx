@@ -6,7 +6,7 @@ import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 import { APPOINTMENT_TYPE_COLORS, APPOINTMENT_STATUS_COLORS } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { formatTimeRange } from '../../utils/format';
-import SpeciesIcon from '../ui/SpeciesIcon';
+import Escutcheon from '../icons/Escutcheon';
 
 export interface AppointmentCardData {
   id: string;
@@ -200,8 +200,9 @@ function AppointmentCard({
       {!compact && appointment.petPhoto ? (
         <Image source={{ uri: appointment.petPhoto }} style={styles.photo} />
       ) : !compact ? (
-        <View style={[styles.photoPlaceholder, { backgroundColor: color + '20' }]}>
-          <SpeciesIcon species={appointment.petSpecies} size={16} color={color} />
+        // No photo: the patient's mark (shield with initial), as everywhere else
+        <View style={styles.photoPlaceholder}>
+          <Escutcheon size={26} color={color} initial={(appointment.patient_name || '?').charAt(0).toUpperCase()} initialColor={colors.text} />
         </View>
       ) : null}
 
@@ -322,7 +323,6 @@ const styles = StyleSheet.create({
   photoPlaceholder: {
     width: 28,
     height: 28,
-    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },

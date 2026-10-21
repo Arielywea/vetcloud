@@ -12,6 +12,7 @@ import {
 } from 'lucide-react-native';
 import SpeciesIcon from '../ui/SpeciesIcon';
 import { api } from '../../services/directus';
+import ModalEnter, { modalAnimation } from '../ui/ModalEnter';
 
 const APPOINTMENT_TYPES = [
   { key: 'consulta', label: 'Consulta', color: APPOINTMENT_TYPE_COLORS.consulta },
@@ -191,7 +192,8 @@ export default function AppointmentCreationModal({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType={modalAnimation('fade')} onRequestClose={onClose}>
+      <ModalEnter>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.overlay}
@@ -463,6 +465,7 @@ export default function AppointmentCreationModal({
           </View>
         </TouchableOpacity>
       </KeyboardAvoidingView>
+      </ModalEnter>
     </Modal>
   );
 }

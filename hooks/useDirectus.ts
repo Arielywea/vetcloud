@@ -68,6 +68,29 @@ export function useDiseases(species?: 'dog' | 'cat' | 'all') {
 // Hook: Medications
 // ─────────────────────────────────────────────────────────
 
+// The catalog lists some drugs once per specialty (or twice by mistake). Same drug,
+// presentation and doses = one card carrying every specialty; different doses stay apart.
+const norm = (v: string | null) => (v || '').trim().toLowerCase();
+function mergeDuplicates(list: Medication[]): Medication[] {
+  const groups = new Map<string, Medication>();
+  for (const m of list) {
+    const key = [m.nombre, m.marca_comercial, m.presentacion, m.dosis_perro, m.dosis_gato].map(norm).join('|');
+    const prev = groups.get(key);
+    if (!prev) {
+      groups.set(key, { ...m, especialidades: m.especialidad ? [m.especialidad] : [] });
+      continue;
+    }
+    const especialidades = [...new Set([...(prev.especialidades || []), ...(m.especialidad ? [m.especialidad] : [])])];
+    groups.set(key, {
+      ...(prev.especialidad ? prev : m),
+      especialidad: prev.especialidad || m.especialidad,
+      category: prev.category === 'receta' || m.category === 'receta' ? 'receta' : prev.category,
+      especialidades,
+    });
+  }
+  return [...groups.values()];
+}
+
 export function useMedications(especialidad?: string) {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,7 +105,7 @@ export function useMedications(especialidad?: string) {
         params.especialidad = especialidad;
       }
       const result = await api.medications.list(params);
-      setMedications(result as Medication[]);
+      setMedications(mergeDuplicates(result as Medication[]));
     } catch (err: any) {
       console.error('Error fetching medications:', err);
       setError(err.message || 'Error fetching medications');

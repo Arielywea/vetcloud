@@ -171,3 +171,6 @@ export const FAMILIA_COLORS: Record<string, string> = {
   'Formamidina': '#B2FF59',
   'Isoxazolina': '#EEFF41',
 };
+
+/** Some catalog doses repeat the label the card already shows ("Perro: 3-4 mg/kg") */
+export const stripSpeciesLabel = (dose: string) => dose.replace(/^\s*(perro|gato|canino|felino)s?\s*:\s*/i, '');
