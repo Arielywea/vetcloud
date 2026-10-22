@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, Button, Dialog, Portal } from 'react-native-paper';
+import { Text, Dialog, Portal } from 'react-native-paper';
 import { Plus } from 'lucide-react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { usePets } from '../../hooks/useDirectus';
@@ -229,12 +229,8 @@ export default function PacientesScreen() {
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setDeleteTarget(null)} textColor={colors.textSecondary}>
-              Cancelar
-            </Button>
-            <Button onPress={handleDelete} textColor={colors.error}>
-              Eliminar
-            </Button>
+            <VButton variant="ghost" onPress={() => setDeleteTarget(null)}>Cancelar</VButton>
+            <VButton variant="danger" onPress={handleDelete}>Eliminar</VButton>
           </Dialog.Actions>
         </Dialog>
       </Portal>

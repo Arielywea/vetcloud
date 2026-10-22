@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Platform, Linking } from 'react-native';
-import { Text, Button, TextInput, Portal, Dialog, Divider } from 'react-native-paper';
+import { Text, TextInput, Portal, Dialog, Divider } from 'react-native-paper';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { usePet, useClinicalRecords, usePrescriptions } from '../../hooks/useDirectus';
@@ -29,6 +29,7 @@ import { useToast } from '../../components/ui/VToast';
 import VModal from '../../components/ui/VModal';
 import DisplayText from '../../components/ui/DisplayText';
 import VButton from '../../components/ui/Button';
+import VBadge from '../../components/ui/Badge';
 import { Plus, FileText, Wallet, HeartPulse, Download } from 'lucide-react-native';
 
 const RECORD_TYPE_LABELS = { consulta: 'Consulta', vacuna: 'Vacuna', cirugia: 'Cirugía', control: 'Control' } as const;
@@ -314,7 +315,7 @@ export default function PetDetailScreen() {
           <ScrollView>
             <View style={styles.typeRow}>
               {(['consulta', 'vacuna', 'cirugia', 'control'] as const).map((t) => (
-                <Button key={t} mode={recordType === t ? 'contained' : 'outlined'} compact onPress={() => setRecordType(t)} style={styles.typeBtn}>{RECORD_TYPE_LABELS[t]}</Button>
+                <VBadge key={t} label={RECORD_TYPE_LABELS[t]} variant={recordType === t ? 'filled' : 'outlined'} color={recordType === t ? colors.primary : colors.textSecondary} selected={recordType === t} onPress={() => setRecordType(t)} />
               ))}
             </View>
             <TextInput label="Fecha y hora" value={recordDate} onChangeText={setRecordDate} mode="outlined" style={styles.input} />
@@ -382,7 +383,7 @@ export default function PetDetailScreen() {
               </View>
             )}
 
-            <Button mode="contained" onPress={handleAddRecord} style={styles.saveButton} loading={saving} disabled={saving}>Guardar registro</Button>
+            <VButton onPress={handleAddRecord} loading={saving} disabled={saving} style={styles.saveButton}>Guardar registro</VButton>
           </ScrollView>
       </VModal>
 
@@ -397,10 +398,10 @@ export default function PetDetailScreen() {
               <RecordDetail record={selectedRecord} />
               <View style={styles.detailActions}>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <Button mode="contained" compact onPress={() => { setSelectedRecord(null); openRxModal(selectedRecord.id); }}>Generar receta</Button>
-                  <Button mode="outlined" compact onPress={() => setDeleteRecordTarget(selectedRecord)} textColor={colors.error}>Eliminar</Button>
+                  <VButton size="sm" onPress={() => { setSelectedRecord(null); openRxModal(selectedRecord.id); }}>Generar receta</VButton>
+                  <VButton size="sm" variant="ghost" color={colors.error} onPress={() => setDeleteRecordTarget(selectedRecord)}>Eliminar</VButton>
                 </View>
-                <Button mode="outlined" onPress={() => setSelectedRecord(null)} style={{ marginTop: 8 }}>Cerrar</Button>
+                <VButton variant="secondary" onPress={() => setSelectedRecord(null)} style={{ marginTop: 8 }}>Cerrar</VButton>
               </View>
             </ScrollView>
           )}
@@ -430,7 +431,7 @@ export default function PetDetailScreen() {
                 <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Formato</Text>
                 <View style={styles.rxSelectRow}>
                   {[{ value: 'standard', label: 'Estándar' }, { value: 'compact', label: 'Compacto' }].map(f => (
-                    <Button key={f.value} mode={rxFormat === f.value ? 'contained' : 'outlined'} onPress={() => setRxFormat(f.value)} style={[styles.rxSelectBtn, rxFormat === f.value && { backgroundColor: colors.primary }]} labelStyle={[styles.rxSelectLabel, rxFormat === f.value ? { color: onPrimaryText.default } : { color: colors.primary }]} compact>{f.label}</Button>
+                    <VBadge key={f.value} label={f.label} variant={rxFormat === f.value ? 'filled' : 'outlined'} color={rxFormat === f.value ? colors.primary : colors.textSecondary} selected={rxFormat === f.value} onPress={() => setRxFormat(f.value)} />
                   ))}
                 </View>
               </View>
@@ -443,8 +444,8 @@ export default function PetDetailScreen() {
             <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Receta *</Text>
             <TextInput value={rxBody} onChangeText={setRxBody} mode="outlined" multiline numberOfLines={12} style={styles.rxBodyInput} placeholder="Fármaco, dosis, vía, frecuencia y duración. Ej.: carprofeno 4 mg/kg VO cada 24 h por 7 días." />
             <View style={styles.rxActionRow}>
-              <Button mode="outlined" onPress={() => setShowRxModal(false)} style={{ flex: 1, marginRight: 8 }}>Volver</Button>
-              <Button mode="contained" onPress={handleSaveRx} style={{ flex: 1 }} loading={saving} disabled={saving} icon="content-save">Guardar</Button>
+              <View style={{ flex: 1, marginRight: 8 }}><VButton variant="secondary" fullWidth onPress={() => setShowRxModal(false)}>Volver</VButton></View>
+              <View style={{ flex: 1 }}><VButton fullWidth onPress={handleSaveRx} loading={saving} disabled={saving}>Guardar receta</VButton></View>
             </View>
           </ScrollView>
       </VModal>
@@ -458,8 +459,10 @@ export default function PetDetailScreen() {
               {selectedRx.clinic_branch && <View style={styles.detailRow}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Sucursal:</Text><Text style={[styles.detailValue, { color: colors.text }]}>{selectedRx.clinic_branch}</Text></View>}
               <View style={[styles.rxBodyCard, { backgroundColor: colors.background, borderColor: colors.border }]}><Text style={{ color: colors.text, lineHeight: 22 }}>{selectedRx.prescription_body}</Text></View>
               <View style={styles.detailActions}>
-                <Button mode="contained" compact onPress={() => handleSendRxEmail(selectedRx)} style={{ marginRight: 8 }}>Enviar por correo</Button>
-                <Button mode="outlined" compact onPress={() => setSelectedRx(null)}>Cerrar</Button>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <VButton size="sm" onPress={() => handleSendRxEmail(selectedRx)}>Enviar por correo</VButton>
+                  <VButton size="sm" variant="secondary" onPress={() => setSelectedRx(null)}>Cerrar</VButton>
+                </View>
               </View>
             </ScrollView>
           )}
@@ -490,9 +493,15 @@ export default function PetDetailScreen() {
                 <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Vista previa</Text>
                 <View style={[styles.emailPreviewCard, { backgroundColor: colors.background, borderColor: colors.border }]}><Text style={{ color: colors.text }}>{emailTarget.prescription_body}</Text></View>
                 <TextInput label="Correo del destinatario" value={emailRecipient} onChangeText={setEmailRecipient} mode="outlined" keyboardType="email-address" style={styles.rxInput} left={<TextInput.Icon icon="email" />} />
+                {/* Sending elsewhere is allowed (a family member) but should be a conscious choice */}
+                {!!emailRecipient.trim() && emailRecipient.trim().toLowerCase() !== String(pet.email || '').trim().toLowerCase() && (
+                  <Text accessibilityRole="alert" style={[styles.emailWarning, { color: colors.warning }]}>
+                    {pet.email ? `No es el correo registrado del tutor (${pet.email}).` : 'El tutor no tiene correo registrado.'} Revisa la dirección antes de enviar.
+                  </Text>
+                )}
                 <View style={styles.rxActionRow}>
-                  <Button mode="outlined" onPress={() => setShowEmailModal(false)} style={{ flex: 1, marginRight: 8 }}>Cancelar</Button>
-                  <Button mode="contained" onPress={confirmSendEmail} style={{ flex: 1 }} loading={sendingEmail} disabled={sendingEmail || !emailRecipient.trim()} icon="send">Enviar</Button>
+                  <View style={{ flex: 1, marginRight: 8 }}><VButton variant="secondary" fullWidth onPress={() => setShowEmailModal(false)}>Cancelar</VButton></View>
+                  <View style={{ flex: 1 }}><VButton fullWidth onPress={confirmSendEmail} loading={sendingEmail} disabled={sendingEmail || !emailRecipient.trim()}>Enviar</VButton></View>
                 </View>
               </>
             )}
@@ -511,7 +520,7 @@ export default function PetDetailScreen() {
           <Dialog.Icon icon="alert-circle-outline" />
           <Dialog.Title style={{ textAlign: 'center' }}>Eliminar registro</Dialog.Title>
           <Dialog.Content><Text style={{ textAlign: 'center' }}>¿Estás seguro? Esta acción no se puede deshacer.</Text></Dialog.Content>
-          <Dialog.Actions><Button onPress={() => setDeleteRecordTarget(null)}>Cancelar</Button><Button onPress={confirmDeleteRecord} textColor={colors.error}>Eliminar</Button></Dialog.Actions>
+          <Dialog.Actions><VButton variant="ghost" onPress={() => setDeleteRecordTarget(null)}>Cancelar</VButton><VButton variant="danger" onPress={confirmDeleteRecord}>Eliminar</VButton></Dialog.Actions>
         </Dialog>
       </Portal>
       <Portal>
@@ -519,7 +528,7 @@ export default function PetDetailScreen() {
           <Dialog.Icon icon="alert-circle-outline" />
           <Dialog.Title style={{ textAlign: 'center' }}>Error</Dialog.Title>
           <Dialog.Content><Text style={{ textAlign: 'center' }}>{errorDialog}</Text></Dialog.Content>
-          <Dialog.Actions><Button onPress={() => setErrorDialog(null)}>Entendido</Button></Dialog.Actions>
+          <Dialog.Actions><VButton variant="ghost" onPress={() => setErrorDialog(null)}>Entendido</VButton></Dialog.Actions>
         </Dialog>
       </Portal>
     </ScrollView>
@@ -561,6 +570,7 @@ const styles = StyleSheet.create({
   rxActionRow: { flexDirection: 'row', marginTop: 12 },
   rxBodyCard: { marginTop: 8, marginBottom: 8, borderRadius: 2, borderWidth: 1, padding: 12 },
   emailHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
+  emailWarning: { fontSize: TYPOGRAPHY.sizes.sm, marginBottom: SPACING.sm },
   emailPreviewCard: { marginBottom: 12, borderRadius: 2, borderWidth: 1, padding: 12 },
   fileChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.sm, borderWidth: 1 },
   fileThumb: { width: 32, height: 32, borderRadius: 4 },

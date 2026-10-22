@@ -1,7 +1,8 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useLayoutEffect } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Image, Animated, Platform } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import type { DragOrigin } from './useDragDrop';
+import { HOUR_HEIGHT } from './TimeGrid';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 import { APPOINTMENT_TYPE_COLORS, APPOINTMENT_STATUS_COLORS } from '../../constants/colors';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -116,6 +117,9 @@ function AppointmentCard({
   const scale = useRef(new Animated.Value(1)).current;
   const isDragActive = useRef(false);
   const wasDragGesture = useRef(false);
+  // After a drop the agenda moves the card to its new slot at once (optimistic update). Keep the
+  // dragged offset until top/day change, then only slide the remainder of the 15-minute snap.
+  const pendingSettle = useRef<{ x: number; y: number } | null>(null);
 
   const handleContextMenu = (e: any) => {
     if (onContextMenu) {
@@ -142,6 +146,24 @@ function AppointmentCard({
   // Critically damped settle (~200 ms, no overshoot): a bounce reads as "rejected" in a work tool
   const SPRING = { damping: 26, stiffness: 400, useNativeDriver: true } as const;
 
+  const settle = (x: number, y: number) => {
+    translateX.setValue(x);
+    translateY.setValue(y);
+    Animated.parallel([
+      Animated.spring(translateX, { toValue: 0, ...SPRING }),
+      Animated.spring(translateY, { toValue: 0, ...SPRING }),
+      Animated.spring(scale, { toValue: 1, ...SPRING }),
+    ]).start();
+  };
+
+  useLayoutEffect(() => {
+    if (!pendingSettle.current) return;
+    const { x, y } = pendingSettle.current;
+    pendingSettle.current = null;
+    settle(x, y);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [top, dayIndex]);
+
   const longPress = Gesture.LongPress()
     .minDuration(500)
     .onStart((e) => {
@@ -164,11 +186,19 @@ function AppointmentCard({
         isDragActive.current = false;
         wasDragGesture.current = true;
         setTimeout(() => { wasDragGesture.current = false; }, 300);
-        Animated.parallel([
-          Animated.spring(translateX, { toValue: 0, ...SPRING }),
-          Animated.spring(translateY, { toValue: 0, ...SPRING }),
-          Animated.spring(scale, { toValue: 1, ...SPRING }),
-        ]).start();
+        const snapPx = HOUR_HEIGHT / 4;
+        const snappedY = Math.round(e.translationY / snapPx) * snapPx;
+        const snappedX = dayColumnWidth ? Math.round(e.translationX / dayColumnWidth) * dayColumnWidth : 0;
+        if (snappedY === 0 && snappedX === 0) {
+          settle(e.translationX, e.translationY);
+        } else {
+          // Residual = where the pointer left it minus where the new slot will put it
+          pendingSettle.current = { x: e.translationX - snappedX, y: e.translationY - snappedY };
+          // If the agenda doesn't move it (a refused or no-op move), spring back after all
+          setTimeout(() => {
+            if (pendingSettle.current) { pendingSettle.current = null; settle(e.translationX, e.translationY); }
+          }, 400);
+        }
         onDragEnd?.();
       }
     })

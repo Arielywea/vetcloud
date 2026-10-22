@@ -1447,6 +1447,12 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
     // Separate from rx.tutor_email: the PDF and the email body still show the tutor's own address
     const recipient = requestedTo || rx.tutor_email;
     if (!recipient) return res.status(400).json({ error: 'El tutor no tiene correo electrónico registrado' });
+    // Addresses other than the tutor's are allowed (a family member), but a fresh trial account must not be
+    // able to use the clinic mailer as a relay: a much tighter daily budget for them.
+    const toOtherAddress = recipient.toLowerCase() !== String(rx.tutor_email || '').trim().toLowerCase();
+    if (toOtherAddress && !await rateLimit(`email-other:${req.userId}`, 3, 86400000)) {
+      return res.status(429).json({ error: 'Límite alcanzado: máximo 3 recetas al día a correos distintos del registrado para el tutor' });
+    }
 
     const nodemailer = require('nodemailer');
     const { generatePrescriptionPdf } = require('./utils/generatePrescriptionPdf');

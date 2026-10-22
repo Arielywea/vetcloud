@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, Button } from 'react-native-paper';
+import { Text } from 'react-native-paper';
+import VButton from '../ui/Button';
 import { ClinicalRecord } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import DisplayText from '../ui/DisplayText';
@@ -23,12 +24,8 @@ export default function RecentRecord({ record, onView, onGenerateRx }: RecentRec
         <DisplayText style={[styles.title, { color: colors.text }]}>Última consulta</DisplayText>
         {/* "Ver todo" and "Detalle" opened the same thing; two quiet text actions instead of three buttons */}
         <View style={styles.headerActions}>
-          <Button compact mode="text" onPress={onGenerateRx} labelStyle={[styles.actionLabel, { color: colors.primary }]}>
-            Generar receta
-          </Button>
-          <Button compact mode="text" onPress={onView} labelStyle={[styles.actionLabel, { color: colors.primary }]}>
-            Ver detalle
-          </Button>
+          <VButton size="sm" variant="ghost" onPress={onGenerateRx}>Generar receta</VButton>
+          <VButton size="sm" variant="ghost" onPress={onView}>Ver detalle</VButton>
         </View>
       </View>
 

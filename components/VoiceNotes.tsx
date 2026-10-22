@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, Button } from 'react-native-paper';
+import { Text } from 'react-native-paper';
+import VButton from './ui/Button';
+import DynamicIcon from './ui/DynamicIcon';
 import { Mic, MicOff, Play, Pause, Square, Wand2, X } from 'lucide-react-native';
 import { parseToSoap } from '../utils/soapParser';
 import { useTheme } from '../contexts/ThemeContext';
@@ -142,21 +144,15 @@ export default function VoiceNotes({ onTranscription, onSoapParsed }: VoiceNotes
       )}
       <View style={styles.controls}>
         {!isRecording ? (
-          <Button mode="contained" onPress={startRecording} icon="microphone" style={[styles.recordButton, { backgroundColor: colors.primary }]}>
-            Grabar
-          </Button>
+          <VButton variant="secondary" onPress={startRecording} icon={<DynamicIcon name="microphone" size={16} color={colors.primary} />} style={styles.recordButton}>Dictar</VButton>
         ) : (
           <View style={styles.activeControls}>
             <View style={styles.recordingIndicator}>
               <View style={[styles.recordingDot, { backgroundColor: colors.error }]} />
               <Text style={[styles.recordingText, { color: colors.error }]}>{formatDuration(duration)}</Text>
             </View>
-            <Button mode="outlined" onPress={pauseRecording} compact style={{ borderColor: colors.border }}>
-              {isPaused ? 'Reanudar' : 'Pausar'}
-            </Button>
-            <Button mode="contained" onPress={stopRecording} compact style={{ backgroundColor: colors.error }}>
-              Detener
-            </Button>
+            <VButton size="sm" variant="secondary" onPress={pauseRecording}>{isPaused ? 'Reanudar' : 'Pausar'}</VButton>
+            <VButton size="sm" variant="danger" onPress={stopRecording}>Detener</VButton>
           </View>
         )}
       </View>
@@ -166,7 +162,7 @@ export default function VoiceNotes({ onTranscription, onSoapParsed }: VoiceNotes
           <View style={styles.transcriptHeader}>
             <Text style={[styles.transcriptLabel, { color: colors.textSecondary }]}>Transcripción:</Text>
             {transcript && (
-              <Button mode="text" onPress={handleParseSoap} compact icon="creation" labelStyle={{ fontSize: TYPOGRAPHY.sizes.xs }}>SOAP</Button>
+              <VButton size="sm" variant="ghost" onPress={handleParseSoap}>Ordenar en SOAP</VButton>
             )}
           </View>
           <View style={[styles.transcriptBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -187,7 +183,7 @@ export default function VoiceNotes({ onTranscription, onSoapParsed }: VoiceNotes
               <Text style={[styles.soapFieldValue, { color: colors.text }]}>{soap[key] || '(no detectado)'}</Text>
             </View>
           ))}
-          <Button mode="text" onPress={() => setShowSoap(false)} compact style={{ alignSelf: 'flex-end' }}>Cerrar</Button>
+          <VButton size="sm" variant="ghost" onPress={() => setShowSoap(false)} style={{ alignSelf: 'flex-end' }}>Cerrar</VButton>
         </View>
       )}
     </View>

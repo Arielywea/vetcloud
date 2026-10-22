@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Alert, useWindowDimensions } from 'react-native';
-import { Text, TextInput, Button, Menu, Dialog, Portal } from 'react-native-paper';
+import { Text, TextInput, Menu, Dialog, Portal } from 'react-native-paper';
+import VButton from '../../components/ui/Button';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Check, ChevronLeft, ChevronRight, UserRound, Camera, Dog, Cat, Mars, Venus, Stethoscope, ShieldCheck, ChevronUp, ChevronDown, CheckSquare, Square, CircleDot, Circle, FileEdit, ImagePlus, ClipboardCheck } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -35,7 +36,7 @@ export default function AddPacienteScreen() {
   const { prefillName, id: editId } = useLocalSearchParams<{ prefillName?: string; id?: string }>();
   const isEdit = !!editId;
   const { addPet, updatePet } = usePets();
-  const { colors, onPrimaryText } = useTheme();
+  const { colors, onPrimaryText, onAccentText } = useTheme();
   const toast = useToast();
   const [loadingPet, setLoadingPet] = useState(isEdit);
   const { width } = useWindowDimensions();
@@ -426,28 +427,22 @@ export default function AddPacienteScreen() {
           <View style={styles.gridField}>
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Especie *</Text>
             <View style={styles.speciesRow}>
-              <Button
-                mode={species === 'dog' ? 'contained' : 'outlined'}
+              <VButton
+                variant={species === 'dog' ? 'filled' : 'secondary'}
                 onPress={() => setSpecies('dog')}
-                style={[styles.speciesPill, species === 'dog' && { backgroundColor: colors.primary }]}
-                labelStyle={[styles.speciesPillLabel, species === 'dog' ? { color: onPrimaryText.default } : { color: colors.primary }]}
-                icon={({ size }) => (
-                  <Dog size={size} color={species === 'dog' ? onPrimaryText.default : colors.primary} />
-                )}
+                containerStyle={styles.pillContainer}
+                icon={<Dog size={16} color={species === 'dog' ? onPrimaryText.default : colors.primary} />}
               >
                 Perro
-              </Button>
-              <Button
-                mode={species === 'cat' ? 'contained' : 'outlined'}
+              </VButton>
+              <VButton
+                variant={species === 'cat' ? 'filled' : 'secondary'}
                 onPress={() => setSpecies('cat')}
-                style={[styles.speciesPill, species === 'cat' && { backgroundColor: colors.primary }]}
-                labelStyle={[styles.speciesPillLabel, species === 'cat' ? { color: onPrimaryText.default } : { color: colors.primary }]}
-                icon={({ size }) => (
-                  <Cat size={size} color={species === 'cat' ? onPrimaryText.default : colors.primary} />
-                )}
+                containerStyle={styles.pillContainer}
+                icon={<Cat size={16} color={species === 'cat' ? onPrimaryText.default : colors.primary} />}
               >
                 Gato
-              </Button>
+              </VButton>
             </View>
           </View>
           <View style={styles.gridField}>
@@ -498,24 +493,22 @@ export default function AddPacienteScreen() {
           <View style={styles.gridField}>
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Sexo *</Text>
             <View style={styles.sexRow}>
-              <Button
-                mode={sex === 'macho' ? 'contained' : 'outlined'}
+              <VButton
+                variant={sex === 'macho' ? 'filled' : 'secondary'}
                 onPress={() => { setSex('macho'); if (!REPRODUCTIVE_MACHO.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
-                style={[styles.sexPill, sex === 'macho' && { backgroundColor: colors.primary }]}
-                labelStyle={sex === 'macho' ? { color: onPrimaryText.default } : { color: colors.primary }}
-                icon={({ size }) => <Mars size={size} color={sex === 'macho' ? onPrimaryText.default : colors.primary} />}
+                containerStyle={styles.pillContainer}
+                icon={<Mars size={16} color={sex === 'macho' ? onPrimaryText.default : colors.primary} />}
               >
                 Macho
-              </Button>
-              <Button
-                mode={sex === 'hembra' ? 'contained' : 'outlined'}
+              </VButton>
+              <VButton
+                variant={sex === 'hembra' ? 'filled' : 'secondary'}
                 onPress={() => { setSex('hembra'); if (!REPRODUCTIVE_HEMBRA.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
-                style={[styles.sexPill, sex === 'hembra' && { backgroundColor: colors.primary }]}
-                labelStyle={sex === 'hembra' ? { color: onPrimaryText.default } : { color: colors.primary }}
-                icon={({ size }) => <Venus size={size} color={sex === 'hembra' ? onPrimaryText.default : colors.primary} />}
+                containerStyle={styles.pillContainer}
+                icon={<Venus size={16} color={sex === 'hembra' ? onPrimaryText.default : colors.primary} />}
               >
                 Hembra
-              </Button>
+              </VButton>
             </View>
           </View>
           <View style={styles.gridField}>
@@ -524,15 +517,17 @@ export default function AddPacienteScreen() {
               visible={statusMenuVisible}
               onDismiss={() => setStatusMenuVisible(false)}
               anchor={
-                <Button
-                  mode="outlined"
+                <VButton
+                  variant="secondary"
+                  color={colors.text}
                   onPress={() => setStatusMenuVisible(true)}
-                  style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, justifyContent: 'flex-start' }]}
-                  labelStyle={{ color: colors.textSecondary, fontSize: TYPOGRAPHY.sizes.sm }}
-                  contentStyle={{ justifyContent: 'flex-start' }}
+                  icon={<ChevronDown size={16} color={colors.textSecondary} />}
+                  iconPosition="right"
+                  fullWidth
+                  style={styles.selectField}
                 >
                   {REPRODUCTIVE_OPTIONS.find(o => o.value === reproductiveStatus)?.label || reproductiveStatus}
-                </Button>
+                </VButton>
               }
             >
               {REPRODUCTIVE_OPTIONS
@@ -605,14 +600,7 @@ export default function AddPacienteScreen() {
               </View>
               <Text style={[styles.photoTitle, { color: colors.text }]}>Subir foto del paciente</Text>
               <Text style={[styles.photoSubtitle, { color: colors.textSecondary }]}>JPG, PNG o WEBP. Máx. 5MB</Text>
-              <Button
-                mode="outlined"
-                onPress={pickImage}
-                style={[styles.photoBtn, { borderColor: colors.primary }]}
-                labelStyle={{ color: colors.primary, fontSize: TYPOGRAPHY.sizes.sm }}
-              >
-                Seleccionar archivo
-              </Button>
+              <VButton variant="secondary" size="sm" onPress={pickImage}>Seleccionar archivo</VButton>
             </View>
           )}
         </TouchableOpacity>
@@ -1028,29 +1016,24 @@ export default function AddPacienteScreen() {
 
       {/* Navigation Bar */}
       <View style={[styles.navBar, { backgroundColor: colors.surface, borderTopColor: colors.border }, isMobile && styles.navBarMobile]}>
-        <Button
-          mode="outlined"
+        <VButton
+          variant="secondary"
           onPress={currentStep === 1 ? () => router.back() : handlePrev}
-          style={[styles.navBtn, { borderColor: colors.border }]}
-          labelStyle={{ color: colors.text }}
-          icon={currentStep === 1 ? undefined : ({ size }) => <ChevronLeft size={size} color={colors.text} />}
+          icon={currentStep === 1 ? undefined : <ChevronLeft size={16} color={colors.primary} />}
         >
           {currentStep === 1 ? 'Cancelar' : 'Volver'}
-        </Button>
-        <Button
-          mode="contained"
+        </VButton>
+        <VButton
           onPress={currentStep === 4 ? handleSave : handleNext}
-          style={[styles.navBtnPrimary, { backgroundColor: colors.primary }]}
-          labelStyle={{ color: onPrimaryText.default }}
           loading={saving}
           disabled={saving}
-          contentStyle={currentStep === 4 ? undefined : { flexDirection: 'row-reverse' }}
-          icon={saving ? undefined : ({ size }) => currentStep === 4
-            ? <Check size={size} color={onPrimaryText.default} />
-            : <ChevronRight size={size} color={onPrimaryText.default} />}
+          icon={currentStep === 4
+            ? <Check size={16} color={onAccentText.default} />
+            : <ChevronRight size={16} color={onAccentText.default} />}
+          iconPosition={currentStep === 4 ? 'left' : 'right'}
         >
           {currentStep === 4 ? (isEdit ? 'Guardar cambios' : 'Guardar paciente') : 'Siguiente'}
-        </Button>
+        </VButton>
       </View>
 
       {/* Error Dialog */}
@@ -1062,7 +1045,7 @@ export default function AddPacienteScreen() {
             <Text style={{ textAlign: 'center' }}>{errorMsg}</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setErrorMsg(null)}>Entendido</Button>
+            <VButton variant="ghost" onPress={() => setErrorMsg(null)}>Entendido</VButton>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -1147,10 +1130,10 @@ const styles = StyleSheet.create({
 
   // Species / Sex pills
   speciesRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.xs },
-  speciesPill: { flex: 1, borderRadius: RADIUS.sm, paddingVertical: SPACING.xs, borderWidth: 1.5 },
+  pillContainer: { flex: 1 },
+  selectField: { justifyContent: 'space-between' },
   speciesPillLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold },
   sexRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.xs },
-  sexPill: { flex: 1, borderRadius: RADIUS.sm, paddingVertical: SPACING.xs, borderWidth: 1.5 },
 
   // Chips
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.xs },
@@ -1199,8 +1182,6 @@ const styles = StyleSheet.create({
   navBarMobile: {
     paddingHorizontal: SPACING.md,
   },
-  navBtn: { borderRadius: RADIUS.md },
-  navBtnPrimary: { borderRadius: RADIUS.md },
 
   // Breed autocomplete
   breedDropdown: {

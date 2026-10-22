@@ -8,7 +8,8 @@ import { getTextOnPrimary } from '../../constants/colors';
 interface VButtonProps {
   children: string;
   onPress?: () => void;
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'accent';
+  /** primary = the screen's one gold action; filled = the chosen option of a selector */
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'accent' | 'filled';
   size?: 'sm' | 'md' | 'lg';
   icon?: React.ReactNode;
   iconPosition?: 'left' | 'right';
@@ -16,6 +17,11 @@ interface VButtonProps {
   disabled?: boolean;
   fullWidth?: boolean;
   style?: ViewStyle;
+  /** Layout of the pressable wrapper (e.g. { flex: 1 } to share a row); style styles the visible button */
+  containerStyle?: ViewStyle;
+  /** Text and icon colour override for ghost/secondary buttons (e.g. colors.error for a destructive action) */
+  color?: string;
+  accessibilityLabel?: string;
 }
 
 // Strong ease-out: instant response on press, quick settle on release.
@@ -32,8 +38,11 @@ export default function VButton({
   disabled = false,
   fullWidth = false,
   style,
+  containerStyle,
+  color,
+  accessibilityLabel,
 }: VButtonProps) {
-  const { colors, onAccentText } = useTheme();
+  const { colors, onAccentText, onPrimaryText } = useTheme();
   const scale = useRef(new Animated.Value(1)).current;
   const inactive = disabled || loading;
 
@@ -53,11 +62,13 @@ export default function VButton({
     ghost: { backgroundColor: 'transparent' },
     danger: { backgroundColor: colors.error },
     accent: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.primary },
+    filled: { backgroundColor: colors.primary, borderWidth: 1, borderColor: colors.primary },
   };
 
-  const textColor = (() => {
+  const textColor = color || (() => {
     switch (variant) {
       case 'primary': return onAccentText.default;
+      case 'filled': return onPrimaryText.default;
       case 'danger': return getTextOnPrimary(colors.error).default;
       default: return colors.primary;
     }
@@ -70,8 +81,9 @@ export default function VButton({
       onPressIn={() => pressTo(0.97, 110)}
       onPressOut={() => pressTo(1, 180)}
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       aria-disabled={inactive} aria-busy={loading}
-      style={fullWidth ? { width: '100%' } : undefined}
+      style={[fullWidth ? { width: '100%' } : undefined, containerStyle]}
     >
       <Animated.View
         style={[

@@ -9,7 +9,7 @@ import VetAssistantWidget from '../../components/VetAssistantWidget';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useResponsive } from '../../hooks/useResponsive';
-import { SPACING, SHADOWS } from '../../constants/tokens';
+import { SPACING, SHADOWS, FAB } from '../../constants/tokens';
 import { APP_COLORS } from '../../constants/colors';
 
 class ErrorBoundary extends Component<{ children: ReactNode; colors?: { text: string; textSecondary: string; error: string } }, { error: Error | null }> {
@@ -154,7 +154,7 @@ export default function DrawerLayout() {
       <CommandPalette visible={cmdOpen} onClose={() => setCmdOpen(false)} />
 
       {/* VetAssistant FAB */}
-      <VetAssistantWidget />
+      <VetAssistantWidget bottomOffset={pathname === '/add-paciente' ? FAB.pageBottom : 0} />
     </View>
   );
 }

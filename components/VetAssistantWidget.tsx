@@ -10,7 +10,8 @@ import { useToast } from './ui/VToast';
 import { api } from '../services/directus';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FAB } from '../constants/tokens';
 
-export default function VetAssistantWidget() {
+// bottomOffset lifts the button above a screen's own bottom bar (the patient form's step navigation)
+export default function VetAssistantWidget({ bottomOffset = 0 }: { bottomOffset?: number }) {
   const { messages, loading, sendMessage } = useAssistant();
   const [visible, setVisible] = useState(false);
   const [inputText, setInputText] = useState('');
@@ -71,7 +72,7 @@ export default function VetAssistantWidget() {
 
   return (
     <>
-      <Pressable style={({ pressed }) => [styles.fab, { backgroundColor: colors.accent, ...SHADOWS.lg, transform: [{ scale: pressed ? 0.97 : 1 }] }]} onPress={() => setVisible(true)} accessibilityRole="button" accessibilityLabel="Abrir asistente">
+      <Pressable style={({ pressed }) => [styles.fab, { bottom: SPACING.lg + bottomOffset, backgroundColor: colors.accent, ...SHADOWS.lg, transform: [{ scale: pressed ? 0.97 : 1 }] }]} onPress={() => setVisible(true)} accessibilityRole="button" accessibilityLabel="Abrir asistente">
         <Bot size={24} color={onAccentText.default} />
       </Pressable>
 

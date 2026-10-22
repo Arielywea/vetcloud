@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Appointment, api } from '../../services/directus';
 import { toLocalDateKey } from '../../utils/date';
 import { useRefreshOn } from '../../hooks/useDirectus';
@@ -168,5 +168,17 @@ export default function useAgendaData({ selectedDate, searchQuery, filters }: Us
     [rawAppointments],
   );
 
-  return { appointments, allAppointments: enriched, loading, error, summary, veterinarians, refetch: fetchData };
+  // Optimistic edit: the card lands where it was dropped right away; the caller reverts if the server refuses.
+  // The next refetch (data-change bus) replaces it with the server's copy either way.
+  const rawRef = useRef(rawAppointments);
+  rawRef.current = rawAppointments;
+  const patchLocal = useCallback((id: string, fields: Partial<Appointment>) => {
+    const previous = rawRef.current.find((a) => a.id === id);
+    setRawAppointments((list) => list.map((a) => (a.id === id ? { ...a, ...fields } : a)));
+    return () => {
+      if (previous) setRawAppointments((list) => list.map((a) => (a.id === id ? previous : a)));
+    };
+  }, []);
+
+  return { appointments, allAppointments: enriched, loading, error, summary, veterinarians, refetch: fetchData, patchLocal };
 }

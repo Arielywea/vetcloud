@@ -81,7 +81,7 @@ function AgendaContent() {
   const [detailModal, setDetailModal] = useState({ visible: false, appointment: null as AppointmentDetail | null });
   const [creationModal, setCreationModal] = useState({ visible: false, initialDate: new Date(), initialHour: 9 });
 
-  const { appointments, allAppointments, loading, error: loadError, summary, veterinarians, refetch } = useAgendaData({
+  const { appointments, allAppointments, loading, error: loadError, summary, veterinarians, refetch, patchLocal } = useAgendaData({
     selectedDate,
     searchQuery,
     filters,
@@ -108,16 +108,16 @@ function AgendaContent() {
 
   const { dragState, onDragStart, onDragMove, onDragEnd } = useDragDrop({
     onMove: async (id, newStart, newEnd) => {
+      const fields = { start_time: newStart.toISOString(), end_time: newEnd.toISOString() };
+      // Show the card in its new slot now instead of snapping back until the server answers
+      const revert = patchLocal(id, fields);
       try {
-        await api.appointments.update(id, {
-          start_time: newStart.toISOString(),
-          end_time: newEnd.toISOString(),
-        });
+        await api.appointments.update(id, fields);
         toast.success('Cita reprogramada');
       } catch (err: any) {
+        revert();
         toast.error(err?.message || 'No se pudo mover la cita');
       }
-      // A successful move refreshes through the data-change bus; a failed one never left the data
     },
   });
 

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, TextInput, Button, SegmentedButtons, Menu, Switch, Dialog, Portal } from 'react-native-paper';
+import { Text, TextInput, SegmentedButtons, Menu, Switch, Dialog, Portal } from 'react-native-paper';
+import { ChevronDown } from 'lucide-react-native';
+import VButton from '../../components/ui/Button';
 import { useRouter } from 'expo-router';
 import DynamicIcon from '../../components/ui/DynamicIcon';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -165,9 +167,9 @@ export default function AddDiseaseScreen() {
           visible={categoryMenuVisible}
           onDismiss={() => setCategoryMenuVisible(false)}
           anchor={
-            <Button mode="outlined" onPress={() => setCategoryMenuVisible(true)} style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <VButton variant="secondary" color={colors.text} fullWidth onPress={() => setCategoryMenuVisible(true)} icon={<ChevronDown size={16} color={colors.textSecondary} />} iconPosition="right" style={styles.selectField}>
               {DISEASE_CATEGORIES[category].label}
-            </Button>
+            </VButton>
           }
         >
           {CATEGORY_KEYS.map((key) => (
@@ -187,9 +189,9 @@ export default function AddDiseaseScreen() {
               visible={severityMenuVisible}
               onDismiss={() => setSeverityMenuVisible(false)}
               anchor={
-                <Button mode="outlined" onPress={() => setSeverityMenuVisible(true)} style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  {SEVERITY_OPTIONS.find((s) => s.value === severity)?.label}
-                </Button>
+                <VButton variant="secondary" color={colors.text} fullWidth onPress={() => setSeverityMenuVisible(true)} icon={<ChevronDown size={16} color={colors.textSecondary} />} iconPosition="right" style={styles.selectField}>
+              {SEVERITY_OPTIONS.find((s) => s.value === severity)?.label || ''}
+            </VButton>
               }
             >
               {SEVERITY_OPTIONS.map((opt) => (
@@ -203,9 +205,9 @@ export default function AddDiseaseScreen() {
               visible={prognosisMenuVisible}
               onDismiss={() => setPrognosisMenuVisible(false)}
               anchor={
-                <Button mode="outlined" onPress={() => setPrognosisMenuVisible(true)} style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  {PROGNOSIS_OPTIONS.find((p) => p.value === prognosis)?.label}
-                </Button>
+                <VButton variant="secondary" color={colors.text} fullWidth onPress={() => setPrognosisMenuVisible(true)} icon={<ChevronDown size={16} color={colors.textSecondary} />} iconPosition="right" style={styles.selectField}>
+              {PROGNOSIS_OPTIONS.find((p) => p.value === prognosis)?.label || ''}
+            </VButton>
               }
             >
               {PROGNOSIS_OPTIONS.map((opt) => (
@@ -383,12 +385,8 @@ export default function AddDiseaseScreen() {
 
       {/* ── Actions ── */}
       <View style={styles.actions}>
-        <Button mode="outlined" onPress={() => router.back()} style={[styles.cancelButton, { borderColor: colors.border }]}>
-          Cancelar
-        </Button>
-        <Button mode="contained" onPress={handleSave} style={[styles.saveButton, { backgroundColor: colors.primary }]}>
-          Guardar Enfermedad
-        </Button>
+        <VButton variant="secondary" onPress={() => router.back()}>Cancelar</VButton>
+        <VButton onPress={handleSave}>Guardar enfermedad</VButton>
       </View>
 
       {/* Error Dialog */}
@@ -400,7 +398,7 @@ export default function AddDiseaseScreen() {
             <Text style={{ textAlign: 'center' }}>{errorDialog}</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setErrorDialog(null)}>Entendido</Button>
+            <VButton variant="ghost" onPress={() => setErrorDialog(null)}>Entendido</VButton>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -439,6 +437,5 @@ const styles = StyleSheet.create({
     marginTop: 8,
     gap: 12,
   },
-  cancelButton: {},
-  saveButton: {},
+  selectField: { justifyContent: 'space-between', marginBottom: 8 },
 });

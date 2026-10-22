@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, Card, Button } from 'react-native-paper';
+import { Text, Card } from 'react-native-paper';
+import VButton from '../ui/Button';
 import DynamicIcon from '../ui/DynamicIcon';
 import { ClinicalRecord } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -91,9 +92,7 @@ export default function RecordTimeline({ records, onViewRecord }: RecordTimeline
                     </View>
                   </View>
                   {onViewRecord && (
-                    <Button compact mode="text" onPress={() => onViewRecord(record)} labelStyle={{ color: colors.primary }}>
-                      Ver detalle
-                    </Button>
+                    <VButton size="sm" variant="ghost" onPress={() => onViewRecord(record)}>Ver detalle</VButton>
                   )}
                 </View>
               </Card.Content>

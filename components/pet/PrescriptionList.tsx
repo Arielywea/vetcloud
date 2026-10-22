@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, Card, Button } from 'react-native-paper';
+import { Text, Card } from 'react-native-paper';
+import VIconButton from '../ui/IconButton';
 import DynamicIcon from '../ui/DynamicIcon';
 import { Prescription } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -45,15 +46,9 @@ export default function PrescriptionList({ prescriptions, onView, onSendEmail, o
                 </Text>
               </View>
               <View style={styles.actions}>
-                <Button compact mode="text" onPress={() => onView(rx)}>
-                  <DynamicIcon name="eye" size={18} color={colors.accent} />
-                </Button>
-                <Button compact mode="text" onPress={() => onDownloadPdf(rx)}>
-                  <DynamicIcon name="download" size={18} color={colors.primary} />
-                </Button>
-                <Button compact mode="text" onPress={() => onSendEmail(rx)}>
-                  <DynamicIcon name="email-outline" size={18} color={colors.info} />
-                </Button>
+                <VIconButton label="Ver receta" onPress={() => onView(rx)} icon={<DynamicIcon name="eye" size={18} color={colors.primary} />} />
+                <VIconButton label="Descargar PDF" onPress={() => onDownloadPdf(rx)} icon={<DynamicIcon name="download" size={18} color={colors.primary} />} />
+                <VIconButton label="Enviar por correo" onPress={() => onSendEmail(rx)} icon={<DynamicIcon name="email-outline" size={18} color={colors.primary} />} />
               </View>
             </View>
           </Card.Content>
