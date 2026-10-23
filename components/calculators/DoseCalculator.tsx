@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Text, TextInput, SegmentedButtons } from 'react-native-paper';
+import { Text, TextInput } from 'react-native-paper';
+import VButton from '../ui/Button';
 import { Search, Calculator, AlertTriangle, BookOpen } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import PageHeader from '../ui/PageHeader';
@@ -69,20 +70,19 @@ export default function DoseCalculator({ initialWeight, initialSpecies }: { init
         </View>
         <View style={[styles.inputGroup, { flex: 1 }]}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>Especie</Text>
-          <SegmentedButtons
-            value={especie}
-            onValueChange={(v) => setEspecie(v as Species)}
-            buttons={[
-              { value: 'perro', label: 'Perro' },
-              { value: 'gato', label: 'Gato' },
-            ]}
-          />
+          <View style={styles.choiceRow} accessibilityRole="radiogroup">
+            {(['perro', 'gato'] as const).map((sp) => (
+              <VButton key={sp} size="sm" variant={especie === sp ? 'filled' : 'secondary'} containerStyle={{ flex: 1 }} onPress={() => setEspecie(sp)} accessibilityLabel={`Especie: ${sp === 'perro' ? 'Perro' : 'Gato'}`}>
+                {sp === 'perro' ? 'Perro' : 'Gato'}
+              </VButton>
+            ))}
+          </View>
         </View>
       </View>
 
       {/* Result first, so it's visible without scrolling past the list */}
       {selectedMed && (
-        <View style={[styles.resultCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={[styles.resultCard, { backgroundColor: colors.surface }]}>
           <View style={styles.resultHeader}>
             <Calculator size={20} color={colors.primary} />
             <Text style={[styles.resultTitle, { color: colors.text }]}>{selectedMed.nombre}</Text>
@@ -115,7 +115,7 @@ export default function DoseCalculator({ initialWeight, initialSpecies }: { init
           )}
 
           {doseText ? (
-            <View style={[styles.sourceBox, { borderTopColor: colors.border }]}>
+            <View style={styles.sourceBox}>
               <BookOpen size={14} color={colors.textSecondary} />
               <Text style={[styles.sourceText, { color: colors.textSecondary }]}>
                 Referencia ({especie}): {doseText}
@@ -200,6 +200,7 @@ const styles = StyleSheet.create({
   content: { padding: SPACING.xl, paddingBottom: SPACING.xl * 2, maxWidth: 760, width: '100%', alignSelf: 'center' },
   title: { fontSize: TYPOGRAPHY.sizes['2xl'], marginBottom: SPACING.xl },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.lg },
+  choiceRow: { flexDirection: 'row', gap: SPACING.sm, minHeight: 40 },
   inputGroup: { marginBottom: SPACING.lg, minWidth: 220 },
   label: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, marginBottom: SPACING.sm },
   helper: { fontSize: TYPOGRAPHY.sizes.sm, marginTop: SPACING.xs },
@@ -211,7 +212,7 @@ const styles = StyleSheet.create({
   medFamilia: { fontSize: TYPOGRAPHY.sizes.sm, marginTop: 2 },
   medDose: { fontSize: TYPOGRAPHY.sizes.sm },
   emptyText: { textAlign: 'center', padding: SPACING.lg, fontSize: TYPOGRAPHY.sizes.sm },
-  resultCard: { borderRadius: RADIUS.md, borderWidth: 1, padding: SPACING.lg, marginBottom: SPACING.xl },
+  resultCard: { borderRadius: RADIUS.sm, padding: SPACING.lg, marginBottom: SPACING.xl },
   resultHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.md },
   resultTitle: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.bold, flex: 1 },
   alertCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, padding: SPACING.md, borderRadius: RADIUS.md, borderWidth: 1 },
@@ -219,7 +220,7 @@ const styles = StyleSheet.create({
   resultRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: SPACING.sm, gap: SPACING.md },
   resultLabel: { fontSize: TYPOGRAPHY.sizes.sm },
   resultValue: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: TYPOGRAPHY.weights.semibold, textAlign: 'right' },
-  sourceBox: { flexDirection: 'row', gap: SPACING.sm, borderTopWidth: 1, marginTop: SPACING.md, paddingTop: SPACING.md },
+  sourceBox: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.lg },
   sourceText: { flex: 1, fontSize: TYPOGRAPHY.sizes.sm, lineHeight: 19 },
   disclaimer: { fontSize: 12, marginTop: SPACING.sm, lineHeight: 17 },
 });
