@@ -149,17 +149,25 @@ function parseDateInput(value, { allowFuture = false } = {}) {
 }
 
 // Columns a client may set on pets (create + update). JSON columns are stringified.
-const PET_COLUMNS = ['name','tutor_rut','species','breed','birth_date','weight','color','photo','allergies','notes','tutor_name','phone','email','address','clinic_location','id_number','sex','temperament','habitat','habitat_other','food','food_frequency','water_consumption','urination','lives_with_other_animals','vaccines','deworming','flea_treatment','last_heat','surgeries','other_diseases','medications','reproductive_status','anamnesis','vital_signs','hallazgos_examen_fisico','motivo_consulta','entorno','areneros','status','receive_reminders','last_visit','pre_diagnostico','base_diseases'];
-const PET_JSON_COLUMNS = ['allergies','temperament','vital_signs','base_diseases'];
+// The tutor's data lives in owners; pets.tutor_* are a copy the server keeps in sync (syncOwnerCopy)
+const PET_OWNER_COPY = ['tutor_name', 'tutor_rut', 'phone', 'email', 'address'];
+const PET_STATUSES = ['alive', 'deceased', 'transferred', 'inactive'];
+const PET_COLUMNS = ['owner_id','species_other','registry_number','birth_date_estimated','alerts','deceased_at','name','tutor_rut','species','breed','birth_date','weight','color','photo','allergies','notes','tutor_name','phone','email','address','clinic_location','id_number','sex','temperament','habitat','habitat_other','food','food_frequency','water_consumption','urination','lives_with_other_animals','vaccines','deworming','flea_treatment','last_heat','surgeries','other_diseases','medications','reproductive_status','anamnesis','vital_signs','hallazgos_examen_fisico','motivo_consulta','entorno','areneros','status','receive_reminders','last_visit','pre_diagnostico','base_diseases'];
+const PET_JSON_COLUMNS = ['allergies','temperament','vital_signs','base_diseases','alerts'];
 
 // Validates and normalizes a pet payload. Returns { values } or { error }.
 function normalizePet(body, { partial }) {
   const safe = sanitizeColumns(PET_COLUMNS, body);
+  for (const key of PET_OWNER_COPY) delete safe[key];
+  if (safe.status !== undefined && !PET_STATUSES.includes(safe.status)) return { error: 'Estado inválido' };
+  if (safe.owner_id !== undefined && safe.owner_id !== null && !isValidUUID(String(safe.owner_id))) return { error: 'Tutor inválido' };
   if (!partial || safe.name !== undefined) {
     if (!safe.name || !String(safe.name).trim()) return { error: 'El nombre es obligatorio' };
     safe.name = String(safe.name).trim();
   }
-  if (safe.species !== undefined && !['dog', 'cat'].includes(safe.species)) return { error: 'La especie debe ser dog o cat' };
+  if (safe.species !== undefined && !['dog', 'cat', 'other'].includes(safe.species)) return { error: 'La especie debe ser perro, gato u otra' };
+  if (safe.species === 'other' && !String(safe.species_other || '').trim()) return { error: 'Indica la especie (por ejemplo, conejo o hurón)' };
+  if (safe.species && safe.species !== 'other') safe.species_other = null;
   if (safe.tutor_rut !== undefined && safe.tutor_rut !== null && String(safe.tutor_rut).trim().length > 20) {
     return { error: 'RUT inválido' };
   }
@@ -228,6 +236,30 @@ function isEmail(value) {
   return typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
 
+// RUT and phone in one canonical form before saving and before searching (same as vc_canon_rut and
+// vc_canon_phone in migration 019), so "12.345.678-k" and "12345678K" are the same tutor.
+function canonRut(raw) {
+  const clean = String(raw || '').replace(/[^0-9kK]/g, '').toUpperCase();
+  if (clean.length < 2) return null;
+  return `${clean.slice(0, -1)}-${clean.slice(-1)}`;
+}
+function validRut(canon) {
+  const m = /^(\d{1,8})-([\dK])$/.exec(canon || '');
+  if (!m) return false;
+  let sum = 0;
+  let mul = 2;
+  for (let i = m[1].length - 1; i >= 0; i--) { sum += Number(m[1][i]) * mul; mul = mul === 7 ? 2 : mul + 1; }
+  const r = 11 - (sum % 11);
+  return (r === 11 ? '0' : r === 10 ? 'K' : String(r)) === m[2];
+}
+function canonPhone(raw) {
+  const d = String(raw || '').replace(/\D/g, '');
+  if (!d) return null;
+  if (d.length === 9) return '+56' + d;
+  if (d.length === 8) return '+569' + d;
+  return '+' + d;
+}
+
 // Same rules as utils/password.ts on the client — keep both in sync
 function passwordPolicyError(password) {
   if (typeof password !== 'string' || password.length < 8) return 'La contraseña debe tener al menos 8 caracteres';
@@ -245,6 +277,7 @@ const OWNED_REFS = {
   appointment_id: 'SELECT 1 FROM appointments WHERE id::text = $1 AND user_id = $2',
   follow_up_of: 'SELECT 1 FROM appointments WHERE id::text = $1 AND user_id = $2',
   clinical_record_id: 'SELECT 1 FROM clinical_records WHERE id::text = $1 AND user_id = $2',
+  owner_id: 'SELECT 1 FROM owners WHERE id::text = $1 AND user_id = $2',
 };
 async function checkRefs(req) {
   const body = req.body || {};
@@ -570,7 +603,7 @@ app.get('/items/diseases', async (req, res) => {
     }
 
     if (conditions.length) query += ' WHERE ' + conditions.join(' AND ');
-    query += ' ORDER BY CASE WHEN species = \'both\' THEN 0 WHEN species = \'dog\' THEN 1 ELSE 2 END, prevalence_rank ASC NULLS LAST, name ASC';
+    query += ' ORDER BY chile_rank ASC NULLS LAST, prevalence_rank ASC NULLS LAST, name ASC';
 
     const result = await pool.query(query, params);
     res.json({ data: result.rows });
@@ -761,12 +794,229 @@ app.get('/items/surgeries/:id', async (req, res) => {
 // ─── PETS ────────────────────────────────────────────────
 // last_visit is derived from the clinical records: the stored column was only bumped when a record was
 // created through the API, so the list said "Sin visitas / Inactivo" for patients with records.
-const PET_SELECT = `SELECT p.*, GREATEST(p.last_visit, (SELECT MAX(cr.date) FROM clinical_records cr WHERE cr.pet_id = p.id)) AS last_visit
-  FROM pets p`;
+const PET_SELECT = `SELECT p.*, GREATEST(p.last_visit, (SELECT MAX(cr.date) FROM clinical_records cr WHERE cr.pet_id = p.id)) AS last_visit,
+    o.name AS owner_name, o.rut AS owner_rut, o.phone AS owner_phone, o.email AS owner_email,
+    o.contact_revoked_at AS owner_contact_revoked_at, o.anonymized_at AS owner_anonymized_at
+  FROM pets p LEFT JOIN owners o ON o.id = p.owner_id`;
+
+// Copies the tutor's data onto their pets (read by PDFs, reminders and the agenda until migration 022)
+async function syncOwnerCopy(ownerId) {
+  await pool.query(
+    `UPDATE pets p SET tutor_name = o.name, tutor_rut = o.rut, phone = o.phone, email = o.email, address = o.address
+     FROM owners o WHERE o.id = $1 AND p.owner_id = o.id`, [ownerId]);
+}
+
+// Transition: the old patient form sends the tutor's fields with the pet instead of an owner_id.
+// Finds the tutor by RUT or creates one (or updates the pet's current tutor) and returns its id;
+// null when the body carries no tutor data. Goes away with the new Pacientes screens.
+async function ownerFromLegacyBody(body, userId, organizationId, currentOwnerId) {
+  const pick = (k) => (typeof body[k] === 'string' && body[k].trim() ? body[k].trim() : null);
+  const name = pick('tutor_name');
+  const rut = canonRut(pick('tutor_rut'));
+  const fields = { name, rut: rut && validRut(rut) ? rut : null, phone: canonPhone(pick('phone')), email: isEmail(pick('email')) ? pick('email') : null, address: pick('address') };
+  if (!Object.values(fields).some(Boolean)) return null;
+  if (fields.rut) {
+    const byRut = await pool.query('SELECT id FROM owners WHERE user_id = $1 AND rut = $2', [userId, fields.rut]);
+    if (byRut.rows.length && byRut.rows[0].id !== currentOwnerId) {
+      if (currentOwnerId) fields.rut = null; // that RUT belongs to another tutor: leave this one's alone
+      else return byRut.rows[0].id;
+    }
+  }
+  if (currentOwnerId) {
+    const set = Object.entries(fields).filter(([k, v]) => ({ name: 'tutor_name', rut: 'tutor_rut' }[k] || k) in body && (v !== null || (k !== 'rut' && k !== 'name')));
+    if (set.length) {
+      await pool.query(
+        `UPDATE owners SET ${set.map(([k], i) => `${k} = $${i + 1}`).join(', ')}, updated_at = NOW() WHERE id = $${set.length + 1} AND user_id = $${set.length + 2}`,
+        [...set.map(([, v]) => v), currentOwnerId, userId]);
+    }
+    return currentOwnerId;
+  }
+  const r = await pool.query(
+    `INSERT INTO owners (user_id, organization_id, name, rut, phone, email, address) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+    [userId, organizationId || null, fields.name || 'Tutor sin nombre', fields.rut, fields.phone, fields.email, fields.address]);
+  return r.rows[0].id;
+}
+
+// A deceased, transferred or inactive pet, or a tutor who revoked contact, gets no more reminders
+async function cancelPendingReminders(where, params) {
+  await pool.query(`UPDATE reminders SET status = 'cancelled' WHERE status = 'pending' AND ${where}`, params);
+}
+
+// The visit is the only source of the weight; pets keep the latest as a cache (and in pets.weight for the PDFs)
+async function refreshPetWeight(petId) {
+  await pool.query(
+    `UPDATE pets p SET current_weight_kg = s.kg, current_weight_at = s.at, weight = s.kg
+     FROM (SELECT weight_kg AS kg, date AS at FROM clinical_records WHERE pet_id = $1 AND weight_kg IS NOT NULL
+           ORDER BY date DESC LIMIT 1) s
+     WHERE p.id = $1`, [petId]);
+}
+
+// ─── OWNERS (TUTORES) ────────────────────────────────────
+const OWNER_COLUMNS = ['name', 'rut', 'phone', 'email', 'address', 'comuna', 'region', 'alt_contact_name', 'alt_contact_phone', 'preferred_contact', 'consent_communications_at', 'notes'];
+function normalizeOwner(body, { partial }) {
+  const safe = sanitizeColumns(OWNER_COLUMNS, body);
+  if (!partial || safe.name !== undefined) {
+    if (!String(safe.name || '').trim()) return { error: 'El nombre del tutor es obligatorio' };
+    safe.name = String(safe.name).trim().slice(0, 200);
+  }
+  if (!partial || safe.rut !== undefined) {
+    const rut = canonRut(safe.rut);
+    if (!rut || !validRut(rut)) return { error: 'RUT inválido: revisa el número y el dígito verificador' };
+    safe.rut = rut;
+  }
+  if (safe.phone !== undefined) safe.phone = canonPhone(safe.phone);
+  if (safe.alt_contact_phone !== undefined) safe.alt_contact_phone = canonPhone(safe.alt_contact_phone);
+  if (safe.email !== undefined) {
+    const email = String(safe.email || '').trim().toLowerCase();
+    if (email && !isEmail(email)) return { error: 'Correo inválido' };
+    safe.email = email || null;
+  }
+  if (safe.preferred_contact !== undefined && safe.preferred_contact !== null && !['whatsapp', 'telefono', 'correo'].includes(safe.preferred_contact)) {
+    return { error: 'Preferencia de contacto inválida' };
+  }
+  if (safe.consent_communications_at !== undefined) {
+    safe.consent_communications_at = safe.consent_communications_at ? new Date().toISOString() : null;
+  }
+  for (const [key, val] of Object.entries(safe)) if (typeof val === 'string' && val.trim() === '') safe[key] = null;
+  return { values: safe };
+}
+const OWNER_LIST_SELECT = `SELECT o.*,
+    COALESCE(json_agg(json_build_object('id', p.id, 'name', p.name, 'species', p.species, 'status', p.status) ORDER BY p.name)
+             FILTER (WHERE p.id IS NOT NULL), '[]') AS pets
+  FROM owners o LEFT JOIN pets p ON p.owner_id = o.id`;
+
+app.get('/items/owners', authMiddleware, async (req, res) => {
+  try {
+    const params = [req.userId];
+    let where = 'o.user_id = $1';
+    const q = String(req.query.q || '').trim();
+    if (q) {
+      const rut = canonRut(q);
+      const phone = q.replace(/\D/g, '');
+      params.push(likeTerm(q.toLowerCase()));
+      const parts = [`LOWER(o.name) LIKE $${params.length}`, `EXISTS (SELECT 1 FROM pets px WHERE px.owner_id = o.id AND LOWER(px.name) LIKE $${params.length})`];
+      if (rut && /\d{5,}/.test(q)) { params.push(rut); parts.push(`o.rut = $${params.length}`); }
+      if (phone.length >= 6) { params.push('%' + phone); parts.push(`regexp_replace(o.phone, '\\D', '', 'g') LIKE $${params.length}`); }
+      where += ` AND (${parts.join(' OR ')})`;
+    }
+    const result = await pool.query(`${OWNER_LIST_SELECT} WHERE ${where} GROUP BY o.id ORDER BY LOWER(o.name) LIMIT 200`, params);
+    res.json({ data: result.rows });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Live duplicate check while typing a RUT
+app.get('/items/owners/check', authMiddleware, async (req, res) => {
+  try {
+    const rut = canonRut(req.query.rut);
+    if (!rut || !validRut(rut)) return res.json({ data: { valid: false, rut, owner: null } });
+    const r = await pool.query('SELECT id, name FROM owners WHERE user_id = $1 AND rut = $2', [req.userId, rut]);
+    res.json({ data: { valid: true, rut, owner: r.rows[0] || null } });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.get('/items/owners/:id', authMiddleware, async (req, res) => {
+  try {
+    const o = await pool.query('SELECT * FROM owners WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
+    if (!o.rows.length) return res.status(404).json({ error: 'No se encontró el tutor' });
+    const pets = await pool.query(`${PET_SELECT} WHERE p.owner_id = $1 AND p.user_id = $2 ORDER BY p.name`, [req.params.id, req.userId]);
+    res.json({ data: { ...o.rows[0], pets: pets.rows } });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/items/owners', authMiddleware, async (req, res) => {
+  try {
+    const { values: owner, error } = normalizeOwner(req.body || {}, { partial: false });
+    if (error) return res.status(400).json({ error });
+    const dup = await pool.query('SELECT id, name FROM owners WHERE user_id = $1 AND rut = $2', [req.userId, owner.rut]);
+    if (dup.rows.length) return res.status(409).json({ error: `Ya existe un tutor con ese RUT (${dup.rows[0].name})`, existing_id: dup.rows[0].id });
+    owner.user_id = req.userId;
+    owner.organization_id = req.organizationId || null;
+    const cols = Object.keys(owner);
+    const result = await pool.query(
+      `INSERT INTO owners (${cols.join(', ')}) VALUES (${cols.map((_, i) => '$' + (i + 1)).join(', ')}) RETURNING *`,
+      cols.map((c) => owner[c])
+    );
+    res.json({ data: { ...result.rows[0], pets: [] } });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.patch('/items/owners/:id', authMiddleware, async (req, res) => {
+  try {
+    const { values: safe, error } = normalizeOwner(req.body || {}, { partial: true });
+    if (error) return res.status(400).json({ error });
+    if (safe.rut) {
+      const dup = await pool.query('SELECT id, name FROM owners WHERE user_id = $1 AND rut = $2 AND id <> $3', [req.userId, safe.rut, req.params.id]);
+      if (dup.rows.length) return res.status(409).json({ error: `Ya existe un tutor con ese RUT (${dup.rows[0].name})`, existing_id: dup.rows[0].id });
+    }
+    const { fields, values, idx } = buildSet(safe);
+    if (!fields.length) return res.status(400).json({ error: 'No hay campos para actualizar' });
+    values.push(req.params.id, req.userId);
+    const result = await pool.query(
+      `UPDATE owners SET ${fields.join(', ')}, updated_at = NOW() WHERE id = $${idx} AND user_id = $${idx + 1} AND anonymized_at IS NULL RETURNING *`, values
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el tutor' });
+    await syncOwnerCopy(req.params.id);
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Stop all communications to the tutor (their pets keep their records)
+app.post('/items/owners/:id/revoke-contact', authMiddleware, async (req, res) => {
+  try {
+    const r = await pool.query('UPDATE owners SET contact_revoked_at = NOW(), consent_communications_at = NULL, updated_at = NOW() WHERE id = $1 AND user_id = $2 RETURNING *', [req.params.id, req.userId]);
+    if (!r.rows.length) return res.status(404).json({ error: 'No se encontró el tutor' });
+    await pool.query('UPDATE pets SET receive_reminders = false WHERE owner_id = $1', [req.params.id]);
+    await cancelPendingReminders('pet_id IN (SELECT id FROM pets WHERE owner_id = $1)', [req.params.id]);
+    res.json({ data: r.rows[0] });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Data-protection request: the tutor's personal data is replaced by a placeholder. Clinical records and
+// prescriptions are kept (they must be retained); nothing is hard-deleted.
+app.post('/items/owners/:id/anonymize', authMiddleware, async (req, res) => {
+  try {
+    const r = await pool.query(
+      `UPDATE owners SET name = 'Tutor anonimizado ' || left(id::text, 8), rut = NULL, phone = NULL, email = NULL, address = NULL,
+         comuna = NULL, region = NULL, alt_contact_name = NULL, alt_contact_phone = NULL, notes = NULL,
+         consent_communications_at = NULL, contact_revoked_at = COALESCE(contact_revoked_at, NOW()), anonymized_at = NOW(), updated_at = NOW()
+       WHERE id = $1 AND user_id = $2 RETURNING *`, [req.params.id, req.userId]);
+    if (!r.rows.length) return res.status(404).json({ error: 'No se encontró el tutor' });
+    await syncOwnerCopy(req.params.id);
+    await pool.query('UPDATE pets SET receive_reminders = false WHERE owner_id = $1', [req.params.id]);
+    await cancelPendingReminders('pet_id IN (SELECT id FROM pets WHERE owner_id = $1)', [req.params.id]);
+    // tutor_email is NOT NULL: blank it instead
+    await pool.query("UPDATE reminders SET tutor_email = '' WHERE pet_id IN (SELECT id FROM pets WHERE owner_id = $1)", [req.params.id]);
+    res.json({ data: r.rows[0] });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
 
 app.get('/items/pets', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query(`${PET_SELECT} WHERE p.user_id = $1 ORDER BY p.name`, [req.userId]);
+    const params = [req.userId];
+    let where = 'p.user_id = $1';
+    if (req.query.owner_id && isValidUUID(String(req.query.owner_id))) { params.push(req.query.owner_id); where += ' AND p.owner_id = $2'; }
+    const result = await pool.query(`${PET_SELECT} WHERE ${where} ORDER BY p.name`, params);
     res.json({ data: result.rows });
   } catch (err) {
     logError(req, err);
@@ -789,7 +1039,14 @@ app.post('/items/pets', authMiddleware, async (req, res) => {
   try {
     const { values: pet, error } = normalizePet(req.body || {}, { partial: false });
     if (error) return res.status(400).json({ error });
-    if (!pet.species) return res.status(400).json({ error: 'La especie debe ser dog o cat' });
+    if (!pet.species) return res.status(400).json({ error: 'La especie debe ser perro, gato u otra' });
+    if (!pet.owner_id) pet.owner_id = await ownerFromLegacyBody(req.body || {}, req.userId, req.organizationId, null);
+    if (!pet.owner_id) return res.status(400).json({ error: 'Selecciona el tutor de la mascota' });
+    const ownerRow = await pool.query('SELECT name, rut, phone, email, address FROM owners WHERE id = $1 AND user_id = $2', [pet.owner_id, req.userId]);
+    if (!ownerRow.rows.length) return res.status(403).json({ error: 'No tienes acceso a ese tutor' });
+    const o = ownerRow.rows[0];
+    Object.assign(pet, { tutor_name: o.name, tutor_rut: o.rut, phone: o.phone, email: o.email, address: o.address });
+    if (pet.weight) { pet.current_weight_kg = pet.weight; pet.current_weight_at = new Date().toISOString(); }
     delete pet.last_visit;
     pet.reproductive_status = pet.reproductive_status || 'intacto';
     pet.status = pet.status || 'alive';
@@ -813,6 +1070,18 @@ app.patch('/items/pets/:id', authMiddleware, async (req, res) => {
   try {
     const { values: safe, error } = normalizePet(req.body || {}, { partial: true });
     if (error) return res.status(400).json({ error });
+    if (safe.owner_id) {
+      const ok = await pool.query('SELECT 1 FROM owners WHERE id = $1 AND user_id = $2', [safe.owner_id, req.userId]);
+      if (!ok.rows.length) return res.status(403).json({ error: 'No tienes acceso a ese tutor' });
+    }
+    if (!safe.owner_id && PET_OWNER_COPY.some((k) => k in (req.body || {}))) {
+      const cur = await pool.query('SELECT owner_id FROM pets WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
+      if (!cur.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
+      const legacyOwner = await ownerFromLegacyBody(req.body, req.userId, req.organizationId, cur.rows[0].owner_id);
+      if (legacyOwner) safe.owner_id = legacyOwner;
+    }
+    if (safe.status === 'deceased' && !safe.deceased_at) safe.deceased_at = new Date().toISOString();
+    if (safe.status && safe.status !== 'deceased') safe.deceased_at = null;
     const fields = [];
     const values = [];
     let idx = 1;
@@ -828,6 +1097,8 @@ app.patch('/items/pets/:id', authMiddleware, async (req, res) => {
       `UPDATE pets SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`, values
     );
     if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
+    if (safe.owner_id) await syncOwnerCopy(safe.owner_id);
+    if (safe.status && safe.status !== 'alive') await cancelPendingReminders('pet_id = $1', [req.params.id]);
     res.json({ data: result.rows[0] });
   } catch (err) {
     logError(req, err);
@@ -1106,12 +1377,16 @@ app.patch('/items/appointments/:id', authMiddleware, async (req, res) => {
     // If changing status, validate transition
     if (a.status) {
       const currentResult = await pool.query(
-        'SELECT status, checked_in_at, started_at, finished_at FROM appointments WHERE id = $1 AND user_id = $2',
+        'SELECT status, pet_id, checked_in_at, started_at, finished_at FROM appointments WHERE id = $1 AND user_id = $2',
         [req.params.id, req.userId]
       );
       if (!currentResult.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
       const current = currentResult.rows[0];
 
+      // Booked by phone without a chart is fine; receiving the patient is not
+      if (['en_espera', 'en_consulta', 'completada'].includes(a.status) && !(a.pet_id || current.pet_id)) {
+        return res.status(400).json({ error: 'Vincula la cita a un paciente (o regístralo) antes de recibirlo', code: 'PET_REQUIRED' });
+      }
       if (!isValidTransition(current.status, a.status)) {
         return res.status(400).json({
           error: `Transición inválida: ${current.status} → ${a.status}`,
@@ -1187,12 +1462,22 @@ app.post('/items/clinical_records', authMiddleware, async (req, res) => {
     if (vErr) return res.status(400).json({ error: vErr });
     const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [r.pet_id, req.userId]);
     if (!ownerCheck.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa mascota' });
+    const refError = await checkRefs({ ...req, body: { appointment_id: r.appointment_id } });
+    if (refError) return res.status(403).json({ error: refError });
+    const weightRaw = r.weight_kg ?? r.details?.weight;
+    let weightKg = null;
+    if (weightRaw !== undefined && weightRaw !== null && weightRaw !== '') {
+      weightKg = parseFloat(String(weightRaw).replace(',', '.'));
+      if (!isFinite(weightKg) || weightKg < 0.05 || weightKg > 150) return res.status(400).json({ error: 'El peso debe estar entre 0,05 y 150 kg' });
+    }
     const result = await pool.query(
-      `INSERT INTO clinical_records (pet_id, user_id, record_type, date, veterinarian, details, organization_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      `INSERT INTO clinical_records (pet_id, user_id, record_type, date, veterinarian, details, organization_id, weight_kg, appointment_id, is_initial)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
       [r.pet_id, req.userId, r.record_type || 'consulta', r.date || new Date().toISOString(),
-       r.veterinarian || null, JSON.stringify(r.details || {}), req.organizationId || null]
+       r.veterinarian || null, JSON.stringify(r.details || {}), req.organizationId || null,
+       weightKg, r.appointment_id || null, r.is_initial === true]
     );
+    if (weightKg !== null) await refreshPetWeight(r.pet_id).catch((err) => logError(req, err));
     // Auto-update pet's last_visit (non-fatal: the record is already saved)
     await pool.query(
       'UPDATE pets SET last_visit = GREATEST(COALESCE(last_visit, $1), $1) WHERE id = $2',
@@ -1215,8 +1500,13 @@ app.patch('/items/clinical_records/:id', authMiddleware, async (req, res) => {
       record_type: { type: 'enum', values: ['consulta', 'vacuna', 'cirugia', 'control'], label: 'Tipo de registro' },
     });
     if (vErr) return res.status(400).json({ error: vErr });
-    const allowed = ['pet_id','record_type','date','veterinarian','details'];
+    const allowed = ['pet_id','record_type','date','veterinarian','details','weight_kg','is_initial'];
     const safe = sanitizeColumns(allowed, r);
+    if (safe.weight_kg !== undefined && safe.weight_kg !== null && safe.weight_kg !== '') {
+      const w = parseFloat(String(safe.weight_kg).replace(',', '.'));
+      if (!isFinite(w) || w < 0.05 || w > 150) return res.status(400).json({ error: 'El peso debe estar entre 0,05 y 150 kg' });
+      safe.weight_kg = w;
+    } else if (safe.weight_kg === '') safe.weight_kg = null;
     if ('details' in safe && safe.details == null) safe.details = {};
     const { fields, values, idx } = buildSet(safe);
     if (!fields.length) return res.status(400).json({ error: 'No hay campos para actualizar' });
@@ -1226,6 +1516,7 @@ app.patch('/items/clinical_records/:id', authMiddleware, async (req, res) => {
       `UPDATE clinical_records SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`, values
     );
     if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
+    if ('weight_kg' in safe || r.date) await refreshPetWeight(result.rows[0].pet_id).catch((err) => logError(req, err));
     // Auto-update pet's last_visit if date changed
     if (r.date) {
       const record = result.rows[0];
@@ -1733,44 +2024,33 @@ app.post('/items/reminders/auto-generate', authMiddleware, async (req, res) => {
     const { pet_id } = req.body;
     if (!pet_id) return res.status(400).json({ error: 'Selecciona un paciente' });
     const petCheck = await pool.query(
-      'SELECT id, name, species, breed, birth_date, email, receive_reminders FROM pets WHERE id = $1 AND user_id = $2',
+      'SELECT id, name, species, breed, birth_date, email, receive_reminders, status FROM pets WHERE id = $1 AND user_id = $2',
       [pet_id, req.userId]
     );
     if (!petCheck.rows.length) return res.status(403).json({ error: 'No autorizado' });
     const pet = petCheck.rows[0];
+    if (pet.status !== 'alive') return res.status(400).json({ error: 'La mascota no está activa: no se generan recordatorios' });
     if (!pet.receive_reminders) return res.status(400).json({ error: 'El tutor no desea recibir recordatorios' });
     if (!pet.email) return res.status(400).json({ error: 'El tutor no tiene email registrado' });
 
-    const records = await pool.query(
-      `SELECT * FROM clinical_records WHERE pet_id = $1 AND user_id = $2 AND record_type = 'vacuna'
-       ORDER BY date DESC`,
+    // Latest dose of each vaccine or deworming; a dose without a next date is due a year after it was applied
+    const latest = await pool.query(
+      `SELECT DISTINCT ON (kind, coalesce(plan_item, ''), lower(coalesce(product, '')))
+              id, pet_id, kind, plan_item, product, clinical_record_id,
+              to_char(coalesce(next_due_at, applied_at + interval '1 year'), 'YYYY-MM-DD') AS next_due_at
+       FROM vaccinations WHERE pet_id = $1 AND user_id = $2
+       ORDER BY kind, coalesce(plan_item, ''), lower(coalesce(product, '')), applied_at DESC, created_at DESC`,
       [pet_id, req.userId]
     );
-
+    const today = new Date().toISOString().slice(0, 10);
     const reminders = [];
-    for (const rec of records.rows) {
-      const vaccineName = rec.details?.notes?.split('\n')[0] || 'Vacuna';
-      const recDate = new Date(rec.date);
-      const nextDate = new Date(recDate);
-      nextDate.setMonth(nextDate.getMonth() + 12);
-
-      if (nextDate > new Date()) {
-        const existing = await pool.query(
-          `SELECT id FROM reminders WHERE pet_id = $1 AND related_record_id = $2 AND status IN ('pending', 'sending', 'sent')`,
-          [pet_id, rec.id]
-        );
-        if (!existing.rows.length) {
-          const r = await pool.query(
-            `INSERT INTO reminders (user_id, pet_id, tutor_email, reminder_type, title, message, scheduled_for, related_record_id, organization_id)
-             VALUES ($1, $2, $3, 'vacuna', $4, $5, $6, $7, $8) RETURNING *`,
-            [req.userId, pet_id, pet.email,
-             `Refuerzo de ${vaccineName} — ${pet.name}`,
-             `Es hora del refuerzo de ${vaccineName} para ${pet.name} (${pet.breed || 'N/D'}). Agende su cita.`,
-             nextDate.toISOString(), rec.id, req.organizationId || null]
-          );
-          reminders.push(r.rows[0]);
-        }
-      }
+    for (const vac of latest.rows) {
+      if (vac.next_due_at <= today) continue;
+      const existing = await pool.query(
+        `SELECT 1 FROM reminders WHERE vaccination_id = $1 AND status IN ('pending', 'sending', 'sent')`, [vac.id]);
+      if (existing.rows.length) continue;
+      const created = await scheduleVaccinationReminder(vac, req.userId, req.organizationId);
+      if (created) reminders.push(created);
     }
     res.json({ data: reminders });
   } catch (err) {
@@ -1833,7 +2113,10 @@ app.post('/items/reminders/send-pending', authMiddleware, async (req, res) => {
     const result = await pool.query(
       `WITH due AS (
          SELECT r.id FROM reminders r
+         JOIN pets pp ON pp.id = r.pet_id
+         LEFT JOIN owners oo ON oo.id = pp.owner_id
          WHERE r.user_id = $1 AND r.scheduled_for <= NOW()
+           AND pp.status = 'alive' AND oo.contact_revoked_at IS NULL AND oo.anonymized_at IS NULL
            AND (r.status = 'pending' OR (r.status = 'sending' AND r.sent_at < NOW() - INTERVAL '15 minutes'))
          ORDER BY r.scheduled_for LIMIT 20 FOR UPDATE SKIP LOCKED
        )
@@ -2291,21 +2574,166 @@ app.get('/search', authMiddleware, async (req, res) => {
     }
     const term = likeTerm(q.toLowerCase());
     // Scoped to the caller's own patients; "phone" is exposed as tutor_phone for the client
+    const rut = /\d{5,}/.test(q) ? canonRut(q) : null;
+    const digits = q.replace(/\D/g, '');
+    const phoneTerm = digits.length >= 6 ? '%' + digits : null;
     const [pets, owners] = await Promise.all([
       pool.query(
-        `SELECT id, name, species, breed, tutor_name, phone AS tutor_phone FROM pets
-         WHERE user_id = $2 AND (LOWER(name) LIKE $1 OR LOWER(breed) LIKE $1 OR LOWER(tutor_name) LIKE $1 OR phone LIKE $1)
-         ORDER BY name LIMIT 20`,
-        [term, req.userId]
+        `SELECT p.id, p.name, p.species, p.breed, p.owner_id, o.name AS tutor_name, o.phone AS tutor_phone FROM pets p
+         LEFT JOIN owners o ON o.id = p.owner_id
+         WHERE p.user_id = $2 AND (LOWER(p.name) LIKE $1 OR LOWER(p.breed) LIKE $1 OR LOWER(o.name) LIKE $1
+           OR LOWER(COALESCE(p.id_number, '')) LIKE $1 OR o.rut = $3 OR regexp_replace(COALESCE(o.phone, ''), '\\D', '', 'g') LIKE $4)
+         ORDER BY p.name LIMIT 20`,
+        [term, req.userId, rut, phoneTerm]
       ),
       pool.query(
-        `SELECT DISTINCT tutor_name, phone AS tutor_phone FROM pets
-         WHERE user_id = $2 AND tutor_name IS NOT NULL AND (LOWER(tutor_name) LIKE $1 OR phone LIKE $1)
-         LIMIT 20`,
-        [term, req.userId]
+        `SELECT o.id, o.name AS tutor_name, o.phone AS tutor_phone, o.rut FROM owners o
+         WHERE o.user_id = $2 AND (LOWER(o.name) LIKE $1 OR o.rut = $3 OR regexp_replace(COALESCE(o.phone, ''), '\\D', '', 'g') LIKE $4)
+         ORDER BY o.name LIMIT 20`,
+        [term, req.userId, rut, phoneTerm]
       ),
     ]);
     res.json({ data: { pets: pets.rows, owners: owners.rows } });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ─── VACCINATIONS ────────────────────────────────────────
+const VACCINATION_KINDS = ['vacuna', 'desparasitacion_interna', 'desparasitacion_externa'];
+const VACCINE_PLAN_ITEMS = ['octuple_sextuple', 'kc', 'antirrabica', 'triple_felina', 'leucemia_felina', 'otra'];
+const VACCINE_PLAN_LABELS = { octuple_sextuple: 'Óctuple/Séxtuple', kc: 'KC', antirrabica: 'Antirrábica', triple_felina: 'Triple Felina', leucemia_felina: 'Leucemia Felina' };
+const VACCINATION_COLUMNS = ['pet_id', 'kind', 'plan_item', 'product', 'lot', 'applied_at', 'next_due_at', 'veterinarian', 'clinical_record_id', 'notes'];
+
+function vaccinationFieldError(v, partial) {
+  if ((!partial || v.kind !== undefined) && v.kind != null && !VACCINATION_KINDS.includes(v.kind)) return 'Tipo inválido';
+  if (v.plan_item != null && !VACCINE_PLAN_ITEMS.includes(v.plan_item)) return 'Vacuna del plan inválida';
+  for (const key of ['applied_at', 'next_due_at']) {
+    if (v[key] === undefined) continue;
+    const parsed = parseDateInput(v[key], { allowFuture: key === 'next_due_at' });
+    if (parsed === undefined) return key === 'applied_at' ? 'Fecha de aplicación inválida' : 'Fecha de la próxima dosis inválida';
+    v[key] = parsed;
+  }
+  if ((!partial || v.applied_at !== undefined) && !v.applied_at) return 'La fecha de aplicación es obligatoria';
+  if (v.applied_at && v.next_due_at && v.next_due_at <= v.applied_at) return 'La próxima dosis debe ser posterior a la aplicación';
+  return null;
+}
+
+// Schedules the reminder 7 days before the next dose, only for a live pet whose tutor can be contacted
+async function scheduleVaccinationReminder(vaccination, userId, organizationId) {
+  await pool.query("DELETE FROM reminders WHERE vaccination_id = $1 AND status = 'pending'", [vaccination.id]);
+  if (!vaccination.next_due_at) return null;
+  const r = await pool.query(
+    `SELECT p.name, p.email, p.receive_reminders, p.status, o.contact_revoked_at, o.anonymized_at
+     FROM pets p LEFT JOIN owners o ON o.id = p.owner_id WHERE p.id = $1`, [vaccination.pet_id]);
+  const pet = r.rows[0];
+  if (!pet || pet.status !== 'alive' || !pet.receive_reminders || !pet.email || pet.contact_revoked_at || pet.anonymized_at) return null;
+  const due = new Date(`${vaccination.next_due_at}T12:00:00-03:00`);
+  const when = new Date(Math.max(due.getTime() - 7 * 86400000, Date.now()));
+  const what = vaccination.kind === 'vacuna'
+    ? (VACCINE_PLAN_LABELS[vaccination.plan_item] || vaccination.product || 'vacuna')
+    : (vaccination.kind === 'desparasitacion_interna' ? 'desparasitación interna' : 'desparasitación externa');
+  const dueText = due.toLocaleDateString('es-CL', { timeZone: 'America/Santiago' });
+  const inserted = await pool.query(
+    `INSERT INTO reminders (user_id, pet_id, tutor_email, reminder_type, title, message, scheduled_for, related_record_id, organization_id, vaccination_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+    [userId, vaccination.pet_id, pet.email, vaccination.kind === 'vacuna' ? 'vacuna' : 'desparasitacion',
+     `Próxima ${what} de ${pet.name}`,
+     `${pet.name} tiene su próxima ${what} el ${dueText}. Agende su hora con anticipación.`,
+     when.toISOString(), vaccination.clinical_record_id || null, organizationId || null, vaccination.id]
+  );
+  return inserted.rows[0];
+}
+
+app.get('/items/vaccinations', authMiddleware, async (req, res) => {
+  try {
+    const params = [req.userId];
+    let where = 'v.user_id = $1';
+    if (req.query.pet_id) {
+      if (!isValidUUID(String(req.query.pet_id))) return res.json({ data: [] });
+      params.push(req.query.pet_id);
+      where += ` AND v.pet_id = $${params.length}`;
+    }
+    const result = await pool.query(`SELECT v.* FROM vaccinations v WHERE ${where} ORDER BY v.applied_at DESC, v.created_at DESC`, params);
+    res.json({ data: result.rows });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Products the vet has typed before, most used first, for autocomplete
+app.get('/items/vaccinations/products', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT plan_item, product, count(*)::int AS uses FROM vaccinations
+       WHERE user_id = $1 AND product IS NOT NULL AND product <> ''
+       GROUP BY plan_item, product ORDER BY uses DESC, product LIMIT 100`, [req.userId]);
+    res.json({ data: result.rows });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/items/vaccinations', authMiddleware, async (req, res) => {
+  try {
+    const v = sanitizeColumns(VACCINATION_COLUMNS, req.body || {});
+    if (!v.pet_id || !isValidUUID(String(v.pet_id))) return res.status(400).json({ error: 'Selecciona un paciente' });
+    v.kind = v.kind || 'vacuna';
+    const fieldError = vaccinationFieldError(v, false);
+    if (fieldError) return res.status(400).json({ error: fieldError });
+    const refError = await checkRefs({ ...req, body: v });
+    if (refError) return res.status(403).json({ error: refError });
+    for (const key of ['product', 'lot', 'veterinarian', 'notes']) if (typeof v[key] === 'string') v[key] = v[key].trim() || null;
+    v.user_id = req.userId;
+    v.organization_id = req.organizationId || null;
+    const cols = Object.keys(v);
+    const result = await pool.query(
+      `INSERT INTO vaccinations (${cols.join(', ')}) VALUES (${cols.map((_, i) => '$' + (i + 1)).join(', ')}) RETURNING *`,
+      cols.map((c) => v[c])
+    );
+    const row = result.rows[0];
+    await scheduleVaccinationReminder({ ...row, applied_at: v.applied_at, next_due_at: v.next_due_at }, req.userId, req.organizationId).catch((err) => logError(req, err));
+    res.json({ data: row });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.patch('/items/vaccinations/:id', authMiddleware, async (req, res) => {
+  try {
+    const v = sanitizeColumns(VACCINATION_COLUMNS.filter((c) => c !== 'pet_id'), req.body || {});
+    const fieldError = vaccinationFieldError(v, true);
+    if (fieldError) return res.status(400).json({ error: fieldError });
+    const refError = await checkRefs({ ...req, body: v });
+    if (refError) return res.status(403).json({ error: refError });
+    const { fields, values, idx } = buildSet(v);
+    if (!fields.length) return res.status(400).json({ error: 'No hay campos para actualizar' });
+    values.push(req.params.id, req.userId);
+    const result = await pool.query(
+      `UPDATE vaccinations SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1}
+       RETURNING *, to_char(applied_at, 'YYYY-MM-DD') AS applied_on, to_char(next_due_at, 'YYYY-MM-DD') AS next_due_on`, values
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
+    const row = result.rows[0];
+    if ('next_due_at' in v || 'plan_item' in v || 'product' in v) {
+      await scheduleVaccinationReminder({ ...row, next_due_at: row.next_due_on }, req.userId, req.organizationId).catch((err) => logError(req, err));
+    }
+    res.json({ data: row });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.delete('/items/vaccinations/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM vaccinations WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
+    res.json({ data: null });
   } catch (err) {
     logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });

@@ -33,7 +33,8 @@ for (const m of server.matchAll(/UPDATE (\w+) SET ([^`'$]*?)(?:WHERE|RETURNING|\
   for (const a of m[2].matchAll(/(\w+)\s*=/g)) add(m[1], [a[1]], 'UPDATE');
 }
 // Whitelists that feed dynamic UPDATE/INSERT: `const allowed = [...]` followed by UPDATE <table>
-for (const m of server.matchAll(/const allowed = \[([^\]]+)\][\s\S]*?UPDATE (\w+) SET/g)) {
+// (within the same handler: the gap may not cross the next route definition)
+for (const m of server.matchAll(/const allowed = \[([^\]]+)\](?:(?!app\.(?:get|post|patch|put|delete)\()[\s\S])*?UPDATE (\w+) SET/g)) {
   add(m[2], splitCols(m[1]), 'allowed[]');
 }
 // Request keys that server.js maps to a differently named column (aliasMap)
@@ -42,6 +43,11 @@ for (const [table, keys] of Object.entries(ALIASES)) keys.forEach((k) => expecte
 
 const petCols = server.match(/const PET_COLUMNS = \[([^\]]+)\]/);
 if (petCols) add('pets', splitCols(petCols[1]), 'PET_COLUMNS');
+// Other whitelists that feed dynamic INSERT/UPDATE
+for (const [name, table] of [['OWNER_COLUMNS', 'owners'], ['VACCINATION_COLUMNS', 'vaccinations']]) {
+  const m = server.match(new RegExp(`const ${name} = \\[([^\\]]+)\\]`));
+  if (m) add(table, splitCols(m[1]), name);
+}
 
 // Reads: inside each SQL string, resolve "FROM/JOIN table alias" and check
 // "alias.column" references plus bare columns in single-table SELECT lists.
@@ -63,7 +69,7 @@ for (const lit of server.matchAll(/(['`])((?:SELECT|WITH)\b[\s\S]*?)\1/g)) {
   if (single && Object.keys(aliases).length === 1) {
     for (const part of single[1].split(',')) {
       const col = part.trim().split(/\s+/)[0];
-      if (/^[a-z_][a-z0-9_]*$/i.test(col) && !/^(count|sum|coalesce|max|min|avg|distinct|case|to_char|extract|now)$/i.test(col)) add(single[2], [col], 'SELECT');
+      if (/^[a-z_][a-z0-9_]*$/i.test(col) && !/^(count|sum|coalesce|max|min|avg|distinct|on|case|to_char|extract|now)$/i.test(col)) add(single[2], [col], 'SELECT');
     }
   }
 }

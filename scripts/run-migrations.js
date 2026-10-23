@@ -27,6 +27,10 @@ const MIGRATIONS = [
   '016_pets_clinical_columns_rate_limits.sql',
   '017_tutor_rut_fk_cleanup_indexes.sql',
   '018_disease_english_name_archive.sql',
+  '019_owners.sql',
+  '020_vaccinations.sql',
+  '021_pet_status_alerts_weight.sql',
+  '023_disease_chile_frequency.sql',
 ];
 
 async function runMigrations() {
