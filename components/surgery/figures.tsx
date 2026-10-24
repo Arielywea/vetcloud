@@ -95,7 +95,43 @@ function TestisLayers({ colors }: FigureProps) {
   );
 }
 
+/** Incisional gastropexy: pyloric antrum sutured to the right transversus abdominis, seen from the surgeon's side */
+function IncisionalGastropexy({ colors }: FigureProps) {
+  const label = { fontFamily: FONT, fontSize: 13, fill: colors.text } as const;
+  const small = { fontFamily: FONT, fontSize: 11.5, fill: colors.textSecondary } as const;
+  return (
+    <Svg width="100%" height={280} viewBox="0 0 660 280" style={{ minWidth: 560, maxWidth: 660 }} accessibilityLabel="Gastropexia incisional del antro pilórico a la pared derecha">
+      {/* Right body wall */}
+      <Rect x={470} y={20} width={150} height={240} fill={alpha(colors.error, 0.08)} stroke={colors.textSecondary} strokeWidth={1.5} />
+      <SvgText x={545} y={42} textAnchor="middle" {...label}>Pared derecha</SvgText>
+      <SvgText x={545} y={58} textAnchor="middle" {...small}>transverso del abdomen</SvgText>
+      {/* Last rib */}
+      <Line x1={470} y1={86} x2={620} y2={70} stroke={colors.textSecondary} strokeWidth={3} />
+      <SvgText x={600} y={92} textAnchor="end" {...small}>última costilla</SvgText>
+      {/* Stomach */}
+      <Path d="M60 60 C 140 20, 260 30, 330 80 C 380 115, 420 130, 455 140 L 455 186 C 410 182, 360 176, 320 190 C 250 220, 120 230, 70 180 C 30 140, 30 90, 60 60 Z"
+        fill={alpha(colors.warning, 0.14)} stroke={colors.warning} strokeWidth={2} />
+      <SvgText x={150} y={130} textAnchor="middle" {...label}>Estómago</SvgText>
+      <SvgText x={150} y={148} textAnchor="middle" {...small}>fundus y cuerpo a la izquierda</SvgText>
+      <SvgText x={405} y={220} textAnchor="middle" {...small}>antro pilórico</SvgText>
+      {/* Seromuscular incision on the antrum and incision in the transversus, both opened into an ellipse */}
+      <Ellipse cx={405} cy={163} rx={34} ry={7} fill={alpha(colors.error, 0.25)} stroke={colors.primary} strokeWidth={2} />
+      <Ellipse cx={540} cy={163} rx={34} ry={7} fill={alpha(colors.error, 0.25)} stroke={colors.primary} strokeWidth={2} />
+      {/* Cranial edges joined (above) and caudal edges joined (below): one stitch line each */}
+      {[0, 1, 2, 3].map((i) => (
+        <G key={i}>
+          <Path d={`M${385 + i * 14} 156 Q ${472 + i * 2} ${132 - i * 2} ${520 + i * 14} 156`} stroke={colors.success} strokeWidth={1.5} fill="none" />
+          <Path d={`M${385 + i * 14} 170 Q ${472 + i * 2} ${194 + i * 2} ${520 + i * 14} 170`} stroke={colors.success} strokeWidth={1.5} fill="none" strokeDasharray="4 3" />
+        </G>
+      ))}
+      <SvgText x={230} y={252} textAnchor="middle" {...label} fill={colors.primary} fontWeight="600">Incisiones de 4–5 cm en el antro y en el transverso</SvgText>
+      <SvgText x={230} y={270} textAnchor="middle" {...small}>continuo craneal (línea llena) y caudal (línea punteada) con PDS 2-0</SvgText>
+    </Svg>
+  );
+}
+
 export const FIGURES: Record<string, React.ComponentType<FigureProps>> = {
   'ovh-three-clamps': OvhThreeClamps,
   'testis-layers': TestisLayers,
+  'gastropexy-incisional': IncisionalGastropexy,
 };

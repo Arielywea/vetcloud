@@ -249,6 +249,54 @@ export function VideoList({ videos, colors }: { videos: NonNullable<SurgeryGuide
   );
 }
 
+// ─── Instrument table ────────────────────────────────────
+
+/** "Mango n.º 3 con hoja 10, tijeras de Mayo y Metzenbaum, pinzas (Adson, Brown)" → one item per comma outside parentheses */
+export function splitMaterials(text: string | null | undefined): string[] {
+  const out: string[] = [];
+  let depth = 0, cur = '';
+  // A sentence break also separates items ("… gasas. Gato: hoja 15 …")
+  for (const ch of (text || '').replace(/\.\s+(?=[A-ZÁÉÍÓÚÑ])/g, ';')) {
+    if (ch === '(') depth++;
+    if (ch === ')') depth = Math.max(0, depth - 1);
+    if ((ch === ',' || ch === ';') && depth === 0) { out.push(cur); cur = ''; } else cur += ch;
+  }
+  out.push(cur);
+  return out.map((s) => s.trim().replace(/\.$/, '')).filter(Boolean).map((s) => s.charAt(0).toUpperCase() + s.slice(1));
+}
+
+/** Checklist to lay out the instrument table; ticks are kept with the guide's other ticks on this device */
+export function TableChecklist({ items, colors, wide, done, onToggle }: {
+  items: string[]; colors: Palette; wide: boolean; done: Set<string>; onToggle: (key: string) => void;
+}) {
+  return (
+    <View style={[styles.mesa, wide && styles.mesaWide]}>
+      {items.map((item, i) => {
+        const key = `mesa:${i}`;
+        const on = done.has(key);
+        return (
+          <Pressable
+            key={key}
+            onPress={() => onToggle(key)}
+            accessibilityRole="checkbox"
+            aria-checked={on}
+            style={({ hovered, pressed }: any) => [
+              styles.mesaItem, wide && styles.mesaItemWide,
+              { backgroundColor: hovered ? alpha(colors.primary, 0.05) : 'transparent' },
+              pressed && { transform: [{ scale: 0.97 }] },
+            ]}
+          >
+            <View style={[styles.box, { borderColor: on ? colors.primary : colors.border, backgroundColor: on ? colors.primary : colors.surface }]}>
+              {on ? <Check size={14} color={getTextOnPrimary(colors.primary).default} strokeWidth={2.5} /> : null}
+            </View>
+            <Text style={[styles.mesaText, { color: on ? colors.textSecondary : colors.text }, on && { textDecorationLine: 'line-through' }]}>{item}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 // ─── One block ───────────────────────────────────────────
 
 export function Block({ block, colors, wide, weight, onWeight, checkKey, done, onToggle }: {
@@ -331,4 +379,11 @@ export const styles = StyleSheet.create({
   videoGo: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.medium },
 
   figure: { padding: SPACING.lg, borderRadius: RADIUS.sm, marginTop: SPACING.xl },
+
+  mesa: { marginTop: SPACING.lg, maxWidth: 720 },
+  mesaWide: { flexDirection: 'row', flexWrap: 'wrap' },
+  mesaItem: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.xs, minHeight: 44, borderRadius: RADIUS.sm },
+  mesaItemWide: { width: '50%' },
+  box: { width: 20, height: 20, borderWidth: 1.5, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
+  mesaText: { flex: 1, fontSize: TYPOGRAPHY.sizes.base, lineHeight: 23 },
 });

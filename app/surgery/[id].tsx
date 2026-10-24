@@ -14,7 +14,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import VButton from '../../components/ui/Button';
 import DisplayText from '../../components/ui/DisplayText';
-import { Block, Bullets, GuideTable, QuizItem, VideoList, PROSE } from '../../components/surgery/GuideBlocks';
+import { Block, Bullets, GuideTable, QuizItem, VideoList, TableChecklist, splitMaterials, PROSE } from '../../components/surgery/GuideBlocks';
 import { CONTAMINATION_LABELS, SPECIES_SHORT, surgeryCategoryLabel, pushRecentSurgery } from '../../constants/surgeryMeta';
 import { SPACING, RADIUS, TYPOGRAPHY, alpha } from '../../constants/tokens';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
@@ -48,7 +48,8 @@ function useDoneSteps(id: string | undefined) {
     try { globalThis.localStorage?.setItem(key, JSON.stringify([...next])); } catch { /* storage blocked */ }
   };
   const toggle = (k: string) => { const next = new Set(done); next.has(k) ? next.delete(k) : next.add(k); save(next); };
-  return { done, toggle, reset: () => save(new Set()) };
+  // Restarting the steps keeps the instrument-table ticks
+  return { done, toggle, reset: () => save(new Set([...done].filter((k) => k.startsWith('mesa:')))) };
 }
 
 /** Keeps the screen on while operating-room mode is on (web Wake Lock; ignored where unsupported) */
@@ -93,6 +94,7 @@ export default function SurgeryGuideScreen() {
     }
     let n = 0;
     if (guide.indications?.length) list.push({ id: 'indicaciones', label: 'Indicaciones', number: pad(++n) });
+    if (splitMaterials(surgery.material_quirurgico).length) list.push({ id: 'mesa', label: 'Preparar la mesa', number: pad(++n) });
     guide.sections.forEach((s) => list.push({
       id: s.id, label: s.title, number: pad(++n),
       sub: s.subsections?.map((x) => ({ id: x.id, label: x.title.replace(/^[A-Z]\.\s*/, '') })),
@@ -218,6 +220,8 @@ export default function SurgeryGuideScreen() {
   ] : [];
   const eyebrow = [surgeryCategoryLabel(surgery.category), meta?.species.map((s) => SPECIES_SHORT[s] || s).join(' y ')].filter(Boolean).join(' · ');
   const stepCount = guide ? countSteps(guide) : 0;
+  // Table ticks ("mesa:") share the store but are not steps
+  const stepsDone = [...done].filter((k) => !k.startsWith('mesa:')).length;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -270,9 +274,9 @@ export default function SurgeryGuideScreen() {
                 {orMode ? (
                   <>
                     <Text style={[styles.orHint, { color: colors.textSecondary }]}>
-                      {`Toca cada número al terminar el paso · ${done.size} de ${stepCount}`}
+                      {`Toca cada número al terminar el paso · ${stepsDone} de ${stepCount}`}
                     </Text>
-                    {done.size ? (
+                    {stepsDone ? (
                       <VButton variant="ghost" size="sm" onPress={reset} icon={<RotateCcw size={15} color={colors.primary} />}>Reiniciar</VButton>
                     ) : null}
                   </>
@@ -301,6 +305,14 @@ export default function SurgeryGuideScreen() {
                 <View onLayout={measure('indicaciones')} style={styles.section}>
                   {sectionHead('indicaciones', 'Indicaciones')}
                   <Bullets items={guide.indications} colors={colors} />
+                </View>
+              ) : null}
+
+              {splitMaterials(surgery.material_quirurgico).length ? (
+                <View onLayout={measure('mesa')} style={styles.section}>
+                  {sectionHead('mesa', 'Preparar la mesa')}
+                  <Text style={[styles.intro, { color: colors.textSecondary }]}>Marca cada instrumento al dejarlo en la mesa. Las marcas quedan guardadas en este dispositivo.</Text>
+                  <TableChecklist items={splitMaterials(surgery.material_quirurgico)} colors={colors} wide={wide} done={done} onToggle={toggle} />
                 </View>
               ) : null}
 

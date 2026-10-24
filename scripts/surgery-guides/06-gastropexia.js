@@ -6,7 +6,7 @@ module.exports = {
   legacy: {
     indicaciones: 'Prevención de la dilatación-vólvulo gástrico (DVG) en razas de pecho profundo, idealmente junto con la esterilización; tratamiento definitivo tras resolver una DVG; hernia de hiato recurrente.',
     tecnica_quirurgica: 'Gastropexia incisional en el lado derecho: incisión de 4–5 cm en la seromuscular del antro pilórico, paralela al eje largo del estómago, e incisión de igual largo en el músculo transverso del abdomen derecho, caudal a la última costilla. Sutura de los bordes craneales y caudales de ambas incisiones con dos continuos simples de absorbible monofilamento 2-0. Alternativas: laparoscópica asistida, en cinturón o circuncostal.',
-    material_quirurgico: 'Instrumental de laparotomía, separador de Balfour, pinzas Babcock, puntos de sostén, compresas húmedas. Laparoscopia: torre, trócares, pinzas atraumáticas.',
+    material_quirurgico: 'Instrumental de laparotomía, separador de Balfour, pinzas Babcock, hilo para puntos de sostén, compresas húmedas, torre de laparoscopia con trócares y pinzas atraumáticas (solo variante laparoscópica)',
     tipo_sutura: 'Gastropexia: PDS 2-0 (o 0 en perros gigantes), dos continuos simples. Pared abdominal según peso.',
     complicaciones_frecuentes: 'Raras: seroma, infección de la herida, neumotórax si se perfora el diafragma (técnicas circuncostales), falla de la pexia. Tras la gastropexia puede haber dilatación, pero el vólvulo es excepcional.',
     manejo_anestesico_sugerido: 'Protocolo habitual de laparotomía en paciente sano: metadona ± dexmedetomidina, propofol o alfaxalona, inhalatorio, bloqueo incisional y AINE postoperatorio. En DVG: estabilización previa, sin α2, con fentanilo y lidocaína en infusión.',
@@ -55,6 +55,7 @@ module.exports = {
         id: 'tecnica',
         title: 'Técnica incisional paso a paso',
         blocks: [
+          { type: 'figure', key: 'gastropexy-incisional', caption: 'Incisión en la seromuscular del antro pilórico e incisión del mismo largo en el transverso del abdomen derecho, caudal a la última costilla. Se unen los bordes craneales entre sí y los caudales entre sí.' },
           {
             type: 'steps',
             items: [
