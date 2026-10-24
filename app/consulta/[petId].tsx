@@ -7,9 +7,10 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useDiseases } from '../../hooks/useDirectus';
-import { api, Appointment, ClinicalRecord, DirectusPet, Medication } from '../../services/directus';
+import { api, Appointment, ClinicalRecord, DirectusPet, Medication, Vaccination } from '../../services/directus';
 import { downloadPdf } from '../../utils/downloadPdf';
 import { CONSULT_TEMPLATES } from '../../constants/consultTemplates';
+import RemoteAnamnesis, { RemoteForm, remoteFromPet, remoteToPetPatch, remoteSummary, declaredDoses } from '../../components/consulta/RemoteAnamnesis';
 import DisplayText from '../../components/ui/DisplayText';
 import VButton from '../../components/ui/Button';
 import VInput from '../../components/ui/Input';
@@ -23,9 +24,9 @@ import { useToast } from '../../components/ui/VToast';
 import { SPACING, RADIUS, TYPOGRAPHY, alpha } from '../../constants/tokens';
 import { calculateAge } from '../../utils/age';
 import { parseCLP, parseNumberInRange } from '../../utils/parseNumber';
-import { formatDmy, parseDmy, parseLocalDateTime, toLocalDateTimeInput } from '../../utils/date';
+import { formatDmy, parseDmy, parseLocalDateTime, toLocalDateKey, toLocalDateTimeInput } from '../../utils/date';
 import { speciesLabel } from '../../utils/identity';
-import { formatDay, PLAN_LABEL } from '../../utils/vaccinePlan';
+import { formatDay, PLAN_LABEL, proposeNextDue } from '../../utils/vaccinePlan';
 import { parseDose } from '../../utils/doseParser';
 
 type RecordType = 'consulta' | 'control' | 'cirugia';
@@ -39,7 +40,6 @@ const STEPS: Record<string, string[]> = {
   en_espera: ['en_consulta'], en_consulta: [],
 };
 
-const FIRST_VISIT_TEMPLATE = 'Alimentación: \nAmbiente y vivienda: \nConvive con otros animales: \nVacunas y desparasitación: \nEnfermedades y cirugías previas: \nMedicación actual: ';
 
 interface Form {
   type: RecordType;
@@ -62,6 +62,9 @@ interface Form {
   payMethod: string;
   payDescription: string;
   extras: Extra[];
+  /** Remote anamnesis: open (being filled or updated) at the first visit or when the vet asks for it */
+  remote: RemoteForm;
+  remoteOpen: boolean;
 }
 
 interface Outcome { label: string; ok: boolean; detail?: string }
@@ -94,6 +97,7 @@ export default function ConsultaScreen() {
 
   const [pet, setPet] = useState<DirectusPet | null>(null);
   const [records, setRecords] = useState<ClinicalRecord[]>([]);
+  const [vaccinations, setVaccinations] = useState<Vaccination[]>([]);
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<Form | null>(null);
@@ -115,9 +119,10 @@ export default function ConsultaScreen() {
     let cancelled = false;
     (async () => {
       try {
-        const [p, recs] = await Promise.all([api.pets.get(petId), api.clinicalRecords.list(petId)]);
+        const [p, recs, vac] = await Promise.all([api.pets.get(petId), api.clinicalRecords.list(petId), api.vaccinations.list(petId).catch(() => [])]);
         if (cancelled) return;
         setPet(p);
+        setVaccinations(vac);
         const sorted = [...(recs as ClinicalRecord[])].sort((a, b) => String(b.date).localeCompare(String(a.date)));
         setRecords(sorted);
         let appt: Appointment | null = null;
@@ -133,17 +138,18 @@ export default function ConsultaScreen() {
           if (!cancelled) setAppointment(appt);
         }
         const draft = loadDraft(petId);
-        if (draft) { setForm(draft); setRestored(true); }
+        // Drafts from before the remote anamnesis existed lack it
+        if (draft) { setForm({ ...draft, remote: draft.remote || remoteFromPet(p), remoteOpen: draft.remote ? draft.remoteOpen : sorted.length === 0 }); setRestored(true); }
         else {
-          const last = sorted.find((r) => r.details?.anamnesis);
           setForm({
             type: appt?.appointment_type === 'control' ? 'control' : appt?.appointment_type === 'cirugia' ? 'cirugia' : 'consulta',
             date: toLocalDateTimeInput(), vet: user?.name || '',
             reason: appt?.description || '',
-            anamnesis: last?.details?.anamnesis || (sorted.length ? '' : FIRST_VISIT_TEMPLATE),
+            anamnesis: '',
             weight: '', findings: '', diagnosisText: '', diagnoses: [], plan: '', procedure: '', postop: '',
             rx: '', vaccines: [], controlDate: '', controlTime: '10:00',
             payAmount: '', payMethod: 'efectivo', payDescription: '', extras: [],
+            remote: remoteFromPet(p), remoteOpen: sorted.length === 0,
           });
         }
         loaded.current = true;
@@ -244,6 +250,11 @@ export default function ConsultaScreen() {
     const amount = has('cobro') && form.payAmount.trim() ? parseCLP(form.payAmount) : null;
     if (amount !== null && (Number.isNaN(amount) || amount <= 0)) { setError('Monto inválido (ej. 25.000)'); return; }
 
+    const declared = form.remoteOpen ? declaredDoses(form.remote) : [];
+    for (const d of declared) {
+      if (!parseDmy(d.raw)) { setError('Revisa las fechas de vacunas y desparasitación de la anamnesis remota (DD/MM/AAAA, no futuras)'); return; }
+    }
+
     setSaving(true);
     setError(null);
     const outcomes: Outcome[] = [];
@@ -260,7 +271,8 @@ export default function ConsultaScreen() {
         is_initial: records.length === 0,
         details: {
           motivo_consulta: form.reason.trim() || undefined,
-          anamnesis: form.anamnesis.trim() && form.anamnesis.trim() !== FIRST_VISIT_TEMPLATE.trim() ? form.anamnesis.trim() : undefined,
+          anamnesis: form.anamnesis.trim() || undefined,
+          anamnesis_remota: form.remoteOpen ? remoteSummary(form.remote, pet.species) || undefined : undefined,
           hallazgos_examen_fisico: form.findings.trim() || undefined,
           assessment: [names.join(', '), form.diagnosisText.trim()].filter(Boolean).join('. ') || undefined,
           diagnoses: form.diagnoses.length ? form.diagnoses : undefined,
@@ -270,6 +282,18 @@ export default function ConsultaScreen() {
           postoperatorio: form.type === 'cirugia' ? form.postop.trim() || undefined : undefined,
         },
       });
+      if (form.remoteOpen) {
+        try {
+          await api.pets.update(pet.id, remoteToPetPatch(form.remote, pet));
+          outcomes.push({ label: 'Anamnesis remota guardada en la ficha', ok: true });
+        } catch (e: any) { outcomes.push({ label: 'Anamnesis remota', ok: false, detail: e?.message }); }
+        for (const d of declared) {
+          const applied = parseDmy(d.raw)!;
+          const next = proposeNextDue(d.kind, d.plan_item, applied, pet.species);
+          await api.vaccinations.create({ pet_id: pet.id, kind: d.kind, plan_item: d.plan_item, applied_at: applied, next_due_at: next > toLocalDateKey(new Date()) ? next : null, notes: 'Declarada por el tutor (anamnesis remota)' })
+            .catch((e: any) => outcomes.push({ label: `Dosis declarada (${d.plan_item ? PLAN_LABEL[d.plan_item] : d.kind.replace('_', ' ')})`, ok: false, detail: e?.message }));
+        }
+      }
       outcomes.push({ label: form.type === 'cirugia' ? 'Cirugía registrada' : form.type === 'control' ? 'Control registrado' : 'Consulta registrada', ok: true, detail: w ? `Peso ${String(w).replace('.', ',')} kg` : undefined });
 
       if (has('receta') && form.rx.trim()) {
@@ -425,8 +449,31 @@ export default function ConsultaScreen() {
           <VInput containerStyle={styles.half} label="Veterinario" value={form.vet} onChangeText={(v) => set('vet', v)} />
         </View>
         <VInput label="Motivo de consulta" value={form.reason} onChangeText={(v) => set('reason', v)} placeholder="Qué trae al paciente hoy" />
-        <VInput label={records.length ? 'Anamnesis' : 'Anamnesis inicial'} value={form.anamnesis} onChangeText={(v) => set('anamnesis', v)} multiline style={styles.area}
-          hint={!records.length ? 'Primera consulta: completa la plantilla' : records.some((r) => r.details?.anamnesis) ? 'Copiada de la última consulta: actualízala con lo que cambió' : 'Lo que cuenta el tutor desde la última visita'} />
+      </View>
+
+      <View style={[styles.panel, { backgroundColor: colors.surface }]}>
+        <View style={styles.panelHead}>
+          <View style={styles.grow}>
+            <DisplayText style={[styles.panelTitle, styles.inlineTitle, { color: colors.text }]}>Anamnesis remota</DisplayText>
+            <Text style={[styles.meta, { color: colors.textSecondary }]}>
+              {form.remoteOpen ? (records.length ? 'Actualiza lo que cambió; se guarda en la ficha al cerrar.' : 'Primera consulta: los antecedentes quedan en la ficha y no se vuelven a preguntar.') : 'Antecedentes registrados en la ficha.'}
+            </Text>
+          </View>
+          {records.length ? <VButton size="sm" variant={form.remoteOpen ? 'ghost' : 'secondary'} onPress={() => set('remoteOpen', !form.remoteOpen)}>{form.remoteOpen ? 'No actualizar' : 'Actualizar'}</VButton> : null}
+        </View>
+        {form.remoteOpen ? (
+          <RemoteAnamnesis pet={pet} value={form.remote} onChange={(v) => set('remote', v)} vaccinations={vaccinations} />
+        ) : (
+          <Text style={[styles.body, { color: remoteSummary(form.remote, pet.species) ? colors.text : colors.textSecondary }]}>
+            {remoteSummary(form.remote, pet.species) || 'Sin antecedentes registrados. Pulsa «Actualizar» para completarlos.'}
+          </Text>
+        )}
+      </View>
+
+      <View style={[styles.panel, { backgroundColor: colors.surface }]}>
+        <DisplayText style={[styles.panelTitle, { color: colors.text }]}>Anamnesis próxima</DisplayText>
+        <VInput value={form.anamnesis} onChangeText={(v) => set('anamnesis', v)} multiline style={styles.area} accessibilityLabel="Anamnesis próxima"
+          placeholder="Desde cuándo, cómo comenzó, evolución, apetito, vómitos o diarrea, tratamientos ya recibidos" />
       </View>
 
       <View style={[styles.panel, { backgroundColor: colors.surface }]}>
@@ -569,6 +616,8 @@ const styles = StyleSheet.create({
   note: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: SPACING.sm, padding: SPACING.md, borderRadius: RADIUS.md, marginBottom: SPACING.md },
   panel: { padding: SPACING.xl, borderRadius: RADIUS.md, marginBottom: SPACING.md },
   panelTitle: { fontSize: 24, lineHeight: 28, fontWeight: '600', marginBottom: SPACING.lg },
+  panelHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: SPACING.md, marginBottom: SPACING.md },
+  inlineTitle: { marginBottom: SPACING.xs },
   segment: { marginBottom: SPACING.lg },
   pair: { flexDirection: 'row', flexWrap: 'wrap', columnGap: SPACING.md },
   half: { flexGrow: 1, flexBasis: 200 },

@@ -102,6 +102,9 @@ export default function PetDetailScreen() {
     if (pet.vital_signs) count++;
     if (pet.hallazgos_examen_fisico) count++;
     if (pet.notes) count++;
+    if (pet.entorno) count++;
+    if (Array.isArray(pet.temperament) && pet.temperament.length) count++;
+    if (Array.isArray(pet.base_diseases) && pet.base_diseases.length) count++;
     return count;
   }, [pet]);
 

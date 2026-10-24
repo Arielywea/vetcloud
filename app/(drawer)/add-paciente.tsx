@@ -2,11 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, ScrollView, StyleSheet, Pressable, Image } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Camera, ChevronDown, ChevronUp, Stethoscope, CalendarPlus, Copy, FileText } from 'lucide-react-native';
+import { Camera, Stethoscope, CalendarPlus, Copy, FileText } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useResponsive } from '../../hooks/useResponsive';
-import { api, DirectusPet, Owner, PetAlert, PetSpecies, VaccinePlanItem } from '../../services/directus';
+import { api, DirectusPet, Owner, PetSpecies } from '../../services/directus';
 import { uploadPetPhoto } from '../../services/cloudinary';
 import PageHeader from '../../components/ui/PageHeader';
 import DisplayText from '../../components/ui/DisplayText';
@@ -20,7 +20,7 @@ import { useToast } from '../../components/ui/VToast';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 import { DOG_BREEDS, CAT_BREEDS, filterBreeds } from '../../constants/breeds';
 import { parseNumberInRange } from '../../utils/parseNumber';
-import { addMonths, birthDateFromAge, formatDmy, parseDmy } from '../../utils/date';
+import { birthDateFromAge, formatDmy, parseDmy } from '../../utils/date';
 import { formatRut } from '../../utils/identity';
 
 const SPECIES_OPTIONS = [{ value: 'dog', label: 'Perro' }, { value: 'cat', label: 'Gato' }, { value: 'other', label: 'Otra' }] as const;
@@ -30,20 +30,8 @@ const REPRO_BY_SEX = {
   hembra: [{ value: 'intacto', label: 'Entera' }, { value: 'esterilizado', label: 'Esterilizada' }, { value: 'gestante', label: 'Gestante' }],
 } as const;
 const BIRTH_MODES = [{ value: 'date', label: 'Fecha de nacimiento' }, { value: 'age', label: 'Edad aproximada' }] as const;
-const TEMPERAMENTS = ['Dócil', 'Nervioso', 'Inquieto', 'Puede morder'];
-const CHRONIC = ['Cardiopatía', 'Renal crónica', 'Diabetes', 'Epilepsia', 'Hipotiroidismo', 'Hipertiroidismo', 'Artrosis', 'Dermatitis atópica', 'Asma / bronquitis crónica', 'Obesidad'];
-// Base vaccination plan (WSAVA): what each species is asked about at registration
-const PLAN: Record<'dog' | 'cat', Array<{ item: VaccinePlanItem; label: string }>> = {
-  dog: [{ item: 'octuple_sextuple', label: 'Óctuple / Séxtuple' }, { item: 'kc', label: 'KC (tos de las perreras)' }, { item: 'antirrabica', label: 'Antirrábica' }],
-  cat: [{ item: 'triple_felina', label: 'Triple felina' }, { item: 'leucemia_felina', label: 'Leucemia felina' }, { item: 'antirrabica', label: 'Antirrábica' }],
-};
-
 type Species = PetSpecies;
 type Sex = 'macho' | 'hembra';
-
-function splitList(text: string): string[] {
-  return text.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
-}
 
 export default function AddPacienteScreen() {
   const router = useRouter();
@@ -77,19 +65,6 @@ export default function AddPacienteScreen() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [originalPhoto, setOriginalPhoto] = useState<string | null>(null);
 
-  // Declared health
-  const [healthOpen, setHealthOpen] = useState(false);
-  const [allergies, setAllergies] = useState('');
-  const [temperament, setTemperament] = useState<string[]>([]);
-  const [chronic, setChronic] = useState<string[]>([]);
-  const [chronicOther, setChronicOther] = useState('');
-  const [medications, setMedications] = useState('');
-  const [surgeries, setSurgeries] = useState('');
-  const [vaccineDates, setVaccineDates] = useState<Record<string, string>>({});
-  const [dewormIn, setDewormIn] = useState('');
-  const [dewormOut, setDewormOut] = useState('');
-  const [otherAlerts, setOtherAlerts] = useState<PetAlert[]>([]);
-
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<DirectusPet | null>(null);
@@ -110,13 +85,6 @@ export default function AddPacienteScreen() {
           setColor(str(p.color));
           setMicrochip(str(p.id_number)); setRegistry(str(p.registry_number));
           setPhoto(p.photo || null); setOriginalPhoto(p.photo || null);
-          setAllergies((Array.isArray(p.allergies) ? p.allergies : []).join(', '));
-          setTemperament(Array.isArray(p.temperament) ? p.temperament : []);
-          const base: string[] = Array.isArray(p.base_diseases) ? p.base_diseases : [];
-          setChronic(base.filter((d) => CHRONIC.includes(d)));
-          setChronicOther(base.filter((d) => !CHRONIC.includes(d)).join(', '));
-          setMedications(str(p.medications)); setSurgeries(str(p.surgeries));
-          setOtherAlerts((Array.isArray(p.alerts) ? p.alerts : []).filter((a: PetAlert) => a.type === 'other'));
           if (p.owner_id) setOwner({ id: p.owner_id, name: p.owner_name || p.tutor_name || 'Tutor', rut: p.owner_rut || null });
         } else if (typeof params.owner_id === 'string' && params.owner_id) {
           const o = await api.owners.get(params.owner_id);
@@ -136,9 +104,6 @@ export default function AddPacienteScreen() {
     const list = filterBreeds(species === 'dog' ? DOG_BREEDS : CAT_BREEDS, breed);
     return (breed.trim() ? list : list.slice(0, 8)).filter((b) => b !== breed);
   }, [species, breed, breedFocused]);
-
-  const toggle = (list: string[], set: (v: string[]) => void, value: string) =>
-    set(list.includes(value) ? list.filter((x) => x !== value) : [...list, value]);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -167,33 +132,6 @@ export default function AddPacienteScreen() {
     }
     const kg = parseNumberInRange(weight, 0.05, 150);
     if (kg !== null && Number.isNaN(kg)) { setError('El peso debe estar entre 0,05 y 150 kg (ej. 12,5)'); return; }
-    const vaccines: Array<{ item: VaccinePlanItem; date: string }> = [];
-    if (!isEdit && species !== 'other') {
-      for (const { item, label } of PLAN[species]) {
-        const raw = vaccineDates[item] || '';
-        const d = parseDmy(raw);
-        if (d === undefined) { setError(`Fecha de ${label} inválida (DD/MM/AAAA)`); setHealthOpen(true); return; }
-        if (d) vaccines.push({ item, date: d });
-      }
-    }
-    const deworm: Array<{ kind: 'desparasitacion_interna' | 'desparasitacion_externa'; date: string }> = [];
-    if (!isEdit) {
-      for (const [kind, raw] of [['desparasitacion_interna', dewormIn], ['desparasitacion_externa', dewormOut]] as const) {
-        const d = parseDmy(raw);
-        if (d === undefined) { setError('Fecha de desparasitación inválida (DD/MM/AAAA)'); setHealthOpen(true); return; }
-        if (d) deworm.push({ kind, date: d });
-      }
-    }
-
-    const allergyList = splitList(allergies);
-    const chronicList = [...chronic, ...splitList(chronicOther)];
-    const alerts: PetAlert[] = [
-      ...allergyList.map((text) => ({ type: 'allergy' as const, text })),
-      ...(temperament.includes('Puede morder') ? [{ type: 'bites' as const, text: 'Puede morder' }] : []),
-      ...chronicList.map((text) => ({ type: 'chronic' as const, text })),
-      ...otherAlerts,
-    ];
-
     setSaving(true);
     setError(null);
     try {
@@ -217,12 +155,6 @@ export default function AddPacienteScreen() {
         id_number: microchip.trim() || null,
         registry_number: registry.trim() || null,
         photo: photoUrl,
-        allergies: allergyList,
-        temperament,
-        base_diseases: chronicList,
-        medications: medications.trim() || null,
-        surgeries: surgeries.trim() || null,
-        alerts,
       };
       // Editing never rewrites a birth date nobody touched into an "estimate"
       if (birthMode === 'age' ? estimated : true) { payload.birth_date = birth; payload.birth_date_estimated = estimated; }
@@ -235,19 +167,6 @@ export default function AddPacienteScreen() {
         return;
       }
       const created: DirectusPet = await api.pets.create(payload);
-      // Declared earlier doses become real records (the plan proposes the next one a year later)
-      const today = new Date().toISOString().slice(0, 10);
-      const failed: string[] = [];
-      for (const v of vaccines) {
-        const next = addMonths(v.date, 12);
-        await api.vaccinations.create({ pet_id: created.id, kind: 'vacuna', plan_item: v.item, applied_at: v.date, next_due_at: next > today ? next : null, notes: 'Declarada por el tutor al registrar' })
-          .catch(() => failed.push(PLAN[species as 'dog' | 'cat'].find((p) => p.item === v.item)?.label || v.item));
-      }
-      for (const d of deworm) {
-        await api.vaccinations.create({ pet_id: created.id, kind: d.kind, applied_at: d.date, notes: 'Declarada por el tutor al registrar' })
-          .catch(() => failed.push('desparasitación'));
-      }
-      if (failed.length) toast.error(`No se guardó: ${failed.join(', ')}. Agrégalo desde la ficha.`);
       setSaved(created);
     } catch (e: any) {
       setError(e?.message || 'No se pudo guardar la mascota');
@@ -265,8 +184,6 @@ export default function AddPacienteScreen() {
   const reset = () => {
     anotherFromLitter();
     setSpecies('dog'); setSpeciesOther(''); setBreed(''); setBirthDate(''); setAgeYears(''); setAgeMonths('');
-    setAllergies(''); setTemperament([]); setChronic([]); setChronicOther(''); setMedications(''); setSurgeries('');
-    setVaccineDates({}); setDewormIn(''); setDewormOut('');
   };
 
   if (loading) return <View style={[styles.flex, { backgroundColor: colors.background }]}><SkeletonCard style={{ margin: SPACING.lg }} /></View>;
@@ -296,7 +213,7 @@ export default function AddPacienteScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-      <PageHeader title={isEdit ? `Editar a ${name || 'la mascota'}` : 'Nueva mascota'} subtitle={isEdit ? 'Identidad y salud declarada. La historia clínica se registra en cada consulta.' : 'Los datos clínicos se registran en la primera consulta.'} />
+      <PageHeader title={isEdit ? `Editar a ${name || 'la mascota'}` : 'Nueva mascota'} subtitle={isEdit ? 'Identidad de la mascota. Los antecedentes se actualizan en la consulta.' : 'Solo la identidad: los antecedentes se preguntan en la anamnesis remota de la primera consulta.'} />
 
       {/* Tutor */}
       <View style={[styles.panel, { backgroundColor: colors.surface }]}>
@@ -390,56 +307,6 @@ export default function AddPacienteScreen() {
         </View>
       </View>
 
-      {/* Declared health */}
-      <View style={[styles.panel, { backgroundColor: colors.surface }]}>
-        <Pressable onPress={() => setHealthOpen(!healthOpen)} accessibilityRole="button" aria-expanded={healthOpen} style={styles.collapse}>
-          <View style={styles.grow}>
-            <DisplayText style={[styles.panelTitle, styles.inlineTitle, { color: colors.text }]}>Salud declarada</DisplayText>
-            <Text style={[styles.small, { color: colors.textSecondary }]}>Alergias, temperamento, enfermedades, medicación{isEdit ? '' : ' y vacunas previas'}. Las alergias y «Puede morder» quedan como alertas en la ficha.</Text>
-          </View>
-          {healthOpen ? <ChevronUp size={20} color={colors.textSecondary} /> : <ChevronDown size={20} color={colors.textSecondary} />}
-        </Pressable>
-        {healthOpen ? (
-          <View style={styles.healthBody}>
-            <VInput label="Alergias" value={allergies} onChangeText={setAllergies} placeholder="Separadas por coma: penicilina, pollo…" />
-            <Text style={[styles.groupLabel, { color: colors.textSecondary }]}>Temperamento</Text>
-            <View style={[styles.chips, styles.segment]}>
-              {TEMPERAMENTS.map((t) => (
-                <VButton key={t} size="sm" variant={temperament.includes(t) ? 'filled' : 'secondary'} onPress={() => toggle(temperament, setTemperament, t)}>{t}</VButton>
-              ))}
-            </View>
-            <Text style={[styles.groupLabel, { color: colors.textSecondary }]}>Enfermedades crónicas o previas</Text>
-            <View style={[styles.chips, { marginBottom: SPACING.sm }]}>
-              {CHRONIC.map((c) => (
-                <VButton key={c} size="sm" variant={chronic.includes(c) ? 'filled' : 'secondary'} onPress={() => toggle(chronic, setChronic, c)}>{c}</VButton>
-              ))}
-            </View>
-            <VInput value={chronicOther} onChangeText={setChronicOther} placeholder="Otras, separadas por coma" accessibilityLabel="Otras enfermedades" />
-            <View style={styles.pair}>
-              <VInput containerStyle={styles.half} label="Medicación actual" value={medications} onChangeText={setMedications} placeholder="Fármaco, dosis y frecuencia" multiline />
-              <VInput containerStyle={styles.half} label="Cirugías previas" value={surgeries} onChangeText={setSurgeries} placeholder="Esterilización 2023…" multiline />
-            </View>
-
-            {!isEdit && species !== 'other' ? (
-              <>
-                <Text style={[styles.subTitle, { color: colors.text }]}>Vacunas y desparasitación previas</Text>
-                <Text style={[styles.small, { color: colors.textSecondary, marginBottom: SPACING.md }]}>La fecha de la última dosis, si el tutor la sabe. La próxima se propone a un año y se puede ajustar en la ficha.</Text>
-                <View style={styles.pair}>
-                  {PLAN[species].map(({ item, label }) => (
-                    <VInput key={item} containerStyle={styles.third} label={label} value={vaccineDates[item] || ''}
-                      onChangeText={(v) => setVaccineDates({ ...vaccineDates, [item]: v })} placeholder="DD/MM/AAAA" keyboardType="numbers-and-punctuation" />
-                  ))}
-                </View>
-                <View style={styles.pair}>
-                  <VInput containerStyle={styles.half} label="Desparasitación interna" value={dewormIn} onChangeText={setDewormIn} placeholder="DD/MM/AAAA" keyboardType="numbers-and-punctuation" />
-                  <VInput containerStyle={styles.half} label="Desparasitación externa" value={dewormOut} onChangeText={setDewormOut} placeholder="DD/MM/AAAA" keyboardType="numbers-and-punctuation" />
-                </View>
-              </>
-            ) : null}
-          </View>
-        ) : null}
-      </View>
-
       {error ? <Text accessibilityRole="alert" style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
       <View style={styles.footer}>
         <VButton variant="secondary" onPress={() => (router.canGoBack() ? router.back() : router.replace('/(drawer)/pacientes' as any))}>Cancelar</VButton>
@@ -454,8 +321,6 @@ const styles = StyleSheet.create({
   page: { padding: SPACING.lg, paddingTop: SPACING.xl, paddingBottom: SPACING['6xl'], maxWidth: 880, width: '100%', alignSelf: 'center' },
   panel: { padding: SPACING.xl, borderRadius: RADIUS.md, marginBottom: SPACING.lg },
   panelTitle: { fontSize: 24, lineHeight: 28, fontWeight: '600', marginBottom: SPACING.lg },
-  inlineTitle: { marginBottom: SPACING.xs },
-  subTitle: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: TYPOGRAPHY.weights.semibold, marginTop: SPACING.md, marginBottom: SPACING.xs },
   ownerRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   ownerName: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.semibold },
   grow: { flex: 1, minWidth: 0 },
@@ -475,9 +340,6 @@ const styles = StyleSheet.create({
   segment: { marginBottom: SPACING.lg },
   suggestions: { position: 'absolute', top: 78, left: 0, right: 0, borderWidth: 1, borderRadius: RADIUS.md, paddingVertical: SPACING.xs, zIndex: 10, elevation: 6 },
   suggestion: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, minHeight: 40, justifyContent: 'center' },
-  collapse: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, minHeight: 44 },
-  healthBody: { marginTop: SPACING.lg },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs },
   small: { fontSize: TYPOGRAPHY.sizes.sm, lineHeight: 19 },
   body: { fontSize: TYPOGRAPHY.sizes.md, lineHeight: 21 },
   error: { fontSize: TYPOGRAPHY.sizes.md, marginBottom: SPACING.md },

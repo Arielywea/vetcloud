@@ -22,7 +22,7 @@ export default function RecordDetail({ record }: RecordDetailProps) {
   const { colors } = useTheme();
 
   const d = record.details || {};
-  const hasSoapData = d.subjective || d.objective || d.assessment || d.plan || d.treatment;
+  const hasSoapData = d.subjective || d.objective || d.assessment || d.plan || d.treatment || d.anamnesis_remota;
   const hasLegacyData = d.notes || d.anamnesis || d.hallazgos || d.hallazgos_examen_fisico || d.motivo_consulta;
 
   // The record form saves temperature/heart_rate/...; older records used temp/fc/fr/pa.
@@ -48,7 +48,7 @@ export default function RecordDetail({ record }: RecordDetailProps) {
           label: 'Subjetivo',
           icon: 'account-heart-outline',
           color: colors.primary,
-          content: [d.subjective, d.anamnesis && `Anamnesis: ${d.anamnesis}`].filter(Boolean).join('\n\n'),
+          content: [d.subjective, d.anamnesis_remota && `Anamnesis remota:\n${d.anamnesis_remota}`, d.anamnesis && `Anamnesis próxima: ${d.anamnesis}`].filter(Boolean).join('\n\n'),
           fields: d.motivo_consulta ? [{ label: 'Motivo', value: d.motivo_consulta }] : [],
         },
         {

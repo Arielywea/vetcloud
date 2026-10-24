@@ -60,7 +60,7 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
       {/* Section header */}
       <TouchableOpacity onPress={() => setExpanded(!expanded)} style={styles.sectionHeader}>
         <View style={styles.sectionTitleRow}>
-          <DisplayText style={[styles.sectionTitle, { color: colors.text }]}>Historia clínica inicial</DisplayText>
+          <DisplayText style={[styles.sectionTitle, { color: colors.text }]}>Anamnesis remota</DisplayText>
           {fieldCount > 0 && (
             <View style={[styles.countBadge, { backgroundColor: colors.primaryContainer }]}>
               <Text style={[styles.countText, { color: colors.primary }]}>{fieldCount}</Text>
@@ -91,8 +91,9 @@ export default function ClinicalHistory({ pet, fieldCount }: ClinicalHistoryProp
           {pet.water_consumption && renderField('cup-water', 'Consumo de agua', pet.water_consumption, colors.info)}
           {pet.urination && renderField('water-opacity', 'Micción', pet.urination, colors.info)}
           {pet.lives_with_other_animals && renderField('paw', 'Vive con otros animales', pet.lives_with_other_animals)}
-          {pet.species === 'cat' && pet.entorno && renderField('home-outline', 'Entorno', pet.entorno)}
+          {pet.entorno && renderField('home-outline', 'Acceso al exterior', pet.entorno)}
           {pet.species === 'cat' && pet.areneros && renderField('inbox-outline', 'Areneros', pet.areneros)}
+          {Array.isArray(pet.temperament) && pet.temperament.length > 0 && renderField('account-heart-outline', 'Comportamiento', pet.temperament.join(', '))}
 
           {/* Historial sanitario */}
           {renderSubSection('Historial sanitario', 'shield-check-outline', colors.success, historialExpanded, () => setHistorialExpanded(!historialExpanded), (
