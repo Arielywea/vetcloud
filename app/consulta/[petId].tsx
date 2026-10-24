@@ -8,8 +8,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useDiseases } from '../../hooks/useDirectus';
 import { api, Appointment, ClinicalRecord, DirectusPet, Medication } from '../../services/directus';
-import { authHeaders, apiFetch } from '../../services/auth';
-import { API_URL } from '../../config';
+import { downloadPdf } from '../../utils/downloadPdf';
+import { CONSULT_TEMPLATES } from '../../constants/consultTemplates';
 import DisplayText from '../../components/ui/DisplayText';
 import VButton from '../../components/ui/Button';
 import VInput from '../../components/ui/Input';
@@ -104,7 +104,8 @@ export default function ConsultaScreen() {
   const [vaccineOpen, setVaccineOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<{ outcomes: Outcome[]; rxId: string | null } | null>(null);
+  const [done, setDone] = useState<{ outcomes: Outcome[]; rxId: string | null; recordId: string } | null>(null);
+  const [sending, setSending] = useState(false);
   const loaded = useRef(false);
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) => setForm((f) => (f ? { ...f, [key]: value } : f));
@@ -312,7 +313,7 @@ export default function ConsultaScreen() {
       }
       saveDraft(pet.id, null);
       if (w) setPet({ ...pet, current_weight_kg: w, current_weight_at: when.toISOString() });
-      setDone({ outcomes, rxId });
+      setDone({ outcomes, rxId, recordId: record.id });
     } catch (e: any) {
       setError(e?.message || 'No se pudo guardar la consulta');
     } finally {
@@ -322,15 +323,28 @@ export default function ConsultaScreen() {
 
   const discard = () => { saveDraft(pet.id, null); router.canGoBack() ? router.back() : router.replace(`/pet/${pet.id}` as any); };
 
-  const downloadRx = async (rxId: string) => {
-    try {
-      const res = await apiFetch(`${API_URL}/items/pets/${pet.id}/prescriptions/${rxId}/pdf`, { headers: await authHeaders() });
-      if (!res.ok) throw new Error();
-      const url = window.URL.createObjectURL(await res.blob());
-      const a = document.createElement('a');
-      a.href = url; a.download = `receta_${pet.name}.pdf`; document.body.appendChild(a); a.click();
-      window.URL.revokeObjectURL(url); document.body.removeChild(a);
-    } catch { toast.error('No se pudo generar el PDF de la receta'); }
+  const pdf = (endpoint: string, name: string) => downloadPdf(endpoint, name).catch((e: any) => toast.error(e?.message || 'No se pudo generar el PDF'));
+  const tutorEmail = pet.owner_contact_revoked_at || pet.owner_anonymized_at ? null : pet.owner_email || pet.email;
+  const sendSummary = async (recordId: string) => {
+    setSending(true);
+    try { const r = await api.clinicalRecords.sendSummary(recordId); toast.success(`Resumen enviado a ${r.to}`); }
+    catch (e: any) { toast.error(e?.message || 'No se pudo enviar el resumen'); }
+    finally { setSending(false); }
+  };
+
+  // A template fills only the empty fields: it never overwrites what the vet already wrote
+  const applyTemplate = (key: string) => {
+    const t = CONSULT_TEMPLATES.find((x) => x.key === key);
+    if (!t) return;
+    setForm((f) => (f ? {
+      ...f,
+      type: t.type,
+      reason: f.reason.trim() ? f.reason : t.reason,
+      findings: f.findings.trim() ? f.findings : t.findings,
+      plan: f.plan.trim() ? f.plan : t.plan,
+      extras: t.extras ? Array.from(new Set([...f.extras, ...t.extras])) : f.extras,
+    } : f));
+    if (t.extras?.includes('vacuna') && !form.vaccines.length) setVaccineOpen(true);
   };
 
   const header = (
@@ -364,8 +378,10 @@ export default function ConsultaScreen() {
           {done.outcomes.some((o) => !o.ok) ? <Text style={[styles.meta, { color: colors.textSecondary, marginTop: SPACING.sm }]}>Lo que no se guardó puedes agregarlo desde la ficha.</Text> : null}
           <View style={styles.doneActions}>
             <VButton onPress={() => router.replace(`/pet/${pet.id}` as any)}>Volver a la ficha</VButton>
-            {done.rxId ? <VButton variant="secondary" onPress={() => downloadRx(done.rxId!)} icon={<Download size={16} color={colors.primary} />}>Receta en PDF</VButton> : null}
-            {done.rxId && (pet.owner_email || pet.email) ? (
+            <VButton variant="secondary" onPress={() => pdf(`/items/clinical_records/${done.recordId}/summary-pdf`, `resumen_${pet.name}.pdf`)} icon={<Download size={16} color={colors.primary} />}>Resumen para el tutor</VButton>
+            {tutorEmail ? <VButton variant="secondary" loading={sending} disabled={sending} onPress={() => sendSummary(done.recordId)} icon={<Mail size={16} color={colors.primary} />}>Enviar resumen por correo</VButton> : null}
+            {done.rxId ? <VButton variant="secondary" onPress={() => pdf(`/items/pets/${pet.id}/prescriptions/${done.rxId}/pdf`, `receta_${pet.name}.pdf`)} icon={<Download size={16} color={colors.primary} />}>Receta en PDF</VButton> : null}
+            {done.rxId && tutorEmail ? (
               <VButton variant="secondary" onPress={() => api.prescriptions.sendEmail(done.rxId!).then(() => toast.success(`Receta enviada a ${pet.owner_email || pet.email}`), (e: any) => toast.error(e?.message || 'No se pudo enviar'))}
                 icon={<Mail size={16} color={colors.primary} />}>Enviar receta al tutor</VButton>
             ) : null}
@@ -398,6 +414,12 @@ export default function ConsultaScreen() {
 
       <View style={[styles.panel, { backgroundColor: colors.surface }]}>
         <Segmented label="Tipo de atención" options={TYPES} value={form.type} onChange={(v) => set('type', v)} style={styles.segment} />
+        <Text style={[styles.meta, { color: colors.textSecondary, marginBottom: SPACING.sm }]}>Plantilla (completa solo los campos vacíos)</Text>
+        <View style={[styles.chips, { marginBottom: SPACING.lg }]}>
+          {CONSULT_TEMPLATES.filter((t) => !t.species || t.species === pet.species).map((t) => (
+            <VButton key={t.key} size="sm" variant="ghost" onPress={() => applyTemplate(t.key)}>{t.label}</VButton>
+          ))}
+        </View>
         <View style={styles.pair}>
           <VInput containerStyle={styles.half} label="Fecha y hora" value={form.date} onChangeText={(v) => set('date', v)} />
           <VInput containerStyle={styles.half} label="Veterinario" value={form.vet} onChangeText={(v) => set('vet', v)} />

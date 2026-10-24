@@ -537,6 +537,8 @@ export const api = {
     create: (data: any) => apiPost('/items/clinical_records', data),
     update: (id: string, data: any) => apiPatch(`/items/clinical_records/${id}`, data),
     delete: (id: string) => apiDelete(`/items/clinical_records/${id}`),
+    /** Emails the visit summary PDF to the tutor (only their own address, only with contact allowed) */
+    sendSummary: (id: string) => apiPost(`/items/clinical_records/${id}/summary-email`, {}) as Promise<{ success: boolean; to: string }>,
   },
   hospitalizations: {
     list: (params?: { status?: string }) =>

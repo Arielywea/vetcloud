@@ -1924,6 +1924,116 @@ app.get('/items/pets/:id/file-pdf', authMiddleware, async (req, res) => {
   }
 });
 
+// ─── VISIT SUMMARY AND VACCINE CERTIFICATE ─────────────
+async function clinicProfile(userId) {
+  const r = await pool.query('SELECT email AS vet_email, clinic_name, veterinarian_name, clinic_phone, clinic_address FROM users WHERE id = $1', [userId]);
+  return r.rows[0] || {};
+}
+async function petWithOwner(petId, userId) {
+  const r = await pool.query(
+    `SELECT p.*, row_to_json(o) AS owner FROM pets p LEFT JOIN owners o ON o.id = p.owner_id WHERE p.id = $1 AND p.user_id = $2`, [petId, userId]);
+  return r.rows[0] || null;
+}
+
+async function visitSummaryData(recordId, userId) {
+  const rec = await pool.query('SELECT * FROM clinical_records WHERE id = $1 AND user_id = $2', [recordId, userId]);
+  if (!rec.rows.length) return null;
+  const record = rec.rows[0];
+  const pet = await petWithOwner(record.pet_id, userId);
+  if (!pet) return null;
+  const [rx, doses, upcoming, clinic] = await Promise.all([
+    pool.query('SELECT * FROM prescriptions WHERE clinical_record_id = $1 AND user_id = $2 ORDER BY issued_at', [recordId, userId]),
+    pool.query('SELECT * FROM vaccinations WHERE clinical_record_id = $1 AND user_id = $2 ORDER BY applied_at', [recordId, userId]),
+    pool.query(
+      `SELECT start_time, appointment_type FROM appointments
+       WHERE pet_id = $1 AND user_id = $2 AND start_time > GREATEST(NOW(), $3::timestamptz) AND status NOT IN ('cancelada', 'completada', 'ausente')
+       ORDER BY start_time LIMIT 3`, [record.pet_id, userId, record.date]),
+    clinicProfile(userId),
+  ]);
+  return { record, pet, owner: pet.owner, prescriptions: rx.rows, doses: doses.rows, upcoming: upcoming.rows, clinic };
+}
+
+const fileSafe = (s) => String(s || 'paciente').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w-]+/g, '_');
+
+app.get('/items/clinical_records/:id/summary-pdf', authMiddleware, async (req, res) => {
+  try {
+    const data = await visitSummaryData(req.params.id, req.userId);
+    if (!data) return res.status(404).json({ error: 'Atención no encontrada' });
+    const { generateVisitSummaryPdf } = require('./utils/generateVisitSummaryPdf');
+    const pdf = await generateVisitSummaryPdf(data);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.attachment(`resumen_${fileSafe(data.pet.name)}_${new Date(data.record.date).toISOString().slice(0, 10)}.pdf`);
+    res.send(pdf);
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Only to the tutor's own address, and only while the tutor accepts communications
+app.post('/items/clinical_records/:id/summary-email', authMiddleware, async (req, res) => {
+  try {
+    const data = await visitSummaryData(req.params.id, req.userId);
+    if (!data) return res.status(404).json({ error: 'Atención no encontrada' });
+    const owner = data.owner || {};
+    if (owner.anonymized_at || owner.contact_revoked_at) return res.status(400).json({ error: 'El tutor revocó las comunicaciones de la clínica' });
+    const to = owner.email || data.pet.email;
+    if (!to || !isEmail(to)) return res.status(400).json({ error: 'El tutor no tiene correo registrado' });
+    if (!process.env.SMTP_EMAIL || !process.env.SMTP_PASSWORD) return res.status(400).json({ error: 'SMTP no configurado en el servidor' });
+    if (!await rateLimit(`summary-email:${req.userId}`, 60, 3600000)) return res.status(429).json({ error: 'Demasiados envíos en la última hora' });
+
+    const { generateVisitSummaryPdf } = require('./utils/generateVisitSummaryPdf');
+    const pdf = await generateVisitSummaryPdf(data);
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({ service: process.env.SMTP_SERVICE || 'gmail', auth: { user: process.env.SMTP_EMAIL, pass: process.env.SMTP_PASSWORD } });
+    const clinicName = data.clinic.clinic_name || 'VetCloud';
+    const when = new Date(data.record.date).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' });
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 20px; color: #141C33; background: #F5F2EA;">
+  <div style="background: #0B1D3A; border-bottom: 3px solid #A8842A; color: #F3EFE4; padding: 22px 24px;">
+    <h1 style="margin: 0; font-size: 22px; font-family: Georgia, serif;">${escapeHtml(clinicName)}</h1>
+  </div>
+  <div style="background: #FFFDF8; padding: 24px; font-size: 15px; line-height: 1.6;">
+    <p style="margin: 0 0 12px;">Hola ${escapeHtml(owner.name || data.pet.tutor_name || '')}:</p>
+    <p style="margin: 0 0 12px;">Adjuntamos el resumen de la atención de <strong>${escapeHtml(data.pet.name)}</strong> del ${when}, con las indicaciones y las próximas fechas.</p>
+    <p style="margin: 0;">Si tiene dudas, responda este correo.</p>
+  </div>
+  <p style="text-align: center; font-size: 11px; color: #4E586F;">Enviado con VetCloud</p>
+</body></html>`;
+    await transporter.sendMail({
+      from: `"${clinicName.replace(/"/g, '')}" <${process.env.SMTP_EMAIL}>`,
+      to,
+      replyTo: data.clinic.vet_email || process.env.SMTP_EMAIL,
+      subject: `Resumen de la atención de ${data.pet.name} — ${when}`,
+      html,
+      attachments: [{ filename: `resumen_${fileSafe(data.pet.name)}.pdf`, content: pdf }],
+    });
+    res.json({ data: { success: true, to } });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.get('/items/pets/:id/vaccine-certificate', authMiddleware, async (req, res) => {
+  try {
+    const pet = await petWithOwner(req.params.id, req.userId);
+    if (!pet) return res.status(404).json({ error: 'Paciente no encontrado' });
+    const [vac, clinic] = await Promise.all([
+      pool.query('SELECT * FROM vaccinations WHERE pet_id = $1 AND user_id = $2', [req.params.id, req.userId]),
+      clinicProfile(req.userId),
+    ]);
+    const { generateVaccineCertificatePdf } = require('./utils/generateVaccineCertificatePdf');
+    const pdf = await generateVaccineCertificatePdf({ pet, owner: pet.owner, vaccinations: vac.rows, clinic });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.attachment(`certificado_vacunas_${fileSafe(pet.name)}.pdf`);
+    res.send(pdf);
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 // ─── VET ASSISTANT ──────────────────────────────────────
 app.post('/assistant', authMiddleware, async (req, res) => {
   try {

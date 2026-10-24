@@ -27,8 +27,7 @@ import VModal from '../../components/ui/VModal';
 import VButton from '../../components/ui/Button';
 import VBadge from '../../components/ui/Badge';
 import { Stethoscope, FileText, Wallet, Download, Syringe, CalendarPlus } from 'lucide-react-native';
-import { authHeaders, apiFetch } from '../../services/auth';
-import { API_URL } from '../../config';
+import { downloadPdf } from '../../utils/downloadPdf';
 
 export default function PetDetailScreen() {
   const router = useRouter();
@@ -111,23 +110,15 @@ export default function PetDetailScreen() {
     setRxBranch(''); setRxFormat('standard'); setRxBody(''); setShowRxModal(true);
   };
 
-  const handleDownloadPdf = async () => {
-    if (!id) return;
-    try {
-      const baseUrl = API_URL;
-      const headers = await authHeaders();
-      const response = await apiFetch(`${baseUrl}/items/pets/${id}/file-pdf`, { headers });
-      if (!response.ok) throw new Error('No se pudo generar el PDF');
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ficha_${pet?.name || 'paciente'}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch { setErrorDialog('No se pudo generar el PDF'); }
+  const pdf = (endpoint: string, name: string) => downloadPdf(endpoint, name).catch((e: any) => setErrorDialog(e?.message || 'No se pudo generar el PDF'));
+  const handleDownloadPdf = () => { if (id) pdf(`/items/pets/${id}/file-pdf`, `ficha_${pet?.name || 'paciente'}.pdf`); };
+  const tutorEmail = pet && !pet.owner_contact_revoked_at && !pet.owner_anonymized_at ? pet.owner_email || pet.email : null;
+  const [sendingSummary, setSendingSummary] = useState(false);
+  const sendSummary = async (recordId: string) => {
+    setSendingSummary(true);
+    try { const r = await api.clinicalRecords.sendSummary(recordId); toast.success(`Resumen enviado a ${r.to}`); }
+    catch (e: any) { setErrorDialog(e?.message || 'No se pudo enviar el resumen'); }
+    finally { setSendingSummary(false); }
   };
 
   const handleSaveRx = async () => {
@@ -145,23 +136,8 @@ export default function PetDetailScreen() {
 
   const handleSendRxEmail = async (rx: Prescription) => { setEmailTarget(rx); setEmailRecipient(pet?.email || ''); setShowEmailModal(true); };
 
-  const handleDownloadRecipePdf = async (rx: Prescription) => {
-    if (!id) return;
-    try {
-      const baseUrl = API_URL;
-      const headers = await authHeaders();
-      const response = await apiFetch(`${baseUrl}/items/pets/${id}/prescriptions/${rx.id}/pdf`, { headers });
-      if (!response.ok) throw new Error('No se pudo generar el PDF');
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `receta_${pet?.name || 'paciente'}_${new Date(rx.issued_at).toLocaleDateString('es-CL').replace(/\//g, '-')}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch { setErrorDialog('No se pudo generar el PDF de la receta'); }
+  const handleDownloadRecipePdf = (rx: Prescription) => {
+    if (id) pdf(`/items/pets/${id}/prescriptions/${rx.id}/pdf`, `receta_${pet?.name || 'paciente'}_${new Date(rx.issued_at).toLocaleDateString('es-CL').replace(/\//g, '-')}.pdf`);
   };
   const confirmSendEmail = async () => {
     if (!emailTarget) return;
@@ -205,7 +181,8 @@ export default function PetDetailScreen() {
           <PetTimeline records={records} prescriptions={prescriptions} vaccinations={vaccinations} onOpenRecord={openRecord} onOpenRx={openRx} />
         </View>
         <View style={isMobile ? undefined : styles.side}>
-          <VaccinesSection pet={pet} vaccinations={vaccinations} onApply={(p) => setVaccinePreset(p)} readOnly={!alive} />
+          <VaccinesSection pet={pet} vaccinations={vaccinations} onApply={(p) => setVaccinePreset(p)} readOnly={!alive}
+            onCertificate={vaccinations.length ? () => pdf(`/items/pets/${pet.id}/vaccine-certificate`, `certificado_vacunas_${pet.name}.pdf`) : undefined} />
           <WeightChart records={records} petId={id || undefined} />
           {clinicalFieldCount > 0 ? <ClinicalHistory pet={pet} fieldCount={clinicalFieldCount} /> : null}
         </View>
@@ -221,8 +198,10 @@ export default function PetDetailScreen() {
               {selectedRecord.details?.weight && <View style={styles.detailRow}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Peso:</Text><Text style={[styles.detailValue, { color: colors.text }]}>{selectedRecord.details.weight} kg</Text></View>}
               <RecordDetail record={selectedRecord} />
               <View style={styles.detailActions}>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   <VButton size="sm" onPress={() => { setSelectedRecord(null); openRxModal(selectedRecord.id); }}>Generar receta</VButton>
+                  <VButton size="sm" variant="secondary" onPress={() => pdf(`/items/clinical_records/${selectedRecord.id}/summary-pdf`, `resumen_${pet.name}.pdf`)}>Resumen para el tutor</VButton>
+                  {tutorEmail ? <VButton size="sm" variant="secondary" loading={sendingSummary} disabled={sendingSummary} onPress={() => sendSummary(selectedRecord.id)}>Enviar resumen</VButton> : null}
                   <VButton size="sm" variant="ghost" color={colors.error} onPress={() => setDeleteRecordTarget(selectedRecord)}>Eliminar</VButton>
                 </View>
                 <VButton variant="secondary" onPress={() => setSelectedRecord(null)} style={{ marginTop: 8 }}>Cerrar</VButton>
@@ -283,8 +262,9 @@ export default function PetDetailScreen() {
               {selectedRx.clinic_branch && <View style={styles.detailRow}><Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Sucursal:</Text><Text style={[styles.detailValue, { color: colors.text }]}>{selectedRx.clinic_branch}</Text></View>}
               <View style={[styles.rxBodyCard, { backgroundColor: colors.background, borderColor: colors.border }]}><Text style={{ color: colors.text, lineHeight: 22 }}>{selectedRx.prescription_body}</Text></View>
               <View style={styles.detailActions}>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   <VButton size="sm" onPress={() => handleSendRxEmail(selectedRx)}>Enviar por correo</VButton>
+                  <VButton size="sm" variant="secondary" onPress={() => handleDownloadRecipePdf(selectedRx)}>PDF</VButton>
                   <VButton size="sm" variant="secondary" onPress={() => setSelectedRx(null)}>Cerrar</VButton>
                 </View>
               </View>

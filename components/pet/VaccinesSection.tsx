@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
-import { Plus } from 'lucide-react-native';
+import { Plus, Download } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { DirectusPet, Vaccination, VaccinationKind, VaccinePlanItem } from '../../services/directus';
 import DisplayText from '../ui/DisplayText';
@@ -15,10 +15,12 @@ interface VaccinesSectionProps {
   /** Record a dose of this item (null = choose in the sheet) */
   onApply: (preset: { kind: VaccinationKind; plan_item?: VaccinePlanItem | null } | null) => void;
   readOnly?: boolean;
+  /** Downloads the vaccination certificate (shown when there is at least one dose) */
+  onCertificate?: () => void;
 }
 
 // The base plan as a ledger: one line per vaccine and deworming, last dose and when the next is due.
-export default function VaccinesSection({ pet, vaccinations, onApply, readOnly }: VaccinesSectionProps) {
+export default function VaccinesSection({ pet, vaccinations, onApply, readOnly, onCertificate }: VaccinesSectionProps) {
   const { colors } = useTheme();
   const plan = planFor(pet.species);
 
@@ -41,7 +43,10 @@ export default function VaccinesSection({ pet, vaccinations, onApply, readOnly }
     <View style={styles.section}>
       <View style={styles.head}>
         <DisplayText style={[styles.title, { color: colors.text }]}>Vacunas y prevención</DisplayText>
-        {!readOnly ? <VButton size="sm" variant="secondary" onPress={() => onApply(null)} icon={<Plus size={15} color={colors.primary} />}>Registrar dosis</VButton> : null}
+        <View style={styles.headActions}>
+          {onCertificate ? <VButton size="sm" variant="ghost" onPress={onCertificate} icon={<Download size={15} color={colors.primary} />}>Certificado</VButton> : null}
+          {!readOnly ? <VButton size="sm" variant="secondary" onPress={() => onApply(null)} icon={<Plus size={15} color={colors.primary} />}>Registrar dosis</VButton> : null}
+        </View>
       </View>
       <View style={[styles.table, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         {rows.map((r, i) => {
@@ -79,6 +84,7 @@ export default function VaccinesSection({ pet, vaccinations, onApply, readOnly }
 const styles = StyleSheet.create({
   section: { marginBottom: SPACING.xl },
   head: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm, marginBottom: SPACING.md },
+  headActions: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs },
   title: { fontSize: 26, lineHeight: 30, fontWeight: '600' },
   table: { borderWidth: 1, borderRadius: RADIUS.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, minHeight: 60 },
