@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // Writes chile_frequency, chile_rank and chile_frequency_basis on the global disease catalog from
-// scripts/data/disease-chile-frequency.js (proposal + the vet's review). Idempotent.
+// scripts/data/disease-chile-frequency.js (proposal + the vet's review + the entries added after it). Idempotent;
+// the added entries must already exist (scripts/add-diseases-200-2026-10.js inserts and ranks them in one go).
 // Usage: node scripts/apply-chile-frequency.js [--dry-run]
 const { Client } = require('pg');
-const { finalOrder } = require('./data/disease-chile-frequency');
+const { fullOrder: finalOrder } = require('./data/disease-chile-frequency');
 try { require('dotenv').config({ quiet: true }); } catch (e) {}
 
 (async () => {

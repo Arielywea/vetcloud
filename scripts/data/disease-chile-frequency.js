@@ -207,4 +207,30 @@ function finalOrder() {
   return rows.map((r, i) => ({ rank: i + 1, name: r.name, frequency: r.freq, basis: r.bases.map((k) => BASES[k]).join(' | ') }));
 }
 
-module.exports = { BASES, PROPOSAL, CORRECTIONS, finalOrder };
+/** Entries added after the first review (E2), as written in scripts/diseases-200/ ({ name, chile }) */
+function additions() {
+  const dir = require('path').join(__dirname, '..', 'diseases-200');
+  return ['general', 'toxic-neuro-ortho', 'internal-onco', 'eye-skin']
+    .flatMap((f) => require(require('path').join(dir, f)))
+    .map((d) => ({ name: d.name, ...d.chile }));
+}
+
+/** The whole catalog in chile_rank order: the reviewed 150 plus the additions, each at the end of its
+ *  tier unless it names an existing entry to go `before` */
+function fullOrder() {
+  const rows = finalOrder().map(({ name, frequency, basis }) => ({ name, frequency, basis }));
+  for (const a of additions()) {
+    const row = { name: a.name, frequency: a.frequency, basis: a.bases.map((k) => BASES[k]).join(' | ') };
+    let at = a.before ? rows.findIndex((r) => r.name === a.before) : -1;
+    if (a.before && at < 0) throw new Error(`"${a.name}": no existe "${a.before}" para ubicarla`);
+    if (at < 0) {
+      const tier = TIERS.indexOf(a.frequency);
+      at = rows.findIndex((r) => TIERS.indexOf(r.frequency) > tier);
+      if (at < 0) at = rows.length;
+    }
+    rows.splice(at, 0, row);
+  }
+  return rows.map((r, i) => ({ rank: i + 1, ...r }));
+}
+
+module.exports = { BASES, PROPOSAL, CORRECTIONS, finalOrder, additions, fullOrder };
