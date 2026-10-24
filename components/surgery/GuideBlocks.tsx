@@ -163,6 +163,9 @@ export function DrugTable({ items, colors, wide, weight, onWeight }: {
       forPatient = lo === hi ? `${fmt(lo)} ${unit}` : `${fmt(lo)}–${fmt(hi)} ${unit}`;
       if (unit === 'mg' && hi < 0.1) forPatient = lo === hi ? `${fmt(lo * 1000)} µg` : `${fmt(lo * 1000)}–${fmt(hi * 1000)} µg`;
       if (/m[aá]x/i.test(d.dose)) forPatient = `hasta ${fmt(hi)} ${unit}`;
+      // An absolute ceiling in the dose ("2 UI/kg (máximo 20 UI)") wins over the per-kg figure
+      const cap = d.dose.match(/m[aá]x(?:imo)?\s*(\d+(?:[.,]\d+)?)\s*(mg|UI|µg)\b/i);
+      if (cap && Number(cap[1].replace(',', '.')) < hi) forPatient = `${cap[1]} ${cap[2]} (tope)`;
     }
     const drug = (
       <View>

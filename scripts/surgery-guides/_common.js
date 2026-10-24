@@ -26,17 +26,20 @@ const DRUGS = {
 
 const pick = (...keys) => keys.map((k) => DRUGS[k]);
 
+// Fossum cap. 19, p. 517–518: the fascia is the holding layer; the peritoneum is not sutured
 const ABDOMINAL_CLOSURE = [
-  { layer: 'Línea alba (vaina externa del recto)', suture: 'PDS', gauge: 'Gato y <10 kg: 3-0 a 2-0 · 10–25 kg: 2-0 a 0 · >25 kg: 0 a 1', pattern: 'Continuo simple', why: 'Capa que sostiene; absorbible de larga duración porque la fascia recupera fuerza lentamente.' },
+  { layer: 'Línea alba (vaina externa del recto)', suture: 'PDS, Maxon, Monocryl o Biosyn', gauge: 'Gato y <10 kg: 3-0 a 2-0 · 10–25 kg: 2-0 a 0 · >25 kg: 0 a 1', pattern: 'Continuo simple (6–8 nudos en cada extremo) o simples a 5–10 mm, tomando 4–10 mm de fascia', why: 'La fascia es la capa que sostiene; sin peritoneo ni ligamento falciforme entre los bordes. Evitar no absorbibles (senos de sutura), catgut y alambre en continuos.' },
   { layer: 'Subcutáneo', suture: 'Monocryl', gauge: '3-0 o 4-0', pattern: 'Continuo simple', why: 'Cierra el espacio muerto y reduce el seroma.' },
-  { layer: 'Piel', suture: 'Monocryl (intradérmico) o nylon', gauge: '4-0 o 3-0', pattern: 'Intradérmico, o simples o en X', why: 'El intradérmico no requiere retirar puntos.' },
+  { layer: 'Piel', suture: 'Monocryl (intradérmico), nylon o grapas', gauge: '4-0 o 3-0', pattern: 'Intradérmico, o simples sin tensión', why: 'El intradérmico no requiere retirar puntos.' },
 ];
 
 const CELIOTOMY_STEPS = [
-  { title: 'Posición y campo.', body: 'Decúbito dorsal; prepara de xifoides a pubis y ancho hasta los flancos, para poder ampliar la incisión.' },
-  { title: 'Incisión.', body: 'Línea media ventral, de largo suficiente para explorar todo el abdomen si la causa no está clara. En machos, desvía la incisión de piel junto al prepucio y liga la arteria y vena epigástricas superficiales caudales.' },
-  { title: 'Entrada.', body: 'Levanta la línea alba en tienda e incide con el filo hacia arriba; amplía con tijera protegiendo las vísceras.' },
-  { title: 'Exposición.', body: 'Separador de Balfour, compresas húmedas en los bordes y exploración sistemática de todo el abdomen antes de ir al órgano.' },
+  { title: 'Cuenta las gasas.', body: 'Antes de incidir y antes de cerrar, con gasas y compresas con marcador radiopaco.', cite: 'Fossum p. 516' },
+  { title: 'Incisión.', body: 'Decúbito dorsal; línea media desde cerca del xifoides hasta el pubis, de largo suficiente para explorar todo el abdomen. En machos, fija el prepucio a un lado con una pinza de campo, curva la incisión de piel hacia el lado opuesto del pene y liga las ramas de la epigástrica superficial caudal en el extremo craneal del prepucio.', cite: 'Fossum p. 516' },
+  { title: 'Entrada.', body: 'Expón la fascia externa del recto, levanta la pared en tienda e incide la línea alba con el bisturí. Palpa la cara interna por si hay adherencias y amplía con tijera.', cite: 'Fossum p. 516–517' },
+  { title: 'Falciforme.', body: 'Despega o extirpa el ligamento falciforme si estorba la exposición craneal; pinza su extremo craneal y controla el sangrado antes de retirarlo.', cite: 'Fossum p. 516' },
+  { title: 'Exposición.', body: 'Separador de Balfour y compresas húmedas para que los tejidos no se sequen.' },
+  { title: 'Explora todo (Box 19.1).', body: 'Cuadrante craneal (diafragma, hígado, vesícula, estómago, píloro, duodeno, bazo, páncreas, porta y cava), cuadrante caudal (colon, vejiga, uretra, próstata o útero, anillos inguinales), todo el intestino con sus vasos y linfonodos, y las goteras: con el mesoduodeno a la izquierda se ve el riñón, la adrenal, el uréter y el ovario derechos; con el colon descendente a la derecha, los izquierdos.', cite: 'Fossum p. 517' },
 ];
 
 const SOURCES = {
@@ -47,4 +50,13 @@ const SOURCES = {
   plumbs: { text: 'Plumb\'s Veterinary Drug Handbook (dosis).', kind: 'complemento' },
 };
 
-module.exports = { DRUGS, pick, drug, ABDOMINAL_CLOSURE, CELIOTOMY_STEPS, SOURCES };
+// Closing an abdomen that was opened onto a contaminated viscus (Fossum p. 517)
+const CLEAN_CLOSURE_STEPS = [
+  { title: 'Lava si hubo contaminación.', body: 'Abundante solución salina estéril tibia; no agregues povidona yodada al lavado (no mejora y en peritonitis inhibe la quimiotaxis de los macrófagos). Nunca a temperatura ambiente en un paciente anestesiado.', cite: 'Fossum p. 517' },
+  { title: 'Aspira y revisa.', body: 'Retira el líquido y la sangre y comprueba que no quede material extraño.' },
+  { title: 'Cuenta las gasas.', body: 'Compara con el conteo inicial.', cite: 'Fossum p. 517' },
+  { title: 'Cambia guantes e instrumental.', body: 'Reemplaza lo contaminado por contenido gástrico o intestinal antes de cerrar la pared.' },
+  { title: 'Cierra la pared.', body: 'Línea alba con continuo simple de absorbible fuerte (6–8 nudos en cada extremo) o puntos simples a 5–10 mm, tomando 4–10 mm de fascia a cada lado. No incluyas peritoneo ni falciforme. Subcutáneo continuo y piel sin tensión.', cite: 'Fossum p. 517–518' },
+];
+
+module.exports = { DRUGS, pick, drug, ABDOMINAL_CLOSURE, CELIOTOMY_STEPS, CLEAN_CLOSURE_STEPS, SOURCES };
