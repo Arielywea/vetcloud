@@ -39,6 +39,12 @@ export interface DirectusDisease {
   life_stage?: 'puppy' | 'kitten' | 'adult' | 'senior' | 'all';
   /** null = global catalog (only admins edit it); set = this clinic's own entry */
   organization_id?: number | null;
+  /** How often it is seen in Chilean small-animal practice (migration 023) */
+  chile_frequency?: 'muy_frecuente' | 'frecuente' | 'ocasional' | 'rara' | null;
+  /** Unique order for "Frecuencia en Chile" (1 = most common) */
+  chile_rank?: number | null;
+  chile_frequency_basis?: string | null;
+  prevalence_rank?: number | null;
 }
 
 export type PetStatus = 'alive' | 'deceased' | 'transferred' | 'inactive';

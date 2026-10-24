@@ -153,6 +153,7 @@ function EmergencyItem({ block, colors, doseStyle, reduced }: { block: Emergency
 // ─── Screen ──────────────────────────────────────────────
 
 type SectionKey = 'summary' | 'emergency' | 'signs' | 'diagnosis' | 'treatment' | 'prevention' | 'references';
+const CHILE_FREQUENCY: Record<string, string> = { muy_frecuente: 'Muy frecuente', frecuente: 'Frecuente', ocasional: 'Ocasional', rara: 'Rara' };
 const SECTION_LABELS: Record<SectionKey, string> = {
   summary: 'Resumen',
   emergency: 'Urgencia',
@@ -306,6 +307,7 @@ export default function DiseaseDetailScreen() {
     SPECIES_LABELS[disease.species] || disease.species,
     categoryLabel(disease.category),
     disease.life_stage && disease.life_stage !== 'all' ? (LIFE_STAGE_LABELS[disease.life_stage] || disease.life_stage) : null,
+    disease.chile_frequency ? `${CHILE_FREQUENCY[disease.chile_frequency]} en Chile` : null,
   ].filter(Boolean).join(' · ');
 
   const sectionTitle = (key: SectionKey, tone?: string) => (
