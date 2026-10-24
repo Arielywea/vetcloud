@@ -156,6 +156,26 @@ export function useSurgeries(search?: string) {
   return { surgeries, loading, error, refresh: fetchSurgeries };
 }
 
+/** One surgery with its step-by-step guide (the list route leaves the guide out) */
+export function useSurgery(id: string | null) {
+  const [surgery, setSurgery] = useState<Surgery | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) { setLoading(false); return; }
+    let live = true;
+    setLoading(true);
+    api.surgeries.get(id)
+      .then((result) => { if (live) setSurgery(result as Surgery); })
+      .catch((err: any) => { if (live) setError(err.message); })
+      .finally(() => { if (live) setLoading(false); });
+    return () => { live = false; };
+  }, [id]);
+
+  return { surgery, loading, error };
+}
+
 // ─────────────────────────────────────────────────────────
 // Hook: Single Disease (with CRUD)
 // ─────────────────────────────────────────────────────────

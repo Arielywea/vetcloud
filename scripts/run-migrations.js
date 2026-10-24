@@ -31,6 +31,7 @@ const MIGRATIONS = [
   '020_vaccinations.sql',
   '021_pet_status_alerts_weight.sql',
   '023_disease_chile_frequency.sql',
+  '024_surgery_guides.sql',
 ];
 
 async function runMigrations() {

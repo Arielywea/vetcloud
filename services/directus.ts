@@ -203,8 +203,58 @@ export interface Surgery {
   consideraciones_por_raza: string | null;
   consideraciones_comorbilidades: string | null;
   fuente: string | null;
+  category: SurgeryCategory | null;
+  sort_order: number | null;
   created_at: string;
+  // Detail route only
+  guide?: SurgeryGuide | null;
+  // List route only (the list leaves the guide out)
+  has_guide?: boolean;
+  guide_draft?: boolean | null;
+  guide_lede?: string | null;
+  guide_meta?: SurgeryGuide['meta'] | null;
 }
+
+export type SurgeryCategory =
+  | 'reproductiva' | 'digestiva' | 'hepatoesplenica' | 'urinaria' | 'piel'
+  | 'perineal' | 'oftalmica' | 'toracica' | 'ortopedica';
+
+// Step-by-step guide shown at /surgery/[id] (docs/plans/2026-10-24-cirugias.md §4)
+export interface SurgeryGuide {
+  lede: string;
+  meta: {
+    species: ('perro' | 'gato')[];
+    duration: string;
+    difficulty: 'básica' | 'intermedia' | 'avanzada';
+    contamination: 'limpia' | 'limpia-contaminada' | 'contaminada' | 'sucia';
+  };
+  before_you_start: string[];
+  indications: string[];
+  sections: GuideSection[];
+  closure: { layer: string; suture: string; gauge: string; pattern: string; why: string }[];
+  complications: { name: string; prevent: string; manage: string }[];
+  quiz: { q: string; a: string }[];
+  videos?: { title: string; url: string; channel: string; lang: 'español' | 'inglés'; note?: string }[];
+  sources: { text: string; kind: 'libro' | 'complemento' }[];
+  draft?: boolean;
+}
+
+export interface GuideSection {
+  id: string;
+  title: string;
+  intro?: string;
+  blocks: GuideBlock[];
+  subsections?: GuideSection[];
+}
+
+export type GuideBlock =
+  | { type: 'steps'; items: { title: string; body?: string; bullets?: string[]; cite?: string }[] }
+  | { type: 'note'; kind: 'why' | 'error' | 'tip' | 'book'; title?: string; text?: string; bullets?: string[] }
+  | { type: 'table'; columns: string[]; rows: string[][]; caption?: string }
+  | { type: 'list'; items: string[] }
+  | { type: 'defs'; items: { tag?: string; title: string; text: string }[] }
+  | { type: 'drugs'; items: { phase: string; drug: string; dose: string; route: string; note?: string }[] }
+  | { type: 'figure'; key: string; caption: string };
 
 export interface Appointment {
   id: string;

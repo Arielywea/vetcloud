@@ -765,7 +765,8 @@ app.post('/items/medications', authMiddleware, async (req, res) => {
 // ─── SURGERIES ──────────────────────────────────────────
 app.get('/items/surgeries', async (req, res) => {
   try {
-    let query = 'SELECT * FROM surgeries';
+    // The list leaves out the guide (15–30 KB each); the detail route returns it
+    let query = `SELECT id, organization_id, nombre_cirugia, indicaciones, tecnica_quirurgica, material_quirurgico, tipo_sutura, complicaciones_frecuentes, manejo_anestesico_sugerido, consideraciones_por_raza, consideraciones_comorbilidades, fuente, category, sort_order, created_at, guide IS NOT NULL AS has_guide, (guide->>'draft')::boolean AS guide_draft, guide->>'lede' AS guide_lede, guide->'meta' AS guide_meta FROM surgeries`;
     const params = [];
     const conditions = [];
 
@@ -775,7 +776,7 @@ app.get('/items/surgeries', async (req, res) => {
     }
 
     if (conditions.length) query += ' WHERE ' + conditions.join(' AND ');
-    query += ' ORDER BY nombre_cirugia ASC';
+    query += ' ORDER BY sort_order ASC NULLS LAST, nombre_cirugia ASC';
 
     const result = await pool.query(query, params);
     res.json({ data: result.rows });
