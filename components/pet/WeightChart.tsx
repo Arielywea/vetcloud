@@ -51,9 +51,10 @@ export default function WeightChart({ records, petId }: WeightChartProps) {
   useRefreshOn(['vital_measurements'], loadVitals);
 
   const weightData = useMemo(() => {
+    // weight_kg is the visit's weight since migration 021; older records kept it in details.weight
     const fromRecords: WeightPoint[] = records
-      .filter(r => r.details?.weight && r.details.weight > 0)
-      .map(r => ({ date: new Date(r.date), kg: Number(r.details.weight) }));
+      .map(r => ({ date: new Date(r.date), kg: Number(r.weight_kg ?? r.details?.weight) }))
+      .filter(p => p.kg > 0);
     // A visit often stores the same weight in the record and in Signos: keep one per day and value
     const seen = new Set<string>();
     const points = [...fromRecords, ...vitalWeights]

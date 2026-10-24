@@ -279,7 +279,7 @@ export default function AddPacienteScreen() {
           <DisplayText style={[styles.doneTitle, { color: colors.text }]}>{saved.name} quedó registrado</DisplayText>
           <Text style={[styles.body, { color: colors.textSecondary, textAlign: 'center' }]}>Tutor: {owner?.name}. ¿Qué sigue?</Text>
           <View style={styles.doneActions}>
-            <VButton size="lg" onPress={() => router.replace({ pathname: '/pet/[id]', params: { id: saved.id, consulta: '1' } } as any)} icon={<Stethoscope size={18} color={onAccentText.default} />}>Iniciar primera consulta</VButton>
+            <VButton size="lg" onPress={() => router.replace(`/consulta/${saved.id}` as any)} icon={<Stethoscope size={18} color={onAccentText.default} />}>Iniciar primera consulta</VButton>
             <VButton size="lg" variant="secondary" onPress={() => router.replace({ pathname: '/(drawer)/agenda', params: { nueva: '1', pet_id: saved.id } } as any)} icon={<CalendarPlus size={18} color={colors.primary} />}>Agendar una cita</VButton>
             <VButton size="lg" variant="secondary" onPress={() => router.replace(`/pet/${saved.id}` as any)} icon={<FileText size={18} color={colors.primary} />}>Solo ver la ficha</VButton>
           </View>

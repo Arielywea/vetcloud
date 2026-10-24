@@ -1,42 +1,34 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Platform, Linking } from 'react-native';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, TextInput, Portal, Dialog, Divider } from 'react-native-paper';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { usePet, useClinicalRecords, usePrescriptions } from '../../hooks/useDirectus';
-import { ClinicalRecord, Prescription } from '../../services/directus';
+import { usePet, useClinicalRecords, usePrescriptions, useVaccinations, useRefreshOn } from '../../hooks/useDirectus';
+import { api, Appointment, ClinicalRecord, Prescription, VaccinationKind, VaccinePlanItem } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
 import { calculateAge } from '../../utils/age';
-import { toLocalDateTimeInput, parseLocalDateTime } from '../../utils/date';
-import { parseVitals } from '../../utils/vitals';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 import { SkeletonCard } from '../../components/ui/Skeleton';
-import ClinicalTabs, { ClinicalTabType } from '../../components/ClinicalTabs';
-import PetHeader from '../../components/pet/PetHeader';
+import ChartHeader from '../../components/pet/ChartHeader';
+import StatusStrip from '../../components/pet/StatusStrip';
+import VaccinesSection from '../../components/pet/VaccinesSection';
+import VaccinationSheet from '../../components/pet/VaccinationSheet';
+import LifeStatusSheet from '../../components/pet/LifeStatusSheet';
+import PetTimeline from '../../components/pet/PetTimeline';
 import ClinicalHistory from '../../components/pet/ClinicalHistory';
-import RecentRecord from '../../components/pet/RecentRecord';
-import RecordTimeline from '../../components/pet/RecordTimeline';
-import PrescriptionList from '../../components/pet/PrescriptionList';
 import WeightChart from '../../components/pet/WeightChart';
 import RecordDetail from '../../components/pet/RecordDetail';
-import AlertBanner from '../../components/pet/AlertBanner';
-import VitalSignsForm from '../../components/pet/VitalSignsForm';
 import PaymentForm from '../../components/pet/PaymentForm';
-import VoiceNotes from '../../components/VoiceNotes';
+import { useResponsive } from '../../hooks/useResponsive';
 import DynamicIcon from '../../components/ui/DynamicIcon';
 import { useToast } from '../../components/ui/VToast';
 import VModal from '../../components/ui/VModal';
-import DisplayText from '../../components/ui/DisplayText';
 import VButton from '../../components/ui/Button';
 import VBadge from '../../components/ui/Badge';
-import { Plus, FileText, Wallet, HeartPulse, Download } from 'lucide-react-native';
-
-const RECORD_TYPE_LABELS = { consulta: 'Consulta', vacuna: 'Vacuna', cirugia: 'Cirugía', control: 'Control' } as const;
+import { Stethoscope, FileText, Wallet, Download, Syringe, CalendarPlus } from 'lucide-react-native';
 import { authHeaders, apiFetch } from '../../services/auth';
 import { API_URL } from '../../config';
-import { uploadPetPhoto } from '../../services/cloudinary';
-import * as ImagePicker from 'expo-image-picker';
 
 export default function PetDetailScreen() {
   const router = useRouter();
@@ -44,11 +36,14 @@ export default function PetDetailScreen() {
   const { user } = useAuth();
   const toast = useToast();
   const { id, consulta } = useLocalSearchParams<{ id: string; consulta?: string }>();
-  const { pet, loading } = usePet(id || null);
-  const { records, loading: recordsLoading, addRecord, removeRecord } = useClinicalRecords(id || undefined);
-  const { prescriptions, loading: rxLoading, addPrescription, sendEmail } = usePrescriptions(id || undefined);
-  const [activeTab, setActiveTab] = useState<ClinicalTabType>('historial');
-  const [showRecordModal, setShowRecordModal] = useState(false);
+  const { pet, loading, refresh: refreshPet } = usePet(id || null);
+  const { records, removeRecord } = useClinicalRecords(id || undefined);
+  const { prescriptions, addPrescription, sendEmail } = usePrescriptions(id || undefined);
+  const { vaccinations } = useVaccinations(id || null);
+  const { isMobile } = useResponsive();
+  const [vaccinePreset, setVaccinePreset] = useState<{ kind: VaccinationKind; plan_item?: VaccinePlanItem | null } | null | undefined>(undefined);
+  const [showStatus, setShowStatus] = useState(false);
+  const [nextAppointment, setNextAppointment] = useState<Appointment | null>(null);
   const [showRxModal, setShowRxModal] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<ClinicalRecord | null>(null);
   const [selectedRx, setSelectedRx] = useState<Prescription | null>(null);
@@ -56,21 +51,6 @@ export default function PetDetailScreen() {
   const [saving, setSaving] = useState(false);
   const [errorDialog, setErrorDialog] = useState<string | null>(null);
   const [deleteRecordTarget, setDeleteRecordTarget] = useState<ClinicalRecord | null>(null);
-  const [recordType, setRecordType] = useState<ClinicalRecord['record_type']>('consulta');
-  const [recordDate, setRecordDate] = useState(() => toLocalDateTimeInput());
-  const [recordVet, setRecordVet] = useState('');
-  const [recordAssessment, setRecordAssessment] = useState('');
-  const [recordPlan, setRecordPlan] = useState('');
-  const [recordTreatment, setRecordTreatment] = useState('');
-  const [recordWeight, setRecordWeight] = useState('');
-  const [recordMotivoConsulta, setRecordMotivoConsulta] = useState('');
-  const [recordAnamnesis, setRecordAnamnesis] = useState('');
-  const [recordHallazgos, setRecordHallazgos] = useState('');
-  const [recordVitalTemp, setRecordVitalTemp] = useState('');
-  const [recordVitalFC, setRecordVitalFC] = useState('');
-  const [recordVitalFR, setRecordVitalFR] = useState('');
-  const [recordVitalPA, setRecordVitalPA] = useState('');
-  const [recordVitalSpO2, setRecordVitalSpO2] = useState('');
   const [rxVet, setRxVet] = useState('');
   const [rxBranch, setRxBranch] = useState('Casa Matriz');
   const [rxBody, setRxBody] = useState('');
@@ -79,27 +59,19 @@ export default function PetDetailScreen() {
   const [emailTarget, setEmailTarget] = useState<Prescription | null>(null);
   const [emailRecipient, setEmailRecipient] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
-  const [showVitals, setShowVitals] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
 
-  const [recordProcedimiento, setRecordProcedimiento] = useState('');
-  const [recordDescripcion, setRecordDescripcion] = useState('');
-  const [recordPostoperatorio, setRecordPostoperatorio] = useState('');
-  const [recordFiles, setRecordFiles] = useState<string[]>([]);
-  const [uploadingFile, setUploadingFile] = useState(false);
-
-  const counts = useMemo(() => ({
-    historial: records.length,
-    consultas: records.filter(r => r.record_type === 'consulta').length,
-    vacunas: records.filter(r => r.record_type === 'vacuna').length,
-    cirugias: records.filter(r => r.record_type === 'cirugia').length,
-    recetas: prescriptions.length,
-  }), [records, prescriptions]);
-
-  const mostRecentRecord = useMemo(() => {
-    const sorted = [...records].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    return sorted[0] || null;
-  }, [records]);
+  const loadNext = useCallback(async () => {
+    if (!id) return;
+    try {
+      const upcoming: Appointment[] = await api.appointments.list({ start: new Date().toISOString() });
+      setNextAppointment(upcoming.find((a) => a.pet_id === id && !['cancelada', 'completada', 'ausente'].includes(a.status)) || null);
+    } catch { setNextAppointment(null); }
+  }, [id]);
+  useEffect(() => { loadNext(); }, [loadNext]);
+  useRefreshOn(['appointments'], loadNext);
+  // Status changes and tutor edits come back without the joined tutor fields: reload the pet
+  useRefreshOn(['owners', 'clinical_records'], refreshPet);
 
   const lastAnamnesis = useMemo(() => {
     const sorted = [...records].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -107,8 +79,6 @@ export default function PetDetailScreen() {
     return null;
   }, [records]);
 
-  const filteredRecords = activeTab === 'historial' ? records : activeTab === 'recetas' ? records : records.filter(r => r.record_type === activeTab.slice(0, -1));
-  const filteredPrescriptions = activeTab === 'recetas' ? prescriptions : [];
   const clinicalFieldCount = useMemo(() => {
     if (!pet) return 0;
     let count = 0;
@@ -136,80 +106,9 @@ export default function PetDetailScreen() {
     return count;
   }, [pet]);
 
-  const handleAddRecord = async () => {
-    if (!recordAssessment.trim() && !recordTreatment.trim()) { setErrorDialog('La evaluación o el tratamiento son obligatorios'); return; }
-    const when = parseLocalDateTime(recordDate);
-    if (!when) { setErrorDialog('Fecha inválida. Usa el formato AAAA-MM-DD HH:MM'); return; }
-    const { values: vitals, error: vitalsError } = parseVitals({
-      weight: recordWeight, temperature: recordVitalTemp, heart_rate: recordVitalFC,
-      respiratory_rate: recordVitalFR, spo2: recordVitalSpO2,
-    });
-    if (vitalsError) { setErrorDialog(vitalsError); return; }
-    if (!id) return; setSaving(true);
-    try {
-      const details: any = {
-        notes: recordAssessment.trim() || undefined,
-        assessment: recordAssessment.trim() || undefined,
-        plan: recordPlan.trim() || undefined,
-        treatment: recordTreatment.trim() || undefined,
-        weight: vitals.weight,
-        motivo_consulta: recordMotivoConsulta.trim() || undefined,
-        anamnesis: recordAnamnesis.trim() || undefined,
-        hallazgos_examen_fisico: recordHallazgos.trim() || undefined,
-        vital_signs: {
-          temperature: vitals.temperature,
-          heart_rate: vitals.heart_rate,
-          respiratory_rate: vitals.respiratory_rate,
-          blood_pressure: recordVitalPA.trim() || undefined,
-          spo2: vitals.spo2,
-        },
-      };
-      if (recordType === 'cirugia') {
-        details.procedimiento = recordProcedimiento.trim() || undefined;
-        details.descripcion = recordDescripcion.trim() || undefined;
-        details.postoperatorio = recordPostoperatorio.trim() || undefined;
-        if (recordFiles.length > 0) details.files = recordFiles;
-      }
-      await addRecord({
-        pet_id: id, record_type: recordType, date: when.toISOString(),
-        veterinarian: recordVet.trim() || null,
-        details,
-      });
-      resetForm();
-      setShowRecordModal(false);
-    } catch (e: any) { setErrorDialog(e?.message || 'No se pudo guardar el registro'); } finally { setSaving(false); }
-  };
-
-  const resetForm = () => {
-    setRecordAssessment(''); setRecordPlan(''); setRecordTreatment('');
-    setRecordVet(''); setRecordWeight(''); setRecordMotivoConsulta('');
-    setRecordAnamnesis(''); setRecordHallazgos(''); setRecordVitalTemp('');
-    setRecordVitalFC(''); setRecordVitalFR(''); setRecordVitalPA(''); setRecordVitalSpO2('');
-    setRecordProcedimiento(''); setRecordDescripcion(''); setRecordPostoperatorio('');
-    setRecordFiles([]);
-    setRecordDate(toLocalDateTimeInput());
-  };
-
   const openRxModal = (linkedRecordId?: string) => {
     setRxLinkedRecordId(linkedRecordId || null); setRxVet(lastAnamnesis?.veterinarian || user?.name || '');
     setRxBranch(''); setRxFormat('standard'); setRxBody(''); setShowRxModal(true);
-  };
-
-  const handleUploadFile = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') { setErrorDialog('Necesitamos acceso a tu galería para subir archivos.'); return; }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images, // the uploader recompresses as JPEG: images only
-        allowsEditing: false,
-        quality: 0.8,
-      });
-      if (result.canceled || !result.assets?.[0]) return;
-      setUploadingFile(true);
-      const url = await uploadPetPhoto(result.assets[0].uri);
-      setRecordFiles(prev => [...prev, url]);
-    } catch (e: any) { setErrorDialog(e?.message || 'No se pudo subir el archivo'); }
-    finally { setUploadingFile(false); }
   };
 
   const handleDownloadPdf = async () => {
@@ -277,123 +176,40 @@ export default function PetDetailScreen() {
     try { await removeRecord(deleteRecordTarget.id); setDeleteRecordTarget(null); setSelectedRecord(null); }
     catch { setErrorDialog('No se pudo eliminar el registro'); }
   };
-  // Arriving from "Iniciar primera consulta" right after registering the pet
+  // Old links (?consulta=1) open the consultation screen
   useEffect(() => {
-    if (consulta === '1' && pet) {
-      setShowRecordModal(true);
-      router.setParams({ consulta: undefined } as any);
-    }
-  }, [consulta, pet]);
+    if (consulta === '1' && id) router.replace(`/consulta/${id}` as any);
+  }, [consulta, id]);
+  const openRecord = useCallback((r: ClinicalRecord) => setSelectedRecord(r), []);
+  const openRx = useCallback((rx: Prescription) => setSelectedRx(rx), []);
 
   if (loading) return <View style={[styles.center, { backgroundColor: colors.background }]}><SkeletonCard style={{ margin: SPACING.lg, width: '90%' }} /></View>;
   if (!pet) return <View style={[styles.center, { backgroundColor: colors.background }]}><Text style={[styles.loadingText, { color: colors.textSecondary }]}>Paciente no encontrado</Text></View>;
 
+  const alive = (pet.status || 'alive') === 'alive';
+
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <PetHeader
-        pet={pet}
-        onEdit={() => router.push({ pathname: '/(drawer)/add-paciente', params: { id: pet.id } } as any)}
-        onCall={pet.phone ? () => Linking.openURL(`tel:${String(pet.phone).replace(/[^\d+]/g, '')}`) : undefined}
-        onEmail={pet.email ? () => Linking.openURL(`mailto:${pet.email}`) : undefined}
-      />
-      {/* The day's work first: these actions used to sit below the weight chart as five equal pills */}
+      <ChartHeader pet={pet} onEdit={() => router.push({ pathname: '/(drawer)/add-paciente', params: { id: pet.id } } as any)} onChangeStatus={() => setShowStatus(true)} />
+      <StatusStrip pet={pet} records={records} vaccinations={vaccinations} nextAppointment={nextAppointment} />
       <View style={styles.actionBar}>
-        <VButton variant="primary" onPress={() => setShowRecordModal(true)} icon={<Plus size={16} color={onAccentText.default} />}>Nueva consulta</VButton>
+        {alive ? <VButton variant="primary" size="lg" onPress={() => router.push(`/consulta/${pet.id}` as any)} icon={<Stethoscope size={18} color={onAccentText.default} />}>Nueva consulta</VButton> : null}
+        {alive ? <VButton variant="secondary" onPress={() => setVaccinePreset(null)} icon={<Syringe size={16} color={colors.primary} />}>Vacuna</VButton> : null}
         <VButton variant="secondary" onPress={() => openRxModal()} icon={<FileText size={16} color={colors.primary} />}>Receta</VButton>
+        {alive ? <VButton variant="secondary" onPress={() => router.push({ pathname: '/(drawer)/agenda', params: { nueva: '1', pet_id: pet.id } } as any)} icon={<CalendarPlus size={16} color={colors.primary} />}>Agendar</VButton> : null}
         <VButton variant="secondary" onPress={() => setShowPayment(true)} icon={<Wallet size={16} color={colors.primary} />}>Cobrar</VButton>
-        <VButton variant="ghost" onPress={() => setShowVitals(true)} icon={<HeartPulse size={16} color={colors.primary} />}>Signos</VButton>
         <VButton variant="ghost" onPress={handleDownloadPdf} icon={<Download size={16} color={colors.primary} />}>Ficha PDF</VButton>
       </View>
-      <AlertBanner pet={pet} />
-      <ClinicalHistory pet={pet} fieldCount={clinicalFieldCount} />
-      {mostRecentRecord && <RecentRecord record={mostRecentRecord} onView={() => setSelectedRecord(mostRecentRecord)} onGenerateRx={() => openRxModal(mostRecentRecord.id)} />}
-      <WeightChart records={records} petId={id || undefined} />
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <DisplayText style={[styles.sectionTitle, { color: colors.text }]}>Historial completo</DisplayText>
+      <View style={[styles.columns, isMobile && styles.columnsMobile]}>
+        <View style={styles.main}>
+          <PetTimeline records={records} prescriptions={prescriptions} vaccinations={vaccinations} onOpenRecord={openRecord} onOpenRx={openRx} />
         </View>
-        <ClinicalTabs activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
-        {activeTab === 'recetas' ? (
-          rxLoading ? <SkeletonCard style={{ marginTop: SPACING.md }} /> : <PrescriptionList prescriptions={filteredPrescriptions} onView={setSelectedRx} onSendEmail={handleSendRxEmail} onDownloadPdf={handleDownloadRecipePdf} />
-        ) : recordsLoading ? <SkeletonCard style={{ marginTop: SPACING.md }} /> : <RecordTimeline records={filteredRecords} onViewRecord={setSelectedRecord} />}
+        <View style={isMobile ? undefined : styles.side}>
+          <VaccinesSection pet={pet} vaccinations={vaccinations} onApply={(p) => setVaccinePreset(p)} readOnly={!alive} />
+          <WeightChart records={records} petId={id || undefined} />
+          {clinicalFieldCount > 0 ? <ClinicalHistory pet={pet} fieldCount={clinicalFieldCount} /> : null}
+        </View>
       </View>
-
-      {/* Modal: Nuevo Registro */}
-      <VModal visible={showRecordModal} onDismiss={() => setShowRecordModal(false)} title="Nueva consulta">
-          <ScrollView>
-            <View style={styles.typeRow}>
-              {(['consulta', 'vacuna', 'cirugia', 'control'] as const).map((t) => (
-                <VBadge key={t} label={RECORD_TYPE_LABELS[t]} variant={recordType === t ? 'filled' : 'outlined'} color={recordType === t ? colors.primary : colors.textSecondary} selected={recordType === t} onPress={() => setRecordType(t)} />
-              ))}
-            </View>
-            <TextInput label="Fecha y hora" value={recordDate} onChangeText={setRecordDate} mode="outlined" style={styles.input} />
-            <TextInput label="Veterinario (opcional)" value={recordVet} onChangeText={setRecordVet} mode="outlined" style={styles.input} />
-            <TextInput label="Peso (kg, opcional)" value={recordWeight} onChangeText={setRecordWeight} mode="outlined" style={styles.input} keyboardType="numeric" />
-
-            {/* SOAP: Subjective */}
-            <Text variant="titleSmall" style={[styles.subTitle, { color: colors.primary }]}>Subjetivo</Text>
-            <TextInput label="Motivo de consulta" value={recordMotivoConsulta} onChangeText={setRecordMotivoConsulta} mode="outlined" multiline numberOfLines={2} style={styles.input} />
-            <TextInput label="Anamnesis" value={recordAnamnesis} onChangeText={setRecordAnamnesis} mode="outlined" multiline numberOfLines={3} style={styles.input} />
-            <VoiceNotes onTranscription={(text) => setRecordAssessment(prev => prev ? prev + ' ' + text : text)} onSoapParsed={(soapData) => { if (soapData.subjective) setRecordAnamnesis(soapData.subjective); if (soapData.objective) setRecordHallazgos(soapData.objective); if (soapData.assessment) setRecordAssessment(soapData.assessment); if (soapData.plan) setRecordPlan(soapData.plan); }} />
-
-            {/* SOAP: Objective */}
-            <Text variant="titleSmall" style={[styles.subTitle, { color: colors.info }]}>Objetivo</Text>
-            <TextInput label="Hallazgos examen físico" value={recordHallazgos} onChangeText={setRecordHallazgos} mode="outlined" multiline numberOfLines={3} style={styles.input} />
-            <Text variant="titleSmall" style={[styles.subTitle, { color: colors.primary }]}>Constantes fisiologicas</Text>
-            <View style={styles.rxFieldRow}><View style={styles.rxFieldHalf}><TextInput label="Temp (C)" value={recordVitalTemp} onChangeText={setRecordVitalTemp} mode="outlined" style={styles.rxInput} keyboardType="numeric" /></View><View style={styles.rxFieldHalf}><TextInput label="FC (lpm)" value={recordVitalFC} onChangeText={setRecordVitalFC} mode="outlined" style={styles.rxInput} keyboardType="numeric" /></View></View>
-            <View style={styles.rxFieldRow}><View style={styles.rxFieldHalf}><TextInput label="FR (rpm)" value={recordVitalFR} onChangeText={setRecordVitalFR} mode="outlined" style={styles.rxInput} keyboardType="numeric" /></View><View style={styles.rxFieldHalf}><TextInput label="PA (mmHg)" value={recordVitalPA} onChangeText={setRecordVitalPA} mode="outlined" style={styles.rxInput} /></View></View>
-            <TextInput label="SpO2 (%)" value={recordVitalSpO2} onChangeText={setRecordVitalSpO2} mode="outlined" style={styles.input} keyboardType="numeric" />
-
-            {/* SOAP: Assessment */}
-            <Text variant="titleSmall" style={[styles.subTitle, { color: colors.warning }]}>Evaluación</Text>
-            <TextInput label="Diagnóstico / evaluación" value={recordAssessment} onChangeText={setRecordAssessment} mode="outlined" multiline numberOfLines={3} style={styles.input} />
-
-            {/* SOAP: Plan */}
-            <Text variant="titleSmall" style={[styles.subTitle, { color: colors.success }]}>Plan</Text>
-            <TextInput label="Plan / indicaciones" value={recordPlan} onChangeText={setRecordPlan} mode="outlined" multiline numberOfLines={3} style={styles.input} />
-
-            {/* SOAP: Treatment */}
-            <Text variant="titleSmall" style={[styles.subTitle, { color: colors.primary }]}>Tratamiento</Text>
-            <TextInput label="Tratamiento indicado" value={recordTreatment} onChangeText={setRecordTreatment} mode="outlined" multiline numberOfLines={3} placeholder="Medicamentos, dosis, duración..." style={styles.input} />
-
-            {/* Cirugia: Campos especificos */}
-            {recordType === 'cirugia' && (
-              <View style={{ marginTop: SPACING.md }}>
-                <Divider style={[styles.rxDivider, { backgroundColor: colors.border }]} />
-                <Text variant="titleSmall" style={[styles.subTitle, { color: colors.error }]}>Datos de cirugía</Text>
-                <TextInput label="Nombre de procedimiento" value={recordProcedimiento} onChangeText={setRecordProcedimiento} mode="outlined" style={styles.input} placeholder="Ej.: esterilización, LDA, toracotomía" />
-                <TextInput label="Descripción del procedimiento" value={recordDescripcion} onChangeText={setRecordDescripcion} mode="outlined" multiline numberOfLines={4} style={styles.input} placeholder="Detalles técnicos del procedimiento" />
-                <TextInput label="Indicaciones postoperatorias" value={recordPostoperatorio} onChangeText={setRecordPostoperatorio} mode="outlined" multiline numberOfLines={4} style={styles.input} placeholder="Cuidados, medicación, controles" />
-
-                <Text style={[styles.rxFieldLabel, { color: colors.textSecondary }]}>Archivos (imagenes / PDF)</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                  {recordFiles.map((fileUrl, idx) => (
-                    <TouchableOpacity key={idx} accessibilityRole="button" accessibilityLabel={`Quitar archivo ${idx + 1}`} style={[styles.fileChip, { backgroundColor: colors.primaryContainer, borderColor: colors.border }]} onPress={() => { setRecordFiles(prev => prev.filter((_, i) => i !== idx)); }}>
-                      {fileUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                        <Image source={{ uri: fileUrl }} style={styles.fileThumb} />
-                      ) : (
-                        <DynamicIcon name="file-pdf-box" size={24} color={colors.error} />
-                      )}
-                      <DynamicIcon name="close-circle" size={16} color={colors.error} />
-                    </TouchableOpacity>
-                  ))}
-                  <TouchableOpacity style={[styles.fileUploadBtn, { borderColor: colors.primary }]} onPress={handleUploadFile} disabled={uploadingFile}>
-                    {uploadingFile ? (
-                      <DynamicIcon name="loading" size={20} color={colors.primary} />
-                    ) : (
-                      <>
-                        <DynamicIcon name="plus-circle-outline" size={20} color={colors.primary} />
-                        <Text style={[styles.fileUploadText, { color: colors.primary }]}>Agregar</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-
-            <VButton onPress={handleAddRecord} loading={saving} disabled={saving} style={styles.saveButton}>Guardar registro</VButton>
-          </ScrollView>
-      </VModal>
 
       {/* Modal: Detalle de Registro */}
       <VModal visible={!!selectedRecord} onDismiss={() => setSelectedRecord(null)} title="Detalle del registro">
@@ -516,8 +332,10 @@ export default function PetDetailScreen() {
           </ScrollView>
       </VModal>
 
-      {/* VitalSignsForm */}
-      <VitalSignsForm petId={id || ''} visible={showVitals} onClose={() => setShowVitals(false)} />
+      <VaccinationSheet visible={vaccinePreset !== undefined} pet={pet} preset={vaccinePreset || null} onClose={() => setVaccinePreset(undefined)}
+        onSaved={() => { setVaccinePreset(undefined); toast.success('Dosis registrada'); }} />
+      <LifeStatusSheet visible={showStatus} pet={pet} onClose={() => setShowStatus(false)}
+        onSaved={() => { setShowStatus(false); refreshPet(true); toast.success('Estado actualizado'); }} />
 
       {/* PaymentForm */}
       <PaymentForm visible={showPayment} onClose={() => setShowPayment(false)} petId={id} />
@@ -544,13 +362,17 @@ export default function PetDetailScreen() {
 }
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { paddingBottom: 32 },
+  content: { padding: SPACING.lg, paddingBottom: SPACING['5xl'], maxWidth: 1240, width: '100%', alignSelf: 'center' },
+  columns: { flexDirection: 'row', gap: SPACING['2xl'], alignItems: 'flex-start' },
+  columnsMobile: { flexDirection: 'column', alignItems: 'stretch' },
+  main: { flex: 1, minWidth: 0, alignSelf: 'stretch' },
+  side: { width: 420 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { textAlign: 'center', marginTop: 40 },
   section: { marginHorizontal: 16, marginTop: 16 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   sectionTitle: { fontSize: 24, fontWeight: '600' },
-  actionBar: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: SPACING.sm, marginHorizontal: SPACING.xl, marginTop: SPACING.md, marginBottom: SPACING.md },
+  actionBar: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.sm, marginBottom: SPACING.xl },
   typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   typeBtn: { flex: 1, minWidth: 60 },
   input: { marginBottom: 8 },

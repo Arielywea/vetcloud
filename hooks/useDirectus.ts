@@ -16,6 +16,7 @@ import {
   Medication,
   Surgery,
   Owner,
+  Vaccination,
 } from '../services/directus';
 
 // ─────────────────────────────────────────────────────────
@@ -265,6 +266,32 @@ export function useOwners() {
   useRefreshOn(['owners', 'pets'], fetchOwners);
 
   return { owners, loading, error, refresh: fetchOwners };
+}
+
+// ─────────────────────────────────────────────────────────
+// Hook: a pet's vaccines and dewormings
+// ─────────────────────────────────────────────────────────
+
+export function useVaccinations(petId: string | null) {
+  const [vaccinations, setVaccinations] = useState<Vaccination[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchVaccinations = useCallback(async (silent: boolean = false) => {
+    if (!petId) { setLoading(false); return; }
+    if (!silent) setLoading(true);
+    try {
+      setVaccinations(await api.vaccinations.list(petId));
+    } catch {
+      setVaccinations([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [petId]);
+
+  useEffect(() => { fetchVaccinations(); }, [fetchVaccinations]);
+  useRefreshOn(['vaccinations'], fetchVaccinations);
+
+  return { vaccinations, loading, refresh: fetchVaccinations };
 }
 
 // ─────────────────────────────────────────────────────────

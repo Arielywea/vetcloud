@@ -33,7 +33,7 @@ export default function RecordDetail({ record }: RecordDetailProps) {
   const fr = vs.respiratory_rate ?? vs.fr;
   const pa = vs.blood_pressure ?? vs.pa;
   const objectiveFields = [
-    d.weight != null ? { label: 'Peso', value: `${fmtNum(d.weight)} kg` } : null,
+    (record.weight_kg ?? d.weight) != null ? { label: 'Peso', value: `${fmtNum(Number(record.weight_kg ?? d.weight))} kg` } : null,
     temp != null ? { label: 'Temp.', value: `${fmtNum(temp)} °C` } : null,
     fc != null ? { label: 'FC', value: `${fc} lpm` } : null,
     fr != null ? { label: 'FR', value: `${fr} rpm` } : null,
@@ -63,7 +63,10 @@ export default function RecordDetail({ record }: RecordDetailProps) {
           icon: 'clipboard-text-search-outline',
           color: colors.warning,
           content: d.assessment || '',
-          fields: d.diagnostico ? [{ label: 'Diagnóstico', value: d.diagnostico }] : [],
+          fields: [
+            ...(d.diagnostico ? [{ label: 'Diagnóstico', value: d.diagnostico }] : []),
+            ...(Array.isArray(d.diagnoses) && d.diagnoses.length ? [{ label: 'Del catálogo', value: d.diagnoses.map((x: any) => x.name).join(', ') }] : []),
+          ],
         },
         {
           label: 'Plan',

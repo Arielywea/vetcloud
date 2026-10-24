@@ -47,7 +47,10 @@ export default function useQuickActions({ onOpenEditor, onOpenPayment, onLinkPat
     router.push(`/pet/${appointment.pet_id}` as any);
   };
 
-  const registerConsultation = openChart;
+  const registerConsultation = async (appointment: QuickAppointment) => {
+    if (await needsPatient(appointment)) return;
+    router.push({ pathname: '/consulta/[petId]', params: { petId: appointment.pet_id, appointment_id: appointment.id } } as any);
+  };
 
   const hospitalize = async (appointment: QuickAppointment) => {
     if (await needsPatient(appointment)) return;

@@ -226,6 +226,10 @@ export interface ClinicalRecord {
   date: string;
   veterinarian: string | null;
   details: { notes?: string; weight?: number; anamnesis?: string; [key: string]: any };
+  /** The visit is the single source of weight (pets.current_weight_kg mirrors the latest) */
+  weight_kg?: number | string | null;
+  appointment_id?: string | null;
+  is_initial?: boolean;
   created_at: string;
 }
 

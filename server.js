@@ -171,6 +171,11 @@ function normalizePet(body, { partial }) {
   if (safe.tutor_rut !== undefined && safe.tutor_rut !== null && String(safe.tutor_rut).trim().length > 20) {
     return { error: 'RUT inválido' };
   }
+  if (safe.deceased_at !== undefined && safe.deceased_at !== null) {
+    const parsed = parseDateTimeInput(safe.deceased_at);
+    if (parsed === undefined || new Date(parsed) > new Date(Date.now() + 86400000)) return { error: 'Fecha de fallecimiento inválida' };
+    safe.deceased_at = parsed;
+  }
   if (safe.birth_date !== undefined) {
     const parsed = parseDateInput(safe.birth_date);
     if (parsed === undefined) return { error: 'Fecha de nacimiento inválida (usa DD/MM/AAAA)' };

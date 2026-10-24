@@ -175,6 +175,13 @@ function AgendaContent() {
   }, []);
 
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string, patientName?: string | null) => {
+    // "Atender" opens the consultation, which moves the appointment to "en consulta" and closes it at the end
+    const target = allAppointments.find((a: any) => a.id === appointmentId);
+    if (newStatus === 'en_consulta' && target?.pet_id) {
+      setDetailModal({ visible: false, appointment: null });
+      router.push({ pathname: '/consulta/[petId]', params: { petId: target.pet_id, appointment_id: appointmentId } } as any);
+      return;
+    }
     try {
       await api.appointments.update(appointmentId, { status: newStatus });
       setDetailModal(prev => prev.appointment?.id === appointmentId
