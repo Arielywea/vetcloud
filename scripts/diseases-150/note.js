@@ -1,4 +1,6 @@
-// Shared by every file in this folder: these entries are drafts until a veterinarian reviews them.
+// Shared by the entries in diseases-150/ and diseases-200/. They were drafts until the vet reviewed doses and
+// protocols (Oct 2026, scripts/clear-disease-draft-notes.js removed the note from the database); kept empty so
+// re-running a seed script does not bring the draft marker back.
 module.exports = {
-  DRAFT_NOTE: 'Borrador pendiente de revisión veterinaria (oct. 2026): verifica dosis y protocolos antes de usarlos.',
+  DRAFT_NOTE: '',
 };
