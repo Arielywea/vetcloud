@@ -18,9 +18,12 @@ export const FREQUENCY_LABELS: Record<string, string> = {
 
 interface DiseasePreviewProps {
   disease: DirectusDisease | null;
+  /** Times this vet diagnosed it in the last 12 months */
+  seenCount?: number;
   favorite: boolean;
   onToggleFavorite: (d: DirectusDisease) => void;
   onOpen: (d: DirectusDisease) => void;
+  hideFavorite?: boolean;
 }
 
 /** First sentences of the description, so the preview reads as a summary and not a wall of text */
@@ -33,7 +36,7 @@ function lead(text: string, max = 420): string {
 }
 
 // Desktop only: enough to confirm "this is the one" (or rule it out) without leaving the list.
-export default function DiseasePreview({ disease: d, favorite, onToggleFavorite, onOpen }: DiseasePreviewProps) {
+export default function DiseasePreview({ disease: d, seenCount = 0, favorite, onToggleFavorite, onOpen, hideFavorite }: DiseasePreviewProps) {
   const { colors, onAccentText } = useTheme();
   if (!d) {
     return (
@@ -62,6 +65,7 @@ export default function DiseasePreview({ disease: d, favorite, onToggleFavorite,
         <VBadge variant={SEVERITY_TONE[d.severity] || 'neutral'} size="sm">{severity}</VBadge>
         {d.is_zoonotic ? <VBadge variant="danger" size="sm">Zoonótica</VBadge> : null}
         {d.chile_frequency ? <VBadge variant="neutral" size="sm">{`En Chile: ${FREQUENCY_LABELS[d.chile_frequency].toLowerCase()}`}</VBadge> : null}
+        {seenCount ? <VBadge variant="info" size="sm">{`${seenCount} ${seenCount === 1 ? 'vez' : 'veces'} en tu clínica`}</VBadge> : null}
         {isDraft(d) ? <VBadge variant="warning" size="sm">Borrador sin revisar</VBadge> : null}
       </View>
 
@@ -86,8 +90,8 @@ export default function DiseasePreview({ disease: d, favorite, onToggleFavorite,
 
       <View style={styles.actions}>
         <VButton onPress={() => onOpen(d)} icon={<ArrowRight size={16} color={onAccentText.default} />} iconPosition="right">Abrir ficha completa</VButton>
-        <VButton variant="ghost" onPress={() => onToggleFavorite(d)}
-          icon={<Star size={16} color={colors.primary} fill={favorite ? colors.primary : 'transparent'} />}>{favorite ? 'Quitar de favoritas' : 'Agregar a favoritas'}</VButton>
+        {hideFavorite ? null : <VButton variant="ghost" onPress={() => onToggleFavorite(d)}
+          icon={<Star size={16} color={colors.primary} fill={favorite ? colors.primary : 'transparent'} />}>{favorite ? 'Quitar de favoritas' : 'Agregar a favoritas'}</VButton>}
       </View>
     </ScrollView>
   );

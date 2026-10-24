@@ -295,6 +295,25 @@ export function useVaccinations(petId: string | null) {
 }
 
 // ─────────────────────────────────────────────────────────
+// Hook: how often this vet diagnosed each catalog disease (12 months)
+// ─────────────────────────────────────────────────────────
+
+export function useDiagnosisStats() {
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const fetchStats = useCallback(async () => {
+    try {
+      const rows = await api.stats.diagnoses();
+      setCounts(Object.fromEntries(rows.map((r) => [r.disease_id, r.count])));
+    } catch {
+      setCounts({}); // the catalog works the same without it
+    }
+  }, []);
+  useEffect(() => { fetchStats(); }, [fetchStats]);
+  useRefreshOn(['clinical_records'], fetchStats);
+  return counts;
+}
+
+// ─────────────────────────────────────────────────────────
 // Hook: Single Pet
 // ─────────────────────────────────────────────────────────
 

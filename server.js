@@ -2540,6 +2540,26 @@ app.get('/stats/weekly', authMiddleware, async (req, res) => {
   }
 });
 
+// How often each catalog disease was diagnosed by this vet in the last 12 months (consultations link
+// diagnoses in details.diagnoses = [{id, name}]); feeds "Más vistas en tu clínica"
+app.get('/stats/diagnoses', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT dx->>'id' AS disease_id, COUNT(*)::int AS count, MAX(cr.date) AS last_seen
+       FROM clinical_records cr
+       CROSS JOIN LATERAL jsonb_array_elements(
+         CASE WHEN jsonb_typeof(cr.details->'diagnoses') = 'array' THEN cr.details->'diagnoses' ELSE '[]'::jsonb END) AS dx
+       WHERE cr.user_id = $1 AND cr.date >= NOW() - INTERVAL '12 months' AND dx->>'id' IS NOT NULL
+       GROUP BY 1 ORDER BY count DESC`,
+      [req.userId]
+    );
+    res.json({ data: result.rows });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 app.get('/stats/record-types', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(

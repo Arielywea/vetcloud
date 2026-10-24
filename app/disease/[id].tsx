@@ -6,7 +6,7 @@ import {
 import { Text, Modal, Portal } from 'react-native-paper';
 import { useLocalSearchParams } from 'expo-router';
 import { Pencil, Heart, AlertTriangle, ChevronDown, MapPin, Info } from 'lucide-react-native';
-import { useDisease, useFavorites } from '../../hooks/useDirectus';
+import { useDisease, useFavorites, useDiagnosisStats } from '../../hooks/useDirectus';
 import { useAuth } from '../../hooks/useAuth';
 import { DirectusDisease } from '../../services/directus';
 import { DISEASE_CATEGORIES, DiseaseCategoryKey, PROGNOSIS_LABELS, LIFE_STAGE_LABELS, SPECIES_LABELS, categoryLabel } from '../../constants/diseaseMeta';
@@ -166,6 +166,7 @@ const SECTION_LABELS: Record<SectionKey, string> = {
 
 export default function DiseaseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const seen = useDiagnosisStats();
   const { disease, loading, updateDisease } = useDisease(id || null);
   const { isFavorite, toggleFavorite } = useFavorites();
   const { user } = useAuth();
@@ -308,6 +309,7 @@ export default function DiseaseDetailScreen() {
     categoryLabel(disease.category),
     disease.life_stage && disease.life_stage !== 'all' ? (LIFE_STAGE_LABELS[disease.life_stage] || disease.life_stage) : null,
     disease.chile_frequency ? `${CHILE_FREQUENCY[disease.chile_frequency]} en Chile` : null,
+    seen[disease.id] ? `${seen[disease.id]} ${seen[disease.id] === 1 ? 'diagnóstico' : 'diagnósticos'} en tu clínica este año` : null,
   ].filter(Boolean).join(' · ');
 
   const sectionTitle = (key: SectionKey, tone?: string) => (

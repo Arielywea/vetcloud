@@ -607,6 +607,8 @@ export const api = {
     dashboard: () => apiGet('/stats/dashboard'),
     weekly: () => apiGet('/stats/weekly'),
     recordTypes: () => apiGet('/stats/record-types'),
+    /** Diagnoses per catalog disease in the last 12 months (this vet's consultations) */
+    diagnoses: () => apiGet('/stats/diagnoses') as Promise<Array<{ disease_id: string; count: number; last_seen: string }>>,
   },
 };
 

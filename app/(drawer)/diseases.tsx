@@ -3,7 +3,7 @@ import { View, StyleSheet, SectionList, LayoutChangeEvent } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { Search, Plus, BriefcaseMedical, SlidersHorizontal, X } from 'lucide-react-native';
-import { useDiseases, useFavorites } from '../../hooks/useDirectus';
+import { useDiseases, useFavorites, useDiagnosisStats } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import DisplayText from '../../components/ui/DisplayText';
 import PageHeader from '../../components/ui/PageHeader';
@@ -28,7 +28,7 @@ const TIER_TITLES: Record<string, { title: string; hint: string }> = {
   none: { title: 'Sin clasificar', hint: 'fichas propias de la clínica' },
 };
 const SPECIES = [{ value: 'all', label: 'Todas' }, { value: 'dog', label: 'Perros' }, { value: 'cat', label: 'Gatos' }] as const;
-const SORTS = [{ value: 'frequency', label: 'Frecuencia en Chile' }, { value: 'az', label: 'A–Z' }, { value: 'severity', label: 'Gravedad' }] as const;
+const SORTS = [{ value: 'frequency', label: 'Frecuencia en Chile' }, { value: 'clinic', label: 'En tu clínica' }, { value: 'az', label: 'A–Z' }, { value: 'severity', label: 'Gravedad' }] as const;
 type Sort = (typeof SORTS)[number]['value'];
 const WIDE = 1100;
 
@@ -54,6 +54,8 @@ export default function DiseasesScreen() {
   const { colors, onAccentText, onPrimaryText } = useTheme();
   const { diseases, loading } = useDiseases();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const seen = useDiagnosisStats();
+  const hasClinicData = Object.keys(seen).length > 0;
 
   const [query, setQuery] = useState('');
   const [species, setSpecies] = useState<'all' | 'dog' | 'cat'>('all');
@@ -86,6 +88,7 @@ export default function DiseasesScreen() {
       (!urgent || isUrgent(d)) && (!zoonotic || d.is_zoonotic) && (!favoritesOnly || isFavorite(d.id)) && (!young || isYoung(d)) &&
       (!categories.length || categories.includes(d.category)) && terms.every((t) => text.includes(t))).map((r) => r.d);
     if (sort === 'az') rows = [...rows].sort((a, b) => a.name.localeCompare(b.name, 'es'));
+    else if (sort === 'clinic') rows = [...rows].sort((a, b) => (seen[b.id] || 0) - (seen[a.id] || 0) || (a.chile_rank ?? 9999) - (b.chile_rank ?? 9999));
     else if (sort === 'severity') rows = [...rows].sort((a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity) || (a.chile_rank ?? 9999) - (b.chile_rank ?? 9999));
     return rows;
   }, [bySpecies, query, urgent, zoonotic, favoritesOnly, young, categories, sort, isFavorite]);
@@ -93,11 +96,17 @@ export default function DiseasesScreen() {
   // Grouped by how common it is in Chile; until the catalog is classified, one plain list
   const sections = useMemo(() => {
     const classified = filtered.some((d) => d.chile_frequency);
+    if (sort === 'clinic') {
+      return [
+        { key: 'seen', title: 'Diagnosticadas en tu clínica', hint: 'últimos 12 meses, de más a menos', data: filtered.filter((d) => seen[d.id]) },
+        { key: 'rest', title: 'Resto del catálogo', hint: 'por frecuencia en Chile', data: filtered.filter((d) => !seen[d.id]) },
+      ].filter((s) => s.data.length);
+    }
     if (sort !== 'frequency' || !classified) return [{ key: 'all', title: '', hint: '', data: filtered }];
     return [...TIERS, 'none' as const]
       .map((t) => ({ key: t, ...TIER_TITLES[t], data: filtered.filter((d) => (d.chile_frequency || 'none') === t) }))
       .filter((s) => s.data.length);
-  }, [filtered, sort]);
+  }, [filtered, sort, seen]);
 
   const selected = useMemo(() => filtered.find((d) => d.id === selectedId) || (wide ? filtered[0] || null : null), [filtered, selectedId, wide]);
   const recentDiseases = useMemo(() => recent.map((id) => diseases.find((d) => d.id === id)).filter(Boolean) as DirectusDisease[], [recent, diseases]);
@@ -166,7 +175,8 @@ export default function DiseasesScreen() {
         <Text style={[styles.small, { color: colors.textSecondary }]}>{loading ? ' ' : `${filtered.length} de ${diseases.length}`}</Text>
         {filtering ? <VButton size="sm" variant="ghost" onPress={clearAll} icon={<X size={14} color={colors.primary} />}>Limpiar filtros</VButton> : null}
         <View style={styles.grow} />
-        <Segmented label="Ordenar" options={SORTS} value={sort} onChange={setSort} size="sm" />
+        {/* "En tu clínica" appears once consultations have linked diagnoses */}
+        <Segmented label="Ordenar" options={hasClinicData ? SORTS : SORTS.filter((s) => s.value !== 'clinic')} value={sort} onChange={setSort} size="sm" />
       </View>
     </View>
   );
@@ -203,7 +213,7 @@ export default function DiseasesScreen() {
           <View style={styles.split}>
             <View style={styles.listPane}>{list}</View>
             <View style={styles.previewPane}>
-              <DiseasePreview disease={selected} favorite={!!selected && isFavorite(selected.id)} onToggleFavorite={(d) => { toggleFavorite(d.id); }} onOpen={open} />
+              <DiseasePreview disease={selected} seenCount={selected ? seen[selected.id] || 0 : 0} favorite={!!selected && isFavorite(selected.id)} onToggleFavorite={(d) => { toggleFavorite(d.id); }} onOpen={open} />
             </View>
           </View>
         </>

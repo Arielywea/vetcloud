@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { View, ScrollView, StyleSheet, Pressable, Modal } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Check, X, FileText, Syringe, CalendarPlus, Wallet, Search, AlertTriangle, Download, Mail } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
 import { useResponsive } from '../../hooks/useResponsive';
-import { useDiseases } from '../../hooks/useDirectus';
+import { useDiseases, useDiagnosisStats } from '../../hooks/useDirectus';
+import DiseasePreview from '../../components/diseases/DiseasePreview';
+import IconButton from '../../components/ui/IconButton';
 import { api, Appointment, ClinicalRecord, DirectusPet, Medication, Vaccination } from '../../services/directus';
 import { downloadPdf } from '../../utils/downloadPdf';
 import { CONSULT_TEMPLATES } from '../../constants/consultTemplates';
@@ -21,7 +23,7 @@ import VaccinationSheet, { VaccinationDraft } from '../../components/pet/Vaccina
 import { petAlerts } from '../../components/pet/ChartHeader';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/VToast';
-import { SPACING, RADIUS, TYPOGRAPHY, alpha } from '../../constants/tokens';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
 import { calculateAge } from '../../utils/age';
 import { parseCLP, parseNumberInRange } from '../../utils/parseNumber';
 import { formatDmy, parseDmy, parseLocalDateTime, toLocalDateKey, toLocalDateTimeInput } from '../../utils/date';
@@ -94,6 +96,9 @@ export default function ConsultaScreen() {
   const { colors, onAccentText, onPrimaryText } = useTheme();
   const { isMobile } = useResponsive();
   const { diseases } = useDiseases('all');
+  // What this clinic diagnoses most: offered first, and shown next to each catalog match
+  const seen = useDiagnosisStats();
+  const [previewId, setPreviewId] = useState<string | null>(null);
 
   const [pet, setPet] = useState<DirectusPet | null>(null);
   const [records, setRecords] = useState<ClinicalRecord[]>([]);
@@ -186,8 +191,15 @@ export default function ConsultaScreen() {
     return diseases
       .filter((d) => (d.species === 'both' || d.species === pet?.species) && !form.diagnoses.some((x) => x.id === d.id))
       .filter((d) => fits(d.name) || (d.english_name ? fits(d.english_name) : false))
+      .sort((a, b) => (seen[b.id] || 0) - (seen[a.id] || 0) || (a.chile_rank ?? 9999) - (b.chile_rank ?? 9999))
       .slice(0, 6);
-  }, [dxQuery, diseases, form, pet?.species]);
+  }, [dxQuery, diseases, form, pet?.species, seen]);
+
+  const clinicTop = useMemo(() => diseases
+    .filter((d) => seen[d.id] && (d.species === 'both' || d.species === pet?.species) && !form?.diagnoses.some((x) => x.id === d.id))
+    .sort((a, b) => seen[b.id] - seen[a.id])
+    .slice(0, 6), [diseases, seen, pet?.species, form?.diagnoses]);
+  const previewed = previewId ? diseases.find((d) => d.id === previewId) || null : null;
 
   if (loading) return <View style={[styles.flex, { backgroundColor: colors.background }]}><SkeletonCard style={{ margin: SPACING.lg }} /></View>;
   if (!pet || !form) return <View style={[styles.center, { backgroundColor: colors.background }]}><Text style={{ color: colors.textSecondary }}>{error || 'Paciente no encontrado'}</Text></View>;
@@ -490,8 +502,11 @@ export default function ConsultaScreen() {
         {form.diagnoses.length ? (
           <View style={styles.chips}>
             {form.diagnoses.map((d) => (
-              <VButton key={d.id} size="sm" variant="filled" onPress={() => set('diagnoses', form.diagnoses.filter((x) => x.id !== d.id))}
-                icon={<X size={14} color={onPrimaryText.default} />} iconPosition="right" accessibilityLabel={`Quitar ${d.name}`}>{d.name}</VButton>
+              <View key={d.id} style={styles.dxChip}>
+                <VButton size="sm" variant="filled" onPress={() => setPreviewId(d.id)} accessibilityLabel={`Ver resumen de ${d.name}`}>{d.name}</VButton>
+                <IconButton icon={<X size={15} color={colors.textSecondary} />} label={`Quitar ${d.name}`} size={32}
+                  onPress={() => set('diagnoses', form.diagnoses.filter((x) => x.id !== d.id))} />
+              </View>
             ))}
           </View>
         ) : null}
@@ -502,9 +517,21 @@ export default function ConsultaScreen() {
             <Pressable key={d.id} onPress={() => { set('diagnoses', [...form.diagnoses, { id: d.id, name: d.name }]); setDxQuery(''); }} accessibilityRole="button"
               style={({ pressed, hovered }: any) => [styles.option, { backgroundColor: pressed || hovered ? colors.surfaceVariant : 'transparent' }]}>
               <Text style={[styles.body, { color: colors.text }]}>{d.name}</Text>
+              {seen[d.id] ? <Text style={[styles.meta, { color: colors.textSecondary }]}>{`${seen[d.id]} en tu clínica este año`}</Text> : null}
             </Pressable>
           ))}
           {dxMatches.length ? <View style={{ height: SPACING.md }} /> : null}
+          {!dxQuery.trim() && clinicTop.length ? (
+            <View style={styles.clinicTop}>
+              <Text style={[styles.meta, { color: colors.textSecondary }]}>Frecuentes en tu clínica</Text>
+              <View style={styles.chips}>
+                {clinicTop.map((d) => (
+                  <VButton key={d.id} size="sm" variant="secondary" onPress={() => set('diagnoses', [...form.diagnoses, { id: d.id, name: d.name }])}
+                    accessibilityLabel={`Agregar ${d.name}`}>{d.name}</VButton>
+                ))}
+              </View>
+            </View>
+          ) : null}
         </View>
         <VInput label="Diagnóstico o impresión clínica" value={form.diagnosisText} onChangeText={(v) => set('diagnosisText', v)} multiline placeholder="Presuntivo, diferenciales, lo que no está en el catálogo" />
         {form.type === 'cirugia' ? (
@@ -597,6 +624,19 @@ export default function ConsultaScreen() {
         <VButton size="lg" onPress={close} loading={saving} disabled={saving} icon={<Check size={18} color={onAccentText.default} />}>Cerrar consulta</VButton>
       </View>
 
+      <Modal visible={!!previewed} transparent animationType="fade" onRequestClose={() => setPreviewId(null)}>
+        <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setPreviewId(null)} accessibilityLabel="Cerrar resumen" />
+          <View style={[styles.previewBox, SHADOWS.xl]}>
+            <View style={styles.previewClose}>
+              <IconButton icon={<X size={18} color={colors.textSecondary} />} label="Cerrar resumen" onPress={() => setPreviewId(null)} />
+            </View>
+            <DiseasePreview disease={previewed} seenCount={previewed ? seen[previewed.id] || 0 : 0} favorite={false}
+              onToggleFavorite={() => {}} onOpen={(d) => { setPreviewId(null); router.push(`/disease/${d.id}` as any); }} hideFavorite />
+          </View>
+        </View>
+      </Modal>
+
       <VaccinationSheet visible={vaccineOpen} pet={pet} onClose={() => setVaccineOpen(false)}
         onDraft={(d) => { setVaccineOpen(false); setForm((f) => (f ? { ...f, vaccines: [...f.vaccines, d], extras: f.extras.includes('vacuna') ? f.extras : [...f.extras, 'vacuna'] } : f)); }} />
     </ScrollView>
@@ -626,6 +666,11 @@ const styles = StyleSheet.create({
   rxArea: { minHeight: 140, textAlignVertical: 'top' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginBottom: SPACING.md },
   searchWrap: {},
+  dxChip: { flexDirection: 'row', alignItems: 'center' },
+  clinicTop: { gap: SPACING.xs, marginBottom: SPACING.lg },
+  overlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.lg },
+  previewBox: { width: '100%', maxWidth: 560, height: '85%', borderRadius: RADIUS.md, overflow: 'hidden' },
+  previewClose: { position: 'absolute', top: SPACING.sm, right: SPACING.sm, zIndex: 2 },
   option: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: RADIUS.md, minHeight: 40, justifyContent: 'center' },
   extra: { marginBottom: SPACING.xl },
   extraTitle: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: TYPOGRAPHY.weights.semibold, marginBottom: SPACING.sm },
