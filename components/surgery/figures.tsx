@@ -58,6 +58,44 @@ function OvhThreeClamps({ colors }: FigureProps) {
   );
 }
 
+/** Orchiectomy: the layers around the testis, in section */
+function TestisLayers({ colors }: FigureProps) {
+  const label = { fontFamily: FONT, fontSize: 13, fill: colors.text } as const;
+  const small = { fontFamily: FONT, fontSize: 11.5, fill: colors.textSecondary } as const;
+  const rings = [
+    { rx: 170, ry: 122, fill: colors.surface, stroke: colors.textSecondary, w: 2 },
+    { rx: 150, ry: 104, fill: colors.surface, stroke: colors.textSecondary, w: 1.5, dash: '5 4' },
+    { rx: 132, ry: 90, fill: alpha(colors.primary, 0.1), stroke: colors.primary, w: 3 },
+    { rx: 112, ry: 74, fill: colors.surface, stroke: colors.primary, w: 1.5 },
+    { rx: 104, ry: 68, fill: alpha(colors.warning, 0.16), stroke: colors.warning, w: 2.5 },
+  ];
+  const leaders: [number, number, number][] = [[285, 44, 30], [315, 83, 72], [324, 119, 114], [322, 150, 156], [305, 175, 198], [274, 198, 240]];
+  return (
+    <Svg width="100%" height={300} viewBox="0 0 660 300" style={{ minWidth: 560, maxWidth: 660 }} accessibilityLabel="Capas del testículo en corte">
+      {rings.map((r, i) => (
+        <Ellipse key={i} cx={200} cy={150} rx={r.rx} ry={r.ry} fill={r.fill} stroke={r.stroke} strokeWidth={r.w} strokeDasharray={r.dash} />
+      ))}
+      <SvgText x={200} y={146} textAnchor="middle" {...label}>parénquima</SvgText>
+      <SvgText x={200} y={164} textAnchor="middle" {...small}>nunca se incide</SvgText>
+      {leaders.map(([x, y, ty], i) => (
+        <G key={i}>
+          <Line x1={x} y1={y} x2={420} y2={ty} stroke={colors.textSecondary} strokeWidth={1} />
+        </G>
+      ))}
+      <SvgText x={428} y={34} {...label}>Piel y dartos</SvgText>
+      <SvgText x={428} y={76} {...label}>Fascia espermática</SvgText>
+      <SvgText x={428} y={118} {...label} fill={colors.primary} fontWeight="600">Túnica vaginal parietal</SvgText>
+      <SvgText x={428} y={134} {...small}>abierta: se incide · cerrada: intacta</SvgText>
+      <SvgText x={428} y={160} {...label}>Cavidad vaginal</SvgText>
+      <SvgText x={428} y={176} {...small}>se comunica con el peritoneo</SvgText>
+      <SvgText x={428} y={202} {...label}>Túnica vaginal visceral</SvgText>
+      <SvgText x={428} y={244} {...label} fill={colors.warning} fontWeight="600">Túnica albugínea</SvgText>
+      <SvgText x={428} y={260} {...small}>no se incide: expone el parénquima</SvgText>
+    </Svg>
+  );
+}
+
 export const FIGURES: Record<string, React.ComponentType<FigureProps>> = {
   'ovh-three-clamps': OvhThreeClamps,
+  'testis-layers': TestisLayers,
 };

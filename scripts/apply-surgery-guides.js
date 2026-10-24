@@ -29,7 +29,7 @@ function check(entry, file) {
 (async () => {
   const apply = process.argv.includes('--apply');
   const only = process.argv.slice(2).filter((a) => /^\d+$/.test(a)).map(Number);
-  const entries = fs.readdirSync(DIR).filter((f) => f.endsWith('.js')).sort().map((f) => {
+  const entries = fs.readdirSync(DIR).filter((f) => f.endsWith('.js') && !f.startsWith('_')).sort().map((f) => {
     const e = require(path.join(DIR, f));
     check(e, f);
     return e;
