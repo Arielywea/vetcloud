@@ -1,1228 +1,489 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Alert, useWindowDimensions } from 'react-native';
-import { Text, TextInput, Menu, Dialog, Portal } from 'react-native-paper';
-import VButton from '../../components/ui/Button';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Check, ChevronLeft, ChevronRight, UserRound, Camera, Dog, Cat, Mars, Venus, Stethoscope, ShieldCheck, ChevronUp, ChevronDown, CheckSquare, Square, CircleDot, Circle, FileEdit, ImagePlus, ClipboardCheck } from 'lucide-react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, ScrollView, StyleSheet, Pressable, Image } from 'react-native';
+import { Text } from 'react-native-paper';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Camera, ChevronDown, ChevronUp, Stethoscope, CalendarPlus, Copy, FileText } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { usePets } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
+import { api, DirectusPet, Owner, PetAlert, PetSpecies, VaccinePlanItem } from '../../services/directus';
 import { uploadPetPhoto } from '../../services/cloudinary';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, BREAKPOINTS, alpha } from '../../constants/tokens';
-import { TEXT_ON_PRIMARY } from '../../constants/colors';
-import VoiceNotes from '../../components/VoiceNotes';
-import { DOG_BREEDS, CAT_BREEDS, filterBreeds } from '../../constants/breeds';
+import PageHeader from '../../components/ui/PageHeader';
 import DisplayText from '../../components/ui/DisplayText';
+import VButton from '../../components/ui/Button';
+import VInput from '../../components/ui/Input';
+import Segmented from '../../components/ui/Segmented';
+import Escutcheon from '../../components/icons/Escutcheon';
+import OwnerPicker from '../../components/owners/OwnerPicker';
+import { SkeletonCard } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/VToast';
+import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
+import { DOG_BREEDS, CAT_BREEDS, filterBreeds } from '../../constants/breeds';
 import { parseNumberInRange } from '../../utils/parseNumber';
-import { parseVitals } from '../../utils/vitals';
-import { api } from '../../services/directus';
+import { addMonths, birthDateFromAge, formatDmy, parseDmy } from '../../utils/date';
+import { formatRut } from '../../utils/identity';
 
-const TEMPERAMENT_OPTIONS = ['Dócil', 'Inquieto', 'Agresivo', 'Nervioso'];
-const HABITAT_OPTIONS = ['Casa', 'Depto', 'Finca', 'Exteriores'];
-const REPRODUCTIVE_OPTIONS = [
-  { value: 'intacto', label: 'Intacto/a' },
-  { value: 'castrado', label: 'Castrado' },
-  { value: 'esterilizado', label: 'Esterilizado/a' },
-  { value: 'gestante', label: 'Gestante' },
-];
-const REPRODUCTIVE_MACHO = ['intacto', 'castrado'];
-const REPRODUCTIVE_HEMBRA = ['intacto', 'castrado', 'esterilizado', 'gestante'];
+const SPECIES_OPTIONS = [{ value: 'dog', label: 'Perro' }, { value: 'cat', label: 'Gato' }, { value: 'other', label: 'Otra' }] as const;
+const SEX_OPTIONS = [{ value: 'macho', label: 'Macho' }, { value: 'hembra', label: 'Hembra' }] as const;
+const REPRO_BY_SEX = {
+  macho: [{ value: 'intacto', label: 'Entero' }, { value: 'castrado', label: 'Castrado' }],
+  hembra: [{ value: 'intacto', label: 'Entera' }, { value: 'esterilizado', label: 'Esterilizada' }, { value: 'gestante', label: 'Gestante' }],
+} as const;
+const BIRTH_MODES = [{ value: 'date', label: 'Fecha de nacimiento' }, { value: 'age', label: 'Edad aproximada' }] as const;
+const TEMPERAMENTS = ['Dócil', 'Nervioso', 'Inquieto', 'Puede morder'];
+const CHRONIC = ['Cardiopatía', 'Renal crónica', 'Diabetes', 'Epilepsia', 'Hipotiroidismo', 'Hipertiroidismo', 'Artrosis', 'Dermatitis atópica', 'Asma / bronquitis crónica', 'Obesidad'];
+// Base vaccination plan (WSAVA): what each species is asked about at registration
+const PLAN: Record<'dog' | 'cat', Array<{ item: VaccinePlanItem; label: string }>> = {
+  dog: [{ item: 'octuple_sextuple', label: 'Óctuple / Séxtuple' }, { item: 'kc', label: 'KC (tos de las perreras)' }, { item: 'antirrabica', label: 'Antirrábica' }],
+  cat: [{ item: 'triple_felina', label: 'Triple felina' }, { item: 'leucemia_felina', label: 'Leucemia felina' }, { item: 'antirrabica', label: 'Antirrábica' }],
+};
 
-const STEP_LABELS = ['Tutor', 'Información básica', 'Información médica', 'Revisión'];
+type Species = PetSpecies;
+type Sex = 'macho' | 'hembra';
+
+function splitList(text: string): string[] {
+  return text.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
+}
 
 export default function AddPacienteScreen() {
   const router = useRouter();
-  const { prefillName, id: editId } = useLocalSearchParams<{ prefillName?: string; id?: string }>();
-  const isEdit = !!editId;
-  const { addPet, updatePet } = usePets();
-  const { colors, onPrimaryText, onAccentText } = useTheme();
   const toast = useToast();
-  const [loadingPet, setLoadingPet] = useState(isEdit);
-  const { width } = useWindowDimensions();
-  const isMobile = width < BREAKPOINTS.sm;
+  const { colors, onAccentText, onPrimaryText } = useTheme();
+  const { isMobile } = useResponsive();
+  const params = useLocalSearchParams<{ id?: string; owner_id?: string; prefillName?: string }>();
+  const editId = typeof params.id === 'string' && params.id ? params.id : null;
+  const isEdit = !!editId;
 
-  // Wizard state
-  const [currentStep, setCurrentStep] = useState(1);
-  const [habitatExpanded, setHabitatExpanded] = useState(true);
-  const [historialExpanded, setHistorialExpanded] = useState(false);
-  const [examenExpanded, setExamenExpanded] = useState(false);
+  const [loading, setLoading] = useState(isEdit || !!params.owner_id);
+  const [owner, setOwner] = useState<Pick<Owner, 'id' | 'name' | 'rut'> | null>(null);
+  const [changingOwner, setChangingOwner] = useState(false);
 
-  // Photo
-  const [photo, setPhoto] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  // Reseña del Paciente
-  const [name, setName] = useState(prefillName || '');
-  const [species, setSpecies] = useState<'dog' | 'cat'>('dog');
-  const [sex, setSex] = useState<'macho' | 'hembra' | null>(null);
+  // Identity
+  const [name, setName] = useState(typeof params.prefillName === 'string' ? params.prefillName : '');
+  const [species, setSpecies] = useState<Species>('dog');
+  const [speciesOther, setSpeciesOther] = useState('');
   const [breed, setBreed] = useState('');
   const [breedFocused, setBreedFocused] = useState(false);
+  const [sex, setSex] = useState<Sex | null>(null);
+  const [repro, setRepro] = useState<string | null>(null);
+  const [birthMode, setBirthMode] = useState<'date' | 'age'>('date');
   const [birthDate, setBirthDate] = useState('');
-  const [weight, setWeight] = useState('');
+  const [ageYears, setAgeYears] = useState('');
+  const [ageMonths, setAgeMonths] = useState('');
   const [color, setColor] = useState('');
-  const [reproductiveStatus, setReproductiveStatus] = useState('intacto');
+  const [weight, setWeight] = useState('');
+  const [microchip, setMicrochip] = useState('');
+  const [registry, setRegistry] = useState('');
+  const [photo, setPhoto] = useState<string | null>(null);
   const [originalPhoto, setOriginalPhoto] = useState<string | null>(null);
-  const [statusMenuVisible, setStatusMenuVisible] = useState(false);
-  const [petStatus] = useState<'alive' | 'deceased'>('alive');
 
-  // Identificación
-  const [idNumber, setIdNumber] = useState('');
-  const [tutorRut, setTutorRut] = useState('');
-
-  // Temperamento
+  // Declared health
+  const [healthOpen, setHealthOpen] = useState(false);
+  const [allergies, setAllergies] = useState('');
   const [temperament, setTemperament] = useState<string[]>([]);
-
-  // Datos del Propietario
-  const [tutorName, setTutorName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [address, setAddress] = useState('');
-
-  // Historia Clínica
-  const [motivoConsulta, setMotivoConsulta] = useState('');
-  const [anamnesis, setAnamnesis] = useState('');
-  const [habitat, setHabitat] = useState('');
-  const [entorno, setEntorno] = useState('');
-  const [areneros, setAreneros] = useState('');
-  const [food, setFood] = useState('');
-  const [foodFrequency, setFoodFrequency] = useState('');
-  const [waterConsumption, setWaterConsumption] = useState('');
-  const [urination, setUrination] = useState('');
-  const [livesWithOtherAnimals, setLivesWithOtherAnimals] = useState('');
-  const [vaccines, setVaccines] = useState('');
-  const [deworming, setDeworming] = useState('');
-  const [fleaTreatment, setFleaTreatment] = useState('');
-  const [lastHeat, setLastHeat] = useState('');
-  const [surgeries, setSurgeries] = useState('');
-  const [otherDiseases, setOtherDiseases] = useState('');
+  const [chronic, setChronic] = useState<string[]>([]);
+  const [chronicOther, setChronicOther] = useState('');
   const [medications, setMedications] = useState('');
+  const [surgeries, setSurgeries] = useState('');
+  const [vaccineDates, setVaccineDates] = useState<Record<string, string>>({});
+  const [dewormIn, setDewormIn] = useState('');
+  const [dewormOut, setDewormOut] = useState('');
+  const [otherAlerts, setOtherAlerts] = useState<PetAlert[]>([]);
 
-  // Pre-diagnóstico
-  const [preDiagnostico, setPreDiagnostico] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<DirectusPet | null>(null);
 
-  // Enfermedades de base (chips)
-  const BASE_DISEASE_OPTIONS = [
-    'Diabetes', 'Artritis', 'Cardiopatía', 'Renal crónica', 'Hepática',
-    'Epilepsia', 'Hipotiroidismo', 'Hipertiroidismo', 'Asma / BRC', 'Dermatitis',
-    'Oncológica', 'Dental', 'Obesidad', 'Glaucoma', 'Anemia',
-  ];
-  const [baseDiseases, setBaseDiseases] = useState<string[]>([]);
-  const [baseDiseasesOther, setBaseDiseasesOther] = useState('');
-
-  // Constantes fisiológicas
-  const [vitalTemp, setVitalTemp] = useState('');
-  const [vitalFC, setVitalFC] = useState('');
-  const [vitalFR, setVitalFR] = useState('');
-  const [vitalPA, setVitalPA] = useState('');
-  const [vitalSpO2, setVitalSpO2] = useState('');
-  const [vitalMucosas, setVitalMucosas] = useState('');
-  const [vitalHidratacion, setVitalHidratacion] = useState('');
-  const [vitalCondicionCorporal, setVitalCondicionCorporal] = useState('');
-
-  // Hallazgos examen físico
-  const [hallazgosExamenFisico, setHallazgosExamenFisico] = useState('');
-
-  // Edit mode: load the patient and fill every step of the wizard
   useEffect(() => {
-    if (!editId) return;
     let cancelled = false;
     (async () => {
       try {
-        const p: any = await api.pets.get(editId);
-        if (cancelled || !p) return;
-        const str = (v: any) => (v === null || v === undefined ? '' : String(v));
-        setPhoto(p.photo || null);
-        setOriginalPhoto(p.photo || null);
-        setName(str(p.name)); setSpecies(p.species === 'cat' ? 'cat' : 'dog'); setSex(p.sex || null);
-        // Keep an unset status unset: saving must not write a value nobody chose
-        setBreed(str(p.breed)); setColor(str(p.color)); setReproductiveStatus(p.reproductive_status || '');
-        if (p.birth_date) {
-          const [y, m, d] = String(p.birth_date).slice(0, 10).split('-');
-          setBirthDate(`${d}/${m}/${y}`);
+        if (editId) {
+          const p: any = await api.pets.get(editId);
+          if (cancelled || !p) return;
+          const str = (v: any) => (v === null || v === undefined ? '' : String(v));
+          setName(str(p.name));
+          setSpecies(p.species === 'cat' ? 'cat' : p.species === 'other' ? 'other' : 'dog');
+          setSpeciesOther(str(p.species_other));
+          setBreed(str(p.breed)); setSex(p.sex || null); setRepro(p.reproductive_status || null);
+          setBirthDate(formatDmy(p.birth_date));
+          setColor(str(p.color));
+          setMicrochip(str(p.id_number)); setRegistry(str(p.registry_number));
+          setPhoto(p.photo || null); setOriginalPhoto(p.photo || null);
+          setAllergies((Array.isArray(p.allergies) ? p.allergies : []).join(', '));
+          setTemperament(Array.isArray(p.temperament) ? p.temperament : []);
+          const base: string[] = Array.isArray(p.base_diseases) ? p.base_diseases : [];
+          setChronic(base.filter((d) => CHRONIC.includes(d)));
+          setChronicOther(base.filter((d) => !CHRONIC.includes(d)).join(', '));
+          setMedications(str(p.medications)); setSurgeries(str(p.surgeries));
+          setOtherAlerts((Array.isArray(p.alerts) ? p.alerts : []).filter((a: PetAlert) => a.type === 'other'));
+          if (p.owner_id) setOwner({ id: p.owner_id, name: p.owner_name || p.tutor_name || 'Tutor', rut: p.owner_rut || null });
+        } else if (typeof params.owner_id === 'string' && params.owner_id) {
+          const o = await api.owners.get(params.owner_id);
+          if (!cancelled) setOwner(o);
         }
-        setWeight(p.weight != null ? String(Number(p.weight)).replace('.', ',') : '');
-        setIdNumber(str(p.id_number)); setTutorRut(str(p.tutor_rut));
-        setTemperament(Array.isArray(p.temperament) ? p.temperament : []);
-        setTutorName(str(p.tutor_name)); setPhone(str(p.phone)); setEmail(str(p.email)); setAddress(str(p.address));
-        setMotivoConsulta(str(p.motivo_consulta)); setAnamnesis(str(p.anamnesis));
-        setHabitat(str(p.habitat)); setEntorno(str(p.entorno)); setAreneros(str(p.areneros));
-        setFood(str(p.food)); setFoodFrequency(str(p.food_frequency)); setWaterConsumption(str(p.water_consumption));
-        setUrination(str(p.urination)); setLivesWithOtherAnimals(str(p.lives_with_other_animals));
-        setVaccines(str(p.vaccines)); setDeworming(str(p.deworming)); setFleaTreatment(str(p.flea_treatment));
-        setLastHeat(str(p.last_heat)); setSurgeries(str(p.surgeries)); setOtherDiseases(str(p.other_diseases));
-        setMedications(str(p.medications)); setPreDiagnostico(str(p.pre_diagnostico));
-        setHallazgosExamenFisico(str(p.hallazgos_examen_fisico));
-        const base: string[] = Array.isArray(p.base_diseases) ? p.base_diseases : [];
-        setBaseDiseases(base.filter((d) => BASE_DISEASE_OPTIONS.includes(d)));
-        setBaseDiseasesOther(base.filter((d) => !BASE_DISEASE_OPTIONS.includes(d)).join(', '));
-        const vs = p.vital_signs || {};
-        const num = (v: any) => (v === null || v === undefined ? '' : String(v).replace('.', ','));
-        setVitalTemp(num(vs.temperature)); setVitalFC(num(vs.heart_rate)); setVitalFR(num(vs.respiratory_rate));
-        setVitalPA(str(vs.blood_pressure)); setVitalSpO2(num(vs.spo2)); setVitalMucosas(str(vs.mucous_membranes));
-        setVitalHidratacion(str(vs.hydration)); setVitalCondicionCorporal(str(vs.body_condition));
       } catch (e: any) {
-        setErrorMsg(e?.message || 'No se pudo cargar el paciente');
+        if (!cancelled) setError(e?.message || 'No se pudieron cargar los datos');
       } finally {
-        if (!cancelled) setLoadingPet(false);
+        if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editId]);
+  }, [editId, params.owner_id]);
 
   const breedSuggestions = useMemo(() => {
-    const breeds = species === 'dog' ? DOG_BREEDS : CAT_BREEDS;
-    return filterBreeds(breeds, breed);
-  }, [species, breed]);
+    if (species === 'other' || !breedFocused) return [];
+    const list = filterBreeds(species === 'dog' ? DOG_BREEDS : CAT_BREEDS, breed);
+    return (breed.trim() ? list : list.slice(0, 8)).filter((b) => b !== breed);
+  }, [species, breed, breedFocused]);
 
-  const toggleTemperament = (t: string) => {
-    setTemperament(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
-  };
+  const toggle = (list: string[], set: (v: string[]) => void, value: string) =>
+    set(list.includes(value) ? list.filter((x) => x !== value) : [...list, value]);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      setErrorMsg('Necesitamos acceso a tus fotos para agregar una imagen del paciente.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setPhoto(result.assets[0].uri);
-    }
+    if (status !== 'granted') { setError('Se necesita acceso a las fotos para agregar una imagen del paciente.'); return; }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
+    if (!result.canceled && result.assets[0]) setPhoto(result.assets[0].uri);
   };
 
-  const handleSave = async () => {
-    if (!name.trim()) {
-      setErrorMsg('El nombre es obligatorio');
-      return;
+  const save = async () => {
+    if (!owner) { setError('Elige el tutor de la mascota'); return; }
+    if (!name.trim()) { setError('El nombre de la mascota es obligatorio'); return; }
+    if (species === 'other' && !speciesOther.trim()) { setError('Indica la especie (por ejemplo, conejo, hurón o ave)'); return; }
+
+    let birth: string | null = null;
+    let estimated = false;
+    if (birthMode === 'date') {
+      const parsed = parseDmy(birthDate);
+      if (parsed === undefined) { setError('La fecha de nacimiento debe ser DD/MM/AAAA y no puede ser futura'); return; }
+      birth = parsed;
+    } else if (ageYears.trim() || ageMonths.trim()) {
+      const y = parseInt(ageYears || '0', 10);
+      const m = parseInt(ageMonths || '0', 10);
+      if (!Number.isFinite(y) || !Number.isFinite(m) || y < 0 || y > 40 || m < 0 || m > 11) { setError('Edad aproximada inválida: años de 0 a 40 y meses de 0 a 11'); return; }
+      birth = birthDateFromAge(y, m);
+      estimated = true;
     }
-    let isoDate: string | null = null;
-    if (birthDate.trim()) {
-      const m = birthDate.trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
-      const d = m ? new Date(+m[3], +m[2] - 1, +m[1]) : null;
-      if (!m || !d || d.getDate() !== +m[1] || d.getMonth() !== +m[2] - 1 || d > new Date()) {
-        setErrorMsg('La fecha de nacimiento debe tener el formato DD/MM/AAAA y no puede ser futura.');
-        setCurrentStep(2);
-        return;
+    const kg = parseNumberInRange(weight, 0.05, 150);
+    if (kg !== null && Number.isNaN(kg)) { setError('El peso debe estar entre 0,05 y 150 kg (ej. 12,5)'); return; }
+    const vaccines: Array<{ item: VaccinePlanItem; date: string }> = [];
+    if (!isEdit && species !== 'other') {
+      for (const { item, label } of PLAN[species]) {
+        const raw = vaccineDates[item] || '';
+        const d = parseDmy(raw);
+        if (d === undefined) { setError(`Fecha de ${label} inválida (DD/MM/AAAA)`); setHealthOpen(true); return; }
+        if (d) vaccines.push({ item, date: d });
       }
-      isoDate = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
     }
-    const parsedWeight = parseNumberInRange(weight, 0.05, 150);
-    if (parsedWeight !== null && Number.isNaN(parsedWeight)) {
-      setErrorMsg('El peso debe estar entre 0,05 y 150 kg (ej: 12,5).');
-      setCurrentStep(2);
-      return;
+    const deworm: Array<{ kind: 'desparasitacion_interna' | 'desparasitacion_externa'; date: string }> = [];
+    if (!isEdit) {
+      for (const [kind, raw] of [['desparasitacion_interna', dewormIn], ['desparasitacion_externa', dewormOut]] as const) {
+        const d = parseDmy(raw);
+        if (d === undefined) { setError('Fecha de desparasitación inválida (DD/MM/AAAA)'); setHealthOpen(true); return; }
+        if (d) deworm.push({ kind, date: d });
+      }
     }
-    const { values: vitals, error: vitalsError } = parseVitals({
-      temperature: vitalTemp, heart_rate: vitalFC, respiratory_rate: vitalFR, spo2: vitalSpO2,
-    });
-    if (vitalsError) {
-      setErrorMsg(vitalsError);
-      setCurrentStep(3);
-      return;
-    }
+
+    const allergyList = splitList(allergies);
+    const chronicList = [...chronic, ...splitList(chronicOther)];
+    const alerts: PetAlert[] = [
+      ...allergyList.map((text) => ({ type: 'allergy' as const, text })),
+      ...(temperament.includes('Puede morder') ? [{ type: 'bites' as const, text: 'Puede morder' }] : []),
+      ...chronicList.map((text) => ({ type: 'chronic' as const, text })),
+      ...otherAlerts,
+    ];
+
     setSaving(true);
-    setErrorMsg(null);
+    setError(null);
     try {
-      // Keep an already-uploaded photo; only local picks need uploading
       let photoUrl: string | null = photo && /^https?:\/\//.test(photo) ? photo : null;
       if (photo && !photoUrl) {
-        try {
-          photoUrl = await uploadPetPhoto(photo);
-        } catch (e: any) {
-          // When editing, a failed upload keeps the previous photo instead of erasing it
+        try { photoUrl = await uploadPetPhoto(photo); }
+        catch {
           photoUrl = isEdit ? originalPhoto : null;
-          toast.error(isEdit
-            ? 'No se pudo subir la foto nueva; se mantuvo la anterior.'
-            : 'No se pudo subir la foto; el paciente se guardó sin ella.');
+          toast.error(isEdit ? 'No se pudo subir la foto nueva; se mantuvo la anterior.' : 'No se pudo subir la foto; la mascota se guardó sin ella.');
         }
       }
-      const hasVitals = Object.keys(vitals).length > 0 || vitalPA.trim() || vitalMucosas.trim() || vitalHidratacion.trim() || vitalCondicionCorporal.trim();
-
-      const payload: any = {
+      const payload: Record<string, unknown> = {
+        owner_id: owner.id,
         name: name.trim(),
         species,
-        breed: breed.trim(),
-        birth_date: isoDate,
-        weight: parsedWeight,
-        color: color.trim(),
-        photo: photoUrl,
-        allergies: [],
-        notes: '',
-        reproductive_status: reproductiveStatus || null,
-        status: petStatus,
-        motivo_consulta: motivoConsulta.trim() || null,
-        anamnesis: anamnesis.trim() || null,
-        tutor_name: tutorName.trim() || null,
-        phone: phone.trim() || null,
-        email: email.trim() || null,
-        address: address.trim() || null,
-        clinic_location: null,
-        id_number: idNumber.trim() || null,
-        tutor_rut: tutorRut.trim() || null,
+        species_other: species === 'other' ? speciesOther.trim() : null,
+        breed: breed.trim() || null,
         sex,
+        reproductive_status: repro,
+        color: color.trim() || null,
+        id_number: microchip.trim() || null,
+        registry_number: registry.trim() || null,
+        photo: photoUrl,
+        allergies: allergyList,
         temperament,
-        habitat: habitat || null,
-        habitat_other: null,
-        entorno: entorno.trim() || null,
-        areneros: areneros.trim() || null,
-        food: food.trim() || null,
-        food_frequency: foodFrequency.trim() || null,
-        water_consumption: waterConsumption.trim() || null,
-        urination: urination.trim() || null,
-        lives_with_other_animals: livesWithOtherAnimals.trim() || null,
-        vaccines: vaccines.trim() || null,
-        deworming: deworming.trim() || null,
-        flea_treatment: fleaTreatment.trim() || null,
-        last_heat: lastHeat.trim() || null,
-        surgeries: surgeries.trim() || null,
-        other_diseases: otherDiseases.trim() || null,
+        base_diseases: chronicList,
         medications: medications.trim() || null,
-        hallazgos_examen_fisico: hallazgosExamenFisico.trim() || null,
-        pre_diagnostico: preDiagnostico.trim() || null,
-        // "Other" is typed comma-separated; store one entry per disease so edits round-trip
-        base_diseases: [...baseDiseases, ...baseDiseasesOther.split(',').map((s) => s.trim()).filter(Boolean)],
-        vital_signs: hasVitals ? {
-          ...vitals,
-          blood_pressure: vitalPA.trim() || undefined,
-          mucous_membranes: vitalMucosas.trim() || undefined,
-          hydration: vitalHidratacion.trim() || undefined,
-          body_condition: vitalCondicionCorporal.trim() || undefined,
-        } : null,
+        surgeries: surgeries.trim() || null,
+        alerts,
       };
+      // Editing never rewrites a birth date nobody touched into an "estimate"
+      if (birthMode === 'age' ? estimated : true) { payload.birth_date = birth; payload.birth_date_estimated = estimated; }
+      if (!isEdit && kg !== null) payload.weight = kg;
+
       if (isEdit) {
-        // Fields the wizard doesn't edit must not be wiped
-        delete payload.allergies; delete payload.notes; delete payload.status; delete payload.clinic_location; delete payload.habitat_other;
-        await updatePet(editId as string, payload);
-        toast.success('Paciente actualizado');
+        await api.pets.update(editId!, payload);
+        toast.success('Datos actualizados');
         router.replace(`/pet/${editId}` as any);
-      } else {
-        const created: any = await addPet(payload);
-        toast.success('Paciente registrado');
-        if (created?.id) router.replace(`/pet/${created.id}` as any);
-        else router.back();
+        return;
       }
-    } catch (error: any) {
-      setErrorMsg(error.message || 'No se pudo guardar el paciente');
+      const created: DirectusPet = await api.pets.create(payload);
+      // Declared earlier doses become real records (the plan proposes the next one a year later)
+      const today = new Date().toISOString().slice(0, 10);
+      const failed: string[] = [];
+      for (const v of vaccines) {
+        const next = addMonths(v.date, 12);
+        await api.vaccinations.create({ pet_id: created.id, kind: 'vacuna', plan_item: v.item, applied_at: v.date, next_due_at: next > today ? next : null, notes: 'Declarada por el tutor al registrar' })
+          .catch(() => failed.push(PLAN[species as 'dog' | 'cat'].find((p) => p.item === v.item)?.label || v.item));
+      }
+      for (const d of deworm) {
+        await api.vaccinations.create({ pet_id: created.id, kind: d.kind, applied_at: d.date, notes: 'Declarada por el tutor al registrar' })
+          .catch(() => failed.push('desparasitación'));
+      }
+      if (failed.length) toast.error(`No se guardó: ${failed.join(', ')}. Agrégalo desde la ficha.`);
+      setSaved(created);
+    } catch (e: any) {
+      setError(e?.message || 'No se pudo guardar la mascota');
     } finally {
       setSaving(false);
     }
   };
 
-  const canAdvance = () => {
-    if (currentStep === 1) return tutorName.trim().length > 0;
-    if (currentStep === 2) return name.trim().length > 0;
-    return true;
+  // Same litter: keep tutor, species, breed and birth date; clear what is individual
+  const anotherFromLitter = () => {
+    setSaved(null);
+    setName(''); setSex(null); setRepro(null); setColor(''); setWeight(''); setMicrochip(''); setRegistry('');
+    setPhoto(null); setOriginalPhoto(null); setError(null);
+  };
+  const reset = () => {
+    anotherFromLitter();
+    setSpecies('dog'); setSpeciesOther(''); setBreed(''); setBirthDate(''); setAgeYears(''); setAgeMonths('');
+    setAllergies(''); setTemperament([]); setChronic([]); setChronicOther(''); setMedications(''); setSurgeries('');
+    setVaccineDates({}); setDewormIn(''); setDewormOut('');
   };
 
-  const handleNext = () => {
-    if (currentStep === 1 && !tutorName.trim()) {
-      setErrorMsg('El nombre del tutor es obligatorio');
-      return;
-    }
-    if (currentStep === 2 && !name.trim()) {
-      setErrorMsg('El nombre del paciente es obligatorio');
-      return;
-    }
-    if (currentStep < 4) setCurrentStep(currentStep + 1);
-  };
+  if (loading) return <View style={[styles.flex, { backgroundColor: colors.background }]}><SkeletonCard style={{ margin: SPACING.lg }} /></View>;
 
-  const handlePrev = () => {
-    if (currentStep > 1) setCurrentStep(currentStep - 1);
-  };
-
-  // ─── Progress Bar ───────────────────────────────────────────
-  const renderProgressBar = () => (
-    <ScrollView
-      horizontal={isMobile}
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={[styles.progressContainer, isMobile && styles.progressContainerMobile]}
-    >
-      {STEP_LABELS.map((label, idx) => {
-        const step = idx + 1;
-        const isCompleted = step < currentStep;
-        const isCurrent = step === currentStep;
-        const isLast = idx === STEP_LABELS.length - 1;
-
-        // Going back is always allowed; when editing, any step can be opened directly
-        const canJump = step !== currentStep && (isEdit || step < currentStep);
-        return (
-          <React.Fragment key={step}>
-            <TouchableOpacity
-              style={styles.progressStep}
-              disabled={!canJump}
-              onPress={() => setCurrentStep(step)}
-              accessibilityRole="button"
-              accessibilityLabel={`Paso ${step}: ${label}`}
-              aria-selected={isCurrent} aria-disabled={!canJump}
-            >
-              <View style={[
-                styles.progressCircle,
-                {
-                  backgroundColor: isCompleted || isCurrent ? colors.primary : 'transparent',
-                  borderColor: isCompleted || isCurrent ? colors.primary : colors.border,
-                },
-              ]}>
-                {isCompleted ? (
-                  <Check size={14} color={onPrimaryText.default} strokeWidth={3} />
-                ) : (
-                  <Text style={[styles.progressNumber, { color: isCurrent ? onPrimaryText.default : colors.textSecondary }]}>
-                    {step}
-                  </Text>
-                )}
-              </View>
-              <Text style={[
-                styles.progressLabel,
-                { color: isCurrent ? colors.primary : isCompleted ? colors.primary : colors.textSecondary },
-                isCurrent && styles.progressLabelActive,
-              ]}>
-                {label}
-              </Text>
-            </TouchableOpacity>
-            {!isLast && (
-              <View style={[
-                styles.progressLine,
-                {
-                  backgroundColor: step < currentStep ? colors.primary : colors.border,
-                  opacity: step < currentStep ? 1 : 0.4,
-                },
-              ]} />
-            )}
-          </React.Fragment>
-        );
-      })}
+  if (saved) {
+    return (
+      <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.page}>
+        <View style={[styles.done, { backgroundColor: colors.surface }]}>
+          <Escutcheon size={56} color={colors.primary} initial={saved.name.charAt(0).toUpperCase()} />
+          <DisplayText style={[styles.doneTitle, { color: colors.text }]}>{saved.name} quedó registrado</DisplayText>
+          <Text style={[styles.body, { color: colors.textSecondary, textAlign: 'center' }]}>Tutor: {owner?.name}. ¿Qué sigue?</Text>
+          <View style={styles.doneActions}>
+            <VButton size="lg" onPress={() => router.replace({ pathname: '/pet/[id]', params: { id: saved.id, consulta: '1' } } as any)} icon={<Stethoscope size={18} color={onAccentText.default} />}>Iniciar primera consulta</VButton>
+            <VButton size="lg" variant="secondary" onPress={() => router.replace({ pathname: '/(drawer)/agenda', params: { nueva: '1', pet_id: saved.id } } as any)} icon={<CalendarPlus size={18} color={colors.primary} />}>Agendar una cita</VButton>
+            <VButton size="lg" variant="secondary" onPress={() => router.replace(`/pet/${saved.id}` as any)} icon={<FileText size={18} color={colors.primary} />}>Solo ver la ficha</VButton>
+          </View>
+          <View style={styles.doneMore}>
+            <VButton variant="ghost" onPress={anotherFromLitter} icon={<Copy size={16} color={colors.primary} />}>Agregar otro de la misma camada</VButton>
+            <VButton variant="ghost" onPress={reset}>{`Agregar otra mascota de ${(owner?.name || '').split(' ')[0]}`}</VButton>
+          </View>
+        </View>
       </ScrollView>
-  );
+    );
+  }
 
-  // ─── Step 1: Información básica ─────────────────────────────
-  const renderStep1 = () => (
-    <View style={styles.stepContent}>
-      {/* Información básica card — 3-column grid */}
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <View style={styles.cardTitleRow}>
-          <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Información básica</DisplayText>
-        </View>
+  const repros = sex ? REPRO_BY_SEX[sex] : null;
 
-        {/* Row 1: Nombre, Especie, Raza */}
-        <View style={[styles.grid3, isMobile && { flexDirection: 'column' }]}>
-          <View style={styles.gridField}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Nombre del paciente *</Text>
-            <TextInput
-              value={name}
-              onChangeText={setName}
-              mode="outlined"
-              placeholder="Ej: Max"
-              style={[styles.input, { backgroundColor: colors.surface }]}
-              outlineColor={colors.border}
-              activeOutlineColor={colors.primary}
-            />
-          </View>
-          <View style={styles.gridField}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Especie *</Text>
-            <View style={styles.speciesRow}>
-              <VButton
-                variant={species === 'dog' ? 'filled' : 'secondary'}
-                onPress={() => setSpecies('dog')}
-                containerStyle={styles.pillContainer}
-                icon={<Dog size={16} color={species === 'dog' ? onPrimaryText.default : colors.primary} />}
-              >
-                Perro
-              </VButton>
-              <VButton
-                variant={species === 'cat' ? 'filled' : 'secondary'}
-                onPress={() => setSpecies('cat')}
-                containerStyle={styles.pillContainer}
-                icon={<Cat size={16} color={species === 'cat' ? onPrimaryText.default : colors.primary} />}
-              >
-                Gato
-              </VButton>
+  return (
+    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
+      <PageHeader title={isEdit ? `Editar a ${name || 'la mascota'}` : 'Nueva mascota'} subtitle={isEdit ? 'Identidad y salud declarada. La historia clínica se registra en cada consulta.' : 'Los datos clínicos se registran en la primera consulta.'} />
+
+      {/* Tutor */}
+      <View style={[styles.panel, { backgroundColor: colors.surface }]}>
+        {owner && !changingOwner ? (
+          <View style={styles.ownerRow}>
+            <Escutcheon size={36} color={colors.primary} initial={owner.name.charAt(0).toUpperCase()} />
+            <View style={styles.grow}>
+              <Text style={[styles.small, { color: colors.textSecondary }]}>Tutor</Text>
+              <Text style={[styles.ownerName, { color: colors.text }]} numberOfLines={1}>{owner.name}</Text>
+              {owner.rut ? <Text style={[styles.small, { color: colors.textSecondary }]}>RUT {formatRut(owner.rut)}</Text> : null}
             </View>
+            <VButton variant="ghost" size="sm" onPress={() => setChangingOwner(true)}>Cambiar</VButton>
           </View>
-          <View style={styles.gridField}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Raza</Text>
-            <View>
-              <TextInput
-                value={breed}
-                onChangeText={(t) => { setBreed(t); setBreedFocused(true); }}
-                onFocus={() => setBreedFocused(true)}
-                onBlur={() => setTimeout(() => setBreedFocused(false), 200)}
-                mode="outlined"
-                placeholder="Ej: Golden Retriever"
-                style={[styles.input, { backgroundColor: colors.surface }]}
-                outlineColor={colors.border}
-                activeOutlineColor={colors.primary}
-              />
-              {breedFocused && breed.length > 0 && breedSuggestions.length > 0 && (
-                <View style={[styles.breedDropdown, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  {breedSuggestions.map((suggestion) => (
-                    <TouchableOpacity
-                      key={suggestion}
-                      onPress={() => { setBreed(suggestion); setBreedFocused(false); }}
-                      style={[styles.breedOption, { borderBottomColor: colors.border }]}
-                    >
-                      <Text style={[styles.breedOptionText, { color: colors.text }]}>{suggestion}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
+        ) : (
+          <View>
+            <OwnerPicker autoFocus={!owner} onPick={(o) => { setOwner(o); setChangingOwner(false); setError(null); }} />
+            {changingOwner ? <VButton variant="ghost" size="sm" onPress={() => setChangingOwner(false)} style={{ alignSelf: 'flex-start', marginTop: SPACING.sm }}>{`Mantener a ${owner?.name || ""}`}</VButton> : null}
           </View>
-        </View>
-
-        {/* Row 2: Fecha nacimiento, Sexo, Estado reproductivo */}
-        <View style={[styles.grid3, isMobile && { flexDirection: 'column' }]}>
-          <View style={styles.gridField}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Fecha de nacimiento</Text>
-            <TextInput
-              value={birthDate}
-              onChangeText={setBirthDate}
-              mode="outlined"
-              placeholder="DD/MM/AAAA"
-              style={[styles.input, { backgroundColor: colors.surface }]}
-              outlineColor={colors.border}
-              activeOutlineColor={colors.primary}
-            />
-          </View>
-          <View style={styles.gridField}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Sexo *</Text>
-            <View style={styles.sexRow}>
-              <VButton
-                variant={sex === 'macho' ? 'filled' : 'secondary'}
-                onPress={() => { setSex('macho'); if (!REPRODUCTIVE_MACHO.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
-                containerStyle={styles.pillContainer}
-                icon={<Mars size={16} color={sex === 'macho' ? onPrimaryText.default : colors.primary} />}
-              >
-                Macho
-              </VButton>
-              <VButton
-                variant={sex === 'hembra' ? 'filled' : 'secondary'}
-                onPress={() => { setSex('hembra'); if (!REPRODUCTIVE_HEMBRA.includes(reproductiveStatus)) setReproductiveStatus('intacto'); }}
-                containerStyle={styles.pillContainer}
-                icon={<Venus size={16} color={sex === 'hembra' ? onPrimaryText.default : colors.primary} />}
-              >
-                Hembra
-              </VButton>
-            </View>
-          </View>
-          <View style={styles.gridField}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Estado reproductivo</Text>
-            <Menu
-              visible={statusMenuVisible}
-              onDismiss={() => setStatusMenuVisible(false)}
-              anchor={
-                <VButton
-                  variant="secondary"
-                  color={colors.text}
-                  onPress={() => setStatusMenuVisible(true)}
-                  icon={<ChevronDown size={16} color={colors.textSecondary} />}
-                  iconPosition="right"
-                  fullWidth
-                  style={styles.selectField}
-                >
-                  {REPRODUCTIVE_OPTIONS.find(o => o.value === reproductiveStatus)?.label || reproductiveStatus}
-                </VButton>
-              }
-            >
-              {REPRODUCTIVE_OPTIONS
-                .filter(opt => {
-                  if (sex === 'macho') return REPRODUCTIVE_MACHO.includes(opt.value);
-                  if (sex === 'hembra') return REPRODUCTIVE_HEMBRA.includes(opt.value);
-                  return true;
-                })
-                .map(opt => (
-                  <Menu.Item key={opt.value} onPress={() => { setReproductiveStatus(opt.value); setStatusMenuVisible(false); }} title={opt.label} />
-                ))}
-            </Menu>
-          </View>
-        </View>
-
-        {/* Row 3: Color/Pelaje, Peso, Microchip */}
-        <View style={[styles.grid3, isMobile && { flexDirection: 'column' }]}>
-          <View style={styles.gridField}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Color / pelaje</Text>
-            <TextInput
-              value={color}
-              onChangeText={setColor}
-              mode="outlined"
-              placeholder="Ej: Dorado"
-              style={[styles.input, { backgroundColor: colors.surface }]}
-              outlineColor={colors.border}
-              activeOutlineColor={colors.primary}
-            />
-          </View>
-          <View style={styles.gridField}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Peso (kg)</Text>
-            <TextInput
-              value={weight}
-              onChangeText={setWeight}
-              mode="outlined"
-              keyboardType="numeric"
-              placeholder="Ej: 25.4"
-              style={[styles.input, { backgroundColor: colors.surface }]}
-              outlineColor={colors.border}
-              activeOutlineColor={colors.primary}
-            />
-          </View>
-          <View style={styles.gridField}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Microchip / ID</Text>
-            <TextInput
-              value={idNumber}
-              onChangeText={setIdNumber}
-              mode="outlined"
-              placeholder="Ej: 981020000456789"
-              style={[styles.input, { backgroundColor: colors.surface }]}
-              outlineColor={colors.border}
-              activeOutlineColor={colors.primary}
-            />
-          </View>
-        </View>
+        )}
       </View>
 
-      {/* Foto del paciente card */}
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <View style={styles.cardTitleRow}>
-          <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Foto del paciente</DisplayText>
-        </View>
-        <TouchableOpacity onPress={pickImage} style={[styles.photoUpload, { borderColor: colors.border }]}>
-          {photo ? (
-            <Image source={{ uri: photo }} style={styles.photoPreview} />
-          ) : (
-            <View style={styles.photoPlaceholder}>
-              <View style={[styles.photoIconWrap, { backgroundColor: colors.primaryContainer }]}>
-                <ImagePlus size={28} color={colors.primary} />
-              </View>
-              <Text style={[styles.photoTitle, { color: colors.text }]}>Subir foto del paciente</Text>
-              <Text style={[styles.photoSubtitle, { color: colors.textSecondary }]}>JPG, PNG o WEBP. Máx. 5MB</Text>
-              <VButton variant="secondary" size="sm" onPress={pickImage}>Seleccionar archivo</VButton>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* Características adicionales card */}
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <View style={styles.cardTitleRow}>
-          <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Características adicionales</DisplayText>
-        </View>
-
-        <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Temperamento</Text>
-        <View style={styles.chipRow}>
-          {TEMPERAMENT_OPTIONS.map(t => (
-            <TouchableOpacity
-              key={t}
-              onPress={() => toggleTemperament(t)}
-              style={[styles.tempChip, { borderColor: colors.border, backgroundColor: temperament.includes(t) ? colors.primaryContainer : colors.surface }]}
-            >
-              {temperament.includes(t) ? <CheckSquare size={18} color={colors.primary} /> : <Square size={18} color={colors.textSecondary} />}
-              <Text style={[styles.tempChipText, { color: temperament.includes(t) ? colors.primary : colors.text }]}>{t}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    </View>
-  );
-
-  // ─── Step 2: Propietario ────────────────────────────────────
-  const renderStep2 = () => (
-    <View style={styles.stepContent}>
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Datos del tutor</DisplayText>
-
-        <TextInput
-          label="Nombre del tutor *"
-          value={tutorName}
-          onChangeText={setTutorName}
-          mode="outlined"
-          style={[styles.input, { backgroundColor: colors.surface }]}
-          outlineColor={colors.border}
-          activeOutlineColor={colors.primary}
-        />
-        <TextInput
-          label="RUT"
-          value={tutorRut}
-          onChangeText={setTutorRut}
-          maxLength={12}
-          autoCapitalize="characters"
-          mode="outlined"
-          placeholder="Ej: 12.345.678-9"
-          style={[styles.input, { backgroundColor: colors.surface }]}
-          outlineColor={colors.border}
-          activeOutlineColor={colors.primary}
-        />
-        <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
-          <TextInput
-            label="Teléfono"
-            value={phone}
-            onChangeText={setPhone}
-            mode="outlined"
-            keyboardType="phone-pad"
-            style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]}
-            outlineColor={colors.border}
-            activeOutlineColor={colors.primary}
-          />
-          <TextInput
-            label="Correo electrónico"
-            value={email}
-            onChangeText={setEmail}
-            mode="outlined"
-            keyboardType="email-address"
-            style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]}
-            outlineColor={colors.border}
-            activeOutlineColor={colors.primary}
-          />
-        </View>
-        <TextInput
-          label="Dirección"
-          value={address}
-          onChangeText={setAddress}
-          mode="outlined"
-          style={[styles.input, { backgroundColor: colors.surface }]}
-          outlineColor={colors.border}
-          activeOutlineColor={colors.primary}
-        />
-      </View>
-    </View>
-  );
-
-  // ─── Step 3: Información médica ─────────────────────────────
-  const renderStep3 = () => (
-    <View style={styles.stepContent}>
-      {/* Section A — Motivo de consulta */}
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Motivo de consulta</DisplayText>
-        <VoiceNotes
-          onTranscription={(text) => setMotivoConsulta(prev => prev ? prev + ' ' + text : text)}
-        />
-        <TextInput
-          label="Motivo de consulta"
-          value={motivoConsulta}
-          onChangeText={setMotivoConsulta}
-          mode="outlined"
-          multiline
-          numberOfLines={3}
-          style={[styles.input, { backgroundColor: colors.surface }]}
-          outlineColor={colors.border}
-          activeOutlineColor={colors.primary}
-        />
-      </View>
-
-      {/* Section B — Hábitat y entorno */}
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <TouchableOpacity onPress={() => setHabitatExpanded(!habitatExpanded)} style={styles.collapsibleHeader}>
-          <DisplayText style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Hábitat y entorno</DisplayText>
-          {habitatExpanded ? <ChevronUp size={20} color={colors.textSecondary} /> : <ChevronDown size={20} color={colors.textSecondary} />}
-        </TouchableOpacity>
-        {habitatExpanded && (
-          <View style={styles.collapsibleContent}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Hábitat</Text>
-            <View style={styles.chipRow}>
-              {HABITAT_OPTIONS.map(h => (
-                <TouchableOpacity
-                  key={h}
-                  onPress={() => setHabitat(habitat === h ? '' : h)}
-                  style={[styles.tempChip, { borderColor: colors.border, backgroundColor: habitat === h ? colors.primaryContainer : colors.surface }]}
-                >
-                  {habitat === h ? <CircleDot size={18} color={colors.primary} /> : <Circle size={18} color={colors.textSecondary} />}
-                  <Text style={[styles.tempChipText, { color: habitat === h ? colors.primary : colors.text }]}>{h}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TextInput label="Alimento (tipo / marca)" value={food} onChangeText={setFood} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            <TextInput label="Frecuencia de alimentación" value={foodFrequency} onChangeText={setFoodFrequency} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            <TextInput label="Consumo de agua" value={waterConsumption} onChangeText={setWaterConsumption} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            <TextInput label="Micción" value={urination} onChangeText={setUrination} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            <TextInput label="Vive con otros animales" value={livesWithOtherAnimals} onChangeText={setLivesWithOtherAnimals} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-
-            {species === 'cat' && (
+      {/* Identity */}
+      <View style={[styles.panel, { backgroundColor: colors.surface }]}>
+        <DisplayText style={[styles.panelTitle, { color: colors.text }]}>Identidad</DisplayText>
+        <View style={[styles.identity, isMobile && styles.identityMobile]}>
+          <Pressable onPress={pickImage} accessibilityRole="button" accessibilityLabel={photo ? 'Cambiar foto' : 'Agregar foto'}
+            style={[styles.photo, { backgroundColor: colors.surfaceVariant }]}>
+            {photo ? <Image source={{ uri: photo }} style={styles.photoImg} /> : (
               <>
-                <TextInput label="Entorno (interior/exterior/mixto)" value={entorno} onChangeText={setEntorno} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-                <TextInput label="Areneros (cantidad y detalle)" value={areneros} onChangeText={setAreneros} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
+                <Camera size={22} color={colors.textSecondary} />
+                <Text style={[styles.small, { color: colors.textSecondary }]}>Foto</Text>
               </>
             )}
-          </View>
-        )}
-      </View>
-
-      {/* Section C — Historial sanitario */}
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <TouchableOpacity onPress={() => setHistorialExpanded(!historialExpanded)} style={styles.collapsibleHeader}>
-          <View style={styles.collapsibleTitleRow}>
-            <ShieldCheck size={18} color={colors.success} />
-            <DisplayText style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Historial sanitario</DisplayText>
-          </View>
-          {historialExpanded ? <ChevronUp size={20} color={colors.textSecondary} /> : <ChevronDown size={20} color={colors.textSecondary} />}
-        </TouchableOpacity>
-        {historialExpanded && (
-          <View style={styles.collapsibleContent}>
-            <TextInput label="Vacunas" value={vaccines} onChangeText={setVaccines} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            <TextInput label="Desparasitación" value={deworming} onChangeText={setDeworming} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            <TextInput label="Antipulgas" value={fleaTreatment} onChangeText={setFleaTreatment} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            {sex === 'hembra' && (
-              <TextInput label="Último celo" value={lastHeat} onChangeText={setLastHeat} mode="outlined" style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            )}
-            <TextInput label="Cirugías previas" value={surgeries} onChangeText={setSurgeries} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            <TextInput label="Otras enfermedades" value={otherDiseases} onChangeText={setOtherDiseases} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            <TextInput label="Medicamentos actuales" value={medications} onChangeText={setMedications} mode="outlined" multiline numberOfLines={2} style={[styles.input, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-          </View>
-        )}
-      </View>
-
-      {/* Section D — Anamnesis */}
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Anamnesis</DisplayText>
-        <TextInput
-          label="Anamnesis"
-          value={anamnesis}
-          onChangeText={setAnamnesis}
-          mode="outlined"
-          multiline
-          numberOfLines={4}
-          style={[styles.input, { backgroundColor: colors.surface }]}
-          outlineColor={colors.border}
-          activeOutlineColor={colors.primary}
-        />
-      </View>
-
-      {/* Section E — Examen físico */}
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <TouchableOpacity onPress={() => setExamenExpanded(!examenExpanded)} style={styles.collapsibleHeader}>
-          <View style={styles.collapsibleTitleRow}>
-            <Stethoscope size={18} color={colors.warning} />
-            <DisplayText style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Examen físico</DisplayText>
-          </View>
-          {examenExpanded ? <ChevronUp size={20} color={colors.textSecondary} /> : <ChevronDown size={20} color={colors.textSecondary} />}
-        </TouchableOpacity>
-        {examenExpanded && (
-          <View style={styles.collapsibleContent}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Constantes fisiológicas</Text>
-            <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
-              <TextInput label="Temp (°C)" value={vitalTemp} onChangeText={setVitalTemp} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-              <TextInput label="FC (lpm)" value={vitalFC} onChangeText={setVitalFC} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            </View>
-            <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
-              <TextInput label="FR (rpm)" value={vitalFR} onChangeText={setVitalFR} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-              <TextInput label="PA (mmHg)" value={vitalPA} onChangeText={setVitalPA} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            </View>
-            <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
-              <TextInput label="SpO₂ (%)" value={vitalSpO2} onChangeText={setVitalSpO2} mode="outlined" keyboardType="numeric" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-              <TextInput label="Mucosas" value={vitalMucosas} onChangeText={setVitalMucosas} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            </View>
-            <View style={[styles.row, isMobile && { flexDirection: 'column' }]}>
-              <TextInput label="Hidratación" value={vitalHidratacion} onChangeText={setVitalHidratacion} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-              <TextInput label="Condición corporal" value={vitalCondicionCorporal} onChangeText={setVitalCondicionCorporal} mode="outlined" style={[styles.input, styles.rowField, { backgroundColor: colors.surface }]} outlineColor={colors.border} activeOutlineColor={colors.primary} />
-            </View>
-
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginTop: 4 }]}>Hallazgos examen físico</Text>
-            <TextInput
-              label="Hallazgos examen físico"
-              value={hallazgosExamenFisico}
-              onChangeText={setHallazgosExamenFisico}
-              mode="outlined"
-              multiline
-              numberOfLines={4}
-              style={[styles.input, { backgroundColor: colors.surface }]}
-              outlineColor={colors.border}
-              activeOutlineColor={colors.primary}
-            />
-          </View>
-        )}
-      </View>
-
-      {/* Section D.5 — Pre-diagnóstico */}
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <View style={styles.collapsibleTitleRow}>
-          <ClipboardCheck size={18} color={colors.info} />
-          <DisplayText style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Pre-diagnóstico</DisplayText>
-        </View>
-        <Text style={[styles.fieldHint, { color: colors.textSecondary }]}>Enfermedades de base conocidas y sospecha diagnóstica</Text>
-
-        <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Enfermedades de base</Text>
-        <View style={styles.chipWrap}>
-          {BASE_DISEASE_OPTIONS.map((d) => {
-            const selected = baseDiseases.includes(d);
-            return (
-              <TouchableOpacity
-                key={d}
-                onPress={() => setBaseDiseases(prev => selected ? prev.filter(x => x !== d) : [...prev, d])}
-                style={[styles.chip, { borderColor: selected ? colors.warning : colors.border, backgroundColor: selected ? colors.warning + '18' : 'transparent' }]}
-              >
-                <Text style={[styles.chipText, { color: selected ? colors.warning : colors.textSecondary }]}>{d}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-        <TextInput
-          label="Otras enfermedades"
-          value={baseDiseasesOther}
-          onChangeText={setBaseDiseasesOther}
-          mode="outlined"
-          placeholder="Ej: Síndrome de Cushing, mielopatía..."
-          style={[styles.input, { backgroundColor: colors.surface }]}
-          outlineColor={colors.border}
-          activeOutlineColor={colors.primary}
-        />
-
-        <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginTop: SPACING.md }]}>Pre-diagnóstico / sospecha</Text>
-        <TextInput
-          label="Pre-diagnóstico"
-          value={preDiagnostico}
-          onChangeText={setPreDiagnostico}
-          mode="outlined"
-          multiline
-          numberOfLines={3}
-          placeholder="Sospecha diagnóstica, diferencias clínicas..."
-          style={[styles.input, { backgroundColor: colors.surface }]}
-          outlineColor={colors.border}
-          activeOutlineColor={colors.primary}
-        />
-      </View>
-    </View>
-  );
-
-  // ─── Step 4: Resumen ────────────────────────────────────────
-  const renderStep4 = () => {
-    const speciesLabel = species === 'dog' ? 'Canino' : 'Felino';
-    const sexLabel = sex === 'macho' ? 'Macho' : sex === 'hembra' ? 'Hembra' : 'No especificado';
-    const reproLabel = REPRODUCTIVE_OPTIONS.find(o => o.value === reproductiveStatus)?.label || reproductiveStatus;
-
-    return (
-      <View style={styles.stepContent}>
-        {/* Card — Paciente */}
-        <View style={[styles.card, { backgroundColor: colors.surface }]}>
-          <View style={styles.summaryHeader}>
-            <DisplayText style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Paciente</DisplayText>
-            <TouchableOpacity onPress={() => setCurrentStep(2)}>
-              <Text style={{ color: colors.primary, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold }}>Editar</Text>
-            </TouchableOpacity>
-          </View>
-          {photo && <Image source={{ uri: photo }} style={styles.summaryPhoto} />}
-          <View style={styles.summaryGrid}>
-            <SummaryItem label="Nombre" value={name || '-'} colors={colors} />
-            <SummaryItem label="Especie" value={speciesLabel} colors={colors} />
-            <SummaryItem label="Raza" value={breed || '-'} colors={colors} />
-            <SummaryItem label="Sexo" value={sexLabel} colors={colors} />
-            <SummaryItem label="Estado reproductivo" value={reproLabel} colors={colors} />
-            <SummaryItem label="Fecha de nacimiento" value={birthDate || '-'} colors={colors} />
-            <SummaryItem label="Peso" value={weight ? `${weight} kg` : '-'} colors={colors} />
-            <SummaryItem label="Color" value={color || '-'} colors={colors} />
-            <SummaryItem label="Temperamento" value={temperament.length > 0 ? temperament.join(', ') : '-'} colors={colors} />
-            <SummaryItem label="Microchip" value={idNumber || '-'} colors={colors} />
-          </View>
-        </View>
-
-        {/* Card — Propietario */}
-        <View style={[styles.card, { backgroundColor: colors.surface }]}>
-          <View style={styles.summaryHeader}>
-            <DisplayText style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Tutor</DisplayText>
-            <TouchableOpacity onPress={() => setCurrentStep(1)}>
-              <Text style={{ color: colors.primary, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold }}>Editar</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.summaryGrid}>
-            <SummaryItem label="Nombre" value={tutorName || '-'} colors={colors} />
-            <SummaryItem label="RUT" value={tutorRut || '-'} colors={colors} />
-            <SummaryItem label="Teléfono" value={phone || '-'} colors={colors} />
-            <SummaryItem label="Correo" value={email || '-'} colors={colors} />
-            <SummaryItem label="Dirección" value={address || '-'} colors={colors} />
-          </View>
-        </View>
-
-        {/* Card — Información clínica */}
-        <View style={[styles.card, { backgroundColor: colors.surface }]}>
-          <View style={styles.summaryHeader}>
-            <DisplayText style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>Información clínica</DisplayText>
-            <TouchableOpacity onPress={() => setCurrentStep(3)}>
-              <Text style={{ color: colors.primary, fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold }}>Editar</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.summaryGrid}>
-            <SummaryItem label="Motivo de consulta" value={motivoConsulta || '-'} colors={colors} />
-            <SummaryItem label="Hábitat" value={habitat || '-'} colors={colors} />
-            <SummaryItem label="Alimento" value={food || '-'} colors={colors} />
-            <SummaryItem label="Frecuencia" value={foodFrequency || '-'} colors={colors} />
-            <SummaryItem label="Agua" value={waterConsumption || '-'} colors={colors} />
-            <SummaryItem label="Micción" value={urination || '-'} colors={colors} />
-            {species === 'cat' && <SummaryItem label="Entorno" value={entorno || '-'} colors={colors} />}
-            {species === 'cat' && <SummaryItem label="Areneros" value={areneros || '-'} colors={colors} />}
-            {vaccines ? <SummaryItem label="Vacunas" value={vaccines} colors={colors} /> : null}
-            {deworming ? <SummaryItem label="Desparasitación" value={deworming} colors={colors} /> : null}
-            {surgeries ? <SummaryItem label="Cirugías" value={surgeries} colors={colors} /> : null}
-            {medications ? <SummaryItem label="Medicamentos" value={medications} colors={colors} /> : null}
-            <SummaryItem label="Anamnesis" value={anamnesis || '-'} colors={colors} />
-            {hallazgosExamenFisico ? <SummaryItem label="Examen físico" value={hallazgosExamenFisico} colors={colors} /> : null}
-            {baseDiseases.length > 0 || baseDiseasesOther ? (
-              <SummaryItem label="Enfermedades de base" value={[...baseDiseases, ...(baseDiseasesOther ? [baseDiseasesOther] : [])].join(', ')} colors={colors} />
+          </Pressable>
+          <View style={styles.grow}>
+            <VInput label="Nombre" value={name} onChangeText={setName} placeholder="Nombre de la mascota" autoCapitalize="words" autoFocus={!!owner && !isEdit} />
+            <Text style={[styles.groupLabel, { color: colors.textSecondary }]}>Especie</Text>
+            <Segmented label="Especie" options={SPECIES_OPTIONS} value={species} onChange={(v) => { setSpecies(v); setBreed(''); }} style={styles.segment} />
+            {species === 'other' ? (
+              <VInput label="¿Qué especie?" value={speciesOther} onChangeText={setSpeciesOther} placeholder="Conejo, hurón, ave, reptil…" autoCapitalize="sentences" />
             ) : null}
-            {preDiagnostico ? <SummaryItem label="Pre-diagnóstico" value={preDiagnostico} colors={colors} /> : null}
           </View>
         </View>
-      </View>
-    );
-  };
 
-  // ─── Summary Item ───────────────────────────────────────────
-  const SummaryItem = ({ label, value, colors }: { label: string; value: string; colors: any }) => (
-    <View style={styles.summaryItem}>
-      <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{label}</Text>
-      <Text style={[styles.summaryValue, { color: colors.text }]}>{value}</Text>
-    </View>
-  );
-
-  // ─── Main Render ────────────────────────────────────────────
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header + Progress Bar */}
-      <View style={[styles.header, isMobile && styles.headerMobile]}>
-        <View style={styles.breadcrumb}>
-          <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-            <ChevronLeft size={14} color={colors.primary} />
-            <Text style={[styles.breadcrumbLink, { color: colors.primary }]}>Pacientes</Text>
-          </TouchableOpacity>
-          <Text style={[styles.breadcrumbSeparator, { color: colors.textSecondary }]}>›</Text>
-          <Text style={[styles.breadcrumbCurrent, { color: colors.text }]}>{isEdit ? 'Editar paciente' : 'Nuevo paciente'}</Text>
-        </View>
-        <View style={[styles.headerRow, isMobile && styles.headerRowMobile]}>
-          <View style={styles.headerLeft}>
-            <DisplayText style={[styles.title, { color: colors.text }, isMobile && styles.titleMobile]}>
-              {isEdit ? (name ? `Editar a ${name}` : 'Editar paciente') : 'Nuevo paciente'}
-            </DisplayText>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              {isEdit
-                ? (loadingPet ? 'Cargando datos del paciente…' : 'Puedes saltar entre pasos; los cambios se guardan al final.')
-                : 'Completa la información para registrar un nuevo paciente en el sistema.'}
-            </Text>
+        <View style={[styles.pair, styles.breedRow]}>
+          <View style={styles.half}>
+            <VInput label={species === 'other' ? 'Raza o variedad' : 'Raza'} value={breed} onChangeText={setBreed}
+              onFocus={() => setBreedFocused(true)} onBlur={() => setTimeout(() => setBreedFocused(false), 150)}
+              placeholder={species === 'cat' ? 'Doméstico de pelo corto…' : species === 'dog' ? 'Mestizo, Poodle…' : 'Opcional'} />
+            {breedSuggestions.length ? (
+              <View style={[styles.suggestions, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                {breedSuggestions.map((b) => (
+                  <Pressable key={b} onPress={() => { setBreed(b); setBreedFocused(false); }} accessibilityRole="button"
+                    style={({ pressed, hovered }: any) => [styles.suggestion, { backgroundColor: pressed || hovered ? colors.surfaceVariant : 'transparent' }]}>
+                    <Text style={[styles.body, { color: colors.text }]}>{b}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
           </View>
-          <View style={[styles.headerRight, isMobile && styles.headerRightMobile]}>
-            {renderProgressBar()}
+          <VInput containerStyle={styles.half} label="Color o pelaje" value={color} onChangeText={setColor} placeholder="Negro con blanco, atigrado…" />
+        </View>
+
+        <View style={styles.pair}>
+          <View style={styles.half}>
+            <Text style={[styles.groupLabel, { color: colors.textSecondary }]}>Sexo</Text>
+            <Segmented label="Sexo" options={SEX_OPTIONS} value={sex} onChange={(v) => { setSex(v); setRepro(null); }} style={styles.segment} />
+          </View>
+          <View style={styles.half}>
+            <Text style={[styles.groupLabel, { color: colors.textSecondary }]}>Estado reproductivo</Text>
+            {repros ? <Segmented label="Estado reproductivo" options={repros} value={repro} onChange={setRepro} style={styles.segment} />
+              : <Text style={[styles.body, styles.segment, { color: colors.textLight }]}>Elige primero el sexo</Text>}
           </View>
         </View>
+
+        <Text style={[styles.groupLabel, { color: colors.textSecondary }]}>Nacimiento</Text>
+        <Segmented label="Nacimiento" size="sm" options={BIRTH_MODES} value={birthMode} onChange={setBirthMode} style={styles.segment} />
+        {birthMode === 'date' ? (
+          <VInput value={birthDate} onChangeText={setBirthDate} placeholder="DD/MM/AAAA" accessibilityLabel="Fecha de nacimiento" keyboardType="numbers-and-punctuation" containerStyle={styles.narrow} />
+        ) : (
+          <View style={styles.pair}>
+            <VInput containerStyle={styles.narrowHalf} value={ageYears} onChangeText={setAgeYears} placeholder="Años" accessibilityLabel="Edad aproximada en años" keyboardType="number-pad" hint="Años" />
+            <VInput containerStyle={styles.narrowHalf} value={ageMonths} onChangeText={setAgeMonths} placeholder="Meses" accessibilityLabel="Meses además de los años" keyboardType="number-pad" hint="Meses" />
+          </View>
+        )}
+
+        <View style={styles.pair}>
+          {!isEdit ? <VInput containerStyle={styles.third} label="Peso (kg)" value={weight} onChangeText={setWeight} placeholder="12,5" keyboardType="decimal-pad" hint="Opcional; en cada consulta se actualiza" /> : null}
+          <VInput containerStyle={styles.third} label="Microchip" value={microchip} onChangeText={setMicrochip} placeholder="15 dígitos" keyboardType="number-pad" />
+          <VInput containerStyle={styles.third} label="N.º de Registro Nacional" value={registry} onChangeText={setRegistry} placeholder="Ley 21.020" />
+        </View>
       </View>
 
-      {/* Step Content */}
-      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, isMobile && styles.scrollContentMobile]}>
-        {currentStep === 1 && renderStep2()}
-        {currentStep === 2 && renderStep1()}
-        {currentStep === 3 && renderStep3()}
-        {currentStep === 4 && renderStep4()}
-      </ScrollView>
+      {/* Declared health */}
+      <View style={[styles.panel, { backgroundColor: colors.surface }]}>
+        <Pressable onPress={() => setHealthOpen(!healthOpen)} accessibilityRole="button" aria-expanded={healthOpen} style={styles.collapse}>
+          <View style={styles.grow}>
+            <DisplayText style={[styles.panelTitle, styles.inlineTitle, { color: colors.text }]}>Salud declarada</DisplayText>
+            <Text style={[styles.small, { color: colors.textSecondary }]}>Alergias, temperamento, enfermedades, medicación{isEdit ? '' : ' y vacunas previas'}. Las alergias y «Puede morder» quedan como alertas en la ficha.</Text>
+          </View>
+          {healthOpen ? <ChevronUp size={20} color={colors.textSecondary} /> : <ChevronDown size={20} color={colors.textSecondary} />}
+        </Pressable>
+        {healthOpen ? (
+          <View style={styles.healthBody}>
+            <VInput label="Alergias" value={allergies} onChangeText={setAllergies} placeholder="Separadas por coma: penicilina, pollo…" />
+            <Text style={[styles.groupLabel, { color: colors.textSecondary }]}>Temperamento</Text>
+            <View style={[styles.chips, styles.segment]}>
+              {TEMPERAMENTS.map((t) => (
+                <VButton key={t} size="sm" variant={temperament.includes(t) ? 'filled' : 'secondary'} onPress={() => toggle(temperament, setTemperament, t)}>{t}</VButton>
+              ))}
+            </View>
+            <Text style={[styles.groupLabel, { color: colors.textSecondary }]}>Enfermedades crónicas o previas</Text>
+            <View style={[styles.chips, { marginBottom: SPACING.sm }]}>
+              {CHRONIC.map((c) => (
+                <VButton key={c} size="sm" variant={chronic.includes(c) ? 'filled' : 'secondary'} onPress={() => toggle(chronic, setChronic, c)}>{c}</VButton>
+              ))}
+            </View>
+            <VInput value={chronicOther} onChangeText={setChronicOther} placeholder="Otras, separadas por coma" accessibilityLabel="Otras enfermedades" />
+            <View style={styles.pair}>
+              <VInput containerStyle={styles.half} label="Medicación actual" value={medications} onChangeText={setMedications} placeholder="Fármaco, dosis y frecuencia" multiline />
+              <VInput containerStyle={styles.half} label="Cirugías previas" value={surgeries} onChangeText={setSurgeries} placeholder="Esterilización 2023…" multiline />
+            </View>
 
-      {/* Navigation Bar */}
-      <View style={[styles.navBar, { backgroundColor: colors.surface, borderTopColor: colors.border }, isMobile && styles.navBarMobile]}>
-        <VButton
-          variant="secondary"
-          onPress={currentStep === 1 ? () => router.back() : handlePrev}
-          icon={currentStep === 1 ? undefined : <ChevronLeft size={16} color={colors.primary} />}
-        >
-          {currentStep === 1 ? 'Cancelar' : 'Volver'}
-        </VButton>
-        <VButton
-          onPress={currentStep === 4 ? handleSave : handleNext}
-          loading={saving}
-          disabled={saving}
-          icon={currentStep === 4
-            ? <Check size={16} color={onAccentText.default} />
-            : <ChevronRight size={16} color={onAccentText.default} />}
-          iconPosition={currentStep === 4 ? 'left' : 'right'}
-        >
-          {currentStep === 4 ? (isEdit ? 'Guardar cambios' : 'Guardar paciente') : 'Siguiente'}
-        </VButton>
+            {!isEdit && species !== 'other' ? (
+              <>
+                <Text style={[styles.subTitle, { color: colors.text }]}>Vacunas y desparasitación previas</Text>
+                <Text style={[styles.small, { color: colors.textSecondary, marginBottom: SPACING.md }]}>La fecha de la última dosis, si el tutor la sabe. La próxima se propone a un año y se puede ajustar en la ficha.</Text>
+                <View style={styles.pair}>
+                  {PLAN[species].map(({ item, label }) => (
+                    <VInput key={item} containerStyle={styles.third} label={label} value={vaccineDates[item] || ''}
+                      onChangeText={(v) => setVaccineDates({ ...vaccineDates, [item]: v })} placeholder="DD/MM/AAAA" keyboardType="numbers-and-punctuation" />
+                  ))}
+                </View>
+                <View style={styles.pair}>
+                  <VInput containerStyle={styles.half} label="Desparasitación interna" value={dewormIn} onChangeText={setDewormIn} placeholder="DD/MM/AAAA" keyboardType="numbers-and-punctuation" />
+                  <VInput containerStyle={styles.half} label="Desparasitación externa" value={dewormOut} onChangeText={setDewormOut} placeholder="DD/MM/AAAA" keyboardType="numbers-and-punctuation" />
+                </View>
+              </>
+            ) : null}
+          </View>
+        ) : null}
       </View>
 
-      {/* Error Dialog */}
-      <Portal>
-        <Dialog visible={!!errorMsg} onDismiss={() => setErrorMsg(null)}>
-          <Dialog.Icon icon="alert-circle-outline" />
-          <Dialog.Title style={{ textAlign: 'center' }}>Error</Dialog.Title>
-          <Dialog.Content>
-            <Text style={{ textAlign: 'center' }}>{errorMsg}</Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <VButton variant="ghost" onPress={() => setErrorMsg(null)}>Entendido</VButton>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-    </View>
+      {error ? <Text accessibilityRole="alert" style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
+      <View style={styles.footer}>
+        <VButton variant="secondary" onPress={() => (router.canGoBack() ? router.back() : router.replace('/(drawer)/pacientes' as any))}>Cancelar</VButton>
+        <VButton size="lg" onPress={save} loading={saving} disabled={saving}>{isEdit ? 'Guardar cambios' : 'Registrar mascota'}</VButton>
+      </View>
+    </ScrollView>
   );
 }
 
-// ─── Styles ────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.xl, paddingBottom: SPACING.md },
-  headerMobile: { paddingHorizontal: SPACING.md, paddingTop: SPACING.md },
-  breadcrumb: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginBottom: SPACING.md },
-  breadcrumbLink: { fontSize: TYPOGRAPHY.sizes.sm },
-  breadcrumbSeparator: { fontSize: TYPOGRAPHY.sizes.sm },
-  breadcrumbCurrent: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold },
-  title: { fontSize: TYPOGRAPHY.sizes['2xl'], fontWeight: TYPOGRAPHY.weights.bold },
-  titleMobile: { fontSize: TYPOGRAPHY.sizes.xl },
-  subtitle: { fontSize: TYPOGRAPHY.sizes.md, marginTop: SPACING.xs },
-
-  // Progress bar
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.lg,
-    gap: 0,
-  },
-  progressContainerMobile: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-  },
-  progressStep: { alignItems: 'center', width: 80 },
-  progressCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  progressNumber: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.bold },
-  progressLabel: { fontSize: TYPOGRAPHY.sizes.xs, marginTop: SPACING.xs, textAlign: 'center' },
-  progressLabelActive: { fontWeight: TYPOGRAPHY.weights.semibold },
-  progressLine: { flex: 1, height: 2, marginTop: 15, marginHorizontal: -4 },
-
-  // Scroll
-  scrollView: { flex: 1 },
-  scrollContent: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING['3xl'] },
-  scrollContentMobile: { paddingHorizontal: SPACING.md },
-
-  // Steps
-  stepContent: { gap: SPACING.md },
-  step1Row: { flexDirection: 'row', gap: SPACING.md },
-  step1Left: { flex: 2, gap: SPACING.xs },
-  step1Right: { flex: 1 },
-  stepSectionTitle: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.bold, marginBottom: SPACING.xs },
-
-  // Header row
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: SPACING.lg },
-  headerRowMobile: { flexDirection: 'column' },
-  headerLeft: { flex: 1 },
-  headerRight: { flexShrink: 0 },
-  headerRightMobile: { width: '100%' },
-
-  // Cards
-  card: { borderRadius: RADIUS.lg, padding: SPACING.lg, gap: SPACING.xs },
-  cardTitle: { fontSize: 24, fontWeight: '600', marginBottom: SPACING.xs },
-  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.sm },
-  cardIcon: { width: 32, height: 32, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center' },
-
-  // 3-column grid
-  grid3: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.xs },
-  gridField: { flex: 1 },
-
-  // Form
-  fieldLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, marginTop: SPACING.xs, marginBottom: SPACING.xs },
-  input: { marginBottom: SPACING.xs },
-  row: { flexDirection: 'row', gap: SPACING.sm },
-  rowField: { flex: 1 },
-
-  // Species / Sex pills
-  speciesRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.xs },
-  pillContainer: { flex: 1 },
-  selectField: { justifyContent: 'space-between' },
-  speciesPillLabel: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold },
-  sexRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.xs },
-
-  // Chips
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.xs },
-  tempChip: {
-    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
-    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.sm, borderWidth: 1,
-  },
-  tempChipText: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold },
-
-  // Photo
-  photoUpload: {
-    borderRadius: RADIUS.lg,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    minHeight: 200,
-    overflow: 'hidden',
-  },
-  photoPreview: { width: '100%', height: 200, borderRadius: RADIUS.lg },
-  photoPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.lg, gap: SPACING.sm },
-  photoIconWrap: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
-  photoTitle: { fontSize: TYPOGRAPHY.sizes.md, fontWeight: TYPOGRAPHY.weights.semibold, textAlign: 'center' },
-  photoSubtitle: { fontSize: TYPOGRAPHY.sizes.sm, textAlign: 'center' },
-  photoBtn: { marginTop: SPACING.xs },
-
-  // Collapsible
-  collapsibleHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  collapsibleTitleRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
-  collapsibleContent: { marginTop: SPACING.md, gap: SPACING.xs },
-
-  // Summary
-  summaryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm },
-  summaryPhoto: { width: 80, height: 80, borderRadius: RADIUS.lg, marginBottom: SPACING.sm },
-  summaryGrid: { gap: SPACING.sm },
-  summaryItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: SPACING.xs },
-  summaryLabel: { fontSize: TYPOGRAPHY.sizes.sm },
-  summaryValue: { fontSize: TYPOGRAPHY.sizes.sm, fontWeight: TYPOGRAPHY.weights.semibold, flex: 1, textAlign: 'right', marginLeft: SPACING.md },
-
-  // Nav bar
-  navBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
-  },
-  navBarMobile: {
-    paddingHorizontal: SPACING.md,
-  },
-
-  // Breed autocomplete
-  breedDropdown: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    borderWidth: 1,
-    borderRadius: RADIUS.md,
-    maxHeight: 200,
-    overflow: 'hidden',
-    ...SHADOWS.lg,
-  },
-  breedOption: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm + 2,
-  },
-  breedOptionText: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-  },
-
-  // Chips for base diseases
-  chipWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.xs,
-    marginBottom: SPACING.sm,
-  },
-  chip: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs + 2,
-    borderRadius: RADIUS.sm,
-    borderWidth: 1.5,
-  },
-  chipText: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  fieldHint: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    marginBottom: SPACING.md,
-  },
+  flex: { flex: 1 },
+  page: { padding: SPACING.lg, paddingTop: SPACING.xl, paddingBottom: SPACING['6xl'], maxWidth: 880, width: '100%', alignSelf: 'center' },
+  panel: { padding: SPACING.xl, borderRadius: RADIUS.md, marginBottom: SPACING.lg },
+  panelTitle: { fontSize: 24, lineHeight: 28, fontWeight: '600', marginBottom: SPACING.lg },
+  inlineTitle: { marginBottom: SPACING.xs },
+  subTitle: { fontSize: TYPOGRAPHY.sizes.base, fontWeight: TYPOGRAPHY.weights.semibold, marginTop: SPACING.md, marginBottom: SPACING.xs },
+  ownerRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  ownerName: { fontSize: TYPOGRAPHY.sizes.lg, fontWeight: TYPOGRAPHY.weights.semibold },
+  grow: { flex: 1, minWidth: 0 },
+  identity: { flexDirection: 'row', gap: SPACING.xl, alignItems: 'flex-start' },
+  identityMobile: { flexDirection: 'column', gap: SPACING.md },
+  photo: { width: 112, height: 112, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center', gap: SPACING.xs, overflow: 'hidden' },
+  photoImg: { width: '100%', height: '100%' },
+  pair: { flexDirection: 'row', flexWrap: 'wrap', columnGap: SPACING.md },
+  half: { flexGrow: 1, flexBasis: 240 },
+  // Above the rows below it, which its suggestion list overlaps (RN Web gives every View z-index 0,
+  // so the row itself has to be raised, not the field inside it)
+  breedRow: { zIndex: 20 },
+  third: { flexGrow: 1, flexBasis: 180 },
+  narrow: { maxWidth: 220 },
+  narrowHalf: { width: 120 },
+  groupLabel: { fontSize: TYPOGRAPHY.sizes.sm, marginBottom: SPACING.sm },
+  segment: { marginBottom: SPACING.lg },
+  suggestions: { position: 'absolute', top: 78, left: 0, right: 0, borderWidth: 1, borderRadius: RADIUS.md, paddingVertical: SPACING.xs, zIndex: 10, elevation: 6 },
+  suggestion: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, minHeight: 40, justifyContent: 'center' },
+  collapse: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, minHeight: 44 },
+  healthBody: { marginTop: SPACING.lg },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs },
+  small: { fontSize: TYPOGRAPHY.sizes.sm, lineHeight: 19 },
+  body: { fontSize: TYPOGRAPHY.sizes.md, lineHeight: 21 },
+  error: { fontSize: TYPOGRAPHY.sizes.md, marginBottom: SPACING.md },
+  footer: { flexDirection: 'row', justifyContent: 'flex-end', flexWrap: 'wrap', gap: SPACING.sm },
+  done: { padding: SPACING['3xl'], borderRadius: RADIUS.md, alignItems: 'center', gap: SPACING.md, marginTop: SPACING['2xl'] },
+  doneTitle: { fontSize: 32, lineHeight: 36, fontWeight: '600', textAlign: 'center' },
+  doneActions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: SPACING.sm, marginTop: SPACING.md },
+  doneMore: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: SPACING.xs, marginTop: SPACING.sm },
 });

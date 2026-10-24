@@ -41,10 +41,79 @@ export interface DirectusDisease {
   organization_id?: number | null;
 }
 
+export type PetStatus = 'alive' | 'deceased' | 'transferred' | 'inactive';
+export type PetSpecies = 'dog' | 'cat' | 'other';
+
+export interface PetAlert {
+  type: 'allergy' | 'bites' | 'chronic' | 'other';
+  text: string;
+  since?: string | null;
+}
+
+export interface Owner {
+  id: string;
+  name: string;
+  /** Canonical 12345678-K */
+  rut: string | null;
+  /** Canonical E.164 (+569…) */
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  comuna: string | null;
+  region: string | null;
+  alt_contact_name: string | null;
+  alt_contact_phone: string | null;
+  preferred_contact: 'whatsapp' | 'telefono' | 'correo' | null;
+  consent_communications_at: string | null;
+  contact_revoked_at: string | null;
+  anonymized_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  /** Present on list and detail */
+  pets?: Array<Pick<DirectusPet, 'id' | 'name' | 'species' | 'species_other' | 'breed' | 'birth_date' | 'sex' | 'status' | 'photo'>>;
+}
+
+/** What a create/edit form sends: consent is a yes/no, the server stamps the date */
+export type OwnerInput = Partial<Omit<Owner, 'consent_communications_at' | 'pets'>> & { consent_communications_at?: boolean };
+
+export type VaccinationKind = 'vacuna' | 'desparasitacion_interna' | 'desparasitacion_externa';
+export type VaccinePlanItem = 'octuple_sextuple' | 'kc' | 'antirrabica' | 'triple_felina' | 'leucemia_felina' | 'otra';
+
+export interface Vaccination {
+  id: string;
+  pet_id: string;
+  kind: VaccinationKind;
+  plan_item: VaccinePlanItem | null;
+  product: string | null;
+  lot: string | null;
+  applied_at: string;
+  next_due_at: string | null;
+  veterinarian: string | null;
+  clinical_record_id: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface DirectusPet {
   id: string;
   name: string;
-  species: 'dog' | 'cat';
+  species: PetSpecies;
+  species_other?: string | null;
+  owner_id?: string | null;
+  /** Joined from owners */
+  owner_name?: string | null;
+  owner_rut?: string | null;
+  owner_phone?: string | null;
+  owner_email?: string | null;
+  owner_contact_revoked_at?: string | null;
+  owner_anonymized_at?: string | null;
+  registry_number?: string | null;
+  birth_date_estimated?: boolean;
+  alerts?: PetAlert[];
+  deceased_at?: string | null;
+  current_weight_kg?: number | string | null;
+  current_weight_at?: string | null;
   breed: string;
   birth_date: string | null;
   weight: number | null;
@@ -59,7 +128,7 @@ export interface DirectusPet {
   address: string | null;
   clinic_location: string | null;
   reproductive_status: string;
-  status: 'alive' | 'deceased';
+  status: PetStatus;
   anamnesis: string | null;
   id_number: string | null;
   sex: 'macho' | 'hembra' | null;
@@ -293,9 +362,10 @@ function emitDataChange(endpoint: string) {
 // Turns a failed response into a readable Error using the server's { error } message
 async function apiError(res: Response): Promise<Error> {
   let message = '';
+  let code: string | undefined;
   try {
     const text = await res.text();
-    try { message = JSON.parse(text)?.error || ''; } catch { message = text.startsWith('<') ? '' : text; }
+    try { const json = JSON.parse(text); message = json?.error || ''; code = json?.code; } catch { message = text.startsWith('<') ? '' : text; }
   } catch { /* ignore */ }
   if (res.status === 401) notifyUnauthorized();
   if (!message) {
@@ -303,8 +373,10 @@ async function apiError(res: Response): Promise<Error> {
     else if (res.status >= 500) message = 'Error del servidor. Intenta de nuevo en unos segundos.';
     else message = `Error ${res.status}`;
   }
-  const err = new Error(message) as Error & { status?: number };
+  const err = new Error(message) as Error & { status?: number; code?: string };
   err.status = res.status;
+  // Machine-readable reason, e.g. PET_REQUIRED when an appointment moves to "en espera" without a patient
+  err.code = code;
   return err;
 }
 
@@ -404,8 +476,25 @@ export const api = {
     },
     get: (id: string) => apiGet(`/items/surgeries/${id}`),
   },
+  owners: {
+    list: (q?: string) => apiGet('/items/owners', q ? { q } : undefined) as Promise<Owner[]>,
+    get: (id: string) => apiGet(`/items/owners/${id}`) as Promise<Owner>,
+    /** Whether the RUT is valid (check digit) and the tutor already registered with it */
+    checkRut: (rut: string) => apiGet('/items/owners/check', { rut }) as Promise<{ valid: boolean; rut: string | null; owner: { id: string; name: string } | null }>,
+    create: (data: OwnerInput) => apiPost('/items/owners', data) as Promise<Owner>,
+    update: (id: string, data: OwnerInput) => apiPatch(`/items/owners/${id}`, data) as Promise<Owner>,
+    revokeContact: (id: string) => apiPost(`/items/owners/${id}/revoke-contact`, {}) as Promise<Owner>,
+    anonymize: (id: string) => apiPost(`/items/owners/${id}/anonymize`, {}) as Promise<Owner>,
+  },
+  vaccinations: {
+    list: (petId: string) => apiGet('/items/vaccinations', { pet_id: petId }) as Promise<Vaccination[]>,
+    products: () => apiGet('/items/vaccinations/products') as Promise<Array<{ plan_item: VaccinePlanItem | null; product: string; uses: number }>>,
+    create: (data: Partial<Vaccination>) => apiPost('/items/vaccinations', data) as Promise<Vaccination>,
+    update: (id: string, data: Partial<Vaccination>) => apiPatch(`/items/vaccinations/${id}`, data) as Promise<Vaccination>,
+    delete: (id: string) => apiDelete(`/items/vaccinations/${id}`),
+  },
   pets: {
-    list: () => apiGet('/items/pets'),
+    list: (ownerId?: string) => apiGet('/items/pets', ownerId ? { owner_id: ownerId } : undefined),
     get: (id: string) => apiGet(`/items/pets/${id}`),
     create: (data: any) => apiPost('/items/pets', data),
     update: (id: string, data: any) => apiPatch(`/items/pets/${id}`, data),

@@ -15,6 +15,7 @@ import {
   Reminder,
   Medication,
   Surgery,
+  Owner,
 } from '../services/directus';
 
 // ─────────────────────────────────────────────────────────
@@ -220,7 +221,7 @@ export function usePets() {
   useEffect(() => {
     fetchPets();
   }, [fetchPets]);
-  useRefreshOn(['pets', 'clinical_records'], fetchPets);
+  useRefreshOn(['pets', 'clinical_records', 'owners'], fetchPets);
 
   const addPet = async (pet: Omit<DirectusPet, 'id' | 'created_at' | 'updated_at' | 'last_visit' | 'organization_id'>) => {
     const result = await api.pets.create(pet);
@@ -237,6 +238,33 @@ export function usePets() {
   };
 
   return { pets, loading, error, addPet, updatePet, removePet, refresh: fetchPets };
+}
+
+// ─────────────────────────────────────────────────────────
+// Hook: Owners (tutors), each with its pets
+// ─────────────────────────────────────────────────────────
+
+export function useOwners() {
+  const [owners, setOwners] = useState<Owner[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchOwners = useCallback(async (silent: boolean = false) => {
+    if (!silent) setLoading(true);
+    setError(null);
+    try {
+      setOwners(await api.owners.list());
+    } catch (err: any) {
+      setError(err.message || 'No se pudieron cargar los tutores');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchOwners(); }, [fetchOwners]);
+  useRefreshOn(['owners', 'pets'], fetchOwners);
+
+  return { owners, loading, error, refresh: fetchOwners };
 }
 
 // ─────────────────────────────────────────────────────────

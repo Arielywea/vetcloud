@@ -38,3 +38,36 @@ export function parseLocalDateTime(input: string): Date | null {
 export function isSameLocalDay(value: string | Date, ref: Date = new Date()): boolean {
   return toLocalDateKey(new Date(value)) === toLocalDateKey(ref);
 }
+
+/** "DD/MM/AAAA" → "YYYY-MM-DD"; null when empty, undefined when it is not a real past-or-today date. */
+export function parseDmy(input: string, { allowFuture = false } = {}): string | null | undefined {
+  const s = input.trim();
+  if (!s) return null;
+  const m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if (!m) return undefined;
+  const d = new Date(+m[3], +m[2] - 1, +m[1]);
+  if (d.getDate() !== +m[1] || d.getMonth() !== +m[2] - 1 || +m[3] < 1980) return undefined;
+  if (!allowFuture && d > new Date()) return undefined;
+  return toLocalDateKey(d);
+}
+
+/** "YYYY-MM-DD" (or an ISO timestamp) → "DD/MM/AAAA" */
+export function formatDmy(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const [y, m, d] = String(iso).slice(0, 10).split('-');
+  return y && m && d ? `${d}/${m}/${y}` : '';
+}
+
+/** An approximate age ("about 3 years and 2 months") as a birth date, mid-month to avoid edge days */
+export function birthDateFromAge(years: number, months: number): string {
+  const d = new Date();
+  d.setDate(15);
+  d.setMonth(d.getMonth() - (years * 12 + months));
+  return toLocalDateKey(d);
+}
+
+export function addMonths(iso: string, months: number): string {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+  const date = new Date(y, m - 1 + months, d);
+  return toLocalDateKey(date);
+}

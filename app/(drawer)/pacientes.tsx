@@ -1,294 +1,158 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, Dialog, Portal } from 'react-native-paper';
-import { Plus } from 'lucide-react-native';
+import { Plus, Search, Download, PawPrint, Users } from 'lucide-react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { usePets } from '../../hooks/useDirectus';
+import { usePets, useOwners } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useResponsive } from '../../hooks/useResponsive';
 import PageHeader from '../../components/ui/PageHeader';
 import VButton from '../../components/ui/Button';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
+import VInput from '../../components/ui/Input';
+import Segmented from '../../components/ui/Segmented';
+import VEmptyState from '../../components/ui/EmptyState';
+import { SkeletonList } from '../../components/ui/Skeleton';
+import PetList from '../../components/pacientes/PetList';
+import OwnerList from '../../components/pacientes/OwnerList';
+import OwnerFormSheet from '../../components/owners/OwnerFormSheet';
+import { SPACING } from '../../constants/tokens';
 import { exportCsv } from '../../utils/exportCsv';
-import { isActive, filterByStatus, StatusFilter } from '../../utils/patientFilters';
-import PatientTabs, { TabKey } from '../../components/pacientes/PatientTabs';
-import PatientFilters, { SpeciesFilter } from '../../components/pacientes/PatientFilters';
-import PatientTable from '../../components/pacientes/PatientTable';
-import PatientSidePanel from '../../components/pacientes/PatientSidePanel';
-import { DirectusPet } from '../../services/directus';
-import DisplayText from '../../components/ui/DisplayText';
+import { canonRut, digits, petMatches } from '../../utils/identity';
+import { Owner } from '../../services/directus';
 import { useToast } from '../../components/ui/VToast';
 
-const ITEMS_PER_PAGE = 10;
+type View_ = 'mascotas' | 'tutores';
+type SpeciesFilter = 'all' | 'dog' | 'cat' | 'other';
+type LifeFilter = 'alive' | 'archived' | 'all';
+
+const VIEWS = [{ value: 'mascotas', label: 'Mascotas' }, { value: 'tutores', label: 'Tutores' }] as const;
+const SPECIES = [{ value: 'all', label: 'Todas' }, { value: 'dog', label: 'Perros' }, { value: 'cat', label: 'Gatos' }, { value: 'other', label: 'Otras' }] as const;
+const LIFE = [{ value: 'alive', label: 'Activos' }, { value: 'archived', label: 'Fallecidos y otros' }, { value: 'all', label: 'Todos' }] as const;
+
+function ownerMatches(owner: Owner, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  if (owner.name.toLowerCase().includes(q)) return true;
+  if ((owner.pets || []).some((p) => p.name.toLowerCase().includes(q))) return true;
+  if ((owner.email || '').toLowerCase().includes(q)) return true;
+  const qd = digits(q);
+  if (qd.length >= 5) {
+    if (owner.rut && (canonRut(q) === owner.rut || digits(owner.rut).startsWith(qd))) return true;
+    if (qd.length >= 6 && digits(owner.phone).endsWith(qd)) return true;
+  }
+  return false;
+}
 
 export default function PacientesScreen() {
   const router = useRouter();
-  const { pets, loading, removePet } = usePets();
-  const { colors, onPrimaryText, onAccentText } = useTheme();
-
-  const { q: initialQuery } = useLocalSearchParams<{ q?: string }>();
-  const [searchQuery, setSearchQuery] = useState(typeof initialQuery === 'string' ? initialQuery : '');
-  // Ctrl+K tutor results land here pre-filtered
-  useEffect(() => { if (typeof initialQuery === 'string') setSearchQuery(initialQuery); }, [initialQuery]);
-  const [species, setSpecies] = useState<SpeciesFilter>('all');
-  const [selectedBreed, setSelectedBreed] = useState('all');
-  const [ownerFilter, setOwnerFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [activeTab, setActiveTab] = useState<TabKey>('all');
-  const [selectedPatient, setSelectedPatient] = useState<DirectusPet | null>(null);
-  const [sidePanelVisible, setSidePanelVisible] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [deleteTarget, setDeleteTarget] = useState<DirectusPet | null>(null);
-  const [deleting, setDeleting] = useState(false);
   const toast = useToast();
+  const { colors, onAccentText } = useTheme();
+  const { isMobile } = useResponsive();
+  const { pets, loading: petsLoading } = usePets();
+  const { owners, loading: ownersLoading } = useOwners();
 
-  const effectiveStatus: StatusFilter = useMemo(() => {
-    if (activeTab === 'active') return 'active';
-    if (activeTab === 'inactive') return 'inactive';
-    return statusFilter;
-  }, [activeTab, statusFilter]);
+  const params = useLocalSearchParams<{ q?: string; vista?: string }>();
+  const [query, setQuery] = useState(typeof params.q === 'string' ? params.q : '');
+  // Ctrl+K tutor results land here pre-filtered
+  useEffect(() => { if (typeof params.q === 'string') setQuery(params.q); }, [params.q]);
+  const view: View_ = params.vista === 'tutores' ? 'tutores' : 'mascotas';
+  const setView = (v: View_) => router.setParams({ vista: v });
 
-  const uniqueBreeds = useMemo(() => {
-    const speciesFiltered = species === 'all' ? pets : pets.filter(p => p.species === species);
-    const breeds = new Set<string>();
-    speciesFiltered.forEach(p => { if (p.breed) breeds.add(p.breed); });
-    return Array.from(breeds).sort();
-  }, [pets, species]);
+  const [species, setSpecies] = useState<SpeciesFilter>('all');
+  const [life, setLife] = useState<LifeFilter>('alive');
+  const [newOwner, setNewOwner] = useState(false);
 
-  const filteredPatients = useMemo(() => {
-    let results = [...pets];
+  const visiblePets = useMemo(() => pets.filter((p) =>
+    (species === 'all' || p.species === species) &&
+    (life === 'all' || (life === 'alive' ? (p.status || 'alive') === 'alive' : (p.status || 'alive') !== 'alive')) &&
+    petMatches(p, query)
+  ), [pets, species, life, query]);
 
-    if (species !== 'all') {
-      results = results.filter(p => p.species === species);
-    }
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      results = results.filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        (p.breed && p.breed.toLowerCase().includes(q)) ||
-        (p.tutor_name && p.tutor_name.toLowerCase().includes(q))
-      );
-    }
-
-    if (selectedBreed !== 'all') {
-      results = results.filter(p => p.breed === selectedBreed);
-    }
-
-    if (ownerFilter.trim()) {
-      const q = ownerFilter.toLowerCase();
-      results = results.filter(p =>
-        p.tutor_name && p.tutor_name.toLowerCase().includes(q)
-      );
-    }
-
-    results = filterByStatus(results, effectiveStatus);
-
-    return results;
-  }, [pets, species, searchQuery, selectedBreed, ownerFilter, effectiveStatus]);
-
-  const totalPages = Math.ceil(filteredPatients.length / ITEMS_PER_PAGE);
-  const paginatedPatients = filteredPatients.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
-
-  const tabCounts = useMemo(() => {
-    const speciesFiltered = species === 'all' ? pets : pets.filter(p => p.species === species);
-    return {
-      all: speciesFiltered.length,
-      active: speciesFiltered.filter(p => isActive(p)).length,
-      inactive: speciesFiltered.filter(p => !isActive(p)).length,
-    };
-  }, [pets, species]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, species, selectedBreed, ownerFilter, statusFilter, activeTab]);
-
-  const clearFilters = useCallback(() => {
-    setSearchQuery('');
-    setSpecies('all');
-    setSelectedBreed('all');
-    setOwnerFilter('');
-    setStatusFilter('all');
-    setActiveTab('all');
-    setSelectedIds(new Set());
-  }, []);
+  const visibleOwners = useMemo(() => owners.filter((o) => ownerMatches(o, query)), [owners, query]);
 
   const handleExport = useCallback(async () => {
     try {
-      await exportCsv(filteredPatients, 'pacientes', { includeMedical: true });
+      await exportCsv(visiblePets, 'pacientes', { includeMedical: true });
     } catch (e: any) {
       toast.error(e?.message || 'No se pudo exportar la lista');
     }
-  }, [filteredPatients, toast]);
+  }, [visiblePets, toast]);
 
-  const handleDelete = useCallback(async () => {
-    if (!deleteTarget || deleting) return;
-    setDeleting(true);
-    try {
-      await removePet(deleteTarget.id);
-      setDeleteTarget(null);
-      toast.success('Paciente eliminado');
-    } catch (e: any) {
-      toast.error(e?.message || 'No se pudo eliminar el paciente');
-    } finally {
-      setDeleting(false);
-    }
-  }, [deleteTarget, deleting, removePet, toast]);
+  const searching = query.trim() !== '';
+  const subtitle = petsLoading || ownersLoading ? ' ' : `${pets.length} mascota${pets.length === 1 ? '' : 's'} · ${owners.length} tutor${owners.length === 1 ? '' : 'es'}`;
 
-  const handleClickPatient = useCallback((pet: DirectusPet) => {
-    setSelectedPatient(pet);
-    setSidePanelVisible(true);
-  }, []);
+  const emptyPets = searching || species !== 'all' || life !== 'alive' ? (
+    <VEmptyState icon={<Search size={28} color={colors.textLight} />} title="Ninguna mascota coincide"
+      description="Prueba con el nombre, el RUT o el teléfono del tutor, o cambia los filtros."
+      action={<VButton variant="secondary" onPress={() => { setQuery(''); setSpecies('all'); setLife('alive'); }}>Limpiar búsqueda</VButton>} />
+  ) : (
+    <VEmptyState icon={<PawPrint size={28} color={colors.textLight} />} title="Aún no hay pacientes"
+      description="Registra primero al tutor; desde su ficha agregas sus mascotas."
+      action={<VButton onPress={() => setNewOwner(true)}>Nuevo tutor</VButton>} />
+  );
+  const emptyOwners = searching ? (
+    <VEmptyState icon={<Search size={28} color={colors.textLight} />} title="Ningún tutor coincide"
+      description="Busca por nombre, RUT (con o sin puntos), teléfono o el nombre de una mascota."
+      action={<VButton onPress={() => setNewOwner(true)}>Registrar tutor nuevo</VButton>} />
+  ) : (
+    <VEmptyState icon={<Users size={28} color={colors.textLight} />} title="Aún no hay tutores"
+      action={<VButton onPress={() => setNewOwner(true)}>Nuevo tutor</VButton>} />
+  );
 
-  const handleToggleSelect = useCallback((id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }, []);
-
-  const hasFilters = searchQuery.trim() !== '' || species !== 'all' || selectedBreed !== 'all' || ownerFilter.trim() !== '' || statusFilter !== 'all';
+  const loading = view === 'mascotas' ? petsLoading : ownersLoading;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.pageHeaderWrap}>
+      <View style={styles.top}>
         <PageHeader
           title="Pacientes"
-          subtitle={loading ? ' ' : `${filteredPatients.length} paciente${filteredPatients.length !== 1 ? 's' : ''}`}
-          actions={<VButton onPress={() => router.push('/(drawer)/add-paciente')} icon={<Plus size={16} color={onAccentText.default} />}>Nuevo paciente</VButton>}
+          subtitle={subtitle}
+          actions={<>
+            {view === 'mascotas' && !isMobile ? <VButton variant="ghost" onPress={handleExport} icon={<Download size={16} color={colors.primary} />}>Exportar</VButton> : null}
+            <VButton onPress={() => setNewOwner(true)} icon={<Plus size={16} color={onAccentText.default} />}>Nuevo tutor</VButton>
+          </>}
         />
+        <View style={styles.toolbar}>
+          <VInput
+            containerStyle={styles.search}
+            value={query}
+            onChangeText={setQuery}
+            placeholder={isMobile ? 'Mascota, tutor, RUT o teléfono' : 'Buscar por mascota, tutor, RUT, teléfono o microchip'}
+            accessibilityLabel="Buscar pacientes y tutores"
+            leftIcon={<Search size={18} color={colors.textLight} />}
+            autoCorrect={false}
+            returnKeyType="search"
+          />
+          <Segmented label="Ver" options={VIEWS} value={view} onChange={setView} />
+        </View>
+        {view === 'mascotas' ? (
+          <View style={styles.filters}>
+            <Segmented label="Especie" size="sm" options={SPECIES} value={species} onChange={setSpecies} />
+            <Segmented label="Estado" size="sm" options={LIFE} value={life} onChange={setLife} />
+          </View>
+        ) : null}
       </View>
 
-      <View style={styles.content}>
-        <PatientTabs
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          counts={tabCounts}
-          onExport={handleExport}
-        />
-
-        <PatientFilters
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          species={species}
-          onSpeciesChange={(s) => { setSpecies(s); setSelectedBreed('all'); }}
-          breeds={uniqueBreeds}
-          selectedBreed={selectedBreed}
-          onBreedChange={setSelectedBreed}
-          ownerFilter={ownerFilter}
-          onOwnerFilterChange={setOwnerFilter}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
-        />
-
-        <PatientTable
-          patients={filteredPatients}
-          paginatedPatients={paginatedPatients}
-          loading={loading}
-          selectedPatient={selectedPatient}
-          selectedIds={selectedIds}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={filteredPatients.length}
-          itemsPerPage={ITEMS_PER_PAGE}
-          hasFilters={hasFilters}
-          onSelectPatient={handleClickPatient}
-          onClickPatient={handleClickPatient}
-          onDeletePatient={setDeleteTarget}
-          onToggleSelect={handleToggleSelect}
-          onPageChange={setCurrentPage}
-          onClearFilters={clearFilters}
-        />
+      <View style={[styles.list, !isMobile && { backgroundColor: colors.surface }]}>
+        {loading ? <SkeletonList count={6} style={{ padding: SPACING.lg }} /> : view === 'mascotas'
+          ? <PetList pets={visiblePets} compact={isMobile} empty={emptyPets} />
+          : <OwnerList owners={visibleOwners} compact={isMobile} empty={emptyOwners} />}
       </View>
 
-      <PatientSidePanel
-        patient={selectedPatient}
-        visible={sidePanelVisible}
-        onClose={() => setSidePanelVisible(false)}
+      <OwnerFormSheet
+        visible={newOwner}
+        onClose={() => setNewOwner(false)}
+        initialName={view === 'tutores' && searching && !digits(query) ? query.trim() : undefined}
+        onSaved={(o) => { setNewOwner(false); toast.success('Tutor registrado'); router.push(`/owner/${o.id}` as any); }}
       />
-
-      <Portal>
-        <Dialog visible={!!deleteTarget} onDismiss={() => setDeleteTarget(null)} style={[styles.dialog, { backgroundColor: colors.surface }]}>
-          <Dialog.Icon icon="alert-circle-outline" />
-          <Dialog.Title style={[styles.dialogTitle, { color: colors.text }]}>Eliminar paciente</Dialog.Title>
-          <Dialog.Content>
-            <Text style={[styles.dialogText, { color: colors.textSecondary }]}>
-              ¿Estás seguro de eliminar a{' '}
-              <Text style={{ fontWeight: TYPOGRAPHY.weights.bold, color: colors.text }}>
-                {deleteTarget?.name}
-              </Text>
-              ? Se borrará todo su historial médico.
-            </Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <VButton variant="ghost" onPress={() => setDeleteTarget(null)}>Cancelar</VButton>
-            <VButton variant="danger" onPress={handleDelete}>Eliminar</VButton>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  pageHeaderWrap: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.xl },
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.md,
-  },
-  headerTextWrap: {
-    flex: 1,
-  },
-  title: {
-    fontSize: TYPOGRAPHY.sizes['2xl'],
-    fontWeight: TYPOGRAPHY.weights.bold,
-  },
-  subtitle: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    marginTop: SPACING['2xs'],
-  },
-  newButton: {
-    borderRadius: RADIUS.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  newButtonText: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  newButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: SPACING.lg,
-    gap: SPACING.md,
-  },
-  dialog: {
-    borderRadius: RADIUS.lg,
-  },
-  dialogTitle: {
-    textAlign: 'center',
-  },
-  dialogText: {
-    textAlign: 'center',
-    lineHeight: 22,
-  },
+  container: { flex: 1 },
+  top: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.xl },
+  toolbar: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: SPACING.md, rowGap: SPACING.sm, marginBottom: SPACING.md },
+  search: { flexGrow: 1, flexBasis: 280, marginBottom: 0 },
+  filters: { flexDirection: 'row', flexWrap: 'wrap', columnGap: SPACING.xl, rowGap: SPACING.sm, marginBottom: SPACING.md },
+  list: { flex: 1, marginHorizontal: SPACING.lg },
 });

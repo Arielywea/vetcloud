@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useMemo, Component, ReactNode } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, Component, ReactNode } from 'react';
 import { View, StyleSheet, Platform, Text, useWindowDimensions, Pressable, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useResponsive } from '../../hooks/useResponsive';
 
 // Components
@@ -15,6 +15,7 @@ import ContextMenu from '../../components/agenda/ContextMenu';
 
 import AppointmentDetailModal, { AppointmentDetail } from '../../components/agenda/AppointmentDetailModal';
 import AppointmentCreationModal from '../../components/agenda/AppointmentCreationModal';
+import LinkPatientSheet from '../../components/agenda/LinkPatientSheet';
 import AppointmentEditSheet, { EditMode } from '../../components/agenda/AppointmentEditSheet';
 import PaymentForm from '../../components/pet/PaymentForm';
 import { exportAgenda, printAgenda } from '../../components/agenda/agendaExport';
@@ -28,7 +29,7 @@ import useDragDrop from '../../components/agenda/useDragDrop';
 
 // Theme
 import { useTheme } from '../../contexts/ThemeContext';
-import { APP_COLORS } from '../../constants/colors';
+import { APP_COLORS, APPOINTMENT_STATUS_COLORS } from '../../constants/colors';
 
 // API
 import { api } from '../../services/directus';
@@ -79,7 +80,12 @@ function AgendaContent() {
   
   const [filters, setFilters] = useState({ veterinarian: '', species: '', appointmentType: '', status: '' });
   const [detailModal, setDetailModal] = useState({ visible: false, appointment: null as AppointmentDetail | null });
-  const [creationModal, setCreationModal] = useState({ visible: false, initialDate: new Date(), initialHour: 9 });
+  const [creationModal, setCreationModal] = useState({ visible: false, initialDate: new Date(), initialHour: 9, petId: null as string | null });
+  // ?nueva=1&pet_id=… (from registering a pet): open the new-appointment form with that patient
+  const { nueva, pet_id: paramPetId } = useLocalSearchParams<{ nueva?: string; pet_id?: string }>();
+  useEffect(() => {
+    if (nueva === '1') setCreationModal({ visible: true, initialDate: new Date(), initialHour: Math.min(Math.max(new Date().getHours() + 1, 8), 19), petId: typeof paramPetId === 'string' ? paramPetId : null });
+  }, [nueva, paramPetId]);
 
   const { appointments, allAppointments, loading, error: loadError, summary, veterinarians, refetch, patchLocal } = useAgendaData({
     selectedDate,
@@ -101,7 +107,11 @@ function AgendaContent() {
     setDetailModal({ visible: true, appointment: apt });
   }, []);
 
+  // An appointment booked without a chart needs its patient at check-in (server: PET_REQUIRED)
+  const [linking, setLinking] = useState<{ id: string; status: string; name: string | null; advance?: boolean } | null>(null);
+
   const quickActions = useQuickActions({
+    onLinkPatient: (appointment) => setLinking({ id: appointment.id, status: appointment.status || 'programada', name: appointment.patient_name }),
     onOpenEditor: (appointment, mode) => setEditor({ visible: true, mode, appointment }),
     onOpenPayment: (appointment) => setPayment({ visible: true, appointment }),
   });
@@ -164,7 +174,7 @@ function AgendaContent() {
     setContextMenu({ visible: false, x: 0, y: 0, appointment: null });
   }, []);
 
-  const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
+  const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string, patientName?: string | null) => {
     try {
       await api.appointments.update(appointmentId, { status: newStatus });
       setDetailModal(prev => prev.appointment?.id === appointmentId
@@ -172,13 +182,28 @@ function AgendaContent() {
         : prev
       );
     } catch (err: any) {
+      if (err?.code === 'PET_REQUIRED') {
+        const apt = allAppointments.find((a: any) => a.id === appointmentId);
+        // The detail modal would sit on top of the sheet and swallow its taps
+        setDetailModal({ visible: false, appointment: null });
+        setLinking({ id: appointmentId, status: newStatus, name: patientName ?? apt?.patient_name ?? null, advance: true });
+        return;
+      }
       // e.g. "Transición inválida: completada -> en_espera" from the server
       toast.error(err?.message || 'No se pudo cambiar el estado');
     }
-  }, [refetch, toast]);
+  }, [refetch, toast, allAppointments]);
+
+  const linkAndAdvance = useCallback(async (petId: string) => {
+    if (!linking) return;
+    await api.appointments.update(linking.id, { pet_id: petId, status: linking.status });
+    setLinking(null);
+    refetch();
+    toast.success(linking.advance ? 'Paciente vinculado; la cita cambió de estado' : 'Paciente vinculado a la cita');
+  }, [linking, refetch, toast]);
 
   const handleSlotPress = useCallback((date: Date, hour: number) => {
-    setCreationModal({ visible: true, initialDate: date, initialHour: hour });
+    setCreationModal({ visible: true, initialDate: date, initialHour: hour, petId: null });
   }, []);
 
   const [mobileSidebarVisible, setMobileSidebarVisible] = useState(false);
@@ -195,7 +220,7 @@ function AgendaContent() {
         onNewAppointment={() => {
           const now = new Date();
           const nextHour = Math.min(now.getHours() + 1, 19);
-          setCreationModal({ visible: true, initialDate: now, initialHour: nextHour });
+          setCreationModal({ visible: true, initialDate: now, initialHour: nextHour, petId: null });
         }}
         onNewPatient={() => router.push('/(drawer)/add-paciente')}
         onFilterPress={isMobile ? () => setMobileSidebarVisible(true) : undefined}
@@ -313,7 +338,8 @@ function AgendaContent() {
             setDetailModal({ visible: false, appointment: null });
           }}
           onRegisterPatient={() => {
-            router.push({ pathname: '/(drawer)/add-paciente', params: { prefillName: detailModal.appointment?.patient_name || '' } });
+            const apt = detailModal.appointment;
+            if (apt) setLinking({ id: apt.id, status: apt.status || 'programada', name: apt.patient_name || null });
             setDetailModal({ visible: false, appointment: null });
           }}
           onStatusChange={handleStatusChange}
@@ -323,8 +349,17 @@ function AgendaContent() {
         visible={creationModal.visible}
         initialDate={creationModal.initialDate}
         initialHour={creationModal.initialHour}
-        onClose={() => setCreationModal({ visible: false, initialDate: new Date(), initialHour: 9 })}
+        initialPetId={creationModal.petId}
+        onClose={() => { setCreationModal({ visible: false, initialDate: new Date(), initialHour: 9, petId: null }); if (nueva) router.setParams({ nueva: undefined, pet_id: undefined } as any); }}
         onCreated={refetch}
+      />
+
+      <LinkPatientSheet
+        visible={!!linking}
+        patientName={linking?.name}
+        nextStatusLabel={linking?.advance ? (APPOINTMENT_STATUS_COLORS[linking.status]?.label || linking.status).toLowerCase() : null}
+        onClose={() => setLinking(null)}
+        onLinked={linkAndAdvance}
       />
 
       {/* Mobile Sidebar Overlay */}

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Image, Platform, Linking } from 'react-native';
 import { Text, TextInput, Portal, Dialog, Divider } from 'react-native-paper';
 
@@ -43,7 +43,7 @@ export default function PetDetailScreen() {
   const { colors, onPrimaryText, onAccentText } = useTheme();
   const { user } = useAuth();
   const toast = useToast();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, consulta } = useLocalSearchParams<{ id: string; consulta?: string }>();
   const { pet, loading } = usePet(id || null);
   const { records, loading: recordsLoading, addRecord, removeRecord } = useClinicalRecords(id || undefined);
   const { prescriptions, loading: rxLoading, addPrescription, sendEmail } = usePrescriptions(id || undefined);
@@ -277,6 +277,14 @@ export default function PetDetailScreen() {
     try { await removeRecord(deleteRecordTarget.id); setDeleteRecordTarget(null); setSelectedRecord(null); }
     catch { setErrorDialog('No se pudo eliminar el registro'); }
   };
+  // Arriving from "Iniciar primera consulta" right after registering the pet
+  useEffect(() => {
+    if (consulta === '1' && pet) {
+      setShowRecordModal(true);
+      router.setParams({ consulta: undefined } as any);
+    }
+  }, [consulta, pet]);
+
   if (loading) return <View style={[styles.center, { backgroundColor: colors.background }]}><SkeletonCard style={{ margin: SPACING.lg, width: '90%' }} /></View>;
   if (!pet) return <View style={[styles.center, { backgroundColor: colors.background }]}><Text style={[styles.loadingText, { color: colors.textSecondary }]}>Paciente no encontrado</Text></View>;
 

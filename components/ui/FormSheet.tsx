@@ -11,7 +11,8 @@ interface FormSheetProps {
   visible: boolean;
   title: string;
   onClose: () => void;
-  onSubmit: () => void;
+  /** Without it the sheet only offers Cancelar (e.g. a step where choosing an item is the action) */
+  onSubmit?: () => void;
   submitLabel?: string;
   submitting?: boolean;
   error?: string | null;
@@ -51,7 +52,7 @@ export default function FormSheet({ visible, title, onClose, onSubmit, submitLab
           </ScrollView>
           <View style={[styles.footer, { borderTopColor: colors.border }]}>
             <VButton variant="secondary" onPress={onClose}>Cancelar</VButton>
-            <VButton onPress={onSubmit} loading={submitting} disabled={submitting}>{submitLabel}</VButton>
+            {onSubmit ? <VButton onPress={onSubmit} loading={submitting} disabled={submitting}>{submitLabel}</VButton> : null}
           </View>
         </View>
       </View>

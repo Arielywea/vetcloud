@@ -17,11 +17,13 @@ interface UseQuickActionsOptions {
   onOpenEditor?: (appointment: any, mode: EditMode) => void;
   /** Opens the payment form for the appointment */
   onOpenPayment?: (appointment: any) => void;
+  /** Check-in sheet that links a phone booking to an existing or quickly registered patient */
+  onLinkPatient?: (appointment: QuickAppointment) => void;
 }
 
 // Real actions for the agenda context menu (they used to be Alert.alert stubs,
 // which do nothing on the web and never called the API).
-export default function useQuickActions({ onOpenEditor, onOpenPayment }: UseQuickActionsOptions = {}) {
+export default function useQuickActions({ onOpenEditor, onOpenPayment, onLinkPatient }: UseQuickActionsOptions = {}) {
   const router = useRouter();
   const { confirm, notify } = useConfirm();
   const toast = useToast();
@@ -33,7 +35,10 @@ export default function useQuickActions({ onOpenEditor, onOpenPayment }: UseQuic
       message: `${appointment.patient_name} no tiene ficha. ¿Quieres registrarlo ahora?`,
       confirmLabel: 'Registrar paciente',
     });
-    if (register) router.push({ pathname: '/(drawer)/add-paciente', params: { prefillName: appointment.patient_name } } as any);
+    if (register) {
+      if (onLinkPatient) onLinkPatient(appointment);
+      else router.push({ pathname: '/(drawer)/add-paciente', params: { prefillName: appointment.patient_name } } as any);
+    }
     return true;
   };
 

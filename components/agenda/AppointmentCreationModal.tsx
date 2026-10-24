@@ -28,6 +28,8 @@ interface AppointmentCreationModalProps {
   visible: boolean;
   initialDate?: Date;
   initialHour?: number;
+  /** Opens with this patient already chosen (e.g. right after registering it) */
+  initialPetId?: string | null;
   onClose: () => void;
   onCreated: () => void;
 }
@@ -51,6 +53,7 @@ export default function AppointmentCreationModal({
   visible,
   initialDate = new Date(),
   initialHour = 9,
+  initialPetId,
   onClose,
   onCreated,
 }: AppointmentCreationModalProps) {
@@ -104,7 +107,8 @@ export default function AppointmentCreationModal({
       setDate(formatDateKey(initialDate));
       setStartHour(initialHour.toString());
       setStartMinute('0');
-      setEndHour(Math.min(initialHour + 1, 19).toString());
+      // The day runs 08:00–20:00: a 19:00 start ends at 20:00, not at its own start time
+      setEndHour(Math.min(initialHour + 1, 20).toString());
       setEndMinute('0');
       setAppointmentType('consulta');
       setVeterinarian('');
@@ -135,11 +139,17 @@ export default function AppointmentCreationModal({
   const selectPet = useCallback((pet: any) => {
     setSelectedPetId(pet.id);
     setPatientName(pet.name || '');
-    setTutorName(pet.tutor_name || '');
-    setTutorPhone(pet.phone || '');
+    setTutorName(pet.owner_name || pet.tutor_name || '');
+    setTutorPhone(pet.owner_phone || pet.phone || '');
     setShowPetSearch(false);
     setPetSearchQuery('');
   }, []);
+
+  useEffect(() => {
+    if (!visible || !initialPetId || !pets.length) return;
+    const pet = pets.find((p) => p.id === initialPetId);
+    if (pet) selectPet(pet);
+  }, [visible, initialPetId, pets, selectPet]);
 
   const handleSubmit = async () => {
     if (!patientName.trim()) {
