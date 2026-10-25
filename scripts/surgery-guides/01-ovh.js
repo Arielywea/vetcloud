@@ -11,7 +11,7 @@ module.exports = {
     manejo_anestesico_sugerido: 'Premedicación con opioide agonista puro (metadona 0,2–0,3 mg/kg IM) ± dexmedetomidina 2–5 µg/kg IM o acepromacina 0,01–0,03 mg/kg IM. Inducción: propofol 2–4 mg/kg IV titulado o alfaxalona 1–2 mg/kg IV. Mantenimiento: isoflurano o sevoflurano en O2. Bloqueo incisional y lidocaína o bupivacaína intraperitoneal. AINE al final si está normotensa e hidratada (meloxicam 0,2 mg/kg SC).',
     consideraciones_por_raza: 'Braquicéfalas: preoxigenar, intubar rápido y extubar tarde, vigilar la vía aérea en la recuperación. Razas grandes y gigantes: valorar gastropexia preventiva en la misma cirugía y discutir la edad de esterilización (riesgo ortopédico e incontinencia). Galgos y lebreles: dosis bajas de propofol, recuperación más lenta con tiopental (evitarlo).',
     consideraciones_comorbilidades: 'Obesidad: pedículos con mucha grasa, ampliar la incisión y ligar por partes si hace falta. Celo o preñez: vasos más grandes y friables, mejor operar en anestro. Piómetra: estabilizar con fluidoterapia y antibiótico, manipular el útero sin romperlo. Geriátricas: perfil renal y hepático antes de anestesiar. Coagulopatías: tiempo de coagulación y plaquetas antes.',
-    fuente: 'Fossum, Small Animal Surgery, 5.ª ed. (2019), cap. 26; Plumb\'s Veterinary Drug Handbook; AAHA 2020 Anesthesia and Monitoring Guidelines.',
+    fuente: 'Fossum, Small Animal Surgery, 5.ª ed. (2019), cap. 26, pp. 725–732 y 744–745; cap. 19, pp. 516–518; Plumb\'s Veterinary Drug Handbook; AAHA 2020 Anesthesia and Monitoring Guidelines.',
   },
   guide: {
     draft: true,
@@ -41,14 +41,14 @@ module.exports = {
             items: [
               { title: 'Ayuno.', body: 'En adultas sanas, 4–6 h de sólidos según las guías de anestesia actuales; el agua se deja hasta la premedicación. En cachorras de menos de 8 semanas o de menos de 2 kg, 1–2 h como máximo, por el riesgo de hipoglucemia.', cite: 'AAHA 2020' },
               { title: 'Evaluación.', body: 'Examen físico completo. Hematocrito, proteínas totales y glucosa como mínimo; desde los 7 años suma perfil renal y hepático. En razas con riesgo, tiempo de coagulación.' },
-              { title: 'Momento del ciclo.', body: 'Opera en anestro. Durante el celo o la preñez los vasos son más grandes y friables y el ligamento ancho sangra más; si no hay urgencia, espera 2–3 meses después del celo.' },
-              { title: 'Antibióticos.', body: 'No hacen falta en la OVH electiva. Úsalos solo si hay piómetra o metritis, o si se rompe la técnica aséptica.' },
-              { title: 'Vejiga.', body: 'Pásala a orinar antes de la inducción o exprímela con suavidad ya anestesiada.' },
+              { title: 'Momento del ciclo.', body: 'Opera en anestro. Durante el celo o la preñez los vasos son más grandes y friables y el ligamento ancho sangra más; si no hay urgencia, espera 2–3 meses después del celo.', cite: 'Fossum p. 730, 744' },
+              { title: 'Antibióticos.', body: 'No hacen falta en la OVH electiva. Úsalos solo si hay piómetra o metritis, o si se rompe la técnica aséptica.', cite: 'Fossum p. 744' },
+              { title: 'Vejiga.', body: 'Pásala a orinar antes de la inducción o exprímela con suavidad ya anestesiada.', cite: 'Fossum p. 728' },
               {
                 title: 'Campo.',
                 body: 'Rasura y prepara el abdomen ventral desde el xifoides hasta el pubis, y lateral hasta las mamas. Decúbito dorsal con los miembros sujetos.',
               },
-              { title: 'Conteo.', body: 'Cuenta las gasas antes de incidir; usa gasas con marcador radiopaco.' },
+              { title: 'Conteo.', body: 'Cuenta las gasas antes de incidir; usa gasas con marcador radiopaco.', cite: 'Fossum p. 516' },
             ],
           },
           {
@@ -116,12 +116,12 @@ module.exports = {
             type: 'list',
             items: [
               'Ovarios: dentro de la bolsa ovárica, justo caudal al polo caudal de cada riñón. El derecho es más craneal, dorsal al duodeno descendente; el izquierdo, dorsal al colon descendente y lateral al bazo.',
-              'Ligamento suspensorio: banda blanca y tensa que va del ovario a la pared, a nivel de las últimas 1–2 costillas. Es lo que se estira o se rompe para exteriorizar el ovario.',
-              'Pedículo ovárico (mesovario): arteria y vena ováricas, de trayecto tortuoso, y una cantidad variable de grasa. La perra tiene mucha más grasa que la gata, por eso cuesta más ver los vasos.',
-              'Drenaje venoso: la vena ovárica izquierda drena en la vena renal izquierda y la derecha en la cava caudal; la arteria nace de la aorta. Un pedículo suelto sangra mucho y rápido.',
-              'Ligamento ancho (mesometrio): suspende el útero. En su borde libre corre el ligamento redondo hasta el canal inguinal.',
-              'Útero: cuerpo corto y cuernos largos. Las arterias y venas uterinas corren a cada lado del cuerpo. El cérvix es la porción caudal, más gruesa y firme.',
-              'Uréter: pasa dorsal al pedículo, cerca del polo caudal del riñón, y junto al cuerpo uterino cerca del trígono. Es lo que pones en riesgo si pinzas a ciegas.',
+              'Ligamento suspensorio: banda blanca y tensa que va del ovario a la pared, a nivel de las últimas dos costillas (p. 726). Es lo que se estira o se rompe para exteriorizar el ovario.',
+              'Pedículo ovárico (mesovario): arteria y vena ováricas, de trayecto tortuoso, y una cantidad variable de grasa. La perra tiene mucha más grasa que la gata, por eso cuesta más ver los vasos (p. 726).',
+              'Drenaje venoso: la vena ovárica izquierda drena en la vena renal izquierda y la derecha en la cava caudal; la arteria nace de la aorta. Un pedículo suelto sangra mucho y rápido (p. 726).',
+              'Ligamento ancho (mesometrio): suspende el útero. En su borde libre corre el ligamento redondo hasta el canal inguinal; con mucha grasa, sus vasos se ligan (p. 726).',
+              'Útero: cuerpo corto y cuernos largos. Las arterias y venas uterinas corren a cada lado del cuerpo. El cérvix es la porción caudal, más gruesa y firme (p. 726).',
+              'Uréter: pasa dorsal al pedículo, cerca del polo caudal del riñón, y junto al cuerpo uterino cerca del trígono. Es lo que pones en riesgo si pinzas a ciegas (p. 744).',
             ],
           },
         ],
@@ -139,11 +139,11 @@ module.exports = {
               {
                 type: 'steps',
                 items: [
-                  { title: 'Ubica la incisión.', body: 'Divide mentalmente el abdomen caudal (del ombligo al pubis) en tercios. En la perra, incide en el tercio craneal, justo caudal al ombligo.', bullets: ['En perras de tórax profundo o con útero grande, amplía hacia craneal o caudal para no traccionar de más.', 'En cachorras prepúberes, el tercio medio facilita ligar el cuerpo uterino.'] },
-                  { title: 'Piel y subcutáneo.', body: 'Incisión de 4–8 cm con hoja 10 de un solo trazo. Sigue por el subcutáneo hasta ver la línea alba, una banda blanca brillante entre los rectos. Controla los sangrados pequeños con presión o electrocauterio.' },
+                  { title: 'Ubica la incisión.', body: 'Divide mentalmente el abdomen caudal (del ombligo al pubis) en tercios. En la perra, incide en el tercio craneal, justo caudal al ombligo.', bullets: ['En perras de tórax profundo o con útero grande, amplía hacia craneal o caudal para no traccionar de más.', 'En cachorras prepúberes, el tercio medio facilita ligar el cuerpo uterino.'], cite: 'Fossum p. 729–730' },
+                  { title: 'Piel y subcutáneo.', body: 'Incisión de 4–8 cm con hoja 10 de un solo trazo. Sigue por el subcutáneo hasta ver la línea alba, una banda blanca brillante entre los rectos. Controla los sangrados pequeños con presión o electrocauterio.', cite: 'Fossum p. 730' },
                   { title: 'Despeja la fascia.', body: 'Limpia unos milímetros de grasa a cada lado de la línea alba: tendrás que ver la vaina externa del recto para el cierre.' },
-                  { title: 'Entra a la cavidad.', body: 'Toma la línea alba con pinza de dientes, levántala en tienda y haz una incisión punzante con el filo hacia arriba. Palpa por dentro buscando adherencias.' },
-                  { title: 'Amplía.', body: 'Con tijera de Mayo, extiende hacia craneal y caudal protegiendo las vísceras con los dedos por debajo.' },
+                  { title: 'Entra a la cavidad.', body: 'Toma la línea alba con pinza de dientes, levántala en tienda y haz una incisión punzante con el filo hacia arriba. Palpa por dentro buscando adherencias.', cite: 'Fossum p. 730' },
+                  { title: 'Amplía.', body: 'Con tijera de Mayo, extiende hacia craneal y caudal protegiendo las vísceras con los dedos por debajo.', cite: 'Fossum p. 730' },
                 ],
               },
               {
@@ -161,12 +161,12 @@ module.exports = {
               {
                 type: 'steps',
                 items: [
-                  { title: 'Introduce el gancho.', body: 'Levanta la pared abdominal izquierda tomando la vaina externa con una pinza. Desliza el gancho con la punta contra la pared, 2–3 cm caudal al riñón.' },
-                  { title: 'Engancha y eleva.', body: 'Gira el gancho hacia medial para tomar el cuerno uterino, el ligamento ancho o el redondo, y elévalo con suavidad.' },
-                  { title: 'Confirma que es útero.', body: 'Síguelo hasta la bifurcación o hasta el ovario. Puedes haber enganchado intestino delgado, uréter o solo el ligamento redondo.', bullets: ['Si no aparece, retroflexiona la vejiga: el cuerpo uterino está entre la vejiga y el colon.'] },
-                  { title: 'Identifica el ligamento suspensorio.', body: 'Con tracción caudal y medial del cuerno, palpa la banda tensa en el borde craneal del pedículo.' },
-                  { title: 'Estíralo o rómpelo.', body: 'Con el índice, tracciona el ligamento hacia caudolateral, cerca del riñón, mientras mantienes el cuerno hacia caudomedial. Rómpelo o estíralo sin desgarrar los vasos ováricos. El ovario debe llegar a la herida sin tensión.' },
-                  { title: 'Abre una ventana en el ligamento ancho.', body: 'Caudal al pedículo, en la zona sin vasos, con el dedo o la punta de una pinza. El pedículo queda aislado para pinzarlo.' },
+                  { title: 'Introduce el gancho.', body: 'Levanta la pared abdominal izquierda tomando la vaina externa con una pinza. Desliza el gancho con la punta contra la pared, 2–3 cm caudal al riñón.', cite: 'Fossum p. 730' },
+                  { title: 'Engancha y eleva.', body: 'Gira el gancho hacia medial para tomar el cuerno uterino, el ligamento ancho o el redondo, y elévalo con suavidad.', cite: 'Fossum p. 730' },
+                  { title: 'Confirma que es útero.', body: 'Síguelo hasta la bifurcación o hasta el ovario. Puedes haber enganchado intestino delgado, uréter o solo el ligamento redondo.', bullets: ['Si no aparece, retroflexiona la vejiga: el cuerpo uterino está entre la vejiga y el colon.'], cite: 'Fossum p. 730' },
+                  { title: 'Identifica el ligamento suspensorio.', body: 'Con tracción caudal y medial del cuerno, palpa la banda tensa en el borde craneal del pedículo.', cite: 'Fossum p. 730' },
+                  { title: 'Estíralo o rómpelo.', body: 'Con el índice, tracciona el ligamento hacia caudolateral, cerca del riñón, mientras mantienes el cuerno hacia caudomedial. Rómpelo o estíralo sin desgarrar los vasos ováricos. El ovario debe llegar a la herida sin tensión.', cite: 'Fossum p. 730' },
+                  { title: 'Abre una ventana en el ligamento ancho.', body: 'Caudal al pedículo, en la zona sin vasos, con el dedo o la punta de una pinza. El pedículo queda aislado para pinzarlo.', cite: 'Fossum p. 730' },
                 ],
               },
               {
@@ -185,12 +185,12 @@ module.exports = {
               {
                 type: 'steps',
                 items: [
-                  { title: 'Coloca las pinzas.', body: 'Pon tres pinzas (Rochester-Carmalt, Kelly o Mosquito según el tamaño) atravesando el pedículo, proximales al ovario.', bullets: ['Pinza proximal: aplasta el tejido y deja un surco donde asienta la ligadura.', 'Pinza media: sostiene el pedículo mientras ligas.', 'Pinza distal: junto al ovario, evita el reflujo de sangre al cortar.'] },
-                  { title: 'Primera ligadura en el surco.', body: 'Retira la pinza proximal y coloca una ligadura circunferencial con nudo de fricción (Miller o estrangulador) exactamente en el surco. Ajusta mientras tu ayudante abre la pinza poco a poco, si la dejas.' },
-                  { title: 'Segunda ligadura.', body: 'Coloca una ligadura transfixiante (en 8) o una segunda circunferencial entre la primera y la pinza media. La transfixiante no puede deslizarse del muñón.', bullets: ['Pasa la aguja por el centro del pedículo, en una zona sin vasos visibles, para no pincharlos.'] },
-                  { title: 'Corta.', body: 'Corta entre la pinza media y la distal, dejando 3–5 mm de muñón sobre la pinza media.' },
-                  { title: 'Revisa el muñón.', body: 'Toma el borde del muñón con una pinza de disección, abre la pinza media y observa durante unos segundos. Si sangra, vuelve a pinzar proximal y liga de nuevo.' },
-                  { title: 'Suelta con control.', body: 'Devuelve el muñón a la cavidad sosteniéndolo con la pinza hasta el final; nunca lo sueltes desde la pinza cerrada.' },
+                  { title: 'Coloca las pinzas.', body: 'Pon tres pinzas (Rochester-Carmalt, Kelly o Mosquito según el tamaño) atravesando el pedículo, proximales al ovario.', bullets: ['Pinza proximal: aplasta el tejido y deja un surco donde asienta la ligadura.', 'Pinza media: sostiene el pedículo mientras ligas.', 'Pinza distal: junto al ovario, evita el reflujo de sangre al cortar.'], cite: 'Fossum p. 730' },
+                  { title: 'Primera ligadura en el surco.', body: 'Retira la pinza proximal y coloca una ligadura circunferencial con nudo de fricción (Miller o estrangulador) exactamente en el surco. Ajusta mientras tu ayudante abre la pinza poco a poco, si la dejas.', cite: 'Fossum p. 729–730' },
+                  { title: 'Segunda ligadura.', body: 'Coloca una ligadura transfixiante (en 8) o una segunda circunferencial entre la primera y la pinza media. La transfixiante no puede deslizarse del muñón.', bullets: ['Pasa la aguja por el centro del pedículo, en una zona sin vasos visibles, para no pincharlos.'], cite: 'Fossum p. 730' },
+                  { title: 'Corta.', body: 'Corta entre la pinza media y la distal, dejando 3–5 mm de muñón sobre la pinza media.', cite: 'Fossum p. 730' },
+                  { title: 'Revisa el muñón.', body: 'Toma el borde del muñón con una pinza de disección, abre la pinza media y observa durante unos segundos. Si sangra, vuelve a pinzar proximal y liga de nuevo.', cite: 'Fossum p. 730' },
+                  { title: 'Suelta con control.', body: 'Devuelve el muñón a la cavidad sosteniéndolo con la pinza hasta el final; nunca lo sueltes desde la pinza cerrada.', cite: 'Fossum p. 730' },
                 ],
               },
               {
@@ -223,11 +223,11 @@ module.exports = {
               {
                 type: 'steps',
                 items: [
-                  { title: 'Nudo de Miller: primera vuelta.', body: 'Pasa el hilo alrededor del pedículo y haz un medio nudo, con un cabo corto y otro largo.' },
-                  { title: 'Reserva el espacio.', body: 'Pon el índice, palma arriba, entre el cabo largo y la ligadura.' },
-                  { title: 'Segunda vuelta.', body: 'Con el portaagujas, lleva el cabo largo alrededor del pedículo una segunda vez.' },
-                  { title: 'Pasa el cabo.', body: 'Mételo por el espacio que reservaba tu dedo y ajusta: la vuelta de arriba comprime a las de abajo.' },
-                  { title: 'Asegura.', body: 'Termina con lazadas cuadradas.' },
+                  { title: 'Nudo de Miller: primera vuelta.', body: 'Pasa el hilo alrededor del pedículo y haz un medio nudo, con un cabo corto y otro largo.', cite: 'Fossum p. 729 (fig. 26.4A)' },
+                  { title: 'Reserva el espacio.', body: 'Pon el índice, palma arriba, entre el cabo largo y la ligadura.', cite: 'Fossum p. 729 (fig. 26.4B)' },
+                  { title: 'Segunda vuelta.', body: 'Con el portaagujas, lleva el cabo largo alrededor del pedículo una segunda vez.', cite: 'Fossum p. 729 (fig. 26.4B)' },
+                  { title: 'Pasa el cabo.', body: 'Mételo por el espacio que reservaba tu dedo y ajusta: la vuelta de arriba comprime a las de abajo.', cite: 'Fossum p. 729 (fig. 26.4C)' },
+                  { title: 'Asegura.', body: 'Termina con lazadas cuadradas.', cite: 'Fossum p. 729 (fig. 26.4C)' },
                 ],
               },
             ],
@@ -239,12 +239,12 @@ module.exports = {
               {
                 type: 'steps',
                 items: [
-                  { title: 'Repite en el lado derecho.', body: 'El ovario derecho es más craneal: suele hacer falta más incisión o más tracción. Misma técnica.' },
-                  { title: 'Ligamento ancho.', body: 'Si tiene vasos o grasa visibles (celo, obesidad, perra adulta), lígalo o pínzalo en bloque y córtalo. Si está delgado y sin vasos, puede romperse con los dedos.' },
-                  { title: 'Exterioriza el cuerpo uterino.', body: 'Tracciona los cuernos hacia craneal para ver el cuerpo y el cérvix.' },
-                  { title: 'Liga los vasos uterinos.', body: 'En perras medianas y grandes, liga las arterias y venas uterinas por separado a cada lado del cuerpo, con una transfixiante que pase por la pared del útero, antes de la ligadura del cuerpo.' },
-                  { title: 'Liga el cuerpo.', body: 'Craneal al cérvix, coloca una ligadura circunferencial y, craneal a ella, una transfixiante (o en 8). En perras grandes, una pinza proximal y la técnica de las tres pinzas igual que en el pedículo.' },
-                  { title: 'Corta y revisa.', body: 'Corta craneal a las ligaduras dejando muñón. Revisa que no sangre antes de devolverlo.' },
+                  { title: 'Repite en el lado derecho.', body: 'El ovario derecho es más craneal: suele hacer falta más incisión o más tracción. Misma técnica.', cite: 'Fossum p. 730' },
+                  { title: 'Ligamento ancho.', body: 'Si tiene vasos o grasa visibles (celo, obesidad, perra adulta), lígalo o pínzalo en bloque y córtalo. Si está delgado y sin vasos, puede romperse con los dedos.', cite: 'Fossum p. 726, 730' },
+                  { title: 'Exterioriza el cuerpo uterino.', body: 'Tracciona los cuernos hacia craneal para ver el cuerpo y el cérvix.', cite: 'Fossum p. 730' },
+                  { title: 'Liga los vasos uterinos.', body: 'En perras medianas y grandes, liga las arterias y venas uterinas por separado a cada lado del cuerpo, con una transfixiante que pase por la pared del útero, antes de la ligadura del cuerpo.', cite: 'Fossum p. 730' },
+                  { title: 'Liga el cuerpo.', body: 'Craneal al cérvix, coloca una ligadura circunferencial y, craneal a ella, una transfixiante (o en 8). En perras grandes, una pinza proximal y la técnica de las tres pinzas igual que en el pedículo.', cite: 'Fossum p. 730' },
+                  { title: 'Corta y revisa.', body: 'Corta craneal a las ligaduras dejando muñón. Revisa que no sangre antes de devolverlo.', cite: 'Fossum p. 730' },
                 ],
               },
               {
@@ -262,9 +262,9 @@ module.exports = {
               {
                 type: 'steps',
                 items: [
-                  { title: 'Mira los tres muñones.', body: 'Ambos pedículos y el cuerpo uterino. Busca sangrado en el ligamento ancho.' },
-                  { title: 'Revisa la pieza.', body: 'Confirma que cada ovario salió completo: abre la bolsa ovárica y busca el tejido ovárico. Un fragmento olvidado causa el síndrome de ovario remanente.' },
-                  { title: 'Cuenta las gasas.', body: 'Mismo número que al abrir.' },
+                  { title: 'Mira los tres muñones.', body: 'Ambos pedículos y el cuerpo uterino. Busca sangrado en el ligamento ancho.', cite: 'Fossum p. 744' },
+                  { title: 'Revisa la pieza.', body: 'Confirma que cada ovario salió completo: abre la bolsa ovárica y busca el tejido ovárico. Un fragmento olvidado causa el síndrome de ovario remanente.', cite: 'Fossum p. 730, 745' },
+                  { title: 'Cuenta las gasas.', body: 'Mismo número que al abrir.', cite: 'Fossum p. 517' },
                 ],
               },
             ],
@@ -279,9 +279,9 @@ module.exports = {
           {
             type: 'steps',
             items: [
-              { title: 'Línea alba.', body: 'Continuo simple con absorbible monofilamento de larga duración (PDS). Cada pasada toma 5–10 mm de la vaina externa del recto a cada lado, separadas 5–10 mm. No incluyas grasa.', bullets: ['Inicio: 5 lazadas. Final, contra el último asa: 6–7 lazadas.'] },
-              { title: 'Subcutáneo.', body: 'Continuo simple con Monocryl 3-0 o 4-0 para cerrar el espacio muerto, tomando a ratos la fascia de abajo.' },
-              { title: 'Piel.', body: 'Intradérmico con 4-0 absorbible (no hay que retirar puntos) o puntos simples o en X con nylon 3-0, a retirar a los 10–14 días.' },
+              { title: 'Línea alba.', body: 'Continuo simple con absorbible monofilamento de larga duración (PDS). Cada pasada toma 5–10 mm de la vaina externa del recto a cada lado, separadas 5–10 mm. No incluyas grasa.', bullets: ['Inicio: 5 lazadas. Final, contra el último asa: 6–7 lazadas.'], cite: 'Fossum p. 517–518' },
+              { title: 'Subcutáneo.', body: 'Continuo simple con Monocryl 3-0 o 4-0 para cerrar el espacio muerto, tomando a ratos la fascia de abajo.', cite: 'Fossum p. 518' },
+              { title: 'Piel.', body: 'Intradérmico con 4-0 absorbible (no hay que retirar puntos) o puntos simples o en X con nylon 3-0, a retirar a los 10–14 días.', cite: 'Fossum p. 518' },
             ],
           },
           { type: 'note', kind: 'error', title: 'Qué no usar en la línea alba', text: 'Catgut en patrón continuo (se afloja y se absorbe de forma impredecible) ni monofilamento no absorbible (senos de sutura).' },
@@ -310,9 +310,9 @@ module.exports = {
             items: [
               { title: 'Recuperación.', body: 'Temperatura, color de mucosas y escala de dolor (Glasgow abreviada en perras, Feline Grimace Scale en gatas) cada 15–30 min hasta que se pare.' },
               { title: 'Analgesia en casa.', body: 'AINE 3–5 días. Explica al tutor los signos de dolor.' },
-              { title: 'Herida.', body: 'Collar isabelino o body hasta el control. Revisión a los 10–14 días (retiro de puntos si son externos).' },
-              { title: 'Reposo.', body: 'Paseos con correa, sin saltar ni correr, 10–14 días.' },
-              { title: 'Alimentación.', body: 'Comida en pequeña cantidad esa noche. La esterilización baja las necesidades energéticas: ajusta la ración desde el control para evitar el sobrepeso.' },
+              { title: 'Herida.', body: 'Collar isabelino o body hasta el control. Revisión a los 10–14 días (retiro de puntos si son externos).', cite: 'Fossum p. 744' },
+              { title: 'Reposo.', body: 'Paseos con correa, sin saltar ni correr, 10–14 días.', cite: 'Fossum p. 744' },
+              { title: 'Alimentación.', body: 'Comida en pequeña cantidad esa noche. La esterilización baja las necesidades energéticas: ajusta la ración desde el control para evitar el sobrepeso.', cite: 'Fossum p. 744–745' },
             ],
           },
           {
@@ -357,8 +357,8 @@ module.exports = {
       { title: 'How to tie a Miller\'s Knot', url: 'https://www.youtube.com/watch?v=HOkL5ixD0DU', channel: 'Obi Veterinary Education', lang: 'inglés', note: 'El nudo de Miller de cerca' },
     ],
     sources: [
-      { text: 'Fossum TW. Small Animal Surgery, 5.ª ed. Elsevier, 2019. Cap. 26, cirugía de los aparatos reproductor y genital.', kind: 'libro' },
-      { text: 'Fossum TW. Small Animal Surgery, 5.ª ed. Cap. 19 (cavidad abdominal) y cap. 8 (biomateriales, sutura y hemostasia).', kind: 'libro' },
+      { text: 'Fossum TW. Small Animal Surgery, 5.ª ed. Elsevier, 2019. Cap. 26, cirugía de los aparatos reproductor y genital: anatomía, OVH y OVE (pp. 725–732), postoperatorio y complicaciones (pp. 744–745).', kind: 'libro' },
+      { text: 'Fossum TW. Small Animal Surgery, 5.ª ed. Cap. 19 (cavidad abdominal, pp. 516–518) y cap. 8 (biomateriales, sutura y hemostasia).', kind: 'libro' },
       { text: 'Leitch BJ y col. Seguridad de nudos de ligadura en un modelo de pedículo vascular. Veterinary Surgery, 2012.', kind: 'complemento' },
       { text: 'Rosin E, Robinson GM. Seguridad de nudos con polidioxanona. Veterinary Surgery, 1989.', kind: 'complemento' },
       { text: 'Van Goethem B y col. Ovariectomía versus ovariohisterectomía en la perra: revisión. Veterinary Surgery, 2006.', kind: 'complemento' },
