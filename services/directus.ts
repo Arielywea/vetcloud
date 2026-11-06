@@ -326,10 +326,19 @@ export interface DirectusNote {
   title: string;
   content: string;
   tags: string[];
+  /** Tiptap/ProseMirror JSON document; null for legacy plain-text notes */
+  blocks?: NoteDoc | null;
+  /** Incremented on every save; sent back on PATCH to detect concurrent edits (409) */
+  version?: number;
   disease_id: DirectusDisease | string | null;
   pet_id: DirectusPet | string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface NoteDoc {
+  type: 'doc';
+  content: any[];
 }
 
 export interface DirectusFavorite {
