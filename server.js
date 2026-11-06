@@ -1172,15 +1172,64 @@ app.get('/items/personal_notes', authMiddleware, async (req, res) => {
   }
 });
 
+const NOTE_TITLE_MAX = 300;
+const NOTE_CONTENT_MAX = 200000;
+const NOTE_BLOCKS_MAX_BYTES = 1000000;
+
+// Validates a note body. `partial` = PATCH (only the keys present are checked).
+// Returns { error } or { note } with normalized values.
+function normalizeNote(body, partial) {
+  const note = {};
+  const b = body || {};
+  if (!partial || 'title' in b) {
+    if (b.title != null && typeof b.title !== 'string') return { error: 'El título debe ser texto' };
+    const title = (b.title || '').trim();
+    if (title.length > NOTE_TITLE_MAX) return { error: `El título no puede superar ${NOTE_TITLE_MAX} caracteres` };
+    note.title = title || 'Sin título';
+  }
+  if (!partial || 'content' in b) {
+    if (b.content != null && typeof b.content !== 'string') return { error: 'El contenido debe ser texto' };
+    const content = b.content || '';
+    if (content.length > NOTE_CONTENT_MAX) return { error: 'La nota es demasiado larga' };
+    note.content = content;
+  }
+  if (!partial || 'tags' in b) {
+    const tags = b.tags == null ? [] : b.tags;
+    if (!Array.isArray(tags) || tags.some(t => typeof t !== 'string')) return { error: 'Las etiquetas deben ser una lista de textos' };
+    const clean = [...new Set(tags.map(t => t.trim()).filter(Boolean))];
+    if (clean.length > 20 || clean.some(t => t.length > 40)) return { error: 'Máximo 20 etiquetas de hasta 40 caracteres' };
+    note.tags = clean;
+  }
+  if ('blocks' in b) {
+    const blocks = b.blocks;
+    if (blocks !== null) {
+      if (typeof blocks !== 'object' || Array.isArray(blocks) || blocks.type !== 'doc' || !Array.isArray(blocks.content)) {
+        return { error: 'El documento de la nota no es válido' };
+      }
+      if (Buffer.byteLength(JSON.stringify(blocks)) > NOTE_BLOCKS_MAX_BYTES) return { error: 'La nota es demasiado larga' };
+    }
+    note.blocks = blocks;
+  }
+  for (const key of ['disease_id', 'pet_id']) {
+    if (key in b) {
+      if (b[key] != null && !isValidUUID(String(b[key]))) return { error: 'Referencia no válida' };
+      note[key] = b[key] || null;
+    }
+  }
+  return { note };
+}
+
 app.post('/items/personal_notes', authMiddleware, async (req, res) => {
   try {
     const refError = await checkRefs(req);
     if (refError) return res.status(403).json({ error: refError });
-    const n = req.body;
+    const { error, note: n } = normalizeNote(req.body, false);
+    if (error) return res.status(400).json({ error });
     const result = await pool.query(
-      `INSERT INTO personal_notes (title, content, tags, disease_id, pet_id, user_id)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [n.title, n.content, JSON.stringify(n.tags || []), n.disease_id, n.pet_id, req.userId]
+      `INSERT INTO personal_notes (title, content, tags, blocks, disease_id, pet_id, user_id, organization_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [n.title, n.content, JSON.stringify(n.tags), n.blocks == null ? null : JSON.stringify(n.blocks),
+       n.disease_id || null, n.pet_id || null, req.userId, req.organizationId || null]
     );
     res.json({ data: result.rows[0] });
   } catch (err) {
@@ -1191,19 +1240,31 @@ app.post('/items/personal_notes', authMiddleware, async (req, res) => {
 
 app.patch('/items/personal_notes/:id', authMiddleware, async (req, res) => {
   try {
+    if (!isValidUUID(req.params.id)) return res.status(400).json({ error: 'Identificador no válido' });
     const refError = await checkRefs(req);
     if (refError) return res.status(403).json({ error: refError });
-    const n = req.body;
-    const allowed = ['title','content','tags','disease_id','pet_id'];
-    const safe = sanitizeColumns(allowed, n);
+    const { error, note: safe } = normalizeNote(req.body, true);
+    if (error) return res.status(400).json({ error });
+    // Optional optimistic concurrency: the client sends the version it last saw
+    const expected = req.body?.version;
+    if (expected != null && !Number.isInteger(expected)) return res.status(400).json({ error: 'Versión no válida' });
     const { fields, values, idx } = buildSet(safe);
-    fields.push(`updated_at = NOW()`);
-    values.push(req.params.id);
-    values.push(req.userId);
+    fields.push(`updated_at = NOW()`, `version = version + 1`);
+    values.push(req.params.id, req.userId);
+    let where = `id = $${idx} AND user_id = $${idx + 1}`;
+    if (expected != null) { values.push(expected); where += ` AND version = $${idx + 2}`; }
     const result = await pool.query(
-      `UPDATE personal_notes SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`, values
+      `UPDATE personal_notes SET ${fields.join(', ')} WHERE ${where} RETURNING *`, values
     );
-    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
+    if (!result.rows.length) {
+      if (expected != null) {
+        const current = await pool.query('SELECT * FROM personal_notes WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
+        if (current.rows.length) {
+          return res.status(409).json({ error: 'La nota cambió en otra ventana. Se cargó la versión más reciente.', data: current.rows[0] });
+        }
+      }
+      return res.status(404).json({ error: 'No se encontró el registro' });
+    }
     res.json({ data: result.rows[0] });
   } catch (err) {
     logError(req, err);
@@ -2820,7 +2881,7 @@ app.get('/search', authMiddleware, async (req, res) => {
 const VACCINATION_KINDS = ['vacuna', 'desparasitacion_interna', 'desparasitacion_externa'];
 const VACCINE_PLAN_ITEMS = ['octuple_sextuple', 'kc', 'antirrabica', 'triple_felina', 'leucemia_felina', 'otra'];
 const VACCINE_PLAN_LABELS = { octuple_sextuple: 'Óctuple/Séxtuple', kc: 'KC', antirrabica: 'Antirrábica', triple_felina: 'Triple Felina', leucemia_felina: 'Leucemia Felina' };
-const VACCINATION_COLUMNS = ['pet_id', 'kind', 'plan_item', 'product', 'lot', 'applied_at', 'next_due_at', 'veterinarian', 'clinical_record_id', 'notes'];
+const VACCINATION_COLUMNS = ['pet_id', 'kind', 'plan_item', 'product', 'lot', 'applied_at', 'next_due_at', 'veterinarian', 'clinical_record_id', 'notes', 'date_estimated'];
 
 function vaccinationFieldError(v, partial) {
   if ((!partial || v.kind !== undefined) && v.kind != null && !VACCINATION_KINDS.includes(v.kind)) return 'Tipo inválido';
@@ -2831,6 +2892,7 @@ function vaccinationFieldError(v, partial) {
     if (parsed === undefined) return key === 'applied_at' ? 'Fecha de aplicación inválida' : 'Fecha de la próxima dosis inválida';
     v[key] = parsed;
   }
+  if (v.date_estimated !== undefined) v.date_estimated = v.date_estimated === true;
   if ((!partial || v.applied_at !== undefined) && !v.applied_at) return 'La fecha de aplicación es obligatoria';
   if (v.applied_at && v.next_due_at && v.next_due_at <= v.applied_at) return 'La próxima dosis debe ser posterior a la aplicación';
   return null;

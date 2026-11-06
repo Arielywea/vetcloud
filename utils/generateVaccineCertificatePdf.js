@@ -28,7 +28,7 @@ function table(doc, y, title, rows, todayKey) {
   };
   y = head(y);
   for (const r of rows) {
-    const cells = [dateOnly(r.applied_at, { day: '2-digit', month: '2-digit', year: 'numeric' }), r.what, r.lot || '—', r.veterinarian || '—',
+    const cells = [dateOnly(r.applied_at, { day: '2-digit', month: '2-digit', year: 'numeric' }) + (r.date_estimated ? ' (aprox.)' : ''), r.what, r.lot || '—', r.veterinarian || '—',
       r.next_due_at ? dateOnly(r.next_due_at, { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'];
     doc.fontSize(9.5).font('Helvetica');
     const h = Math.max(22, ...cells.map((t, i) => doc.heightOfString(String(t), { width: cols[i].w - 10 }) + 12));

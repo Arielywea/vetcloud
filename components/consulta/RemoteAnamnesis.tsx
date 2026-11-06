@@ -9,6 +9,10 @@ import VButton from '../ui/Button';
 import Segmented from '../ui/Segmented';
 import { SPACING, TYPOGRAPHY } from '../../constants/tokens';
 import { DEWORMING, doseStatus, formatDay, planFor } from '../../utils/vaccinePlan';
+import { monthsAgoInput } from '../../utils/date';
+
+// "The tutor does not remember": a month/year estimate, filled in one tap
+const AGO = [{ label: '3 meses', months: 3 }, { label: '6 meses', months: 6 }, { label: '1 año', months: 12 }, { label: '2 años', months: 24 }];
 
 // Remote anamnesis (antecedentes): what is asked once, at the first visit, and kept up to date afterwards.
 // It lives on the pet (food, habitat, allergies…); each visit keeps a text copy of what it was then.
@@ -212,19 +216,27 @@ export default function RemoteAnamnesis({ pet, value: r, onChange, vaccinations 
 
       {Group({ title: 'Vacunas y desparasitación', children: (
         <>
-          <Text style={[styles.note, { color: colors.textSecondary }]}>Fecha de la última dosis si el tutor la sabe. Las ya registradas en la clínica aparecen con su fecha.</Text>
+          <Text style={[styles.note, { color: colors.textSecondary }]}>Fecha de la última dosis (DD/MM/AAAA). Si el tutor no la sabe, escribe mes y año (MM/AAAA) o elige "hace": queda marcada como estimada. Las ya registradas en la clínica aparecen con su fecha.</Text>
           <View style={styles.pair}>
             {[...plan.map((p) => ({ key: p.item as string, label: p.label, s: doseStatus(vaccinations, (v) => v.kind === 'vacuna' && v.plan_item === p.item, p.months) })),
               ...DEWORMING.map((d) => ({ key: d.kind as string, label: d.label, s: doseStatus(vaccinations, (v) => v.kind === d.kind, d.months) }))].map((row) => (
               row.s.last ? (
                 <View key={row.key} style={[styles.third, styles.recorded]}>
                   <Label>{row.label}</Label>
-                  <Text style={[styles.body, { color: colors.text }]}>Última {formatDay(row.s.last.applied_at)}</Text>
+                  <Text style={[styles.body, { color: colors.text }]}>Última {formatDay(row.s.last.applied_at)}{row.s.last.date_estimated ? ' (aprox.)' : ''}</Text>
                 </View>
               ) : (
-                <VInput key={row.key} containerStyle={styles.third} label={row.label} placeholder="DD/MM/AAAA" keyboardType="numbers-and-punctuation"
-                  value={row.key === 'desparasitacion_interna' ? r.dewormIn : row.key === 'desparasitacion_externa' ? r.dewormOut : r.vaccineDates[row.key] || ''}
-                  onChangeText={(v) => row.key === 'desparasitacion_interna' ? set('dewormIn', v) : row.key === 'desparasitacion_externa' ? set('dewormOut', v) : set('vaccineDates', { ...r.vaccineDates, [row.key]: v })} />
+                <View key={row.key} style={styles.third}>
+                  <VInput label={row.label} placeholder="DD/MM/AAAA o MM/AAAA" keyboardType="numbers-and-punctuation"
+                    value={row.key === 'desparasitacion_interna' ? r.dewormIn : row.key === 'desparasitacion_externa' ? r.dewormOut : r.vaccineDates[row.key] || ''}
+                    onChangeText={(v: string) => row.key === 'desparasitacion_interna' ? set('dewormIn', v) : row.key === 'desparasitacion_externa' ? set('dewormOut', v) : set('vaccineDates', { ...r.vaccineDates, [row.key]: v })} />
+                  <View style={styles.chips}>
+                    <Text style={[styles.ago, { color: colors.textSecondary }]}>Hace</Text>
+                    {AGO.map((a) => (
+                      <VButton key={a.months} size="sm" variant="ghost" onPress={() => ((v: string) => row.key === 'desparasitacion_interna' ? set('dewormIn', v) : row.key === 'desparasitacion_externa' ? set('dewormOut', v) : set('vaccineDates', { ...r.vaccineDates, [row.key]: v }))(monthsAgoInput(a.months))} accessibilityLabel={`${row.label}: hace ${a.label}`}>{a.label}</VButton>
+                    ))}
+                  </View>
+                </View>
               )
             ))}
           </View>
@@ -260,6 +272,7 @@ const styles = StyleSheet.create({
   groupBody: { flex: 1, minWidth: 0 },
   label: { fontSize: TYPOGRAPHY.sizes.sm, marginBottom: SPACING.sm },
   note: { fontSize: TYPOGRAPHY.sizes.sm, lineHeight: 19, marginBottom: SPACING.md },
+  ago: { fontSize: TYPOGRAPHY.sizes.sm, alignSelf: 'center' },
   body: { fontSize: TYPOGRAPHY.sizes.md },
   seg: { marginBottom: SPACING.md },
   segTight: { marginBottom: SPACING.sm },

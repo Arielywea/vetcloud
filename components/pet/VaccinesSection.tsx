@@ -58,7 +58,7 @@ export default function VaccinesSection({ pet, vaccinations, onApply, readOnly, 
                 <Text style={[styles.stateText, { color: st.color }]}>{st.text}</Text>
                 {r.s.last ? (
                   <Text style={[styles.meta, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {[`Última ${formatDay(r.s.last.applied_at)}`, r.s.last.product, r.s.last.lot ? `lote ${r.s.last.lot}` : null].filter(Boolean).join(' · ')}
+                    {[`Última ${formatDay(r.s.last.applied_at)}${r.s.last.date_estimated ? ' (aprox.)' : ''}`, r.s.last.product, r.s.last.lot ? `lote ${r.s.last.lot}` : null].filter(Boolean).join(' · ')}
                   </Text>
                 ) : null}
               </View>

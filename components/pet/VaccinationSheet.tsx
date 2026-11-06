@@ -8,7 +8,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 import { api, DirectusPet, Vaccination, VaccinationKind, VaccinePlanItem } from '../../services/directus';
-import { formatDmy, parseDmy, toLocalDateKey } from '../../utils/date';
+import { formatDmy, monthsAgoInput, parseDmy, parseDoseDate, toLocalDateKey } from '../../utils/date';
 import { planFor, proposeNextDue } from '../../utils/vaccinePlan';
 
 export interface VaccinationDraft {
@@ -19,6 +19,8 @@ export interface VaccinationDraft {
   applied_at: string;
   next_due_at: string | null;
   veterinarian: string | null;
+  /** The exact date is not known: applied_at is an estimate */
+  date_estimated?: boolean;
 }
 
 interface VaccinationSheetProps {
@@ -69,7 +71,7 @@ export default function VaccinationSheet({ visible, pet, preset, onClose, onSave
   // The next date follows the plan until the vet edits it
   useEffect(() => {
     if (nextTouched) return;
-    const a = parseDmy(applied);
+    const a = parseDoseDate(applied)?.date;
     setNextDue(a ? formatDmy(proposeNextDue(kind, kind === 'vacuna' ? item : null, a, pet.species)) : '');
   }, [applied, kind, item, nextTouched, pet.species]);
 
@@ -81,15 +83,16 @@ export default function VaccinationSheet({ visible, pet, preset, onClose, onSave
   }, [products, product, productFocused, kind, item]);
 
   const submit = async () => {
-    const a = parseDmy(applied);
-    if (!a) { setError('Fecha de aplicación inválida (DD/MM/AAAA, no futura)'); return; }
+    const parsed = parseDoseDate(applied);
+    const a = parsed?.date;
+    if (!a) { setError('Fecha de aplicación inválida (DD/MM/AAAA, o MM/AAAA si es aproximada; no futura)'); return; }
     const n = parseDmy(nextDue, { allowFuture: true });
     if (n === undefined) { setError('Próxima dosis inválida (DD/MM/AAAA)'); return; }
     if (n && n <= a) { setError('La próxima dosis debe ser posterior a la aplicación'); return; }
     if (kind === 'vacuna' && item === 'otra' && !product.trim()) { setError('Indica qué vacuna se aplicó'); return; }
     const draft: VaccinationDraft = {
       kind, plan_item: kind === 'vacuna' ? item : null, product: product.trim() || null, lot: lot.trim() || null,
-      applied_at: a, next_due_at: n, veterinarian: vet.trim() || null,
+      applied_at: a, next_due_at: n, veterinarian: vet.trim() || null, date_estimated: parsed!.estimated,
     };
     if (onDraft) { onDraft(draft); return; }
     setSaving(true);
@@ -138,7 +141,19 @@ export default function VaccinationSheet({ visible, pet, preset, onClose, onSave
         <VInput containerStyle={styles.half} label="Veterinario" value={vet} onChangeText={setVet} />
       </View>
       <View style={styles.pair}>
-        <VInput containerStyle={styles.half} label="Aplicada el" value={applied} onChangeText={setApplied} placeholder="DD/MM/AAAA" keyboardType="numbers-and-punctuation" />
+        <View style={styles.half}>
+          <VInput label="Aplicada el" value={applied} onChangeText={setApplied} placeholder="DD/MM/AAAA o MM/AAAA" keyboardType="numbers-and-punctuation"
+            hint={parseDoseDate(applied)?.estimated ? 'Fecha aproximada: quedará marcada como estimada' : 'Si no se sabe el día, escribe mes y año'} />
+          <View style={styles.agoRow}>
+            <Text style={[styles.ago, { color: colors.textSecondary }]}>Hace</Text>
+            {[3, 6, 12, 24].map((m) => (
+              <Pressable key={m} onPress={() => setApplied(monthsAgoInput(m))} accessibilityRole="button" accessibilityLabel={`Hace ${m >= 12 ? m / 12 + (m === 12 ? ' año' : ' años') : m + ' meses'}`}
+                style={({ pressed, hovered }: any) => [styles.agoChip, { backgroundColor: pressed || hovered ? colors.surfaceVariant : 'transparent' }]}>
+                <Text style={[styles.body, { color: colors.primary }]}>{m >= 12 ? `${m / 12} ${m === 12 ? 'año' : 'años'}` : `${m} meses`}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
         <VInput containerStyle={styles.half} label="Próxima dosis" value={nextDue} onChangeText={(v) => { setNextTouched(true); setNextDue(v); }}
           placeholder="DD/MM/AAAA" keyboardType="numbers-and-punctuation" hint={nextTouched ? 'Fecha ajustada a mano' : 'Propuesta por el plan; puedes cambiarla'} />
       </View>
@@ -157,4 +172,7 @@ const styles = StyleSheet.create({
   body: { fontSize: TYPOGRAPHY.sizes.md },
   pair: { flexDirection: 'row', flexWrap: 'wrap', columnGap: SPACING.md },
   half: { flexGrow: 1, flexBasis: 200 },
+  agoRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: SPACING.xs },
+  ago: { fontSize: TYPOGRAPHY.sizes.sm },
+  agoChip: { paddingHorizontal: SPACING.sm, minHeight: 36, justifyContent: 'center' },
 });

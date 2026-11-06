@@ -29,7 +29,7 @@ import { useToast } from '../../components/ui/VToast';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
 import { calculateAge } from '../../utils/age';
 import { parseCLP, parseNumberInRange } from '../../utils/parseNumber';
-import { formatDmy, parseDmy, parseLocalDateTime, toLocalDateKey, toLocalDateTimeInput } from '../../utils/date';
+import { formatDmy, parseDmy, parseDoseDate, parseLocalDateTime, toLocalDateKey, toLocalDateTimeInput } from '../../utils/date';
 import { speciesLabel } from '../../utils/identity';
 import { formatDay, PLAN_LABEL, proposeNextDue } from '../../utils/vaccinePlan';
 import { parseDose } from '../../utils/doseParser';
@@ -298,7 +298,7 @@ export default function ConsultaScreen() {
     if (exErr) { setError(exErr); return; }
     const declared = form.remoteOpen ? declaredDoses(form.remote) : [];
     for (const d of declared) {
-      if (!parseDmy(d.raw)) { setError('Revisa las fechas de vacunas y desparasitación de la anamnesis remota (DD/MM/AAAA, no futuras)'); return; }
+      if (!parseDoseDate(d.raw)) { setError('Revisa las fechas de vacunas y desparasitación de la anamnesis remota (DD/MM/AAAA o MM/AAAA si es aproximada, no futuras)'); return; }
     }
 
     setSaving(true);
@@ -349,9 +349,9 @@ export default function ConsultaScreen() {
           outcomes.push({ label: 'Anamnesis remota guardada en la ficha', ok: true });
         } catch (e: any) { outcomes.push({ label: 'Anamnesis remota', ok: false, detail: e?.message }); }
         for (const d of declared) {
-          const applied = parseDmy(d.raw)!;
+          const { date: applied, estimated } = parseDoseDate(d.raw)!;
           const next = proposeNextDue(d.kind, d.plan_item, applied, pet.species);
-          await api.vaccinations.create({ pet_id: pet.id, kind: d.kind, plan_item: d.plan_item, applied_at: applied, next_due_at: next > toLocalDateKey(new Date()) ? next : null, notes: 'Declarada por el tutor (anamnesis remota)' })
+          await api.vaccinations.create({ pet_id: pet.id, kind: d.kind, plan_item: d.plan_item, applied_at: applied, next_due_at: next > toLocalDateKey(new Date()) ? next : null, date_estimated: estimated, notes: estimated ? 'Declarada por el tutor (fecha estimada)' : 'Declarada por el tutor (anamnesis remota)' })
             .catch((e: any) => outcomes.push({ label: `Dosis declarada (${d.plan_item ? PLAN_LABEL[d.plan_item] : d.kind.replace('_', ' ')})`, ok: false, detail: e?.message }));
         }
       }

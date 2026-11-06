@@ -51,6 +51,36 @@ export function parseDmy(input: string, { allowFuture = false } = {}): string | 
   return toLocalDateKey(d);
 }
 
+/**
+ * A past dose date the tutor may only know roughly: "DD/MM/AAAA" is exact; "MM/AAAA" or "AAAA" is an estimate
+ * (mid-month / mid-year, never in the future). undefined when it is not a valid past date, null when empty.
+ */
+export function parseDoseDate(input: string): { date: string; estimated: boolean } | null | undefined {
+  const s = input.trim();
+  if (!s) return null;
+  const exact = parseDmy(s);
+  if (exact) return { date: exact, estimated: false };
+  const ym = s.match(/^(\d{1,2})[\/\-.](\d{4})$/);
+  const y = s.match(/^(\d{4})$/);
+  if (!ym && !y) return undefined;
+  const year = +(ym ? ym[2] : y![1]);
+  const month = ym ? +ym[1] : 7;
+  if (month < 1 || month > 12 || year < 1980) return undefined;
+  let d = new Date(year, month - 1, ym ? 15 : 1);
+  const now = new Date();
+  if (new Date(year, month - 1, 1) > now) return undefined;
+  if (d > now) d = now;
+  return { date: toLocalDateKey(d), estimated: true };
+}
+
+/** "MM/AAAA" of the month that was `months` ago (for the "about N months ago" shortcuts) */
+export function monthsAgoInput(months: number): string {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - months);
+  return `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
+
 /** "YYYY-MM-DD" (or an ISO timestamp) → "DD/MM/AAAA" */
 export function formatDmy(iso: string | null | undefined): string {
   if (!iso) return '';

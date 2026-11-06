@@ -98,6 +98,8 @@ export interface Vaccination {
   veterinarian: string | null;
   clinical_record_id: string | null;
   notes: string | null;
+  /** The tutor did not know the exact date: applied_at is an estimate */
+  date_estimated?: boolean;
   created_at: string;
 }
 
