@@ -5,6 +5,7 @@ import { ClinicalRecord } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import DynamicIcon from '../ui/DynamicIcon';
+import { examLines, nextLines } from '../../utils/physicalExam';
 
 interface RecordDetailProps {
   record: ClinicalRecord;
@@ -22,7 +23,7 @@ export default function RecordDetail({ record }: RecordDetailProps) {
   const { colors } = useTheme();
 
   const d = record.details || {};
-  const hasSoapData = d.subjective || d.objective || d.assessment || d.plan || d.treatment || d.anamnesis_remota;
+  const hasSoapData = d.subjective || d.objective || d.assessment || d.plan || d.treatment || d.anamnesis_remota || d.exam || d.anamnesis_proxima;
   const hasLegacyData = d.notes || d.anamnesis || d.hallazgos || d.hallazgos_examen_fisico || d.motivo_consulta;
 
   // The record form saves temperature/heart_rate/...; older records used temp/fc/fr/pa.
@@ -48,7 +49,7 @@ export default function RecordDetail({ record }: RecordDetailProps) {
           label: 'Subjetivo',
           icon: 'account-heart-outline',
           color: colors.primary,
-          content: [d.subjective, d.anamnesis_remota && `Anamnesis remota:\n${d.anamnesis_remota}`, d.anamnesis && `Anamnesis próxima: ${d.anamnesis}`].filter(Boolean).join('\n\n'),
+          content: [d.subjective, d.anamnesis_remota && `Anamnesis remota:\n${d.anamnesis_remota}`, (nextLines(d.anamnesis_proxima).length || d.anamnesis) && `Anamnesis próxima:\n${[...nextLines(d.anamnesis_proxima).map(([k, v]) => `${k}: ${v}`), d.anamnesis].filter(Boolean).join('\n')}`].filter(Boolean).join('\n\n'),
           fields: d.motivo_consulta ? [{ label: 'Motivo', value: d.motivo_consulta }] : [],
         },
         {
@@ -56,13 +57,13 @@ export default function RecordDetail({ record }: RecordDetailProps) {
           icon: 'stethoscope',
           color: colors.info,
           content: [d.objective, (d.hallazgos_examen_fisico || d.hallazgos) && `Examen físico: ${d.hallazgos_examen_fisico || d.hallazgos}`].filter(Boolean).join('\n\n'),
-          fields: objectiveFields,
+          fields: [...objectiveFields, ...examLines(d.exam).map(([label, value]) => ({ label, value }))],
         },
         {
           label: 'Evaluación',
           icon: 'clipboard-text-search-outline',
           color: colors.warning,
-          content: d.assessment || '',
+          content: [d.problemas && `Problemas:\n${d.problemas}`, d.assessment].filter(Boolean).join('\n\n'),
           fields: [
             ...(d.diagnostico ? [{ label: 'Diagnóstico', value: d.diagnostico }] : []),
             ...(Array.isArray(d.diagnoses) && d.diagnoses.length ? [{ label: 'Del catálogo', value: d.diagnoses.map((x: any) => x.name).join(', ') }] : []),

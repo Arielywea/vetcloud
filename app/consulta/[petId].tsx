@@ -18,6 +18,8 @@ import VButton from '../../components/ui/Button';
 import VInput from '../../components/ui/Input';
 import Segmented from '../../components/ui/Segmented';
 import Escutcheon from '../../components/icons/Escutcheon';
+import { VitalsAndExam, NextAnamnesis } from '../../components/consulta/PhysicalExam';
+import { ExamForm, emptyExam, examError, examToDetails, nextToDetails } from '../../utils/physicalExam';
 import VoiceNotes from '../../components/VoiceNotes';
 import VaccinationSheet, { VaccinationDraft } from '../../components/pet/VaccinationSheet';
 import { petAlerts } from '../../components/pet/ChartHeader';
@@ -67,6 +69,8 @@ interface Form {
   /** Remote anamnesis: open (being filled or updated) at the first visit or when the vet asks for it */
   remote: RemoteForm;
   remoteOpen: boolean;
+  /** Structured vitals, physical exam, current-problem anamnesis and problem list */
+  exam: ExamForm;
 }
 
 interface Outcome { label: string; ok: boolean; detail?: string }
@@ -144,7 +148,7 @@ export default function ConsultaScreen() {
         }
         const draft = loadDraft(petId);
         // Drafts from before the remote anamnesis existed lack it
-        if (draft) { setForm({ ...draft, remote: draft.remote || remoteFromPet(p), remoteOpen: draft.remote ? draft.remoteOpen : sorted.length === 0 }); setRestored(true); }
+        if (draft) { setForm({ ...draft, exam: draft.exam || emptyExam(), remote: draft.remote || remoteFromPet(p), remoteOpen: draft.remote ? draft.remoteOpen : sorted.length === 0 }); setRestored(true); }
         else {
           setForm({
             type: appt?.appointment_type === 'control' ? 'control' : appt?.appointment_type === 'cirugia' ? 'cirugia' : 'consulta',
@@ -154,7 +158,7 @@ export default function ConsultaScreen() {
             weight: '', findings: '', diagnosisText: '', diagnoses: [], plan: '', procedure: '', postop: '',
             rx: '', vaccines: [], controlDate: '', controlTime: '10:00',
             payAmount: '', payMethod: 'efectivo', payDescription: '', extras: [],
-            remote: remoteFromPet(p), remoteOpen: sorted.length === 0,
+            remote: remoteFromPet(p), remoteOpen: sorted.length === 0, exam: emptyExam(),
           });
         }
         loaded.current = true;
@@ -262,6 +266,8 @@ export default function ConsultaScreen() {
     const amount = has('cobro') && form.payAmount.trim() ? parseCLP(form.payAmount) : null;
     if (amount !== null && (Number.isNaN(amount) || amount <= 0)) { setError('Monto inválido (ej. 25.000)'); return; }
 
+    const exErr = examError(form.exam);
+    if (exErr) { setError(exErr); return; }
     const declared = form.remoteOpen ? declaredDoses(form.remote) : [];
     for (const d of declared) {
       if (!parseDmy(d.raw)) { setError('Revisa las fechas de vacunas y desparasitación de la anamnesis remota (DD/MM/AAAA, no futuras)'); return; }
@@ -286,6 +292,9 @@ export default function ConsultaScreen() {
           anamnesis: form.anamnesis.trim() || undefined,
           anamnesis_remota: form.remoteOpen ? remoteSummary(form.remote, pet.species) || undefined : undefined,
           hallazgos_examen_fisico: form.findings.trim() || undefined,
+          exam: examToDetails(form.exam),
+          anamnesis_proxima: nextToDetails(form.exam.next),
+          problemas: form.exam.problems.trim() || undefined,
           assessment: [names.join(', '), form.diagnosisText.trim()].filter(Boolean).join('. ') || undefined,
           diagnoses: form.diagnoses.length ? form.diagnoses : undefined,
           plan: form.plan.trim() || undefined,
@@ -484,14 +493,16 @@ export default function ConsultaScreen() {
 
       <View style={[styles.panel, { backgroundColor: colors.surface }]}>
         <DisplayText style={[styles.panelTitle, { color: colors.text }]}>Anamnesis próxima</DisplayText>
-        <VInput value={form.anamnesis} onChangeText={(v) => set('anamnesis', v)} multiline style={styles.area} accessibilityLabel="Anamnesis próxima"
-          placeholder="Desde cuándo, cómo comenzó, evolución, apetito, vómitos o diarrea, tratamientos ya recibidos" />
+        <NextAnamnesis exam={form.exam} onChange={(e) => set('exam', e)} />
+        <VInput label="Algo más que llame la atención" value={form.anamnesis} onChangeText={(v) => set('anamnesis', v)} multiline style={styles.area} accessibilityLabel="Anamnesis próxima, otros"
+          placeholder="Cómo comenzó, cambios en el entorno, cualquier otro detalle del tutor" />
       </View>
 
       <View style={[styles.panel, { backgroundColor: colors.surface }]}>
         <DisplayText style={[styles.panelTitle, { color: colors.text }]}>Examen</DisplayText>
         <VInput label="Peso (kg)" value={form.weight} onChangeText={(v) => set('weight', v)} placeholder="Ej. 12,5"
           keyboardType="decimal-pad" containerStyle={styles.narrow} hint={lastWeight ? `Anterior: ${String(lastWeight).replace('.', ',')} kg${pet.current_weight_at ? ` (${formatDay(pet.current_weight_at)})` : ''}` : 'Actualiza el peso de la ficha'} />
+        <VitalsAndExam exam={form.exam} onChange={(e) => set('exam', e)} />
         <VInput label="Hallazgos del examen" value={form.findings} onChangeText={(v) => set('findings', v)} multiline style={styles.area}
           placeholder="Condición corporal, mucosas, hidratación, auscultación, palpación, lo que encuentres" />
         <VoiceNotes onTranscription={(t) => setForm((f) => (f ? { ...f, findings: f.findings ? `${f.findings} ${t}` : t } : f))} />
@@ -533,6 +544,7 @@ export default function ConsultaScreen() {
             </View>
           ) : null}
         </View>
+        <VInput label="Lista de problemas" value={form.exam.problems} onChangeText={(v) => set('exam', { ...form.exam, problems: v })} multiline placeholder="Un problema por línea" />
         <VInput label="Diagnóstico o impresión clínica" value={form.diagnosisText} onChangeText={(v) => set('diagnosisText', v)} multiline placeholder="Presuntivo, diferenciales, lo que no está en el catálogo" />
         {form.type === 'cirugia' ? (
           <>

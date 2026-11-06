@@ -1457,6 +1457,19 @@ app.get('/items/clinical_records', authMiddleware, async (req, res) => {
   }
 });
 
+// Vitals saved in details.exam: reject impossible values with a Spanish message
+const EXAM_RANGES = { fc: [20, 300, 'FC'], fr: [4, 150, 'FR'], temp: [30, 45, 'T°'], tllc: [0, 10, 'TLLC'] };
+function examDetailsError(details) {
+  const v = details && details.exam && details.exam.vitals;
+  if (!v) return null;
+  for (const [k, [min, max, label]] of Object.entries(EXAM_RANGES)) {
+    if (v[k] === undefined || v[k] === null || v[k] === '') continue;
+    const n = Number(v[k]);
+    if (!isFinite(n) || n < min || n > max) return `${label} fuera de rango (${min}–${max})`;
+  }
+  return null;
+}
+
 app.post('/items/clinical_records', authMiddleware, async (req, res) => {
   try {
     const r = req.body;
@@ -1468,6 +1481,8 @@ app.post('/items/clinical_records', authMiddleware, async (req, res) => {
     if (vErr) return res.status(400).json({ error: vErr });
     const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [r.pet_id, req.userId]);
     if (!ownerCheck.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa mascota' });
+    const examErr = examDetailsError(r.details);
+    if (examErr) return res.status(400).json({ error: examErr });
     const refError = await checkRefs({ ...req, body: { appointment_id: r.appointment_id } });
     if (refError) return res.status(403).json({ error: refError });
     const weightRaw = r.weight_kg ?? r.details?.weight;
@@ -1506,6 +1521,8 @@ app.patch('/items/clinical_records/:id', authMiddleware, async (req, res) => {
       record_type: { type: 'enum', values: ['consulta', 'vacuna', 'cirugia', 'control'], label: 'Tipo de registro' },
     });
     if (vErr) return res.status(400).json({ error: vErr });
+    const examErr = examDetailsError(r.details);
+    if (examErr) return res.status(400).json({ error: examErr });
     const allowed = ['pet_id','record_type','date','veterinarian','details','weight_kg','is_initial'];
     const safe = sanitizeColumns(allowed, r);
     if (safe.weight_kg !== undefined && safe.weight_kg !== null && safe.weight_kg !== '') {
