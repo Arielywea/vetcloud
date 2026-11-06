@@ -156,6 +156,9 @@ export interface DirectusPet {
   motivo_consulta: string | null;
   entorno: string | null;
   areneros: string | null;
+  procedencia?: string | null;
+  procedencia_edad?: string | null;
+  retroviral_test?: string | null;
   vital_signs: { temperature?: number; heart_rate?: number; respiratory_rate?: number; blood_pressure?: string; spo2?: number; mucous_membranes?: string; hydration?: string; body_condition?: string } | null;
   hallazgos_examen_fisico: string | null;
   pre_diagnostico: string | null;

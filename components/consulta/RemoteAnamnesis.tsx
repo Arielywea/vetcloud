@@ -31,6 +31,11 @@ export interface RemoteForm {
   vaccineDates: Record<string, string>;
   dewormIn: string;
   dewormOut: string;
+  /** Where the patient came from (compra, adopción, rescate…) and how old it was; retroviral test (cats) */
+  origin?: string | null;
+  originAge?: string;
+  retroviral?: string;
+  water?: string | null;
 }
 
 const DIETS = [
@@ -42,6 +47,11 @@ const HOUSING = [
 ] as const;
 const OUTDOOR = [{ value: 'Solo interior', label: 'Solo interior' }, { value: 'Sale al exterior', label: 'Sale al exterior' }, { value: 'Libre en la calle', label: 'Libre en la calle' }] as const;
 export const CHRONIC = ['Cardiopatía', 'Renal crónica', 'Diabetes', 'Epilepsia', 'Hipotiroidismo', 'Hipertiroidismo', 'Artrosis', 'Dermatitis atópica', 'Asma / bronquitis crónica', 'Obesidad'];
+const ORIGINS = [
+  { value: 'Comprado', label: 'Comprado' }, { value: 'Adoptado', label: 'Adoptado' }, { value: 'Rescatado', label: 'Rescatado' },
+  { value: 'Regalado', label: 'Regalado' }, { value: 'Nacido en casa', label: 'Nacido en casa' },
+] as const;
+const WATER = [{ value: 'Normal', label: 'Normal' }, { value: 'Aumentado', label: 'Aumentado' }, { value: 'Disminuido', label: 'Disminuido' }] as const;
 const TEMPERAMENTS = ['Dócil', 'Nervioso', 'Inquieto', 'Puede morder'];
 
 const list = (text: string) => text.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
@@ -68,6 +78,10 @@ export function remoteFromPet(pet: DirectusPet): RemoteForm {
     vaccineDates: {},
     dewormIn: '',
     dewormOut: '',
+    origin: ORIGINS.find((o) => o.value === pet.procedencia)?.value || null,
+    originAge: pet.procedencia_edad || '',
+    retroviral: pet.retroviral_test || '',
+    water: WATER.find((w) => w.value === pet.water_consumption)?.value || null,
   };
 }
 
@@ -85,6 +99,10 @@ export function remoteToPetPatch(r: RemoteForm, pet: DirectusPet): Record<string
   return {
     food: [r.diet, r.dietDetail.trim()].filter(Boolean).join(' · ') || null,
     food_frequency: r.feedings.trim() || null,
+    water_consumption: r.water || null,
+    procedencia: r.origin || null,
+    procedencia_edad: (r.originAge || '').trim() || null,
+    retroviral_test: pet.species === 'cat' ? (r.retroviral || '').trim() || null : undefined,
     habitat: r.housing,
     entorno: r.outdoor,
     lives_with_other_animals: r.companions.trim() || null,
@@ -103,6 +121,9 @@ export function remoteToPetPatch(r: RemoteForm, pet: DirectusPet): Record<string
 /** One readable block, kept in the visit (and shown in the chart's history) */
 export function remoteSummary(r: RemoteForm, species: DirectusPet['species']): string {
   const lines = [
+    ['Procedencia', [r.origin, (r.originAge || '').trim() ? `llegó con ${(r.originAge || '').trim()}` : null].filter(Boolean).join(' · ')],
+    ['Test VIF/ViLeF', species === 'cat' ? (r.retroviral || '').trim() : ''],
+    ['Consumo de agua', r.water || ''],
     ['Alimentación', [r.diet, r.dietDetail.trim(), r.feedings.trim()].filter(Boolean).join(' · ')],
     ['Ambiente', [r.housing === 'Depto' ? 'Departamento' : r.housing, r.outdoor, species === 'cat' && r.litter.trim() ? `areneros: ${r.litter.trim()}` : null].filter(Boolean).join(' · ')],
     ['Convive con', r.companions.trim()],
@@ -142,6 +163,16 @@ export default function RemoteAnamnesis({ pet, value: r, onChange, vaccinations 
 
   return (
     <View>
+      {Group({ title: 'Procedencia', children: (
+        <>
+          <Segmented label="Procedencia" options={ORIGINS} value={r.origin ?? null} onChange={(v) => set('origin', r.origin === v ? null : v)} size="sm" style={styles.seg} />
+          <View style={styles.pair}>
+            <VInput containerStyle={styles.narrow} value={r.originAge || ''} onChangeText={(v) => set('originAge', v)} placeholder="Edad al llegar (ej. 2 meses)" accessibilityLabel="Edad a la que llegó" />
+            {pet.species === 'cat' ? <VInput containerStyle={styles.wide} value={r.retroviral || ''} onChangeText={(v) => set('retroviral', v)} placeholder="Test VIF/ViLeF (fecha y resultado)" accessibilityLabel="Test retroviral" /> : null}
+          </View>
+        </>
+      ) })}
+
       {Group({ title: 'Alimentación', children: (
         <>
           <Segmented label="Tipo de alimento" options={DIETS} value={r.diet} onChange={(v) => set('diet', r.diet === v ? null : v)} size="sm" style={styles.seg} />
@@ -149,6 +180,7 @@ export default function RemoteAnamnesis({ pet, value: r, onChange, vaccinations 
             <VInput containerStyle={styles.wide} value={r.dietDetail} onChangeText={(v) => set('dietDetail', v)} placeholder="Marca y cantidad (ej. Royal Canin, 200 g)" accessibilityLabel="Marca y cantidad de alimento" />
             <VInput containerStyle={styles.narrow} value={r.feedings} onChangeText={(v) => set('feedings', v)} placeholder="Veces al día" accessibilityLabel="Frecuencia de alimentación" />
           </View>
+          <Segmented label="Consumo de agua" options={WATER} value={r.water ?? null} onChange={(v) => set('water', r.water === v ? null : v)} size="sm" style={styles.seg} />
         </>
       ) })}
 
