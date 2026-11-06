@@ -65,6 +65,9 @@ export async function apiAuthRegister(data: {
   password: string;
   org_name?: string;
   org_type?: string;
+  accepted_terms?: boolean;
+  accepted_privacy?: boolean;
+  legal_version?: string;
 }) {
   const res = await apiFetch(`${API_URL}/auth/register`, {
     method: 'POST',

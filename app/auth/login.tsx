@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { Text } from 'react-native-paper';
-import { User, Lock, AlertCircle, LogIn, Eye, EyeOff, Mail, Building, UserPlus, ArrowLeft } from 'lucide-react-native';
+import { User, Lock, AlertCircle, LogIn, Eye, EyeOff, Mail, Building, UserPlus, ArrowLeft, Check } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
@@ -11,10 +11,11 @@ import VInput from '../../components/ui/Input';
 import VButton from '../../components/ui/Button';
 import { passwordPolicyError, PASSWORD_HINT } from '../../utils/password';
 import { apiForgotPassword } from '../../services/auth';
+import { LEGAL_VERSION } from '../../constants/legal';
 
 export default function LoginScreen() {
   const { login, register } = useAuth();
-  const { colors, isDark, onChromeText, onAccentText } = useTheme();
+  const { colors, isDark, onChromeText, onAccentText, onPrimaryText } = useTheme();
   const [view, setView] = useState<'login' | 'register' | 'forgot'>('login');
 
   // Login state
@@ -28,6 +29,8 @@ export default function LoginScreen() {
   const [regPassword, setRegPassword] = useState('');
   const [regOrgName, setRegOrgName] = useState('');
   const [regOrgType, setRegOrgType] = useState<'solo' | 'clinic'>('solo');
+
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
 
   // Forgot-password state
   const [forgotEmail, setForgotEmail] = useState('');
@@ -51,6 +54,7 @@ export default function LoginScreen() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail.trim())) { setError('Formato de correo inválido'); return; }
     const policyError = passwordPolicyError(regPassword);
     if (policyError) { setError(policyError); return; }
+    if (!acceptedLegal) { setError('Debes aceptar los Términos y la Política de privacidad'); return; }
 
     setLoading(true); setError('');
     try {
@@ -60,6 +64,9 @@ export default function LoginScreen() {
         password: regPassword,
         org_name: regOrgName.trim() || undefined,
         org_type: regOrgType,
+        accepted_terms: true,
+        accepted_privacy: true,
+        legal_version: LEGAL_VERSION,
       });
     } catch (e: any) {
       setError(e.message || 'Error al crear cuenta');
@@ -109,6 +116,23 @@ export default function LoginScreen() {
                 <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
               </View>
             ) : null}
+
+            <TouchableOpacity
+              onPress={() => setAcceptedLegal(!acceptedLegal)}
+              style={styles.legalRow}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: acceptedLegal }}
+            >
+              <View style={[styles.checkbox, { borderColor: acceptedLegal ? colors.primary : colors.border, backgroundColor: acceptedLegal ? colors.primary : 'transparent' }]}>
+                {acceptedLegal ? <Check size={14} color={onPrimaryText.default} /> : null}
+              </View>
+              <Text style={[styles.legalText, { color: colors.textSecondary }]}>
+                Acepto los{' '}
+                <Text style={{ color: colors.primary, textDecorationLine: 'underline' }} onPress={() => Linking.openURL('/terminos')}>Términos y condiciones</Text>
+                {' '}y la{' '}
+                <Text style={{ color: colors.primary, textDecorationLine: 'underline' }} onPress={() => Linking.openURL('/privacidad')}>Política de privacidad</Text>
+              </Text>
+            </TouchableOpacity>
 
             <VButton onPress={handleRegister} loading={loading} disabled={loading} fullWidth icon={<UserPlus size={18} color={onAccentText.default} />}>
               Crear Cuenta
@@ -299,6 +323,9 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
   },
   errorText: { fontSize: TYPOGRAPHY.sizes.sm, flex: 1 },
+  legalRow: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm, marginBottom: SPACING.md },
+  checkbox: { width: 20, height: 20, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  legalText: { flex: 1, fontSize: TYPOGRAPHY.sizes.sm, lineHeight: 20 },
   registerLink: {
     alignItems: 'center',
     marginTop: SPACING.lg,

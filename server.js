@@ -330,6 +330,9 @@ function authMiddleware(req, res, next) {
 }
 
 // ─── AUTH ENDPOINTS ───────────────────────────────────────
+// Version of the Términos / Política de privacidad texts (constants/legal.ts must carry the same value).
+// Bump it whenever either text changes: new sign-ups record this version.
+const LEGAL_VERSION = '2026-11-06';
 app.post('/auth/login', async (req, res) => {
   try {
     const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
@@ -379,7 +382,7 @@ app.post('/auth/register', async (req, res) => {
     if (!await rateLimit(`register:${clientIp}`, 3, 300000)) {
       return res.status(429).json({ error: 'Demasiados registros. Intente en 5 minutos.' });
     }
-    const { username, email, password, org_name, org_type } = req.body;
+    const { username, email, password, org_name, org_type, accepted_terms, accepted_privacy, legal_version } = req.body;
 
     // Validations
     if (!username || !email || !password) {
@@ -396,6 +399,12 @@ app.post('/auth/register', async (req, res) => {
     }
     const policyError = passwordPolicyError(password);
     if (policyError) return res.status(400).json({ error: policyError });
+    if (accepted_terms !== true || accepted_privacy !== true) {
+      return res.status(400).json({ error: 'Debes aceptar los Términos y la Política de privacidad para crear la cuenta' });
+    }
+    if (legal_version !== LEGAL_VERSION) {
+      return res.status(400).json({ error: 'Los Términos o la Política de privacidad cambiaron. Recarga la página y vuelve a intentarlo.' });
+    }
 
     // Check uniqueness
     const existingUser = await pool.query('SELECT id FROM users WHERE username = $1 OR email = $2', [username, email]);
@@ -424,6 +433,13 @@ app.post('/auth/register', async (req, res) => {
         [username, email, hash, username, 'owner', organizationId]
       );
       const user = userResult.rows[0];
+
+      for (const document of ['terminos', 'privacidad']) {
+        await client.query(
+          'INSERT INTO legal_acceptances (user_id, document, version, ip) VALUES ($1, $2, $3, $4)',
+          [user.id, document, LEGAL_VERSION, String(clientIp).slice(0, 64)]
+        );
+      }
 
       await client.query('COMMIT');
 

@@ -56,8 +56,8 @@ function AppContent() {
   const { colors, onChromeText } = useTheme();
   const pathname = usePathname();
 
-  // Public pages (the tutor's anamnesis form, /f/<token>, and password reset, /restablecer) open without a session and without waiting for it
-  if (pathname.startsWith('/f/') || pathname === '/restablecer') return <Slot />;
+  // Public pages (the tutor's anamnesis form, /f/<token>, password reset, /restablecer, and the legal texts) open without a session and without waiting for it
+  if (pathname.startsWith('/f/') || ['/restablecer', '/terminos', '/privacidad'].includes(pathname)) return <Slot />;
 
   if (loading) {
     return (

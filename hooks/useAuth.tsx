@@ -26,7 +26,7 @@ interface AuthContextType {
   loading: boolean;
   isAuthenticated: boolean;
   login: (identifier: string, password: string) => Promise<void>;
-  register: (data: { username: string; email: string; password: string; org_name?: string; org_type?: string }) => Promise<void>;
+  register: (data: { username: string; email: string; password: string; org_name?: string; org_type?: string; accepted_terms?: boolean; accepted_privacy?: boolean; legal_version?: string }) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Record<string, any>) => Promise<void>;
 }
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await loadFullProfile(result.user);
   };
 
-  const register = async (data: { username: string; email: string; password: string; org_name?: string; org_type?: string }) => {
+  const register = async (data: { username: string; email: string; password: string; org_name?: string; org_type?: string; accepted_terms?: boolean; accepted_privacy?: boolean; legal_version?: string }) => {
     const result = await apiAuthRegister(data);
     await setToken(result.token);
     await loadFullProfile(result.user);
