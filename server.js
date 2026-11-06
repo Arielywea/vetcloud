@@ -2401,12 +2401,17 @@ app.delete('/items/hospitalizations/:id', authMiddleware, async (req, res) => {
 // ─── LAB EXAMS ─────────────────────────────────────────
 app.get('/items/lab_exams', authMiddleware, async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, pet_id } = req.query;
     let query = 'SELECT le.*, p.name as pet_name, p.species, p.breed FROM lab_exams le LEFT JOIN pets p ON le.pet_id = p.id WHERE le.user_id = $1';
     const params = [req.userId];
     if (status && status !== 'todos') {
-      query += ' AND le.status = $2';
       params.push(status);
+      query += ` AND le.status = $${params.length}`;
+    }
+    if (pet_id) {
+      if (!isValidUUID(pet_id)) return res.status(400).json({ error: 'Paciente inválido' });
+      params.push(pet_id);
+      query += ` AND le.pet_id = $${params.length}`;
     }
     query += ' ORDER BY le.date DESC';
     const result = await pool.query(query, params);
@@ -2456,6 +2461,64 @@ app.patch('/items/lab_exams/:id', authMiddleware, async (req, res) => {
     const result = await pool.query(`UPDATE lab_exams SET ${sets} WHERE id = $1 AND user_id = $${values.length} RETURNING *`, values);
     if (!result.rows.length) return res.status(404).json({ error: 'No encontrado' });
     res.json({ data: result.rows[0] });
+  } catch (error) {
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// An exam order: one lab_exams row per ordered exam, sharing order_id (and the consultation that asked for them)
+app.post('/items/lab_exam_orders', authMiddleware, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { pet_id, clinical_record_id, veterinarian, exams } = req.body;
+    if (!pet_id || !isValidUUID(pet_id)) return res.status(400).json({ error: 'Selecciona un paciente' });
+    if (!Array.isArray(exams) || !exams.length || exams.length > 30) return res.status(400).json({ error: 'Elige entre 1 y 30 exámenes' });
+    const items = exams.map((e) => ({ name: String((e && e.exam_name) || '').trim().slice(0, 150), type: e && e.exam_type ? String(e.exam_type).slice(0, 50) : null }));
+    if (items.some((i) => !i.name)) return res.status(400).json({ error: 'Cada examen necesita un nombre' });
+    const ownerCheck = await pool.query('SELECT id FROM pets WHERE id = $1 AND user_id = $2', [pet_id, req.userId]);
+    if (!ownerCheck.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa mascota' });
+    if (clinical_record_id) {
+      if (!isValidUUID(clinical_record_id)) return res.status(400).json({ error: 'Consulta inválida' });
+      const rec = await pool.query('SELECT id FROM clinical_records WHERE id = $1 AND pet_id = $2 AND user_id = $3', [clinical_record_id, pet_id, req.userId]);
+      if (!rec.rows.length) return res.status(403).json({ error: 'No tienes acceso a esa consulta' });
+    }
+    const orderId = require('crypto').randomUUID();
+    await client.query('BEGIN');
+    const rows = [];
+    for (const i of items) {
+      const r = await client.query(
+        'INSERT INTO lab_exams (pet_id, user_id, exam_name, exam_type, status, veterinarian, organization_id, clinical_record_id, order_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',
+        [pet_id, req.userId, i.name, i.type, 'pendiente', veterinarian ? String(veterinarian).slice(0, 150) : null, req.organizationId || null, clinical_record_id || null, orderId]
+      );
+      rows.push(r.rows[0]);
+    }
+    await client.query('COMMIT');
+    res.json({ data: { order_id: orderId, exams: rows } });
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  } finally {
+    client.release();
+  }
+});
+
+app.get('/items/lab_exam_orders/:orderId/pdf', authMiddleware, async (req, res) => {
+  try {
+    if (!isValidUUID(req.params.orderId)) return res.status(400).json({ error: 'Orden inválida' });
+    const ex = await pool.query('SELECT * FROM lab_exams WHERE order_id = $1 AND user_id = $2 ORDER BY id', [req.params.orderId, req.userId]);
+    if (!ex.rows.length) return res.status(404).json({ error: 'Orden no encontrada' });
+    const pet = await petWithOwner(ex.rows[0].pet_id, req.userId);
+    if (!pet) return res.status(404).json({ error: 'Paciente no encontrado' });
+    const { generateExamOrderPdf } = require('./utils/generateExamOrderPdf');
+    const pdf = await generateExamOrderPdf({
+      pet, owner: pet.owner, exams: ex.rows, clinic: await clinicProfile(req.userId),
+      veterinarian: ex.rows[0].veterinarian, orderedAt: ex.rows[0].date || ex.rows[0].created_at || new Date(),
+    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.attachment(`orden_examenes_${fileSafe(pet.name)}.pdf`);
+    res.send(pdf);
   } catch (error) {
     logError(req, error);
     res.status(500).json({ error: 'Error interno del servidor' });

@@ -4,7 +4,7 @@ import { Text, TextInput, Portal, Dialog, Divider } from 'react-native-paper';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { usePet, useClinicalRecords, usePrescriptions, useVaccinations, useRefreshOn } from '../../hooks/useDirectus';
-import { api, Appointment, ClinicalRecord, Prescription, VaccinationKind, VaccinePlanItem } from '../../services/directus';
+import { api, Appointment, ClinicalRecord, DirectusLabExam, Prescription, VaccinationKind, VaccinePlanItem } from '../../services/directus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
 import { calculateAge } from '../../utils/age';
@@ -19,6 +19,8 @@ import PetTimeline from '../../components/pet/PetTimeline';
 import ClinicalHistory from '../../components/pet/ClinicalHistory';
 import WeightChart from '../../components/pet/WeightChart';
 import RecordDetail from '../../components/pet/RecordDetail';
+import LabSection from '../../components/pet/LabSection';
+import ExamOrderSheet from '../../components/exams/ExamOrderSheet';
 import PaymentForm from '../../components/pet/PaymentForm';
 import { useResponsive } from '../../hooks/useResponsive';
 import DynamicIcon from '../../components/ui/DynamicIcon';
@@ -26,7 +28,7 @@ import { useToast } from '../../components/ui/VToast';
 import VModal from '../../components/ui/VModal';
 import VButton from '../../components/ui/Button';
 import VBadge from '../../components/ui/Badge';
-import { Stethoscope, FileText, Wallet, Download, Syringe, CalendarPlus } from 'lucide-react-native';
+import { Stethoscope, FileText, Wallet, Download, Syringe, CalendarPlus, FlaskConical } from 'lucide-react-native';
 import { downloadPdf } from '../../utils/downloadPdf';
 
 export default function PetDetailScreen() {
@@ -59,6 +61,8 @@ export default function PetDetailScreen() {
   const [emailRecipient, setEmailRecipient] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
+  const [labExams, setLabExams] = useState<DirectusLabExam[]>([]);
+  const [showExams, setShowExams] = useState(false);
 
   const loadNext = useCallback(async () => {
     if (!id) return;
@@ -68,6 +72,12 @@ export default function PetDetailScreen() {
     } catch { setNextAppointment(null); }
   }, [id]);
   useEffect(() => { loadNext(); }, [loadNext]);
+  const loadLab = useCallback(async () => {
+    if (!id) return;
+    try { setLabExams(await api.labExams.list({ pet_id: id })); } catch { setLabExams([]); }
+  }, [id]);
+  useEffect(() => { loadLab(); }, [loadLab]);
+  useRefreshOn(['lab_exams'], loadLab);
   useRefreshOn(['appointments'], loadNext);
   // Status changes and tutor edits come back without the joined tutor fields: reload the pet
   useRefreshOn(['owners', 'clinical_records'], refreshPet);
@@ -176,6 +186,7 @@ export default function PetDetailScreen() {
         {alive ? <VButton variant="secondary" onPress={() => setVaccinePreset(null)} icon={<Syringe size={16} color={colors.primary} />}>Vacuna</VButton> : null}
         <VButton variant="secondary" onPress={() => openRxModal()} icon={<FileText size={16} color={colors.primary} />}>Receta</VButton>
         {alive ? <VButton variant="secondary" onPress={() => router.push({ pathname: '/(drawer)/agenda', params: { nueva: '1', pet_id: pet.id } } as any)} icon={<CalendarPlus size={16} color={colors.primary} />}>Agendar</VButton> : null}
+        {alive ? <VButton variant="secondary" onPress={() => setShowExams(true)} icon={<FlaskConical size={16} color={colors.primary} />}>Exámenes</VButton> : null}
         <VButton variant="secondary" onPress={() => setShowPayment(true)} icon={<Wallet size={16} color={colors.primary} />}>Cobrar</VButton>
         <VButton variant="ghost" onPress={handleDownloadPdf} icon={<Download size={16} color={colors.primary} />}>Ficha PDF</VButton>
       </View>
@@ -186,10 +197,13 @@ export default function PetDetailScreen() {
         <View style={isMobile ? undefined : styles.side}>
           <VaccinesSection pet={pet} vaccinations={vaccinations} onApply={(p) => setVaccinePreset(p)} readOnly={!alive}
             onCertificate={vaccinations.length ? () => pdf(`/items/pets/${pet.id}/vaccine-certificate`, `certificado_vacunas_${pet.name}.pdf`) : undefined} />
+          <LabSection exams={labExams} readOnly={!alive} onOrder={() => setShowExams(true)} onOpenAll={() => router.push({ pathname: '/(drawer)/laboratorio', params: { pet_id: pet.id } } as any)} />
           <WeightChart records={records} petId={id || undefined} />
           {clinicalFieldCount > 0 ? <ClinicalHistory pet={pet} fieldCount={clinicalFieldCount} /> : null}
         </View>
       </View>
+
+      <ExamOrderSheet visible={showExams} petId={pet.id} petName={pet.name} veterinarian={user?.name} onClose={() => setShowExams(false)} onCreated={loadLab} />
 
       {/* Modal: Detalle de Registro */}
       <VModal visible={!!selectedRecord} onDismiss={() => setSelectedRecord(null)} title="Detalle del registro">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
+import { useLocalSearchParams } from 'expo-router';
 import { FlaskConical, Plus, AlertTriangle, CheckCircle } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import PageHeader from '../../components/ui/PageHeader';
@@ -35,6 +36,8 @@ export default function LaboratorioScreen() {
   const { colors, onAccentText } = useTheme();
   const toast = useToast();
   const { pets } = usePets();
+  // Opened from a chart: only that patient's exams
+  const { pet_id: onlyPet } = useLocalSearchParams<{ pet_id?: string }>();
   const [exams, setExams] = useState<DirectusLabExam[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -57,14 +60,14 @@ export default function LaboratorioScreen() {
     setLoadError(null);
     try {
       if (!silent) setLoading(true);
-      const params = filter === 'todos' ? undefined : { status: filter };
+      const params = { ...(filter === 'todos' ? {} : { status: filter }), ...(onlyPet ? { pet_id: onlyPet } : {}) };
       setExams(await api.labExams.list(params));
     } catch (e: any) {
       setLoadError(e?.message || 'Error de conexión');
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, onlyPet]);
 
   useEffect(() => { fetchExams(); }, [fetchExams]);
   useRefreshOn(['lab_exams'], fetchExams);

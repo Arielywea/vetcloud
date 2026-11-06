@@ -633,10 +633,12 @@ export const api = {
     sendPending: () => apiPost('/items/reminders/send-pending', {}),
   },
   labExams: {
-    list: (params?: { status?: string }) =>
+    list: (params?: { status?: string; pet_id?: string }) =>
       apiGet('/items/lab_exams', params),
     get: (id: string) => apiGet(`/items/lab_exams/${id}`),
     create: (data: any) => apiPost('/items/lab_exams', data),
+    createOrder: (data: { pet_id: string; clinical_record_id?: string | null; veterinarian?: string | null; exams: Array<{ exam_name: string; exam_type?: string | null }> }) =>
+      apiPost('/items/lab_exam_orders', data),
     update: (id: string, data: any) => apiPatch(`/items/lab_exams/${id}`, data),
     delete: (id: string) => apiDelete(`/items/lab_exams/${id}`),
   },

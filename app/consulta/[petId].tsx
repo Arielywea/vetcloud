@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, ScrollView, StyleSheet, Pressable, Modal } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Check, X, FileText, Syringe, CalendarPlus, Wallet, Search, AlertTriangle, Download, Mail } from 'lucide-react-native';
+import { Check, X, FileText, Syringe, CalendarPlus, Wallet, Search, AlertTriangle, Download, Mail, FlaskConical } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
 import { useResponsive } from '../../hooks/useResponsive';
@@ -18,6 +18,7 @@ import VButton from '../../components/ui/Button';
 import VInput from '../../components/ui/Input';
 import Segmented from '../../components/ui/Segmented';
 import Escutcheon from '../../components/icons/Escutcheon';
+import ExamPicker, { ExamSelection, emptySelection, selectionToExams } from '../../components/exams/ExamPicker';
 import { VitalsAndExam, NextAnamnesis } from '../../components/consulta/PhysicalExam';
 import { ExamForm, emptyExam, examError, examFromDetails, examToDetails, nextToDetails } from '../../utils/physicalExam';
 import VoiceNotes from '../../components/VoiceNotes';
@@ -34,7 +35,7 @@ import { formatDay, PLAN_LABEL, proposeNextDue } from '../../utils/vaccinePlan';
 import { parseDose } from '../../utils/doseParser';
 
 type RecordType = 'consulta' | 'control' | 'cirugia';
-type Extra = 'receta' | 'vacuna' | 'control' | 'cobro';
+type Extra = 'receta' | 'vacuna' | 'control' | 'cobro' | 'examenes';
 
 const TYPES = [{ value: 'consulta', label: 'Consulta' }, { value: 'control', label: 'Control' }, { value: 'cirugia', label: 'Cirugía' }] as const;
 const PAY_METHODS = [{ value: 'efectivo', label: 'Efectivo' }, { value: 'debito', label: 'Débito' }, { value: 'credito', label: 'Crédito' }, { value: 'transferencia', label: 'Transferencia' }] as const;
@@ -71,6 +72,8 @@ interface Form {
   remoteOpen: boolean;
   /** Structured vitals, physical exam, current-problem anamnesis and problem list */
   exam: ExamForm;
+  /** Exams ordered from this visit (one pending lab exam each, created when the visit is saved) */
+  orders: ExamSelection;
 }
 
 interface Outcome { label: string; ok: boolean; detail?: string }
@@ -92,7 +95,7 @@ function formFromRecord(rec: ClinicalRecord, p: DirectusPet): Form {
     findings: d.hallazgos_examen_fisico || '', diagnosisText: dxText, diagnoses: dx,
     plan: d.plan || '', procedure: d.procedimiento || '', postop: d.postoperatorio || '',
     rx: '', vaccines: [], controlDate: '', controlTime: '10:00', payAmount: '', payMethod: 'efectivo', payDescription: '', extras: [],
-    remote: remoteFromPet(p), remoteOpen: false, exam: examFromDetails(d),
+    remote: remoteFromPet(p), remoteOpen: false, exam: examFromDetails(d), orders: emptySelection(),
   };
 }
 
@@ -139,7 +142,7 @@ export default function ConsultaScreen() {
   const [vaccineOpen, setVaccineOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<{ outcomes: Outcome[]; rxId: string | null; recordId: string } | null>(null);
+  const [done, setDone] = useState<{ outcomes: Outcome[]; rxId: string | null; orderId: string | null; recordId: string } | null>(null);
   const [sending, setSending] = useState(false);
   const loaded = useRef(false);
 
@@ -173,7 +176,7 @@ export default function ConsultaScreen() {
         if (editId && !rec) throw new Error('No se encontró la consulta que quieres editar');
         // Drafts from before the remote anamnesis existed lack it
         if (rec) { setEditRecord(rec); setForm(formFromRecord(rec, p)); }
-        else if (draft) { setForm({ ...draft, exam: draft.exam || emptyExam(), remote: draft.remote || remoteFromPet(p), remoteOpen: draft.remote ? draft.remoteOpen : sorted.length === 0 }); setRestored(true); }
+        else if (draft) { setForm({ ...draft, exam: draft.exam || emptyExam(), orders: draft.orders || emptySelection(), remote: draft.remote || remoteFromPet(p), remoteOpen: draft.remote ? draft.remoteOpen : sorted.length === 0 }); setRestored(true); }
         else {
           setForm({
             type: appt?.appointment_type === 'control' ? 'control' : appt?.appointment_type === 'cirugia' ? 'cirugia' : 'consulta',
@@ -183,7 +186,7 @@ export default function ConsultaScreen() {
             weight: '', findings: '', diagnosisText: '', diagnoses: [], plan: '', procedure: '', postop: '',
             rx: '', vaccines: [], controlDate: '', controlTime: '10:00',
             payAmount: '', payMethod: 'efectivo', payDescription: '', extras: [],
-            remote: remoteFromPet(p), remoteOpen: sorted.length === 0, exam: emptyExam(),
+            remote: remoteFromPet(p), remoteOpen: sorted.length === 0, exam: emptyExam(), orders: emptySelection(),
           });
         }
         loaded.current = !editId;
@@ -302,6 +305,7 @@ export default function ConsultaScreen() {
     setError(null);
     const outcomes: Outcome[] = [];
     let rxId: string | null = null;
+    let orderId: string | null = null;
     try {
       const names = form.diagnoses.map((d) => d.name);
       const fresh = {
@@ -363,6 +367,16 @@ export default function ConsultaScreen() {
           outcomes.push({ label: 'Receta emitida', ok: true });
         } catch (e: any) { outcomes.push({ label: 'Receta', ok: false, detail: e?.message }); }
       }
+      if (has('examenes')) {
+        const exams = selectionToExams(form.orders);
+        if (exams.length) {
+          try {
+            const order = await api.labExams.createOrder({ pet_id: pet.id, clinical_record_id: record.id, veterinarian: form.vet.trim() || null, exams });
+            outcomes.push({ label: `Orden de ${exams.length} ${exams.length === 1 ? 'examen' : 'exámenes'}`, ok: true, detail: 'Pendientes en el laboratorio de la ficha' });
+            orderId = order.order_id;
+          } catch (e: any) { outcomes.push({ label: 'Orden de exámenes', ok: false, detail: e?.message }); }
+        }
+      }
       for (const v of form.vaccines) {
         const label = v.kind === 'vacuna' ? (v.plan_item && v.plan_item !== 'otra' ? PLAN_LABEL[v.plan_item] : v.product || 'Vacuna') : v.kind === 'desparasitacion_interna' ? 'Desparasitación interna' : 'Desparasitación externa';
         try {
@@ -394,7 +408,7 @@ export default function ConsultaScreen() {
       }
       saveDraft(pet.id, null);
       if (w) setPet({ ...pet, current_weight_kg: w, current_weight_at: when.toISOString() });
-      setDone({ outcomes, rxId, recordId: record.id });
+      setDone({ outcomes, rxId, orderId, recordId: record.id });
     } catch (e: any) {
       setError(e?.message || 'No se pudo guardar la consulta');
     } finally {
@@ -461,6 +475,7 @@ export default function ConsultaScreen() {
             <VButton onPress={() => router.replace(`/pet/${pet.id}` as any)}>Volver a la ficha</VButton>
             <VButton variant="secondary" onPress={() => pdf(`/items/clinical_records/${done.recordId}/summary-pdf`, `resumen_${pet.name}.pdf`)} icon={<Download size={16} color={colors.primary} />}>Resumen para el tutor</VButton>
             {tutorEmail ? <VButton variant="secondary" loading={sending} disabled={sending} onPress={() => sendSummary(done.recordId)} icon={<Mail size={16} color={colors.primary} />}>Enviar resumen por correo</VButton> : null}
+            {done.orderId ? <VButton variant="secondary" onPress={() => pdf(`/items/lab_exam_orders/${done.orderId}/pdf`, `orden_examenes_${pet.name}.pdf`)} icon={<Download size={16} color={colors.primary} />}>Orden de exámenes en PDF</VButton> : null}
             {done.rxId ? <VButton variant="secondary" onPress={() => pdf(`/items/pets/${pet.id}/prescriptions/${done.rxId}/pdf`, `receta_${pet.name}.pdf`)} icon={<Download size={16} color={colors.primary} />}>Receta en PDF</VButton> : null}
             {done.rxId && tutorEmail ? (
               <VButton variant="secondary" onPress={() => api.prescriptions.sendEmail(done.rxId!).then(() => toast.success(`Receta enviada a ${pet.owner_email || pet.email}`), (e: any) => toast.error(e?.message || 'No se pudo enviar'))}
@@ -601,6 +616,7 @@ export default function ConsultaScreen() {
           {extraButton('receta', 'Receta', FileText)}
           {extraButton('vacuna', 'Vacuna o desparasitación', Syringe)}
           {extraButton('control', 'Control', CalendarPlus)}
+          {extraButton('examenes', 'Exámenes', FlaskConical)}
           {extraButton('cobro', 'Cobro', Wallet)}
         </View>
 
@@ -621,6 +637,13 @@ export default function ConsultaScreen() {
             </View>
             <VInput value={form.rx} onChangeText={(v) => set('rx', v)} multiline style={styles.rxArea} accessibilityLabel="Texto de la receta"
               placeholder="Fármaco, dosis, vía, frecuencia y duración. Revisa siempre la dosis calculada." />
+          </View>
+        ) : null}
+
+        {has('examenes') ? (
+          <View style={styles.extra}>
+            <Text style={[styles.extraTitle, { color: colors.text }]}>Orden de exámenes</Text>
+            <ExamPicker value={form.orders} onChange={(v) => set('orders', v)} />
           </View>
         ) : null}
 

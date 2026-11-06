@@ -33,6 +33,7 @@ const MIGRATIONS = [
   '023_disease_chile_frequency.sql',
   '024_surgery_guides.sql',
   '025_pet_origin.sql',
+  '026_lab_orders.sql',
 ];
 
 async function runMigrations() {
