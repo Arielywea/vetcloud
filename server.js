@@ -2441,6 +2441,7 @@ app.patch('/items/hospitalizations/:id', authMiddleware, async (req, res) => {
     const values = [req.params.id, ...Object.values(safe), req.userId];
     const result = await pool.query(`UPDATE hospitalizations SET ${sets} WHERE id = $1 AND user_id = $${values.length} RETURNING *`, values);
     if (!result.rows.length) return res.status(404).json({ error: 'No encontrado' });
+    if (safe.status === 'discharged') await createDischargeNotice(req, result.rows[0]);
     res.json({ data: result.rows[0] });
   } catch (error) {
     logError(req, error);
@@ -3010,6 +3011,340 @@ app.patch('/items/vaccinations/:id', authMiddleware, async (req, res) => {
 app.delete('/items/vaccinations/:id', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM vaccinations WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
+    res.json({ data: null });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ─── CLINIC NOTICES AND AUTOMATION RULES ─────────────────
+// A small inbox for the clinic, filled by rules the user can switch off. Derived notices (stock, vaccines)
+// are created and removed by syncNotices from the current data; the discharge checklist is created
+// by the hospitalization handler. A rule with no row in automation_rules is on.
+const AUTOMATION_RULES = [
+  { key: 'low_stock', title: 'Stock bajo', description: 'Avisa cuando un producto llega a su stock mínimo.' },
+  { key: 'vaccines_overdue', title: 'Vacunas vencidas', description: 'Avisa cuando un paciente tiene vacunas o desparasitaciones con la fecha vencida.' },
+  { key: 'discharge_checklist', title: 'Checklist de alta', description: 'Al dar de alta a un paciente hospitalizado, crea un checklist para cerrar el caso.' },
+];
+const DISCHARGE_CHECKLIST = ['Entregar las indicaciones de alta al tutor', 'Dar la receta y explicar la medicación', 'Agendar el control', 'Cobrar la hospitalización', 'Revisar que la ficha quede al día'];
+
+async function disabledRules(userId) {
+  const r = await pool.query('SELECT rule_key FROM automation_rules WHERE user_id = $1 AND enabled = false', [userId]);
+  return new Set(r.rows.map((x) => x.rule_key));
+}
+
+async function syncNotices(userId, organizationId) {
+  const off = await disabledRules(userId);
+  const stockOff = off.has('low_stock');
+  const vaccinesOff = off.has('vaccines_overdue');
+  const overdue = `v.next_due_at < CURRENT_DATE AND p.status = 'alive'
+    AND NOT EXISTS (SELECT 1 FROM vaccinations v2 WHERE v2.pet_id = v.pet_id AND v2.kind = v.kind
+                      AND coalesce(v2.plan_item, '') = coalesce(v.plan_item, '') AND v2.applied_at > v.applied_at)`;
+  if (!stockOff) {
+    await pool.query(
+      `INSERT INTO clinic_notices (user_id, organization_id, kind, title, body, link, dedupe_key)
+       SELECT i.user_id, $2::int, 'low_stock', 'Stock bajo: ' || i.name,
+              i.current_stock || ' ' || coalesce(i.unit, 'unidades') || ' (mínimo ' || i.min_stock || ')',
+              '/(drawer)/inventario', 'stock:' || i.id
+         FROM inventory i WHERE i.user_id = $1 AND i.current_stock <= i.min_stock
+        ORDER BY i.current_stock LIMIT 50
+       ON CONFLICT (user_id, dedupe_key) DO UPDATE SET title = EXCLUDED.title, body = EXCLUDED.body
+         WHERE clinic_notices.status = 'open'`, [userId, organizationId]
+    );
+  }
+  await pool.query(
+    `DELETE FROM clinic_notices n WHERE n.user_id = $1 AND n.kind = 'low_stock'
+        AND ($2::boolean OR NOT EXISTS (SELECT 1 FROM inventory i WHERE 'stock:' || i.id = n.dedupe_key AND i.user_id = $1 AND i.current_stock <= i.min_stock))`,
+    [userId, stockOff]
+  );
+  if (!vaccinesOff) {
+    await pool.query(
+      `INSERT INTO clinic_notices (user_id, organization_id, kind, title, body, link, pet_id, dedupe_key)
+       SELECT $1::uuid, $2::int, 'vaccines_overdue', 'Vacunas vencidas: ' || p.name,
+              CASE WHEN count(*) = 1 THEN '1 dosis con la fecha vencida' ELSE count(*) || ' dosis con la fecha vencida' END,
+              '/pet/' || p.id, p.id, 'vaccine:' || p.id
+         FROM vaccinations v JOIN pets p ON p.id = v.pet_id
+        WHERE v.user_id = $1 AND p.user_id = $1 AND ${overdue}
+        GROUP BY p.id, p.name ORDER BY count(*) DESC LIMIT 50
+       ON CONFLICT (user_id, dedupe_key) DO UPDATE SET title = EXCLUDED.title, body = EXCLUDED.body
+         WHERE clinic_notices.status = 'open'`, [userId, organizationId]
+    );
+  }
+  await pool.query(
+    `DELETE FROM clinic_notices n WHERE n.user_id = $1 AND n.kind = 'vaccines_overdue'
+        AND ($2::boolean OR NOT EXISTS (SELECT 1 FROM vaccinations v JOIN pets p ON p.id = v.pet_id
+                                         WHERE 'vaccine:' || p.id = n.dedupe_key AND v.user_id = $1 AND ${overdue}))`,
+    [userId, vaccinesOff]
+  );
+}
+
+// Called when a hospitalization is discharged; never fails the discharge itself
+async function createDischargeNotice(req, hospitalization) {
+  try {
+    if ((await disabledRules(req.userId)).has('discharge_checklist')) return;
+    const pet = (await pool.query('SELECT name FROM pets WHERE id = $1 AND user_id = $2', [hospitalization.pet_id, req.userId])).rows[0];
+    if (!pet) return;
+    await pool.query(
+      `INSERT INTO clinic_notices (user_id, organization_id, kind, title, body, link, pet_id, dedupe_key, checklist)
+       VALUES ($1, $2, 'discharge_checklist', $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (user_id, dedupe_key) DO NOTHING`,
+      [req.userId, req.organizationId || null, `Alta de ${pet.name}: cerrar el caso`, 'Pasos para dejar el alta completa.',
+       `/pet/${hospitalization.pet_id}`, hospitalization.pet_id, `discharge:${hospitalization.id}`,
+       JSON.stringify(DISCHARGE_CHECKLIST.map((text) => ({ text, done: false })))]
+    );
+  } catch (err) {
+    logError(req, err);
+  }
+}
+
+app.get('/items/notices', authMiddleware, async (req, res) => {
+  try {
+    await syncNotices(req.userId, req.organizationId || null);
+    const result = await pool.query(
+      `SELECT id, kind, title, body, link, pet_id, status, checklist, created_at, resolved_at
+         FROM clinic_notices WHERE user_id = $1 AND status = 'open' ORDER BY created_at DESC LIMIT 100`, [req.userId]
+    );
+    res.json({ data: result.rows });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.patch('/items/notices/:id', authMiddleware, async (req, res) => {
+  try {
+    const { status, checklist } = req.body || {};
+    const sets = [];
+    const values = [];
+    if (status !== undefined) {
+      if (!['open', 'done', 'dismissed'].includes(status)) return res.status(400).json({ error: 'Estado no válido' });
+      values.push(status);
+      sets.push(`status = $${values.length}`, status === 'open' ? 'resolved_at = NULL' : 'resolved_at = NOW()');
+    }
+    if (checklist !== undefined) {
+      const valid = Array.isArray(checklist) && checklist.length <= 20
+        && checklist.every((c) => c && typeof c.text === 'string' && c.text.length > 0 && c.text.length <= 200 && typeof c.done === 'boolean');
+      if (!valid) return res.status(400).json({ error: 'El checklist no es válido' });
+      values.push(JSON.stringify(checklist.map((c) => ({ text: c.text, done: c.done }))));
+      sets.push(`checklist = $${values.length}`);
+    }
+    if (!sets.length) return res.status(400).json({ error: 'Sin cambios' });
+    values.push(req.params.id, req.userId);
+    const result = await pool.query(
+      `UPDATE clinic_notices SET ${sets.join(', ')} WHERE id = $${values.length - 1} AND user_id = $${values.length}
+       RETURNING id, kind, title, body, link, pet_id, status, checklist, created_at, resolved_at`, values
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.get('/items/automation_rules', authMiddleware, async (req, res) => {
+  try {
+    const off = await disabledRules(req.userId);
+    res.json({ data: AUTOMATION_RULES.map((r) => ({ ...r, enabled: !off.has(r.key) })) });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.patch('/items/automation_rules/:key', authMiddleware, async (req, res) => {
+  try {
+    const rule = AUTOMATION_RULES.find((r) => r.key === req.params.key);
+    if (!rule) return res.status(404).json({ error: 'No se encontró la regla' });
+    if (typeof (req.body || {}).enabled !== 'boolean') return res.status(400).json({ error: 'Indica si la regla está activa' });
+    await pool.query(
+      `INSERT INTO automation_rules (user_id, rule_key, enabled) VALUES ($1, $2, $3)
+       ON CONFLICT (user_id, rule_key) DO UPDATE SET enabled = EXCLUDED.enabled, updated_at = NOW()`,
+      [req.userId, rule.key, req.body.enabled]
+    );
+    res.json({ data: { ...rule, enabled: req.body.enabled } });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ─── ANAMNESIS FORM FOR THE TUTOR ────────────────────────
+// The vet creates a link for a patient; the tutor answers at /f/<token> without an account;
+// the vet reviews the answers and imports them into the consultation. The public routes expose
+// only the pet's name, species, sex and the clinic name, and accept answers once.
+const ANAMNESIS_TTL_DAYS = 14;
+const ANAMNESIS_TOKEN_RE = /^[A-Za-z0-9_-]{20,64}$/;
+const ANAMNESIS_OPTIONS = {
+  diet: ['Seco', 'Húmedo', 'Mixto', 'Casero', 'BARF'],
+  housing: ['Casa', 'Depto', 'Parcela', 'Exteriores'],
+  outdoor: ['Solo interior', 'Sale al exterior', 'Libre en la calle'],
+  origin: ['Comprado', 'Adoptado', 'Rescatado', 'Regalado', 'Nacido en casa'],
+  water: ['Normal', 'Aumentado', 'Disminuido'],
+};
+const ANAMNESIS_CHRONIC = ['Cardiopatía', 'Renal crónica', 'Diabetes', 'Epilepsia', 'Hipotiroidismo', 'Hipertiroidismo', 'Artrosis', 'Dermatitis atópica', 'Asma / bronquitis crónica', 'Obesidad'];
+const ANAMNESIS_TEMPERAMENT = ['Dócil', 'Nervioso', 'Inquieto', 'Puede morder'];
+const ANAMNESIS_VACCINE_ITEMS = ['octuple_sextuple', 'kc', 'antirrabica', 'triple_felina', 'leucemia_felina'];
+const ANAMNESIS_TEXT_LIMITS = {
+  dietDetail: 200, feedings: 100, companions: 300, litter: 200, chronicOther: 600, surgeries: 800,
+  medications: 800, allergies: 400, lastHeat: 300, originAge: 100, retroviral: 200, dewormIn: 20, dewormOut: 20,
+};
+
+// Keeps only the known keys with the right shape. Returns { error } or { answers }.
+function normalizeAnamnesisAnswers(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { error: 'Las respuestas no son válidas' };
+  const answers = {};
+  for (const [key, options] of Object.entries(ANAMNESIS_OPTIONS)) {
+    const v = raw[key];
+    if (v == null || v === '') { answers[key] = null; continue; }
+    if (typeof v !== 'string' || !options.includes(v)) return { error: `Respuesta no válida (${key})` };
+    answers[key] = v;
+  }
+  for (const [key, max] of Object.entries(ANAMNESIS_TEXT_LIMITS)) {
+    const v = raw[key];
+    if (v == null) { answers[key] = ''; continue; }
+    if (typeof v !== 'string') return { error: `Respuesta no válida (${key})` };
+    const text = v.trim();
+    if (text.length > max) return { error: `La respuesta "${key}" supera ${max} caracteres` };
+    answers[key] = text;
+  }
+  for (const [key, allowed] of [['chronic', ANAMNESIS_CHRONIC], ['temperament', ANAMNESIS_TEMPERAMENT]]) {
+    const v = raw[key];
+    if (v == null) { answers[key] = []; continue; }
+    if (!Array.isArray(v) || v.some((x) => typeof x !== 'string' || !allowed.includes(x))) return { error: `Respuesta no válida (${key})` };
+    answers[key] = [...new Set(v)];
+  }
+  const dates = raw.vaccineDates;
+  answers.vaccineDates = {};
+  if (dates != null) {
+    if (typeof dates !== 'object' || Array.isArray(dates)) return { error: 'Respuesta no válida (vaccineDates)' };
+    for (const [item, value] of Object.entries(dates)) {
+      if (!ANAMNESIS_VACCINE_ITEMS.includes(item) || typeof value !== 'string' || value.trim().length > 20) return { error: 'Respuesta no válida (vaccineDates)' };
+      if (value.trim()) answers.vaccineDates[item] = value.trim();
+    }
+  }
+  const empty = Object.values(answers).every((v) => v == null || v === '' || (Array.isArray(v) && !v.length) || (typeof v === 'object' && v !== null && !Array.isArray(v) && !Object.keys(v).length));
+  if (empty) return { error: 'Responde al menos una pregunta' };
+  return { answers };
+}
+
+// Public (no auth): the link is the credential, so every lookup is rate limited and answers are accepted once
+async function loadPublicAnamnesis(req, res) {
+  const token = req.params.token;
+  if (!ANAMNESIS_TOKEN_RE.test(token)) { res.status(404).json({ error: 'Este enlace no es válido' }); return null; }
+  const form = (await pool.query(
+    `SELECT f.id, f.status, f.expires_at, p.name AS pet_name, p.species, p.sex, p.reproductive_status, u.clinic_name
+       FROM anamnesis_forms f
+       JOIN pets p ON p.id = f.pet_id
+       JOIN users u ON u.id = f.user_id
+      WHERE f.token = $1`, [token]
+  )).rows[0];
+  if (!form || form.status === 'cancelado') { res.status(404).json({ error: 'Este enlace no es válido' }); return null; }
+  if (form.status !== 'pendiente') { res.status(409).json({ error: 'Ya recibimos las respuestas de este formulario. ¡Gracias!', code: 'ALREADY_ANSWERED' }); return null; }
+  if (new Date(form.expires_at) < new Date()) { res.status(410).json({ error: 'Este enlace venció. Pide uno nuevo a la clínica.', code: 'EXPIRED' }); return null; }
+  return form;
+}
+
+app.get('/public/anamnesis/:token', async (req, res) => {
+  try {
+    if (!await rateLimit(`anamnesis-view:${req.ip || 'unknown'}`, 60, 3600000)) return res.status(429).json({ error: 'Demasiadas solicitudes. Intenta más tarde.' });
+    const form = await loadPublicAnamnesis(req, res);
+    if (!form) return;
+    res.json({ data: { pet: { name: form.pet_name, species: form.species, sex: form.sex, reproductive_status: form.reproductive_status }, clinic_name: form.clinic_name || null, expires_at: form.expires_at } });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/public/anamnesis/:token', async (req, res) => {
+  try {
+    const ip = req.ip || 'unknown';
+    if (!ANAMNESIS_TOKEN_RE.test(req.params.token)) return res.status(404).json({ error: 'Este enlace no es válido' });
+    if (!await rateLimit(`anamnesis-submit:${ip}`, 10, 3600000) || !await rateLimit(`anamnesis-token:${req.params.token}`, 10, 3600000)) {
+      return res.status(429).json({ error: 'Demasiados intentos. Intenta más tarde.' });
+    }
+    const form = await loadPublicAnamnesis(req, res);
+    if (!form) return;
+    const { error, answers } = normalizeAnamnesisAnswers(req.body && req.body.answers);
+    if (error) return res.status(400).json({ error });
+    // The status condition makes a double submit (two tabs, a retry) land only once
+    const saved = await pool.query(
+      `UPDATE anamnesis_forms SET answers = $1, status = 'respondido', submitted_at = NOW()
+        WHERE id = $2 AND status = 'pendiente' AND expires_at > NOW() RETURNING id`,
+      [JSON.stringify(answers), form.id]
+    );
+    if (!saved.rows.length) return res.status(409).json({ error: 'Ya recibimos las respuestas de este formulario. ¡Gracias!', code: 'ALREADY_ANSWERED' });
+    res.json({ data: { ok: true } });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Vet side. The token is returned so the link can be copied again; it expires and works once.
+app.get('/items/anamnesis_forms', authMiddleware, async (req, res) => {
+  try {
+    const petId = String(req.query.pet_id || '');
+    if (!isValidUUID(petId)) return res.status(400).json({ error: 'Falta el paciente' });
+    const result = await pool.query(
+      `SELECT id, pet_id, token, status, answers, expires_at, submitted_at, imported_at, created_at
+         FROM anamnesis_forms WHERE pet_id = $1 AND user_id = $2 AND status <> 'cancelado'
+        ORDER BY created_at DESC LIMIT 5`, [petId, req.userId]
+    );
+    res.json({ data: result.rows });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/items/anamnesis_forms', authMiddleware, async (req, res) => {
+  try {
+    const petId = String((req.body || {}).pet_id || '');
+    if (!isValidUUID(petId)) return res.status(400).json({ error: 'Falta el paciente' });
+    const refError = await checkRefs(req);
+    if (refError) return res.status(403).json({ error: refError });
+    if (!await rateLimit(`anamnesis-create:${req.userId}`, 30, 3600000)) return res.status(429).json({ error: 'Demasiados formularios creados. Intenta más tarde.' });
+    // One open link per patient: a new one replaces the previous pending link
+    await pool.query(`UPDATE anamnesis_forms SET status = 'cancelado' WHERE pet_id = $1 AND user_id = $2 AND status = 'pendiente'`, [petId, req.userId]);
+    const token = require('crypto').randomBytes(24).toString('base64url');
+    const result = await pool.query(
+      `INSERT INTO anamnesis_forms (pet_id, user_id, organization_id, token, expires_at)
+       VALUES ($1, $2, $3, $4, NOW() + ($5 || ' days')::interval)
+       RETURNING id, pet_id, token, status, answers, expires_at, submitted_at, imported_at, created_at`,
+      [petId, req.userId, req.organizationId || null, token, String(ANAMNESIS_TTL_DAYS)]
+    );
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/items/anamnesis_forms/:id/imported', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `UPDATE anamnesis_forms SET status = 'importado', imported_at = NOW()
+        WHERE id = $1 AND user_id = $2 AND status IN ('respondido', 'importado') RETURNING id, status, imported_at`,
+      [req.params.id, req.userId]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.delete('/items/anamnesis_forms/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `UPDATE anamnesis_forms SET status = 'cancelado' WHERE id = $1 AND user_id = $2 AND status = 'pendiente' RETURNING id`,
+      [req.params.id, req.userId]
+    );
     if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
     res.json({ data: null });
   } catch (err) {

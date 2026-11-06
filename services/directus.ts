@@ -341,6 +341,70 @@ export interface NoteDoc {
   content: any[];
 }
 
+/** Anamnesis form the tutor answers from a public link (see the "ANAMNESIS FORM" routes in server.js) */
+export interface AnamnesisForm {
+  id: string;
+  pet_id: string;
+  token: string;
+  status: 'pendiente' | 'respondido' | 'importado' | 'cancelado';
+  /** Same keys as the consultation's RemoteForm, validated by the server */
+  answers: Record<string, any> | null;
+  expires_at: string;
+  submitted_at: string | null;
+  imported_at: string | null;
+  created_at: string;
+}
+
+export interface PublicAnamnesisInfo {
+  pet: { name: string; species: DirectusPet['species']; sex: DirectusPet['sex']; reproductive_status: DirectusPet['reproductive_status'] };
+  clinic_name: string | null;
+  expires_at: string;
+}
+
+/** Public form calls: no session, so no auth headers and no 401 handling */
+export const publicAnamnesis = {
+  async get(token: string): Promise<PublicAnamnesisInfo> {
+    const res = await apiFetch(`${API_URL}/public/anamnesis/${encodeURIComponent(token)}`);
+    if (!res.ok) throw await apiError(res);
+    return (await res.json()).data;
+  },
+  async submit(token: string, answers: Record<string, any>): Promise<void> {
+    const res = await apiFetch(`${API_URL}/public/anamnesis/${encodeURIComponent(token)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers }),
+    });
+    if (!res.ok) throw await apiError(res);
+  },
+};
+
+/** Inbox item for the clinic, created by an automation rule (see "CLINIC NOTICES" in server.js) */
+export interface ClinicNotice {
+  id: string;
+  kind: 'low_stock' | 'vaccines_overdue' | 'discharge_checklist';
+  title: string;
+  body: string | null;
+  /** App route to open (e.g. /pet/<id>) */
+  link: string | null;
+  pet_id: string | null;
+  status: 'open' | 'done' | 'dismissed';
+  checklist: { text: string; done: boolean }[] | null;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+export interface AutomationRule {
+  key: 'low_stock' | 'vaccines_overdue' | 'discharge_checklist';
+  title: string;
+  description: string;
+  enabled: boolean;
+}
+
+/** Link the vet shares with the tutor */
+export function anamnesisLink(token: string): string {
+  return `${API_URL}/f/${token}`;
+}
+
 export interface DirectusFavorite {
   id: string;
   disease_id: DirectusDisease | string;
@@ -577,6 +641,21 @@ export const api = {
   medicalRecords: {
     list: (petId?: string) => apiGet('/items/medical_records', petId ? { pet_id: petId } : undefined),
     create: (data: any) => apiPost('/items/medical_records', data),
+  },
+  notices: {
+    /** Syncs the rules with the current data, then returns the open notices */
+    list: (): Promise<ClinicNotice[]> => apiGet('/items/notices'),
+    update: (id: string, data: { status?: ClinicNotice['status']; checklist?: ClinicNotice['checklist'] }): Promise<ClinicNotice> => apiPatch(`/items/notices/${id}`, data),
+  },
+  automationRules: {
+    list: (): Promise<AutomationRule[]> => apiGet('/items/automation_rules'),
+    setEnabled: (key: AutomationRule['key'], enabled: boolean): Promise<AutomationRule> => apiPatch(`/items/automation_rules/${key}`, { enabled }),
+  },
+  anamnesisForms: {
+    forPet: (petId: string): Promise<AnamnesisForm[]> => apiGet('/items/anamnesis_forms', { pet_id: petId }),
+    create: (petId: string): Promise<AnamnesisForm> => apiPost('/items/anamnesis_forms', { pet_id: petId }),
+    cancel: (id: string) => apiDelete(`/items/anamnesis_forms/${id}`),
+    markImported: (id: string) => apiPost(`/items/anamnesis_forms/${id}/imported`, {}),
   },
   notes: {
     list: () => apiGet('/items/personal_notes'),

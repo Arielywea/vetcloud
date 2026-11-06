@@ -62,6 +62,7 @@ const SCREEN_TITLES: Record<string, string> = {
   '/configuracion': 'Configuración',
   '/notes': 'Notas personales',
   '/reminders': 'Recordatorios',
+  '/avisos': 'Avisos',
   '/fluidoterapia': 'Fluidoterapia',
   '/dosis': 'Calculadora de dosis',
   '/search': 'Búsqueda',
@@ -69,7 +70,7 @@ const SCREEN_TITLES: Record<string, string> = {
 
 // Screens that draw their own DisplayText heading; the rest get it in the top bar
 // Every page draws its own PageHeader except the agenda, a dense tool whose toolbar is its heading
-const OWN_HEADING = new Set(['/', '/pacientes', '/add-paciente', '/hospitalizacion', '/laboratorio', '/reportes', '/configuracion', '/surgeries', '/inventario', '/diseases', '/add-disease', '/medications', '/notes', '/reminders', '/fluidoterapia', '/dosis']);
+const OWN_HEADING = new Set(['/', '/pacientes', '/add-paciente', '/hospitalizacion', '/laboratorio', '/reportes', '/configuracion', '/surgeries', '/inventario', '/diseases', '/add-disease', '/medications', '/notes', '/reminders', '/avisos', '/fluidoterapia', '/dosis']);
 
 export default function DrawerLayout() {
   const { colors, isDark } = useTheme();
@@ -143,6 +144,7 @@ export default function DrawerLayout() {
               <Stack.Screen name="configuracion" />
               <Stack.Screen name="notes" />
               <Stack.Screen name="reminders" />
+              <Stack.Screen name="avisos" />
               <Stack.Screen name="fluidoterapia" />
               <Stack.Screen name="dosis" />
             </Stack>

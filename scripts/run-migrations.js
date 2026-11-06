@@ -36,6 +36,8 @@ const MIGRATIONS = [
   '026_lab_orders.sql',
   '027_dose_date_estimated.sql',
   '028_note_blocks.sql',
+  '029_anamnesis_forms.sql',
+  '030_clinic_notices.sql',
 ];
 
 async function runMigrations() {

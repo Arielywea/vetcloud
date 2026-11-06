@@ -12,7 +12,8 @@ import IconButton from '../../components/ui/IconButton';
 import { api, Appointment, ClinicalRecord, DirectusPet, Medication, Vaccination } from '../../services/directus';
 import { downloadPdf } from '../../utils/downloadPdf';
 import { CONSULT_TEMPLATES } from '../../constants/consultTemplates';
-import RemoteAnamnesis, { RemoteForm, remoteFromPet, remoteToPetPatch, remoteSummary, declaredDoses } from '../../components/consulta/RemoteAnamnesis';
+import RemoteAnamnesis, { RemoteForm, remoteFromPet, remoteToPetPatch, remoteSummary, declaredDoses, mergeTutorAnswers } from '../../components/consulta/RemoteAnamnesis';
+import TutorAnamnesisLink from '../../components/consulta/TutorAnamnesisLink';
 import DisplayText from '../../components/ui/DisplayText';
 import VButton from '../../components/ui/Button';
 import VInput from '../../components/ui/Input';
@@ -535,6 +536,11 @@ export default function ConsultaScreen() {
           </View>
           {records.length ? <VButton size="sm" variant={form.remoteOpen ? 'ghost' : 'secondary'} onPress={() => set('remoteOpen', !form.remoteOpen)}>{form.remoteOpen ? 'No actualizar' : 'Actualizar'}</VButton> : null}
         </View>
+        <TutorAnamnesisLink
+          petId={pet.id}
+          petName={pet.name}
+          onImport={(answers) => setForm((f) => (f ? { ...f, remote: mergeTutorAnswers(f.remote, answers), remoteOpen: true } : f))}
+        />
         {form.remoteOpen ? (
           <RemoteAnamnesis pet={pet} value={form.remote} onChange={(v) => set('remote', v)} vaccinations={vaccinations} />
         ) : (

@@ -7,6 +7,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useResponsive } from '../../hooks/useResponsive';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
 import DisplayText from '../ui/DisplayText';
+import { useNotices } from '../../hooks/useNotices';
 
 // The palette opens with Ctrl+K or ⌘K; show the one this keyboard has
 const IS_MAC = Platform.OS === 'ios' || (Platform.OS === 'web' && typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent));
@@ -24,6 +25,7 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
   const router = useRouter();
   const { colors, onAccentText } = useTheme();
   const { isMobile } = useResponsive();
+  const noticeCount = useNotices().notices.length;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }, isMobile && styles.containerMobile]}>
@@ -62,10 +64,16 @@ export default function TopBar({ onMenuPress, onSearchPress, title, rightContent
         {rightContent}
         <TouchableOpacity
           style={[styles.iconBtn, isMobile && styles.iconBtnMobile]}
-          onPress={() => router.push('/(drawer)/reminders')}
-          accessibilityLabel="Recordatorios"
+          onPress={() => router.push('/(drawer)/avisos')}
+          accessibilityRole="button"
+          accessibilityLabel={noticeCount ? `Avisos: ${noticeCount} pendientes` : 'Avisos'}
         >
           <Bell size={20} color={colors.textSecondary} />
+          {noticeCount ? (
+            <View style={[styles.badge, { backgroundColor: colors.accent }]}>
+              <Text style={[styles.badgeText, { color: onAccentText.default }]}>{noticeCount > 9 ? '9+' : noticeCount}</Text>
+            </View>
+          ) : null}
         </TouchableOpacity>
         {!isMobile && (
           <TouchableOpacity
@@ -158,6 +166,8 @@ const styles = StyleSheet.create({
     padding: SPACING.sm,
     position: 'relative',
   },
+  badge: { position: 'absolute', top: 2, right: 0, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
+  badgeText: { fontSize: 11, fontWeight: TYPOGRAPHY.weights.bold, lineHeight: 14 },
   iconBtnMobile: {
     padding: SPACING.md,
   },

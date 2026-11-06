@@ -141,15 +141,34 @@ export function remoteSummary(r: RemoteForm, species: DirectusPet['species']): s
   return lines.filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join('\n');
 }
 
+/** A blank form: what the tutor starts from on the public page */
+export function emptyRemote(): RemoteForm {
+  return { diet: null, dietDetail: '', feedings: '', housing: null, outdoor: null, companions: '', litter: '', chronic: [], chronicOther: '', surgeries: '', medications: '', allergies: '', temperament: [], lastHeat: '', vaccineDates: {}, dewormIn: '', dewormOut: '', origin: null, originAge: '', retroviral: '', water: null };
+}
+
+/** What the tutor answered, laid over the current form: an unanswered question keeps what the ficha already has */
+export function mergeTutorAnswers(current: RemoteForm, answers: Partial<RemoteForm>): RemoteForm {
+  const next: RemoteForm = { ...current, vaccineDates: { ...current.vaccineDates } };
+  for (const key of Object.keys(emptyRemote()) as (keyof RemoteForm)[]) {
+    const v = answers[key];
+    if (key === 'vaccineDates') { Object.assign(next.vaccineDates, v || {}); continue; }
+    const filled = Array.isArray(v) ? v.length > 0 : typeof v === 'string' ? v.trim() !== '' : v != null;
+    if (filled) (next as any)[key] = v;
+  }
+  return next;
+}
+
 interface RemoteAnamnesisProps {
   pet: DirectusPet;
   value: RemoteForm;
   onChange: (next: RemoteForm) => void;
   /** Doses already recorded: those plan items show the last dose instead of asking for it */
   vaccinations: Vaccination[];
+  /** Public form: the text speaks to the tutor instead of the vet */
+  forTutor?: boolean;
 }
 
-export default function RemoteAnamnesis({ pet, value: r, onChange, vaccinations }: RemoteAnamnesisProps) {
+export default function RemoteAnamnesis({ pet, value: r, onChange, vaccinations, forTutor }: RemoteAnamnesisProps) {
   const { colors } = useTheme();
   const { isMobile } = useResponsive();
   const set = <K extends keyof RemoteForm>(k: K, v: RemoteForm[K]) => onChange({ ...r, [k]: v });
@@ -210,13 +229,17 @@ export default function RemoteAnamnesis({ pet, value: r, onChange, vaccinations 
             <VInput containerStyle={styles.half} label="Cirugías previas" value={r.surgeries} onChangeText={(v) => set('surgeries', v)} placeholder="Esterilización 2023…" />
             <VInput containerStyle={styles.half} label="Medicación actual" value={r.medications} onChangeText={(v) => set('medications', v)} placeholder="Fármaco, dosis y frecuencia" />
           </View>
-          <VInput label="Alergias" value={r.allergies} onChangeText={(v) => set('allergies', v)} placeholder="Separadas por coma: penicilina, pollo…" hint="Quedan como alerta en la ficha" />
+          <VInput label="Alergias" value={r.allergies} onChangeText={(v) => set('allergies', v)} placeholder="Separadas por coma: penicilina, pollo…" hint={forTutor ? undefined : 'Quedan como alerta en la ficha'} />
         </>
       ) })}
 
       {Group({ title: 'Vacunas y desparasitación', children: (
         <>
-          <Text style={[styles.note, { color: colors.textSecondary }]}>Fecha de la última dosis (DD/MM/AAAA). Si el tutor no la sabe, escribe mes y año (MM/AAAA) o elige "hace": queda marcada como estimada. Las ya registradas en la clínica aparecen con su fecha.</Text>
+          <Text style={[styles.note, { color: colors.textSecondary }]}>
+            {forTutor
+              ? 'Fecha de la última dosis (DD/MM/AAAA). Si no la recuerda, escriba mes y año (MM/AAAA) o elija "hace": basta con una fecha aproximada. Puede dejar en blanco lo que no sepa.'
+              : 'Fecha de la última dosis (DD/MM/AAAA). Si el tutor no la sabe, escribe mes y año (MM/AAAA) o elige "hace": queda marcada como estimada. Las ya registradas en la clínica aparecen con su fecha.'}
+          </Text>
           <View style={styles.pair}>
             {[...plan.map((p) => ({ key: p.item as string, label: p.label, s: doseStatus(vaccinations, (v) => v.kind === 'vacuna' && v.plan_item === p.item, p.months) })),
               ...DEWORMING.map((d) => ({ key: d.kind as string, label: d.label, s: doseStatus(vaccinations, (v) => v.kind === d.kind, d.months) }))].map((row) => (

@@ -1,4 +1,4 @@
-import { Stack, useRouter } from 'expo-router';
+import { Slot, Stack, usePathname, useRouter } from 'expo-router';
 import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -54,6 +54,10 @@ class RootErrorBoundary extends React.Component<
 function AppContent() {
   const { isAuthenticated, loading } = useAuth();
   const { colors, onChromeText } = useTheme();
+  const pathname = usePathname();
+
+  // Public pages (the tutor's anamnesis form, /f/<token>) open without a session and without waiting for it
+  if (pathname.startsWith('/f/')) return <Slot />;
 
   if (loading) {
     return (

@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-06T19:59:14.649Z",
+        "reason": "project rule: CLAUDE.md mandates Inter for the whole UI (loaded in utils/webFonts.ts)"
+      }
+    ]
+  }
+}

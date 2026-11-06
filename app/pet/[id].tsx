@@ -26,9 +26,10 @@ import { useResponsive } from '../../hooks/useResponsive';
 import DynamicIcon from '../../components/ui/DynamicIcon';
 import { useToast } from '../../components/ui/VToast';
 import VModal from '../../components/ui/VModal';
+import TutorAnamnesisLink from '../../components/consulta/TutorAnamnesisLink';
 import VButton from '../../components/ui/Button';
 import VBadge from '../../components/ui/Badge';
-import { Stethoscope, FileText, Wallet, Download, Syringe, CalendarPlus, FlaskConical } from 'lucide-react-native';
+import { Stethoscope, FileText, Wallet, Download, Syringe, CalendarPlus, FlaskConical, ClipboardList } from 'lucide-react-native';
 import { downloadPdf } from '../../utils/downloadPdf';
 
 export default function PetDetailScreen() {
@@ -63,6 +64,7 @@ export default function PetDetailScreen() {
   const [showPayment, setShowPayment] = useState(false);
   const [labExams, setLabExams] = useState<DirectusLabExam[]>([]);
   const [showExams, setShowExams] = useState(false);
+  const [showTutorForm, setShowTutorForm] = useState(false);
 
   const loadNext = useCallback(async () => {
     if (!id) return;
@@ -186,6 +188,7 @@ export default function PetDetailScreen() {
         {alive ? <VButton variant="secondary" onPress={() => setVaccinePreset(null)} icon={<Syringe size={16} color={colors.primary} />}>Vacuna</VButton> : null}
         <VButton variant="secondary" onPress={() => openRxModal()} icon={<FileText size={16} color={colors.primary} />}>Receta</VButton>
         {alive ? <VButton variant="secondary" onPress={() => router.push({ pathname: '/(drawer)/agenda', params: { nueva: '1', pet_id: pet.id } } as any)} icon={<CalendarPlus size={16} color={colors.primary} />}>Agendar</VButton> : null}
+        {alive ? <VButton variant="secondary" onPress={() => setShowTutorForm(true)} icon={<ClipboardList size={16} color={colors.primary} />}>Anamnesis al tutor</VButton> : null}
         {alive ? <VButton variant="secondary" onPress={() => setShowExams(true)} icon={<FlaskConical size={16} color={colors.primary} />}>Exámenes</VButton> : null}
         <VButton variant="secondary" onPress={() => setShowPayment(true)} icon={<Wallet size={16} color={colors.primary} />}>Cobrar</VButton>
         <VButton variant="ghost" onPress={handleDownloadPdf} icon={<Download size={16} color={colors.primary} />}>Ficha PDF</VButton>
@@ -204,6 +207,11 @@ export default function PetDetailScreen() {
       </View>
 
       <ExamOrderSheet visible={showExams} petId={pet.id} petName={pet.name} veterinarian={user?.name} onClose={() => setShowExams(false)} onCreated={loadLab} />
+
+      {/* Modal: anamnesis remota enviada al tutor como enlace */}
+      <VModal visible={showTutorForm} onDismiss={() => setShowTutorForm(false)} title="Anamnesis al tutor">
+        {showTutorForm ? <TutorAnamnesisLink petId={pet.id} petName={pet.name} /> : null}
+      </VModal>
 
       {/* Modal: Detalle de Registro */}
       <VModal visible={!!selectedRecord} onDismiss={() => setSelectedRecord(null)} title="Detalle del registro">
