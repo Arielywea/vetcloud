@@ -50,7 +50,10 @@ export default function RecordDetail({ record }: RecordDetailProps) {
           icon: 'account-heart-outline',
           color: colors.primary,
           content: [d.subjective, d.anamnesis_remota && `Anamnesis remota:\n${d.anamnesis_remota}`, (nextLines(d.anamnesis_proxima).length || d.anamnesis) && `Anamnesis próxima:\n${[...nextLines(d.anamnesis_proxima).map(([k, v]) => `${k}: ${v}`), d.anamnesis].filter(Boolean).join('\n')}`].filter(Boolean).join('\n\n'),
-          fields: d.motivo_consulta ? [{ label: 'Motivo', value: d.motivo_consulta }] : [],
+          fields: [
+            ...(d.motivo_consulta ? [{ label: 'Motivo', value: d.motivo_consulta }] : []),
+            ...(d.edited_at ? [{ label: 'Editada', value: new Date(d.edited_at).toLocaleDateString('es-CL') }] : []),
+          ],
         },
         {
           label: 'Objetivo',

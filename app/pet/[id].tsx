@@ -202,7 +202,8 @@ export default function PetDetailScreen() {
               <RecordDetail record={selectedRecord} />
               <View style={styles.detailActions}>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  <VButton size="sm" onPress={() => { setSelectedRecord(null); openRxModal(selectedRecord.id); }}>Generar receta</VButton>
+                  {selectedRecord.record_type !== 'vacuna' ? <VButton size="sm" onPress={() => { const id = selectedRecord.id; setSelectedRecord(null); router.push({ pathname: `/consulta/${pet.id}`, params: { record: id } } as any); }}>Editar</VButton> : null}
+                  <VButton size="sm" variant="secondary" onPress={() => { setSelectedRecord(null); openRxModal(selectedRecord.id); }}>Generar receta</VButton>
                   <VButton size="sm" variant="secondary" onPress={() => pdf(`/items/clinical_records/${selectedRecord.id}/summary-pdf`, `resumen_${pet.name}.pdf`)}>Resumen para el tutor</VButton>
                   {tutorEmail ? <VButton size="sm" variant="secondary" loading={sendingSummary} disabled={sendingSummary} onPress={() => sendSummary(selectedRecord.id)}>Enviar resumen</VButton> : null}
                   <VButton size="sm" variant="ghost" color={colors.error} onPress={() => setDeleteRecordTarget(selectedRecord)}>Eliminar</VButton>

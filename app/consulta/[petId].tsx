@@ -19,7 +19,7 @@ import VInput from '../../components/ui/Input';
 import Segmented from '../../components/ui/Segmented';
 import Escutcheon from '../../components/icons/Escutcheon';
 import { VitalsAndExam, NextAnamnesis } from '../../components/consulta/PhysicalExam';
-import { ExamForm, emptyExam, examError, examToDetails, nextToDetails } from '../../utils/physicalExam';
+import { ExamForm, emptyExam, examError, examFromDetails, examToDetails, nextToDetails } from '../../utils/physicalExam';
 import VoiceNotes from '../../components/VoiceNotes';
 import VaccinationSheet, { VaccinationDraft } from '../../components/pet/VaccinationSheet';
 import { petAlerts } from '../../components/pet/ChartHeader';
@@ -75,6 +75,27 @@ interface Form {
 
 interface Outcome { label: string; ok: boolean; detail?: string }
 
+/** Details keys this form manages: the rest (remote anamnesis, treatment, attachments…) survive an edit */
+const MANAGED_DETAILS = ['motivo_consulta', 'anamnesis', 'hallazgos_examen_fisico', 'exam', 'anamnesis_proxima', 'problemas', 'assessment', 'diagnoses', 'plan', 'procedimiento', 'postoperatorio'];
+
+function formFromRecord(rec: ClinicalRecord, p: DirectusPet): Form {
+  const d: any = rec.details || {};
+  const dx: Array<{ id: string; name: string }> = Array.isArray(d.diagnoses) ? d.diagnoses : [];
+  const names = dx.map((x) => x.name).join(', ');
+  let dxText: string = d.assessment || '';
+  if (names && dxText.startsWith(names)) dxText = dxText.slice(names.length).replace(/^.s*/, '');
+  return {
+    type: rec.record_type === 'control' || rec.record_type === 'cirugia' ? rec.record_type : 'consulta',
+    date: toLocalDateTimeInput(new Date(rec.date)), vet: rec.veterinarian || '',
+    reason: d.motivo_consulta || '', anamnesis: d.anamnesis || '',
+    weight: rec.weight_kg != null && rec.weight_kg !== '' ? String(rec.weight_kg).replace('.', ',') : '',
+    findings: d.hallazgos_examen_fisico || '', diagnosisText: dxText, diagnoses: dx,
+    plan: d.plan || '', procedure: d.procedimiento || '', postop: d.postoperatorio || '',
+    rx: '', vaccines: [], controlDate: '', controlTime: '10:00', payAmount: '', payMethod: 'efectivo', payDescription: '', extras: [],
+    remote: remoteFromPet(p), remoteOpen: false, exam: examFromDetails(d),
+  };
+}
+
 const draftKey = (petId: string) => `vetcloud:consulta:${petId}`;
 function loadDraft(petId: string): Form | null {
   try {
@@ -93,7 +114,7 @@ function saveDraft(petId: string, form: Form | null) {
 }
 
 export default function ConsultaScreen() {
-  const { petId, appointment_id: appointmentId } = useLocalSearchParams<{ petId: string; appointment_id?: string }>();
+  const { petId, appointment_id: appointmentId, record: editId } = useLocalSearchParams<{ petId: string; appointment_id?: string; record?: string }>();
   const router = useRouter();
   const toast = useToast();
   const { user } = useAuth();
@@ -105,6 +126,7 @@ export default function ConsultaScreen() {
   const [previewId, setPreviewId] = useState<string | null>(null);
 
   const [pet, setPet] = useState<DirectusPet | null>(null);
+  const [editRecord, setEditRecord] = useState<ClinicalRecord | null>(null);
   const [records, setRecords] = useState<ClinicalRecord[]>([]);
   const [vaccinations, setVaccinations] = useState<Vaccination[]>([]);
   const [appointment, setAppointment] = useState<Appointment | null>(null);
@@ -146,9 +168,12 @@ export default function ConsultaScreen() {
           if (appt && status) appt = { ...appt, status };
           if (!cancelled) setAppointment(appt);
         }
-        const draft = loadDraft(petId);
+        const draft = editId ? null : loadDraft(petId);
+        const rec = editId ? sorted.find((r) => r.id === editId) : null;
+        if (editId && !rec) throw new Error('No se encontró la consulta que quieres editar');
         // Drafts from before the remote anamnesis existed lack it
-        if (draft) { setForm({ ...draft, exam: draft.exam || emptyExam(), remote: draft.remote || remoteFromPet(p), remoteOpen: draft.remote ? draft.remoteOpen : sorted.length === 0 }); setRestored(true); }
+        if (rec) { setEditRecord(rec); setForm(formFromRecord(rec, p)); }
+        else if (draft) { setForm({ ...draft, exam: draft.exam || emptyExam(), remote: draft.remote || remoteFromPet(p), remoteOpen: draft.remote ? draft.remoteOpen : sorted.length === 0 }); setRestored(true); }
         else {
           setForm({
             type: appt?.appointment_type === 'control' ? 'control' : appt?.appointment_type === 'cirugia' ? 'cirugia' : 'consulta',
@@ -161,7 +186,7 @@ export default function ConsultaScreen() {
             remote: remoteFromPet(p), remoteOpen: sorted.length === 0, exam: emptyExam(),
           });
         }
-        loaded.current = true;
+        loaded.current = !editId;
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'No se pudo cargar el paciente');
       } finally {
@@ -170,7 +195,7 @@ export default function ConsultaScreen() {
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [petId, appointmentId]);
+  }, [petId, appointmentId, editId]);
 
   // Keep a local draft: an accidental "back" in the middle of a visit must not lose it
   useEffect(() => { if (loaded.current && form && petId && !done) saveDraft(petId, form); }, [form, petId, done]);
@@ -279,15 +304,7 @@ export default function ConsultaScreen() {
     let rxId: string | null = null;
     try {
       const names = form.diagnoses.map((d) => d.name);
-      const record = await api.clinicalRecords.create({
-        pet_id: pet.id,
-        record_type: form.type,
-        date: when.toISOString(),
-        veterinarian: form.vet.trim() || null,
-        weight_kg: w,
-        appointment_id: appointment?.id || null,
-        is_initial: records.length === 0,
-        details: {
+      const fresh = {
           motivo_consulta: form.reason.trim() || undefined,
           anamnesis: form.anamnesis.trim() || undefined,
           anamnesis_remota: form.remoteOpen ? remoteSummary(form.remote, pet.species) || undefined : undefined,
@@ -301,7 +318,26 @@ export default function ConsultaScreen() {
           treatment: has('receta') && form.rx.trim() ? form.rx.trim() : undefined,
           procedimiento: form.type === 'cirugia' ? form.procedure.trim() || undefined : undefined,
           postoperatorio: form.type === 'cirugia' ? form.postop.trim() || undefined : undefined,
-        },
+      };
+      const base = {
+        record_type: form.type,
+        date: when.toISOString(),
+        veterinarian: form.vet.trim() || null,
+        weight_kg: w,
+      };
+      if (editRecord) {
+        const kept = Object.fromEntries(Object.entries(editRecord.details || {}).filter(([k]) => !MANAGED_DETAILS.includes(k)));
+        await api.clinicalRecords.update(editRecord.id, { ...base, details: { ...kept, ...fresh, edited_at: new Date().toISOString() } });
+        toast.success('Consulta actualizada');
+        router.replace(`/pet/${pet.id}` as any);
+        return;
+      }
+      const record = await api.clinicalRecords.create({
+        ...base,
+        pet_id: pet.id,
+        appointment_id: appointment?.id || null,
+        is_initial: records.length === 0,
+        details: fresh,
       });
       if (form.remoteOpen) {
         try {
@@ -366,7 +402,7 @@ export default function ConsultaScreen() {
     }
   };
 
-  const discard = () => { saveDraft(pet.id, null); router.canGoBack() ? router.back() : router.replace(`/pet/${pet.id}` as any); };
+  const discard = () => { if (!editRecord) saveDraft(pet.id, null); router.canGoBack() ? router.back() : router.replace(`/pet/${pet.id}` as any); };
 
   const pdf = (endpoint: string, name: string) => downloadPdf(endpoint, name).catch((e: any) => toast.error(e?.message || 'No se pudo generar el PDF'));
   const tutorEmail = pet.owner_contact_revoked_at || pet.owner_anonymized_at ? null : pet.owner_email || pet.email;
@@ -444,6 +480,7 @@ export default function ConsultaScreen() {
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       {header}
+      {editRecord ? <Text style={[styles.meta, { color: colors.textSecondary, marginBottom: SPACING.md }]}>Editando la consulta del {formatDay(String(editRecord.date).slice(0, 10))}. Receta, vacunas y cobros se agregan desde la ficha.</Text> : null}
       {alerts.length ? (
         <View style={[styles.alerts, { backgroundColor: alpha(colors.error, 0.1) }]} accessibilityRole="alert">
           <AlertTriangle size={18} color={colors.error} />
@@ -472,6 +509,7 @@ export default function ConsultaScreen() {
         <VInput label="Motivo de consulta" value={form.reason} onChangeText={(v) => set('reason', v)} placeholder="Qué trae al paciente hoy" />
       </View>
 
+      {editRecord ? null : (<>
       <View style={[styles.panel, { backgroundColor: colors.surface }]}>
         <View style={styles.panelHead}>
           <View style={styles.grow}>
@@ -490,6 +528,7 @@ export default function ConsultaScreen() {
           </Text>
         )}
       </View>
+      </>)}
 
       <View style={[styles.panel, { backgroundColor: colors.surface }]}>
         <DisplayText style={[styles.panelTitle, { color: colors.text }]}>Anamnesis próxima</DisplayText>
@@ -555,6 +594,7 @@ export default function ConsultaScreen() {
         <VInput label="Plan e indicaciones" value={form.plan} onChangeText={(v) => set('plan', v)} multiline style={styles.area} placeholder="Exámenes, manejo, indicaciones al tutor" />
       </View>
 
+      {editRecord ? null : (<>
       <View style={[styles.panel, { backgroundColor: colors.surface }]}>
         <DisplayText style={[styles.panelTitle, { color: colors.text }]}>Desde esta consulta</DisplayText>
         <View style={[styles.chips, { marginBottom: SPACING.lg }]}>
@@ -629,11 +669,12 @@ export default function ConsultaScreen() {
         ) : null}
         {!form.extras.length ? <Text style={[styles.meta, { color: colors.textSecondary }]}>Agrega lo que corresponda: todo se guarda junto al cerrar la consulta.</Text> : null}
       </View>
+      </>)}
 
       {error ? <Text accessibilityRole="alert" style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
       <View style={[styles.footer, isMobile && styles.footerMobile]}>
         <VButton variant="ghost" onPress={discard}>Descartar</VButton>
-        <VButton size="lg" onPress={close} loading={saving} disabled={saving} icon={<Check size={18} color={onAccentText.default} />}>Cerrar consulta</VButton>
+        <VButton size="lg" onPress={close} loading={saving} disabled={saving} icon={<Check size={18} color={onAccentText.default} />}>{editRecord ? 'Guardar cambios' : 'Cerrar consulta'}</VButton>
       </View>
 
       <Modal visible={!!previewed} transparent animationType="fade" onRequestClose={() => setPreviewId(null)}>
