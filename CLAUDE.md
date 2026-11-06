@@ -1,4 +1,4 @@
-# VetCloud
+# Vet Avalon
 
 Software de gestión clínica veterinaria. Expo 52 (React Native Web, expo-router) exportado como web estática + API Express en un solo `server.js`, desplegado en Vercel (`api/index.js` envuelve `server.js`). Base de datos PostgreSQL en Neon con SQL directo (`pg`), sin ORM.
 
@@ -19,17 +19,17 @@ Software de gestión clínica veterinaria. Expo 52 (React Native Web, expo-route
 - Valida la entrada en el servidor y responde 400 con un mensaje en español (ver `normalizePet`, `parseDateInput`).
 - `services/directus.ts` es el cliente HTTP de la API propia; el nombre "directus" es histórico, no hay Directus. Exporta `api`, no `directus`.
 
-## Diseño (Saber / Alter)
+## Diseño (Camelot / Morgana)
 
-- Tema claro **Saber**: azul real, oro antiguo y marfil (del escudo en `assets/logo.png`). Tema oscuro **Alter**: casi negro, carmesí para marcas y oro pálido para lo interactivo. Definidos en `constants/colors.ts`; no hay paletas extra.
+- Tema claro **Camelot**: azul real, oro antiguo y marfil (del escudo en `assets/logo.png`). Tema oscuro **Morgana**: casi negro, carmesí para marcas y oro pálido para lo interactivo. Definidos en `constants/colors.ts`; no hay paletas extra.
 - Nunca pongas colores fijos (`'#FFF'`, `'#C9A227'`, grises) en componentes. Usa `useTheme()`:
   - texto sobre `colors.primary` → `onPrimaryText.default`
   - texto sobre `colors.accent` (botón primario) → `onAccentText.default`
   - barra lateral, encabezados, hero → fondo `colors.chrome`, texto `onChromeText`
-- El dorado (`accent` en Saber) no se usa para texto pequeño (contraste 3.4:1): solo iconos, líneas y botones.
+- El dorado (`accent` en Camelot) no se usa para texto pequeño (contraste 3.4:1): solo iconos, líneas y botones.
 - Tipografía: Inter para toda la interfaz (se carga en `utils/webFonts.ts`). `components/ui/DisplayText.tsx` (Cormorant Garamond) para títulos de página y de panel (como capítulos de un códice), el logotipo, el nombre del paciente, las cifras del registro del dashboard y las rúbricas de la barra lateral; nunca en etiquetas, botones, tablas ni datos de formulario.
 - Sin mayúsculas espaciadas (`textTransform: 'uppercase'` + `letterSpacing`) en rótulos: texto normal a tamaño legible.
-- Iconos: `components/icons/VetCloudIcon.tsx` para navegación (trazo 1.75), `lucide-react-native` para el resto, `SpeciesIcon` para perro/gato. Sin emojis como iconos. `CrestStar` es el único ornamento; úsalo con moderación.
+- Iconos: `components/icons/AvalonIcon.tsx` para navegación (trazo 1.75), `lucide-react-native` para el resto, `SpeciesIcon` para perro/gato. Sin emojis como iconos. `CrestStar` es el único ornamento; úsalo con moderación.
 - Movimiento: ≤250 ms, curva ease-out fuerte, solo `transform`/`opacity`. Sin animaciones de entrada coreografiadas en pantallas que se abren a diario. Botones: escala 0.97 al presionar, nada más.
 - Esquinas rectas (`RADIUS` 2–4 px), como piedra, pergamino y escudo. El círculo (`RADIUS.full`) solo para lo que es redondo: la Mesa Redonda, sellos de estado (badges), botones de ícono y fotos de perfil. Nada de radios "suaves" de 8–20 px.
 - Elevación: lo que está en reposo no lleva sombra ni borde; los paneles (`surface`) se distinguen del fondo pergamino (`background`) solo por tono. Sombras (`SHADOWS.lg`/`xl`) solo para lo que flota: menús, modales, hojas, toasts y botones flotantes. Bordes solo en campos de formulario, tablas y `VCard variant="outlined"`.

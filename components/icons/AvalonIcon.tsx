@@ -4,7 +4,7 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 // One consistent line-icon set for navigation and dashboard surfaces:
 // 24px grid, 1.75 stroke, round caps/joins, no decorative fills.
 
-export type VetCloudIconName =
+export type AvalonIconName =
   | 'dashboard'
   | 'pacientes'
   | 'enfermedades'
@@ -23,8 +23,8 @@ export type VetCloudIconName =
   | 'consulta'
   | 'fichas';
 
-interface VetCloudIconProps {
-  name: VetCloudIconName;
+interface AvalonIconProps {
+  name: AvalonIconName;
   size?: number;
   color?: string;
   strokeWidth?: number;
@@ -32,7 +32,7 @@ interface VetCloudIconProps {
 
 type GlyphProps = { s: { stroke: string; strokeWidth: number; strokeLinecap: 'round'; strokeLinejoin: 'round'; fill: 'none' } };
 
-const GLYPHS: Record<VetCloudIconName, React.FC<GlyphProps>> = {
+const GLYPHS: Record<AvalonIconName, React.FC<GlyphProps>> = {
   dashboard: ({ s }) => (
     <>
       <Rect x="3.5" y="3.5" width="7" height="7" rx="1.5" {...s} />
@@ -156,7 +156,7 @@ const GLYPHS: Record<VetCloudIconName, React.FC<GlyphProps>> = {
   ),
 };
 
-export default function VetCloudIcon({ name, size = 24, color = '#C9A227', strokeWidth = 1.75 }: VetCloudIconProps) {
+export default function AvalonIcon({ name, size = 24, color = '#C9A227', strokeWidth = 1.75 }: AvalonIconProps) {
   const Glyph = GLYPHS[name] || GLYPHS.dashboard;
   const s = { stroke: color, strokeWidth, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none' as const };
   return (

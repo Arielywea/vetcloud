@@ -25,18 +25,27 @@ export function notifyUnauthorized() {
 
 export async function getToken(): Promise<string | null> {
   if (storedToken) return storedToken;
-  storedToken = await AsyncStorage.getItem('vetcloud_token');
+  storedToken = await AsyncStorage.getItem('vetavalon_token');
+  if (!storedToken) {
+    // Session saved under the pre-rename key: carry it over instead of logging the user out
+    const legacy = await AsyncStorage.getItem('vetcloud_token');
+    if (legacy) {
+      storedToken = legacy;
+      await AsyncStorage.setItem('vetavalon_token', legacy);
+      await AsyncStorage.removeItem('vetcloud_token');
+    }
+  }
   return storedToken;
 }
 
 export async function setToken(token: string) {
   storedToken = token;
-  await AsyncStorage.setItem('vetcloud_token', token);
+  await AsyncStorage.setItem('vetavalon_token', token);
 }
 
 export async function clearToken() {
   storedToken = null;
-  await AsyncStorage.removeItem('vetcloud_token');
+  await AsyncStorage.removeItem('vetavalon_token');
 }
 
 export async function apiAuthLogin(identifier: string, password: string) {
@@ -114,4 +123,24 @@ export async function apiAuthChangePassword(current_password: string, new_passwo
   if (res.status === 401) notifyUnauthorized();
   if (!res.ok) throw new Error(json.error || 'No se pudo cambiar la contraseña');
   return json.data;
+}
+
+export async function apiForgotPassword(email: string) {
+  const res = await apiFetch(`${API_URL}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'No se pudo enviar el correo');
+}
+
+export async function apiResetPassword(token: string, newPassword: string) {
+  const res = await apiFetch(`${API_URL}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, new_password: newPassword }),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'No se pudo cambiar la contraseña');
 }

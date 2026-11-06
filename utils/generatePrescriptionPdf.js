@@ -8,7 +8,7 @@ function generatePrescriptionPdf(prescription, pet, clinic) {
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    // Saber palette (constants/colors.ts): royal blue, antique gold, ivory
+    // Camelot palette (constants/colors.ts): royal blue, antique gold, ivory
     const primaryColor = '#12264D';
     const accentColor = '#A8842A';
     const darkText = '#141C33';
@@ -16,12 +16,12 @@ function generatePrescriptionPdf(prescription, pet, clinic) {
     const borderColor = '#DDD5C4';
     const panelColor = '#F5F2EA';
 
-    // ── HEADER: the clinic's identity (falls back to VetCloud) ──
+    // ── HEADER: the clinic's identity (falls back to Vet Avalon) ──
     const pageW = doc.page.width;
     doc.rect(0, 0, pageW, 84).fill('#0B1D3A');
     doc.rect(0, 84, pageW, 2).fill(accentColor);
 
-    const clinicTitle = clinic?.clinic_name || 'VetCloud';
+    const clinicTitle = clinic?.clinic_name || 'Vet Avalon';
     doc.fill('#FFFFFF').fontSize(20).font('Helvetica-Bold').text(clinicTitle, 50, 18, { width: pageW / 2 });
     const contact = [clinic?.clinic_address, clinic?.clinic_phone].filter(Boolean).join('  ·  ');
     doc.fill('#D9D4C6').fontSize(9).font('Helvetica').text(contact || 'Receta veterinaria', 50, 46, { width: pageW / 2 });
@@ -103,7 +103,7 @@ function generatePrescriptionPdf(prescription, pet, clinic) {
         .text(`Consultas: ${clinic.vet_email}`, 50, footerY, { align: 'center', width: doc.page.width - 100 });
     }
     doc.fill('#999999').fontSize(8).font('Helvetica')
-      .text('Documento electrónico generado por VetCloud', 50, footerY + 14, { align: 'center', width: doc.page.width - 100 });
+      .text('Documento electrónico generado por Vet Avalon', 50, footerY + 14, { align: 'center', width: doc.page.width - 100 });
 
     doc.end();
   });

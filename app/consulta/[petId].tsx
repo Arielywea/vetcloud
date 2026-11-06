@@ -100,7 +100,7 @@ function formFromRecord(rec: ClinicalRecord, p: DirectusPet): Form {
   };
 }
 
-const draftKey = (petId: string) => `vetcloud:consulta:${petId}`;
+const draftKey = (petId: string) => `vetavalon:consulta:${petId}`;
 function loadDraft(petId: string): Form | null {
   try {
     const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(draftKey(petId)) : null;

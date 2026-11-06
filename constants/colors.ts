@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────
-// Light — "Saber": royal navy, antique gold, ivory vellum.
+// Light — "Camelot": royal navy, antique gold, ivory vellum.
 // Taken from the crest in assets/logo.png. Warm ivory surfaces
 // instead of cool SaaS gray; gold is reserved for marks and
 // primary actions, never small text (3.4:1 on surface).
@@ -31,7 +31,7 @@ export const APP_COLORS = {
 };
 
 // ─────────────────────────────────────────────────────────
-// Dark — "Alter": black armor, crimson veins, pale gold eyes.
+// Dark — "Morgana": black armor, crimson veins, pale gold eyes.
 // Near-black surfaces with a violet undertone; gold carries
 // interaction (9.4:1), crimson only marks and active states.
 // ─────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ export const APP_COLORS_DARK: AppColors = {
 
 export type AppColors = typeof APP_COLORS;
 
-// Saber/Alter are now the light/dark themes themselves. Kept as an empty
+// Camelot/Morgana are now the light/dark themes themselves. Kept as an empty
 // registry so a stored color_palette from older versions falls back cleanly.
 export const PALETTES: Record<string, { light: AppColors; dark: AppColors; label: string }> = {};
 

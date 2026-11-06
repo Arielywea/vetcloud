@@ -7,7 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { usePets, useAppointments, useInventory, useRefreshOn } from '../../hooks/useDirectus';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, ANIMATION, BREAKPOINTS, alpha } from '../../constants/tokens';
-import VetCloudIcon from '../../components/icons/VetCloudIcon';
+import AvalonIcon from '../../components/icons/AvalonIcon';
 import CrestStar from '../../components/icons/CrestStar';
 import DisplayText from '../../components/ui/DisplayText';
 import TodayTable from '../../components/dashboard/TodayTable';

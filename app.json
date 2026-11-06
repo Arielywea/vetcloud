@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "VetCloud",
-    "slug": "vet-cloud",
+    "name": "Vet Avalon",
+    "slug": "vet-avalon",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,14 +14,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.vetcloud.app"
+      "bundleIdentifier": "com.vetavalon.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0B1D3A"
       },
-      "package": "com.vetcloud.app"
+      "package": "com.vetavalon.app"
     },
     "web": {
       "favicon": "./assets/favicon.png",

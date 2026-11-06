@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import DisplayText from '../ui/DisplayText';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
-import VetCloudIcon from '../icons/VetCloudIcon';
+import AvalonIcon from '../icons/AvalonIcon';
 import DynamicIcon from '../ui/DynamicIcon';
 
 interface InventoryItem {

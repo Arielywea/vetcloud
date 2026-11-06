@@ -1,5 +1,5 @@
 // ---------------------------------------------------------
-// VetCloud Icon System — Royal Veterinary Icons
+// Vet Avalon Icon System — Royal Veterinary Icons
 // Gold accents + Navy authority + Artoria DNA
 // ---------------------------------------------------------
 

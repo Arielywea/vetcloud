@@ -454,12 +454,114 @@ app.post('/auth/register', async (req, res) => {
   }
 });
 
+// ─── PASSWORD RESET ───────────────────────────────────────
+// The link carries a random token; only its sha256 lives in the database (password_resets).
+const RESET_TTL_MS = 60 * 60 * 1000;
+const sha256 = (s) => require('crypto').createHash('sha256').update(String(s)).digest('hex');
+
+app.post('/auth/forgot-password', async (req, res) => {
+  // Same answer whether or not the email has an account: it must not reveal who is registered
+  const generic = { data: { sent: true } };
+  try {
+    const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
+    if (!await rateLimit(`forgot:${clientIp}`, 5, 900000)) {
+      return res.status(429).json({ error: 'Demasiados intentos. Intenta en 15 minutos.' });
+    }
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    if (!isEmail(email)) return res.status(400).json({ error: 'Ingresa un correo válido' });
+    if (!await rateLimit(`forgot-email:${email}`, 3, 3600000)) return res.json(generic);
+
+    const found = await pool.query('SELECT id, name FROM users WHERE lower(email) = $1', [email]);
+    if (!found.rows.length) return res.json(generic);
+
+    const base = process.env.APP_URL || (process.env.VERCEL ? null : 'http://localhost:8081');
+    if (!base || !process.env.SMTP_EMAIL) {
+      logError(req, new Error('Recuperación de contraseña sin APP_URL o SMTP_EMAIL configurados'));
+      return res.json(generic);
+    }
+
+    const user = found.rows[0];
+    const token = require('crypto').randomBytes(32).toString('base64url');
+    await pool.query('UPDATE password_resets SET used_at = now() WHERE user_id = $1 AND used_at IS NULL', [user.id]);
+    await pool.query(
+      'INSERT INTO password_resets (user_id, token_hash, expires_at) VALUES ($1, $2, $3)',
+      [user.id, sha256(token), new Date(Date.now() + RESET_TTL_MS)]
+    );
+
+    const link = `${base.replace(/\/$/, '')}/restablecer?token=${token}`;
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      service: process.env.SMTP_SERVICE || 'gmail',
+      auth: { user: process.env.SMTP_EMAIL, pass: process.env.SMTP_PASSWORD },
+    });
+    await transporter.sendMail({
+      from: `"Vet Avalon" <${process.env.SMTP_EMAIL}>`,
+      to: email,
+      subject: 'Restablece tu contraseña de Vet Avalon',
+      html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 20px; color: #141C33; background: #F5F2EA;">
+  <div style="background: #0B1D3A; border-bottom: 3px solid #A8842A; color: #F3EFE4; padding: 22px 24px;">
+    <h1 style="margin: 0; font-size: 22px; font-family: Georgia, serif;">Vet Avalon</h1>
+  </div>
+  <div style="background: #FFFDF8; padding: 24px; font-size: 15px; line-height: 1.6;">
+    <p>Hola ${escapeHtml(user.name || '')},</p>
+    <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta. El enlace vale 1 hora y se puede usar una sola vez.</p>
+    <p style="text-align: center; margin: 28px 0;"><a href="${link}" style="background: #A8842A; color: #0B1D3A; padding: 12px 22px; text-decoration: none; font-weight: 600;">Elegir una contraseña nueva</a></p>
+    <p style="font-size: 13px; color: #4E586F;">Si no fuiste tú, ignora este correo: tu contraseña no cambia.</p>
+  </div>
+</body></html>`,
+    });
+    res.json(generic);
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/auth/reset-password', async (req, res) => {
+  try {
+    const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
+    if (!await rateLimit(`reset:${clientIp}`, 10, 900000)) {
+      return res.status(429).json({ error: 'Demasiados intentos. Intenta en 15 minutos.' });
+    }
+    const { token, new_password } = req.body || {};
+    if (!token || typeof token !== 'string') return res.status(400).json({ error: 'El enlace no es válido' });
+    const policyError = passwordPolicyError(new_password);
+    if (policyError) return res.status(400).json({ error: policyError });
+
+    const hash = await bcrypt.hash(new_password, 10);
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      // Claim the token in one statement so two requests cannot both use it
+      const claimed = await client.query(
+        'UPDATE password_resets SET used_at = now() WHERE token_hash = $1 AND used_at IS NULL AND expires_at > now() RETURNING user_id',
+        [sha256(token)]
+      );
+      if (!claimed.rows.length) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'El enlace venció o ya fue usado. Pide uno nuevo.' });
+      }
+      await client.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, claimed.rows[0].user_id]);
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
+    res.json({ data: { success: true } });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 app.get('/auth/me', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query('SELECT id, rut, username, name, email, role, organization_id, theme_preference, color_palette, created_at, smtp_email, clinic_name, veterinarian_name, clinic_phone, clinic_address, notification_email_reminders, notification_upcoming_appointments, notification_push FROM users WHERE id = $1', [req.userId]);
     if (!result.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
     const user = result.rows[0];
-    if (user.smtp_password) user.smtp_password = '••••••••';
     res.json({ data: user });
   } catch (err) {
     logError(req, err);
@@ -517,7 +619,6 @@ app.patch('/auth/profile', authMiddleware, async (req, res) => {
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
     const user = result.rows[0];
-    if (user.smtp_password) user.smtp_password = '••••••••';
     res.json({ data: user });
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ error: 'Ese correo ya está registrado en otra cuenta' });
@@ -1873,7 +1974,7 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
 <head><meta charset="utf-8"></head>
 <body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; color: #141C33; background: #F5F2EA;">
   <div style="background: #0B1D3A; border-bottom: 3px solid #A8842A; color: #F3EFE4; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
-    <h1 style="margin: 0; font-size: 24px; font-family: Georgia, serif;">${escapeHtml(userProfile.clinic_name || 'VetCloud')}</h1>
+    <h1 style="margin: 0; font-size: 24px; font-family: Georgia, serif;">${escapeHtml(userProfile.clinic_name || 'Vet Avalon')}</h1>
     <p style="margin: 4px 0 0; opacity: 0.9; font-size: 14px;">Receta veterinaria</p>
   </div>
   <div style="background: #ffffff; padding: 24px; border: 1px solid #e0e0e0; border-top: none;">
@@ -1904,7 +2005,7 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
   </div>
   <div style="text-align: center; padding: 16px; font-size: 11px; color: #999; background: #fff; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 12px 12px;">
     <p style="margin: 0 0 6px;">Para consultas, responda a este correo o escriba a <strong style="color: #12264D;">${escapeHtml(vetEmail)}</strong></p>
-    <p style="margin: 0;">Documento electrónico generado por <strong style="color: #12264D;">VetCloud</strong></p>
+    <p style="margin: 0;">Documento electrónico generado por <strong style="color: #12264D;">Vet Avalon</strong></p>
   </div>
 </body>
 </html>`;
@@ -1916,7 +2017,7 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
     }] : [];
 
     await transporter.sendMail({
-      from: `"VetCloud" <${process.env.SMTP_EMAIL}>`,
+      from: `"Vet Avalon" <${process.env.SMTP_EMAIL}>`,
       to: recipient,
       replyTo: vetEmail,
       subject: `Receta veterinaria — ${rx.pet_name} — ${issuedDate}`,
@@ -2065,7 +2166,7 @@ app.post('/items/clinical_records/:id/summary-email', authMiddleware, async (req
     const pdf = await generateVisitSummaryPdf(data);
     const nodemailer = require('nodemailer');
     const transporter = nodemailer.createTransport({ service: process.env.SMTP_SERVICE || 'gmail', auth: { user: process.env.SMTP_EMAIL, pass: process.env.SMTP_PASSWORD } });
-    const clinicName = data.clinic.clinic_name || 'VetCloud';
+    const clinicName = data.clinic.clinic_name || 'Vet Avalon';
     const when = new Date(data.record.date).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' });
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
 <body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 20px; color: #141C33; background: #F5F2EA;">
@@ -2077,7 +2178,7 @@ app.post('/items/clinical_records/:id/summary-email', authMiddleware, async (req
     <p style="margin: 0 0 12px;">Adjuntamos el resumen de la atención de <strong>${escapeHtml(data.pet.name)}</strong> del ${when}, con las indicaciones y las próximas fechas.</p>
     <p style="margin: 0;">Si tiene dudas, responda este correo.</p>
   </div>
-  <p style="text-align: center; font-size: 11px; color: #4E586F;">Enviado con VetCloud</p>
+  <p style="text-align: center; font-size: 11px; color: #4E586F;">Enviado con Vet Avalon</p>
 </body></html>`;
     await transporter.sendMail({
       from: `"${clinicName.replace(/"/g, '')}" <${process.env.SMTP_EMAIL}>`,
@@ -2340,7 +2441,7 @@ app.post('/items/reminders/send-pending', authMiddleware, async (req, res) => {
 <html><head><meta charset="utf-8"></head>
 <body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #141C33;">
   <div style="background: #0B1D3A; border-bottom: 3px solid #A8842A; color: #F3EFE4; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
-    <h1 style="margin: 0; font-size: 22px; font-family: Georgia, serif;">${escapeHtml(userProfile.clinic_name || 'VetCloud')}</h1>
+    <h1 style="margin: 0; font-size: 22px; font-family: Georgia, serif;">${escapeHtml(userProfile.clinic_name || 'Vet Avalon')}</h1>
     <p style="margin: 4px 0 0; opacity: 0.9; font-size: 14px;">Recordatorio</p>
   </div>
   <div style="background: #fff; padding: 24px; border: 1px solid #e0e0e0; border-top: none;">
@@ -2357,7 +2458,7 @@ app.post('/items/reminders/send-pending', authMiddleware, async (req, res) => {
   </div>
   <div style="text-align: center; padding: 16px; font-size: 11px; color: #999; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 12px 12px;">
     <p style="margin: 0;">Para cancelar este recordatorio, responda a este correo.</p>
-    <p style="margin: 4px 0 0;">Documento generado por <strong style="color: #12264D;">VetCloud</strong></p>
+    <p style="margin: 4px 0 0;">Documento generado por <strong style="color: #12264D;">Vet Avalon</strong></p>
   </div>
 </body></html>`;
 
@@ -2368,7 +2469,7 @@ app.post('/items/reminders/send-pending', authMiddleware, async (req, res) => {
           continue;
         }
         await transporter.sendMail({
-          from: `"VetCloud" <${process.env.SMTP_EMAIL}>`,
+          from: `"Vet Avalon" <${process.env.SMTP_EMAIL}>`,
           to,
           subject: `Recordatorio: ${reminder.title}`,
           html: htmlBody,
@@ -3362,7 +3463,7 @@ app.post('/files', authMiddleware, (req, res) => {
 
 if (!process.env.VERCEL_ENV) {
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`VetCloud API running on http://localhost:${PORT}`);
+    console.log(`Vet Avalon API running on http://localhost:${PORT}`);
   });
 }
 

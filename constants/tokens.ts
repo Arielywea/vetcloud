@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────
-// VetCloud Design System — Tokens
+// Vet Avalon Design System — Tokens
 // ─────────────────────────────────────────────────────────
 
 // Spacing (4px grid)

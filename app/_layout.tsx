@@ -56,8 +56,8 @@ function AppContent() {
   const { colors, onChromeText } = useTheme();
   const pathname = usePathname();
 
-  // Public pages (the tutor's anamnesis form, /f/<token>) open without a session and without waiting for it
-  if (pathname.startsWith('/f/')) return <Slot />;
+  // Public pages (the tutor's anamnesis form, /f/<token>, and password reset, /restablecer) open without a session and without waiting for it
+  if (pathname.startsWith('/f/') || pathname === '/restablecer') return <Slot />;
 
   if (loading) {
     return (
@@ -182,7 +182,7 @@ export default function RootLayout() {
   );
 }
 
-// Follows the app theme (Saber/Alter), not the OS setting
+// Follows the app theme (Camelot/Morgana), not the OS setting
 function ThemedStatusBar() {
   const { isDark } = useTheme();
   return <StatusBar style={isDark ? 'light' : 'dark'} />;
@@ -199,7 +199,7 @@ function ThemedPaperProvider({ children }: { children: React.ReactNode }) {
     roundness: 0.5,
     colors: {
       ...base.colors,
-      // MD3's lavender (secondaryContainer, the elevation tint) was never part of Saber or Alter
+      // MD3's lavender (secondaryContainer, the elevation tint) was never part of Camelot or Morgana
       secondaryContainer: colors.primaryContainer,
       onSecondaryContainer: colors.text,
       elevation: {

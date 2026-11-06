@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo   VetCloud - Iniciando servicios...
+echo   Vet Avalon - Iniciando servicios...
 echo ========================================
 echo.
 
@@ -17,23 +17,23 @@ echo [OK] PostgreSQL activo en puerto 1245
 
 :: Start API Server
 echo [2/3] Iniciando API Server...
-tasklist /fi "windowtitle eq VetCloud-API" 2>nul | findstr "node.exe" >nul 2>&1
+tasklist /fi "windowtitle eq VetAvalon-API" 2>nul | findstr "node.exe" >nul 2>&1
 if %errorlevel% equ 0 (
     echo [OK] API Server ya esta corriendo
 ) else (
-    start "VetCloud-API" cmd /c "cd /d %~dp0 && node server.js"
+    start "VetAvalon-API" cmd /c "cd /d %~dp0 && node server.js"
     timeout /t 2 /nobreak >nul
     echo [OK] API Server iniciado en http://localhost:8055
 )
 
 :: Start Expo
 echo [3/3] Iniciando Expo Metro Bundler...
-start "VetCloud-Expo" cmd /c "cd /d %~dp0 && npx expo start"
+start "VetAvalon-Expo" cmd /c "cd /d %~dp0 && npx expo start"
 timeout /t 3 /nobreak >nul
 
 echo.
 echo ========================================
-echo   VetCloud esta listo!
+echo   Vet Avalon esta listo!
 echo ========================================
 echo.
 echo   App:        http://localhost:8081

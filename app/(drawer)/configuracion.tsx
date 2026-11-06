@@ -202,7 +202,7 @@ export default function ConfiguracionScreen() {
           {modeButton(true)}
         </View>
         <Text style={[styles.modeHint, { color: colors.textSecondary }]}>
-          {modeDark ? 'Alter: armadura negra, carmesí y oro pálido.' : 'Saber: azul real, oro antiguo y marfil.'}
+          {modeDark ? 'Morgana: armadura negra, carmesí y oro pálido.' : 'Camelot: azul real, oro antiguo y marfil.'}
         </Text>
       </VCard>
 

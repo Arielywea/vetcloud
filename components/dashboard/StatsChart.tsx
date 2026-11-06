@@ -5,7 +5,7 @@ import { TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import DisplayText from '../ui/DisplayText';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
-import VetCloudIcon from '../icons/VetCloudIcon';
+import AvalonIcon from '../icons/AvalonIcon';
 
 export interface WeeklyDay { date: string; day: string; count: number; consultas: number; vacunas: number }
 export interface WeeklySummary {

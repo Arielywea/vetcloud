@@ -7,7 +7,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import VAvatar from '../ui/Avatar';
 import DisplayText from '../ui/DisplayText';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../constants/tokens';
-import VetCloudIcon from '../icons/VetCloudIcon';
+import AvalonIcon from '../icons/AvalonIcon';
 
 interface Patient {
   id: string;

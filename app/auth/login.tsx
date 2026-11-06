@@ -10,11 +10,12 @@ import BeagleLogo from '../../components/BeagleLogo';
 import VInput from '../../components/ui/Input';
 import VButton from '../../components/ui/Button';
 import { passwordPolicyError, PASSWORD_HINT } from '../../utils/password';
+import { apiForgotPassword } from '../../services/auth';
 
 export default function LoginScreen() {
   const { login, register } = useAuth();
   const { colors, isDark, onChromeText, onAccentText } = useTheme();
-  const [view, setView] = useState<'login' | 'register'>('login');
+  const [view, setView] = useState<'login' | 'register' | 'forgot'>('login');
 
   // Login state
   const [identifier, setIdentifier] = useState('');
@@ -27,6 +28,10 @@ export default function LoginScreen() {
   const [regPassword, setRegPassword] = useState('');
   const [regOrgName, setRegOrgName] = useState('');
   const [regOrgType, setRegOrgType] = useState<'solo' | 'clinic'>('solo');
+
+  // Forgot-password state
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSent, setForgotSent] = useState(false);
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -63,7 +68,7 @@ export default function LoginScreen() {
     }
   };
 
-  const switchView = (v: 'login' | 'register') => { setView(v); setError(''); };
+  const switchView = (v: 'login' | 'register' | 'forgot') => { setView(v); setError(''); };
 
   // ─── REGISTER VIEW ────────────────────────────────────
   if (view === 'register') {
@@ -75,7 +80,7 @@ export default function LoginScreen() {
         <View style={[styles.header, { backgroundColor: colors.chrome }]}>
           <BeagleLogo size={64} />
           <DisplayText style={[styles.logoTitle, { color: onChromeText.default }]}>Crear cuenta</DisplayText>
-          <Text style={[styles.logoSubtitle, { color: onChromeText.muted }]}>Regístrate para probar VetCloud</Text>
+          <Text style={[styles.logoSubtitle, { color: onChromeText.muted }]}>Regístrate para probar Vet Avalon</Text>
         </View>
 
         <ScrollView style={styles.formSection} contentContainerStyle={styles.formContent}>
@@ -115,8 +120,60 @@ export default function LoginScreen() {
             <Text style={[styles.backText, { color: colors.primary }]}>Volver al login</Text>
           </TouchableOpacity>
 
-          <Text style={[styles.footer, { color: colors.textLight }]}>© 2026 VetCloud</Text>
+          <Text style={[styles.footer, { color: colors.textLight }]}>© 2026 Vet Avalon</Text>
         </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
+
+  // ─── FORGOT PASSWORD VIEW ─────────────────────────────
+  if (view === 'forgot') {
+    const handleForgot = async () => {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(forgotEmail.trim())) { setError('Ingresa un correo válido'); return; }
+      setLoading(true); setError('');
+      try { await apiForgotPassword(forgotEmail.trim()); setForgotSent(true); }
+      catch (e: any) { setError(e.message || 'No se pudo enviar el correo'); }
+      finally { setLoading(false); }
+    };
+    return (
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: colors.background }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={[styles.header, { backgroundColor: colors.chrome }]}>
+          <BeagleLogo size={88} />
+          <DisplayText style={[styles.logoTitle, { color: onChromeText.default }]}>
+            Vet <Text style={{ color: isDark ? colors.primary : colors.accent }}>Avalon</Text>
+          </DisplayText>
+        </View>
+        <View style={styles.formSection}>
+          <View style={[styles.card, { backgroundColor: colors.surface }]}>
+            <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Recuperar contraseña</DisplayText>
+            {forgotSent ? (
+              <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
+                Si ese correo tiene una cuenta, te enviamos un enlace para elegir una contraseña nueva. Vale 1 hora. Revisa también la carpeta de spam.
+              </Text>
+            ) : (
+              <>
+                <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>Te enviaremos un enlace al correo con que te registraste</Text>
+                <VInput label="Correo" autoComplete="email" placeholder="correo@ejemplo.com" value={forgotEmail} onChangeText={setForgotEmail} onSubmitEditing={handleForgot} returnKeyType="go" leftIcon={<Mail size={18} color={colors.primary} />} autoCapitalize="none" keyboardType="email-address" />
+                {error ? (
+                  <View style={[styles.errorContainer, { backgroundColor: colors.error + '12' }]}>
+                    <AlertCircle size={16} color={colors.error} />
+                    <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+                  </View>
+                ) : null}
+                <VButton onPress={handleForgot} loading={loading} disabled={loading} fullWidth icon={<Mail size={18} color={onAccentText.default} />}>
+                  Enviar enlace
+                </VButton>
+              </>
+            )}
+          </View>
+          <TouchableOpacity onPress={() => { setForgotSent(false); switchView('login'); }} style={styles.backLink}>
+            <ArrowLeft size={16} color={colors.primary} />
+            <Text style={[styles.backText, { color: colors.primary }]}>Volver al login</Text>
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
     );
   }
@@ -130,7 +187,7 @@ export default function LoginScreen() {
       <View style={[styles.header, { backgroundColor: colors.chrome }]}>
         <BeagleLogo size={88} />
         <DisplayText style={[styles.logoTitle, { color: onChromeText.default }]}>
-          Vet<Text style={{ color: isDark ? colors.primary : colors.accent }}>Cloud</Text>
+          Vet <Text style={{ color: isDark ? colors.primary : colors.accent }}>Avalon</Text>
         </DisplayText>
         <View style={styles.taglineRow}>
           <Text style={[styles.logoSubtitle, { color: onChromeText.muted }]}>Gestión clínica veterinaria</Text>
@@ -156,6 +213,10 @@ export default function LoginScreen() {
           <VButton onPress={handleLogin} loading={loading} disabled={loading} fullWidth icon={<LogIn size={18} color={onAccentText.default} />}>
             Ingresar
           </VButton>
+
+          <TouchableOpacity onPress={() => switchView('forgot')} style={{ alignSelf: 'center', paddingTop: SPACING.md }} accessibilityRole="link">
+            <Text style={{ color: colors.primary, fontSize: TYPOGRAPHY.sizes.sm }}>¿Olvidaste tu contraseña?</Text>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity onPress={() => switchView('register')} style={styles.registerLink}>
@@ -164,7 +225,7 @@ export default function LoginScreen() {
           </Text>
         </TouchableOpacity>
 
-        <Text style={[styles.footer, { color: colors.textLight }]}>© 2026 VetCloud</Text>
+        <Text style={[styles.footer, { color: colors.textLight }]}>© 2026 Vet Avalon</Text>
       </View>
     </KeyboardAvoidingView>
   );

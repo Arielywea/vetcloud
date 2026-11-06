@@ -80,7 +80,7 @@ export default function VetAssistantWidget({ bottomOffset = 0 }: { bottomOffset?
         <Modal visible={visible} onDismiss={() => setVisible(false)} contentContainerStyle={[styles.panel, { backgroundColor: colors.surface }]}>
           <View style={[styles.header, { backgroundColor: colors.primary }]}>
             <Bot size={22} color={colors.accent} />
-            <Text style={[styles.headerTitle, { color: onPrimaryText.default }]}>Asistente VetCloud</Text>
+            <Text style={[styles.headerTitle, { color: onPrimaryText.default }]}>Asistente Vet Avalon</Text>
             <TouchableOpacity onPress={() => setVisible(false)} accessibilityRole="button" accessibilityLabel="Cerrar asistente" hitSlop={10}><X size={20} color={onPrimaryText.default} /></TouchableOpacity>
           </View>
 

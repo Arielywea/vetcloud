@@ -9,7 +9,7 @@ import { useResponsive } from '../../hooks/useResponsive';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
 import { TEXT_ON_PRIMARY, getTextOnPrimary } from '../../constants/colors';
 import BeagleLogo from '../BeagleLogo';
-import VetCloudIcon, { VetCloudIconName } from '../icons/VetCloudIcon';
+import AvalonIcon, { AvalonIconName } from '../icons/AvalonIcon';
 import DisplayText from '../ui/DisplayText';
 import Escutcheon from '../icons/Escutcheon';
 
@@ -23,46 +23,46 @@ const NAV_SECTIONS = [
   {
     title: 'Clínica',
     items: [
-      { label: 'Inicio', iconName: 'dashboard' as VetCloudIconName, route: '/(drawer)' },
-      { label: 'Pacientes', iconName: 'pacientes' as VetCloudIconName, route: '/(drawer)/pacientes' },
-      { label: 'Enfermedades', iconName: 'enfermedades' as VetCloudIconName, route: '/(drawer)/diseases' },
-      { label: 'Vademécum', iconName: 'medicamentos' as VetCloudIconName, route: '/(drawer)/medications' },
-      { label: 'Cirugías', iconName: 'cirugias' as VetCloudIconName, route: '/(drawer)/surgeries' },
+      { label: 'Inicio', iconName: 'dashboard' as AvalonIconName, route: '/(drawer)' },
+      { label: 'Pacientes', iconName: 'pacientes' as AvalonIconName, route: '/(drawer)/pacientes' },
+      { label: 'Enfermedades', iconName: 'enfermedades' as AvalonIconName, route: '/(drawer)/diseases' },
+      { label: 'Vademécum', iconName: 'medicamentos' as AvalonIconName, route: '/(drawer)/medications' },
+      { label: 'Cirugías', iconName: 'cirugias' as AvalonIconName, route: '/(drawer)/surgeries' },
     ],
   },
   {
     title: 'Gestión',
     items: [
-      { label: 'Agenda', iconName: 'agenda' as VetCloudIconName, route: '/(drawer)/agenda' },
-      { label: 'Hospitalización', iconName: 'hospitalizacion' as VetCloudIconName, route: '/(drawer)/hospitalizacion' },
-      { label: 'Laboratorio', iconName: 'laboratorio' as VetCloudIconName, route: '/(drawer)/laboratorio' },
-      { label: 'Inventario', iconName: 'inventario' as VetCloudIconName, route: '/(drawer)/inventario' },
+      { label: 'Agenda', iconName: 'agenda' as AvalonIconName, route: '/(drawer)/agenda' },
+      { label: 'Hospitalización', iconName: 'hospitalizacion' as AvalonIconName, route: '/(drawer)/hospitalizacion' },
+      { label: 'Laboratorio', iconName: 'laboratorio' as AvalonIconName, route: '/(drawer)/laboratorio' },
+      { label: 'Inventario', iconName: 'inventario' as AvalonIconName, route: '/(drawer)/inventario' },
     ],
   },
   {
     title: 'Herramientas',
     items: [
-      { label: 'Fluidoterapia', iconName: 'fluidoterapia' as VetCloudIconName, route: '/(drawer)/fluidoterapia' },
-      { label: 'Calculadora dosis', iconName: 'dosis' as VetCloudIconName, route: '/(drawer)/dosis' },
+      { label: 'Fluidoterapia', iconName: 'fluidoterapia' as AvalonIconName, route: '/(drawer)/fluidoterapia' },
+      { label: 'Calculadora dosis', iconName: 'dosis' as AvalonIconName, route: '/(drawer)/dosis' },
     ],
   },
   {
     title: 'Análisis',
     items: [
-      { label: 'Reportes', iconName: 'reportes' as VetCloudIconName, route: '/(drawer)/reportes' },
+      { label: 'Reportes', iconName: 'reportes' as AvalonIconName, route: '/(drawer)/reportes' },
     ],
   },
   {
     title: 'Personal',
     items: [
-      { label: 'Notas', iconName: 'notas' as VetCloudIconName, route: '/(drawer)/notes' },
-      { label: 'Recordatorios', iconName: 'recordatorios' as VetCloudIconName, route: '/(drawer)/reminders' },
+      { label: 'Notas', iconName: 'notas' as AvalonIconName, route: '/(drawer)/notes' },
+      { label: 'Recordatorios', iconName: 'recordatorios' as AvalonIconName, route: '/(drawer)/reminders' },
     ],
   },
 ];
 
 const BOTTOM_ITEMS = [
-  { label: 'Configuración', iconName: 'configuracion' as VetCloudIconName, route: '/(drawer)/configuracion' },
+  { label: 'Configuración', iconName: 'configuracion' as AvalonIconName, route: '/(drawer)/configuracion' },
 ];
 
 export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProps) {
@@ -71,7 +71,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
   const { user, logout } = useAuth();
   const { colors, isDark, onChromeText } = useTheme();
 
-  // Saber: gold marks on navy. Alter: gold icons, crimson lozenge on black.
+  // Camelot: gold marks on navy. Morgana: gold icons, crimson lozenge on black.
   const activeIcon = isDark ? colors.primary : colors.accent;
   const activeMark = colors.accent;
 
@@ -85,7 +85,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
     return pathname.startsWith(route.replace('/(drawer)', ''));
   };
 
-  const renderItem = (item: { label: string; iconName: VetCloudIconName; route: string }) => {
+  const renderItem = (item: { label: string; iconName: AvalonIconName; route: string }) => {
     const active = isActive(item.route);
     return (
       <TouchableOpacity
@@ -98,7 +98,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
         accessibilityLabel={item.label}
       >
         {active && <View style={[styles.lozenge, { backgroundColor: activeMark }]} />}
-        <VetCloudIcon name={item.iconName} size={19} color={active ? activeIcon : onChromeText.subtle} />
+        <AvalonIcon name={item.iconName} size={19} color={active ? activeIcon : onChromeText.subtle} />
         {!collapsed && (
           <Text
             style={[styles.navLabel, { color: active ? onChromeText.default : onChromeText.muted, fontWeight: active ? TYPOGRAPHY.weights.semibold : '500' }]}
@@ -118,7 +118,7 @@ export default function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProp
         <BeagleLogo size={collapsed ? 32 : 36} />
         {!collapsed && (
           <DisplayText style={[styles.wordmark, { color: onChromeText.default }]}>
-            Vet<Text style={{ color: isDark ? colors.primary : colors.accent }}>Cloud</Text>
+            Vet <Text style={{ color: isDark ? colors.primary : colors.accent }}>Avalon</Text>
           </DisplayText>
         )}
         {onToggle && !collapsed && (

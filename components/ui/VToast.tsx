@@ -5,7 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, ANIMATION, Z_INDEX } from '../../constants/tokens';
 
 // ─────────────────────────────────────────────────────────
-// VetCloud Toast System
+// Vet Avalon Toast System
 // Slide-in notifications for success, error, info
 // ─────────────────────────────────────────────────────────
 

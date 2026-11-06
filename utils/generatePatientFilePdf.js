@@ -31,7 +31,7 @@ function generatePatientFilePdf(pet, records, clinic) {
     // The crest is portrait (≈0.72:1); fit keeps its proportions inside the 85 pt header
     doc.image(path.join(__dirname, '../assets/logo.png'), 30, 12, { fit: [46, 60], align: 'center', valign: 'center' });
 
-    doc.fill(white).fontSize(20).font('Helvetica-Bold').text(clinic?.clinic_name || 'VetCloud', 84, 20, { width: pageW / 2 - 40, lineBreak: false, ellipsis: true });
+    doc.fill(white).fontSize(20).font('Helvetica-Bold').text(clinic?.clinic_name || 'Vet Avalon', 84, 20, { width: pageW / 2 - 40, lineBreak: false, ellipsis: true });
     doc.fontSize(10).font('Helvetica').fill(gold).text('Ficha clínica del paciente', 84, 46);
     const halfX = pageW / 2;
     const rightW = pageW / 2 - margin;
@@ -276,7 +276,7 @@ function generatePatientFilePdf(pet, records, clinic) {
       doc.page.margins.bottom = 0;
       doc.rect(0, pageH - 35, pageW, 35).fill(navy);
       doc.fill(lightText).fontSize(7).font('Helvetica')
-        .text(`Ficha clínica generada por VetCloud  —  Página ${i + 1} de ${pageCount}`, margin, pageH - 22, { width: contentW, align: 'center' });
+        .text(`Ficha clínica generada por Vet Avalon  —  Página ${i + 1} de ${pageCount}`, margin, pageH - 22, { width: contentW, align: 'center' });
     }
 
     doc.end();

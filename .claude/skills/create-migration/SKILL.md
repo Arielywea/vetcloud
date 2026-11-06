@@ -1,6 +1,6 @@
 ---
 name: create-migration
-description: Create the next numbered SQL migration for VetCloud, register it in run-migrations.js, verify schema drift, and apply it to Neon only after the user confirms. Use when adding or changing database columns or tables.
+description: Create the next numbered SQL migration for Vet Avalon, register it in run-migrations.js, verify schema drift, and apply it to Neon only after the user confirms. Use when adding or changing database columns or tables.
 disable-model-invocation: true
 argument-hint: "<descripción del cambio, ej: agregar columna microchip a pets>"
 ---

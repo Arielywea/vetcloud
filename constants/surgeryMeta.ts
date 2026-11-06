@@ -25,7 +25,7 @@ export const CONTAMINATION_LABELS: Record<string, string> = {
 
 export const SPECIES_SHORT: Record<string, string> = { perro: 'Perro', gato: 'Gato' };
 
-export const RECENT_SURGERIES_KEY = 'vetcloud_recent_surgeries';
+export const RECENT_SURGERIES_KEY = 'vetavalon_recent_surgeries';
 
 export function readRecentSurgeries(): number[] {
   try { return JSON.parse(globalThis.localStorage?.getItem(RECENT_SURGERIES_KEY) || '[]'); } catch { return []; }

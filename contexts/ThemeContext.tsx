@@ -31,7 +31,7 @@ const onChromeFor = (c: AppColors): OnColor => ({
 const ThemeContext = createContext<ThemeContextType>({
   isDark: false,
   colors: APP_COLORS,
-  themeName: 'saber',
+  themeName: 'camelot',
   onPrimaryText: getTextOnPrimary(APP_COLORS.primary),
   onAccentText: getTextOnPrimary(APP_COLORS.accent),
   onChromeText: onChromeFor(APP_COLORS),
@@ -58,7 +58,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       themeName = palette;
     } else {
       colors = isDark ? APP_COLORS_DARK : APP_COLORS;
-      themeName = isDark ? 'alter' : 'saber';
+      themeName = isDark ? 'morgana' : 'camelot';
     }
 
     return {

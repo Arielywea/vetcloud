@@ -18,7 +18,7 @@ import { SPACING, TYPOGRAPHY, RADIUS } from '../../constants/tokens';
 
 type Phase = 'loading' | 'form' | 'sent' | 'closed';
 
-const draftKey = (token: string) => `vetcloud_anamnesis_draft:${token}`;
+const draftKey = (token: string) => `vetavalon_anamnesis_draft:${token}`;
 
 export default function PublicAnamnesisScreen() {
   const { token } = useLocalSearchParams<{ token: string }>();

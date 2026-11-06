@@ -38,6 +38,7 @@ const MIGRATIONS = [
   '028_note_blocks.sql',
   '029_anamnesis_forms.sql',
   '030_clinic_notices.sql',
+  '031_password_resets.sql',
 ];
 
 async function runMigrations() {

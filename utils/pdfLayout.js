@@ -1,6 +1,6 @@
 // Shared layout for the documents a tutor takes home (visit summary, vaccine certificate): the clinic's
 // band on top, patient and tutor side by side, titled sections that break across pages, and a footer.
-// Same Saber palette as the prescription PDF.
+// Same Camelot palette as the prescription PDF.
 const PDFDocument = require('pdfkit');
 
 const C = {
@@ -83,7 +83,7 @@ function header(doc, clinic, title) {
   const w = doc.page.width;
   doc.rect(0, 0, w, 84).fill(C.chrome);
   doc.rect(0, 84, w, 2).fill(C.accent);
-  doc.fill(C.onChrome).fontSize(20).font('Helvetica-Bold').text(clinic?.clinic_name || 'VetCloud', MARGIN, 18, { width: w / 2 });
+  doc.fill(C.onChrome).fontSize(20).font('Helvetica-Bold').text(clinic?.clinic_name || 'Vet Avalon', MARGIN, 18, { width: w / 2 });
   const contact = [clinic?.clinic_address, clinic?.clinic_phone].filter(Boolean).join('  ·  ');
   doc.fill(C.onChromeMuted).fontSize(9).font('Helvetica').text(contact || title, MARGIN, 46, { width: w / 2 });
   if (contact) doc.text(title, MARGIN, 60, { width: w / 2 });
@@ -152,7 +152,7 @@ function footer(doc, clinic, note) {
     if (note) doc.fill(C.muted).fontSize(8).font('Helvetica').text(note, MARGIN, y - 14, { width: doc.page.width - MARGIN * 2, align: 'center' });
     const contact = clinic?.vet_email ? `Consultas: ${clinic.vet_email}  ·  ` : '';
     doc.fill('#999999').fontSize(8).font('Helvetica')
-      .text(`${contact}Documento generado por VetCloud  ·  Página ${i - range.start + 1} de ${range.count}`, MARGIN, y, { width: doc.page.width - MARGIN * 2, align: 'center' });
+      .text(`${contact}Documento generado por Vet Avalon  ·  Página ${i - range.start + 1} de ${range.count}`, MARGIN, y, { width: doc.page.width - MARGIN * 2, align: 'center' });
   }
 }
 

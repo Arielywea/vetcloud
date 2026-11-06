@@ -85,7 +85,7 @@ export default function DrawerLayout() {
   const openCmd = React.useCallback(() => setCmdOpen(true), []);
   useCmdK(openCmd);
 
-  const pageTitle = SCREEN_TITLES[pathname] || 'VetCloud';
+  const pageTitle = SCREEN_TITLES[pathname] || 'Vet Avalon';
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

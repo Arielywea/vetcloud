@@ -1,4 +1,4 @@
-# VetCloud 🐶
+# Vet Avalon 🐶
 
 Sistema de gestión veterinaria web y móvil. App de React Native (Expo) con API Express.js, desplegada en Vercel con Neon PostgreSQL.
 

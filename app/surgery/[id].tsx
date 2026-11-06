@@ -38,7 +38,7 @@ const LEGACY_SECTIONS: { key: keyof Surgery; label: string }[] = [
 
 /** Operating-room mode: ticked steps per surgery, kept on this device only */
 function useDoneSteps(id: string | undefined) {
-  const key = `vetcloud_surgery_done_${id}`;
+  const key = `vetavalon_surgery_done_${id}`;
   const [done, setDone] = useState<Set<string>>(new Set());
   useEffect(() => {
     try { setDone(new Set(JSON.parse(globalThis.localStorage?.getItem(key) || '[]'))); } catch { setDone(new Set()); }

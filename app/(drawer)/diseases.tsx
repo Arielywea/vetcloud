@@ -33,7 +33,7 @@ type Sort = (typeof SORTS)[number]['value'];
 const WIDE = 1100;
 
 // Recently opened sheets: a per-device convenience, so browser storage is enough
-const RECENT_KEY = 'vetcloud:recent-diseases';
+const RECENT_KEY = 'vetavalon:recent-diseases';
 function readRecent(): string[] {
   try { return JSON.parse(globalThis.localStorage?.getItem(RECENT_KEY) || '[]'); } catch { return []; }
 }
