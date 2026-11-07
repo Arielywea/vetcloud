@@ -25,7 +25,7 @@ interface LinkPatientSheetProps {
   onLinked: (petId: string) => Promise<void> | void;
 }
 
-const SPECIES = [{ value: 'dog', label: 'Perro' }, { value: 'cat', label: 'Gato' }, { value: 'other', label: 'Otra' }] as const;
+const SPECIES = [{ value: 'dog', label: 'Perro' }, { value: 'cat', label: 'Gato' }] as const;
 
 // Check-in for an appointment booked without a chart: pick the patient if it exists, otherwise a
 // quick registration (tutor by RUT, pet name and species). The rest is filled in later.

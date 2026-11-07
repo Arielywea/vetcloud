@@ -25,7 +25,9 @@ type SpeciesFilter = 'all' | 'dog' | 'cat' | 'other';
 type LifeFilter = 'alive' | 'archived' | 'all';
 
 const VIEWS = [{ value: 'mascotas', label: 'Mascotas' }, { value: 'tutores', label: 'Tutores' }] as const;
-const SPECIES = [{ value: 'all', label: 'Todas' }, { value: 'dog', label: 'Perros' }, { value: 'cat', label: 'Gatos' }, { value: 'other', label: 'Otras' }] as const;
+const SPECIES = [{ value: 'all', label: 'Todas' }, { value: 'dog', label: 'Perros' }, { value: 'cat', label: 'Gatos' }] as const;
+// 'Otras' only shows for accounts that still have patients of another species (new ones are dog/cat only)
+const SPECIES_WITH_OTHER = [...SPECIES, { value: 'other', label: 'Otras' }] as const;
 const LIFE = [{ value: 'alive', label: 'Activos' }, { value: 'archived', label: 'Fallecidos y otros' }, { value: 'all', label: 'Todos' }] as const;
 
 function ownerMatches(owner: Owner, query: string): boolean {
@@ -126,7 +128,7 @@ export default function PacientesScreen() {
         </View>
         {view === 'mascotas' ? (
           <View style={styles.filters}>
-            <Segmented label="Especie" size="sm" options={SPECIES} value={species} onChange={setSpecies} />
+            <Segmented label="Especie" size="sm" options={pets.some((p) => p.species === 'other') ? SPECIES_WITH_OTHER : SPECIES} value={species} onChange={setSpecies} />
             <Segmented label="Estado" size="sm" options={LIFE} value={life} onChange={setLife} />
           </View>
         ) : null}

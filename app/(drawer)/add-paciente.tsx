@@ -23,7 +23,9 @@ import { parseNumberInRange } from '../../utils/parseNumber';
 import { birthDateFromAge, formatDmy, parseDmy } from '../../utils/date';
 import { formatRut } from '../../utils/identity';
 
-const SPECIES_OPTIONS = [{ value: 'dog', label: 'Perro' }, { value: 'cat', label: 'Gato' }, { value: 'other', label: 'Otra' }] as const;
+const SPECIES_OPTIONS = [{ value: 'dog', label: 'Perro' }, { value: 'cat', label: 'Gato' }] as const;
+// Patients registered before Vet Avalon became dogs-and-cats only keep their species when edited
+const SPECIES_OPTIONS_LEGACY = [...SPECIES_OPTIONS, { value: 'other', label: 'Otra' }] as const;
 const SEX_OPTIONS = [{ value: 'macho', label: 'Macho' }, { value: 'hembra', label: 'Hembra' }] as const;
 const REPRO_BY_SEX = {
   macho: [{ value: 'intacto', label: 'Entero' }, { value: 'castrado', label: 'Castrado' }],
@@ -251,7 +253,7 @@ export default function AddPacienteScreen() {
           <View style={styles.grow}>
             <VInput label="Nombre" value={name} onChangeText={setName} placeholder="Nombre de la mascota" autoCapitalize="words" autoFocus={!!owner && !isEdit} />
             <Text style={[styles.groupLabel, { color: colors.textSecondary }]}>Especie</Text>
-            <Segmented label="Especie" options={SPECIES_OPTIONS} value={species} onChange={(v) => { setSpecies(v); setBreed(''); }} style={styles.segment} />
+            <Segmented label="Especie" options={species === 'other' ? SPECIES_OPTIONS_LEGACY : SPECIES_OPTIONS} value={species} onChange={(v) => { setSpecies(v); setBreed(''); }} style={styles.segment} />
             {species === 'other' ? (
               <VInput label="¿Qué especie?" value={speciesOther} onChangeText={setSpeciesOther} placeholder="Conejo, hurón, ave, reptil…" autoCapitalize="sentences" />
             ) : null}
