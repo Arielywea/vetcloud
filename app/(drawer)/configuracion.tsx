@@ -14,6 +14,7 @@ import VCard from '../../components/ui/Card';
 import VInput from '../../components/ui/Input';
 import VButton from '../../components/ui/Button';
 import DisplayText from '../../components/ui/DisplayText';
+import SignatureCard from '../../components/profile/SignatureCard';
 
 const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
@@ -199,6 +200,8 @@ export default function ConfiguracionScreen() {
           Guardar cambios
         </VButton>
       </VCard>
+
+      <SignatureCard />
 
       {/* Apariencia */}
       <VCard style={styles.card}>

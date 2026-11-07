@@ -1,7 +1,7 @@
 // What the tutor takes home after a visit: why they came, what was found, the diagnosis in plain
 // terms, the instructions, the prescription, doses applied today and the next dates.
 // The clinical working notes (anamnesis, differential reasoning) stay in the chart.
-const { C, MARGIN, createDoc, header, patientBlock, section, ensureSpace, footer, day, dateOnly } = require('./pdfLayout');
+const { C, MARGIN, createDoc, header, patientBlock, section, ensureSpace, footer, signatureBlock, SIGNATURE_BLOCK_HEIGHT, day, dateOnly } = require('./pdfLayout');
 
 const TYPE = { consulta: 'Resumen de consulta', control: 'Resumen de control', cirugia: 'Resumen de cirugía', vacuna: 'Resumen de vacunación' };
 const PLAN = { octuple_sextuple: 'Óctuple / Séxtuple', kc: 'KC (tos de las perreras)', antirrabica: 'Antirrábica', triple_felina: 'Triple felina', leucemia_felina: 'Leucemia felina' };
@@ -59,6 +59,9 @@ async function generateVisitSummaryPdf({ record, pet, owner, prescriptions, dose
   y = ensureSpace(doc, y, 24);
   doc.fill(C.muted).fontSize(9).font('Helvetica')
     .text('Si nota que empeora, deja de comer o aparece algo nuevo, contáctenos antes de la próxima cita.', MARGIN, y + 6, { width: doc.page.width - MARGIN * 2 });
+
+  y = ensureSpace(doc, doc.y + 18, SIGNATURE_BLOCK_HEIGHT);
+  signatureBlock(doc, y, clinic);
 
   footer(doc, clinic);
   doc.end();

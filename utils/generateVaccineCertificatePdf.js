@@ -1,6 +1,6 @@
 // Vaccination and deworming certificate: every recorded dose with product, lot and the vet who applied
 // it, and when the next one is due. What a tutor shows at a kennel, a groomer or the border.
-const { C, MARGIN, createDoc, header, patientBlock, ensureSpace, footer, dateOnly, dateKey } = require('./pdfLayout');
+const { C, MARGIN, createDoc, header, patientBlock, ensureSpace, footer, signatureBlock, SIGNATURE_BLOCK_HEIGHT, dateOnly, dateKey } = require('./pdfLayout');
 
 const PLAN = { octuple_sextuple: 'Óctuple / Séxtuple', kc: 'KC (tos de las perreras)', antirrabica: 'Antirrábica', triple_felina: 'Triple felina', leucemia_felina: 'Leucemia felina' };
 
@@ -75,11 +75,8 @@ async function generateVaccineCertificatePdf({ pet, owner, vaccinations, clinic 
     y = doc.y + 20;
   }
 
-  y = ensureSpace(doc, y, 90);
-  const sigX = doc.page.width - MARGIN - 220;
-  doc.moveTo(sigX, y + 50).lineTo(sigX + 220, y + 50).lineWidth(0.8).strokeColor(C.text).stroke();
-  doc.fill(C.text).fontSize(10).font('Helvetica-Bold').text(clinic?.veterinarian_name || 'Médico veterinario', sigX, y + 56, { width: 220, align: 'center' });
-  doc.fill(C.muted).fontSize(8.5).font('Helvetica').text('Firma y timbre', sigX, y + 70, { width: 220, align: 'center' });
+  y = ensureSpace(doc, y, SIGNATURE_BLOCK_HEIGHT);
+  signatureBlock(doc, y + 8, clinic);
 
   footer(doc, clinic, 'Las dosis marcadas como declaradas fueron informadas por el tutor y no se aplicaron en esta clínica.');
   doc.end();

@@ -16,6 +16,9 @@ interface User {
   clinic_phone: string | null;
   clinic_address: string | null;
   smtp_email: string | null;
+  professional_rut?: string | null;
+  professional_title?: string | null;
+  professional_university?: string | null;
   notification_email_reminders: boolean;
   notification_upcoming_appointments: boolean;
   notification_push: boolean;

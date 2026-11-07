@@ -143,6 +143,38 @@ function section(doc, y, title, body) {
   return doc.y + 14;
 }
 
+const SIGNATURE_BLOCK_HEIGHT = 112;
+
+function imageBuffer(dataUrl) {
+  const m = /^data:image\/(?:png|jpeg);base64,(.+)$/.exec(String(dataUrl || ''));
+  return m ? Buffer.from(m[1], 'base64') : null;
+}
+
+/**
+ * Signature line with the professional's scanned signature above it, the stamp beside it, and their name,
+ * title, university and RUT below. A missing or broken image just leaves the line blank to sign by hand.
+ * Draws at (x, y) in a column of width w; returns the y below it.
+ */
+function signatureBlock(doc, y, clinic, { x, w = 220 } = {}) {
+  const left = x ?? doc.page.width - MARGIN - w;
+  const lineY = y + 54;
+  try {
+    const sig = imageBuffer(clinic?.signature_png);
+    if (sig) doc.image(sig, left + (w - 170) / 2, y, { fit: [170, 50], align: 'center', valign: 'bottom' });
+  } catch (e) { /* unreadable image: leave the line empty */ }
+  try {
+    const stamp = imageBuffer(clinic?.stamp_png);
+    if (stamp) doc.image(stamp, Math.max(MARGIN, left - 92), y - 4, { fit: [84, 70] });
+  } catch (e) { /* unreadable image */ }
+  doc.moveTo(left, lineY).lineTo(left + w, lineY).lineWidth(0.8).strokeColor(C.text).stroke();
+  doc.fill(C.text).fontSize(10).font('Helvetica-Bold')
+    .text(clinic?.veterinarian_name || 'Médico veterinario', left, lineY + 6, { width: w, align: 'center' });
+  const credential = [clinic?.professional_title || 'Médico veterinario', clinic?.professional_university].filter(Boolean).join(' · ');
+  doc.fill(C.muted).fontSize(8.5).font('Helvetica').text(credential, left, doc.y + 1, { width: w, align: 'center' });
+  if (clinic?.professional_rut) doc.text('RUT ' + formatRut(clinic.professional_rut), left, doc.y + 1, { width: w, align: 'center' });
+  return doc.y + 6;
+}
+
 function footer(doc, clinic, note) {
   const range = doc.bufferedPageRange();
   for (let i = range.start; i < range.start + range.count; i++) {
@@ -156,4 +188,4 @@ function footer(doc, clinic, note) {
   }
 }
 
-module.exports = { C, MARGIN, createDoc, header, patientBlock, section, ensureSpace, footer, day, dateOnly, dateKey, formatRut };
+module.exports = { C, MARGIN, createDoc, header, patientBlock, section, ensureSpace, footer, signatureBlock, SIGNATURE_BLOCK_HEIGHT, day, dateOnly, dateKey, formatRut };

@@ -156,7 +156,7 @@ const PET_COLUMNS = ['owner_id','species_other','registry_number','birth_date_es
 const PET_JSON_COLUMNS = ['allergies','temperament','vital_signs','base_diseases','alerts'];
 
 // Validates and normalizes a pet payload. Returns { values } or { error }.
-function normalizePet(body, { partial }) {
+function normalizePet(body, { partial, allowOther = false }) {
   const safe = sanitizeColumns(PET_COLUMNS, body);
   for (const key of PET_OWNER_COPY) delete safe[key];
   if (safe.status !== undefined && !PET_STATUSES.includes(safe.status)) return { error: 'Estado inválido' };
@@ -165,7 +165,8 @@ function normalizePet(body, { partial }) {
     if (!safe.name || !String(safe.name).trim()) return { error: 'El nombre es obligatorio' };
     safe.name = String(safe.name).trim();
   }
-  if (safe.species !== undefined && !['dog', 'cat', 'other'].includes(safe.species)) return { error: 'La especie debe ser perro, gato u otra' };
+  // Vet Avalon attends dogs and cats. 'other' survives only on patients that already had it (allowOther)
+  if (safe.species !== undefined && !['dog', 'cat', ...(allowOther ? ['other'] : [])].includes(safe.species)) return { error: 'Vet Avalon atiende perros y gatos: la especie debe ser perro o gato' };
   if (safe.species === 'other' && !String(safe.species_other || '').trim()) return { error: 'Indica la especie (por ejemplo, conejo o hurón)' };
   if (safe.species && safe.species !== 'other') safe.species_other = null;
   if (safe.tutor_rut !== undefined && safe.tutor_rut !== null && String(safe.tutor_rut).trim().length > 20) {
@@ -599,7 +600,7 @@ app.post('/auth/reset-password', async (req, res) => {
 
 app.get('/auth/me', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, rut, username, name, email, role, organization_id, theme_preference, color_palette, created_at, smtp_email, clinic_name, veterinarian_name, clinic_phone, clinic_address, notification_email_reminders, notification_upcoming_appointments, notification_push FROM users WHERE id = $1', [req.userId]);
+    const result = await pool.query('SELECT id, rut, username, name, email, role, organization_id, theme_preference, color_palette, created_at, smtp_email, clinic_name, veterinarian_name, clinic_phone, clinic_address, notification_email_reminders, notification_upcoming_appointments, notification_push, professional_rut, professional_title, professional_university, (signature_png IS NOT NULL) AS has_signature, (stamp_png IS NOT NULL) AS has_stamp FROM users WHERE id = $1', [req.userId]);
     if (!result.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
     const user = result.rows[0];
     res.json({ data: user });
@@ -611,7 +612,7 @@ app.get('/auth/me', authMiddleware, async (req, res) => {
 
 app.patch('/auth/profile', authMiddleware, async (req, res) => {
   try {
-    const { name, email, clinic_name, veterinarian_name, clinic_phone, clinic_address, smtp_email, theme_preference, color_palette, notification_email_reminders, notification_upcoming_appointments, notification_push } = req.body;
+    const { professional_rut, professional_title, professional_university, name, email, clinic_name, veterinarian_name, clinic_phone, clinic_address, smtp_email, theme_preference, color_palette, notification_email_reminders, notification_upcoming_appointments, notification_push } = req.body;
     if (name !== undefined && (typeof name !== 'string' || !name.trim() || name.length > 100)) {
       return res.status(400).json({ error: 'El nombre es obligatorio (máx. 100 caracteres)' });
     }
@@ -626,6 +627,14 @@ app.patch('/auth/profile', authMiddleware, async (req, res) => {
       if (value !== undefined && value !== null && (typeof value !== 'string' || value.length > 200)) {
         return res.status(400).json({ error: 'Los datos de la clínica deben ser texto (máx. 200 caracteres)' });
       }
+    }
+    for (const value of [professional_title, professional_university]) {
+      if (value !== undefined && value !== null && (typeof value !== 'string' || value.length > 120)) {
+        return res.status(400).json({ error: 'El título y la universidad deben ser texto (máx. 120 caracteres)' });
+      }
+    }
+    if (professional_rut !== undefined && professional_rut !== null && professional_rut !== '' && !validRut(canonRut(String(professional_rut)))) {
+      return res.status(400).json({ error: 'El RUT del profesional no es válido' });
     }
     if (theme_preference !== undefined && !['light', 'dark'].includes(theme_preference)) {
       return res.status(400).json({ error: 'Tema inválido' });
@@ -645,7 +654,10 @@ app.patch('/auth/profile', authMiddleware, async (req, res) => {
     if (veterinarian_name !== undefined) { fields.push(`veterinarian_name = $${idx}`); values.push(text(veterinarian_name)); idx++; }
     if (clinic_phone !== undefined) { fields.push(`clinic_phone = $${idx}`); values.push(text(clinic_phone)); idx++; }
     if (clinic_address !== undefined) { fields.push(`clinic_address = $${idx}`); values.push(text(clinic_address)); idx++; }
-    if (smtp_email !== undefined) { fields.push(`smtp_email = $${idx}`); values.push(text(smtp_email)); idx++; }
+    if (professional_rut !== undefined) { fields.push(`professional_rut = ${idx}`); values.push(text(professional_rut) ? canonRut(String(professional_rut)) : null); idx++; }
+    if (professional_title !== undefined) { fields.push(`professional_title = ${idx}`); values.push(text(professional_title)); idx++; }
+    if (professional_university !== undefined) { fields.push(`professional_university = ${idx}`); values.push(text(professional_university)); idx++; }
+    if (smtp_email !== undefined) { fields.push(`smtp_email = ${idx}`); values.push(text(smtp_email)); idx++; }
     if (theme_preference !== undefined) { fields.push(`theme_preference = $${idx}`); values.push(theme_preference); idx++; }
     if (color_palette !== undefined) { fields.push(`color_palette = $${idx}`); values.push(color_palette); idx++; }
     if (notification_email_reminders !== undefined) { fields.push(`notification_email_reminders = $${idx}`); values.push(notification_email_reminders); idx++; }
@@ -654,7 +666,7 @@ app.patch('/auth/profile', authMiddleware, async (req, res) => {
     if (!fields.length) return res.status(400).json({ error: 'No hay campos para actualizar' });
     values.push(req.userId);
     const result = await pool.query(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, rut, name, email, role, theme_preference, color_palette, created_at, smtp_email, clinic_name, veterinarian_name, clinic_phone, clinic_address, notification_email_reminders, notification_upcoming_appointments, notification_push`,
+      `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, rut, name, email, role, theme_preference, color_palette, created_at, smtp_email, clinic_name, veterinarian_name, clinic_phone, clinic_address, notification_email_reminders, notification_upcoming_appointments, notification_push, professional_rut, professional_title, professional_university, (signature_png IS NOT NULL) AS has_signature, (stamp_png IS NOT NULL) AS has_stamp`,
       values
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -662,6 +674,60 @@ app.patch('/auth/profile', authMiddleware, async (req, res) => {
     res.json({ data: user });
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ error: 'Ese correo ya está registrado en otra cuenta' });
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ─── SIGNATURE AND STAMP IMAGES ───────────────────────────
+// Private: only the owner reads them back, and the server embeds them in that account's PDFs.
+const SIGNATURE_KINDS = { signature: 'signature_png', stamp: 'stamp_png' };
+const SIGNATURE_MAX_BYTES = 300 * 1024;
+
+function parseImageDataUrl(value) {
+  const m = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+/=]+)$/.exec(String(value || ''));
+  if (!m) return { error: 'La imagen debe ser PNG o JPG' };
+  const bytes = Buffer.from(m[2], 'base64');
+  if (bytes.length > SIGNATURE_MAX_BYTES) return { error: 'La imagen es demasiado grande (máx. 300 KB)' };
+  const isPng = bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+  const isJpg = bytes.length > 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  if ((m[1] === 'png' && !isPng) || (m[1] === 'jpeg' && !isJpg)) return { error: 'El archivo no es una imagen válida' };
+  return { value: String(value) };
+}
+
+app.get('/auth/signature', authMiddleware, async (req, res) => {
+  try {
+    const column = SIGNATURE_KINDS[req.query.kind];
+    if (!column) return res.status(400).json({ error: 'Indica si es la firma o el timbre' });
+    const r = await pool.query(`SELECT ${column} AS image FROM users WHERE id = $1`, [req.userId]);
+    res.json({ data: { image: r.rows[0]?.image || null } });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.put('/auth/signature', authMiddleware, async (req, res) => {
+  try {
+    const column = SIGNATURE_KINDS[req.body?.kind];
+    if (!column) return res.status(400).json({ error: 'Indica si es la firma o el timbre' });
+    const parsed = parseImageDataUrl(req.body?.image);
+    if (parsed.error) return res.status(400).json({ error: parsed.error });
+    await pool.query(`UPDATE users SET ${column} = $1 WHERE id = $2`, [parsed.value, req.userId]);
+    res.json({ data: { saved: true } });
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.delete('/auth/signature', authMiddleware, async (req, res) => {
+  try {
+    const column = SIGNATURE_KINDS[req.query.kind];
+    if (!column) return res.status(400).json({ error: 'Indica si es la firma o el timbre' });
+    await pool.query(`UPDATE users SET ${column} = NULL WHERE id = $1`, [req.userId]);
+    res.json({ data: { deleted: true } });
+  } catch (err) {
     logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
@@ -1215,7 +1281,12 @@ app.post('/items/pets', authMiddleware, async (req, res) => {
 
 app.patch('/items/pets/:id', authMiddleware, async (req, res) => {
   try {
-    const { values: safe, error } = normalizePet(req.body || {}, { partial: true });
+    let allowOther = false;
+    if (req.body && req.body.species === 'other') {
+      const cur = await pool.query('SELECT species FROM pets WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
+      allowOther = cur.rows[0]?.species === 'other';
+    }
+    const { values: safe, error } = normalizePet(req.body || {}, { partial: true, allowOther });
     if (error) return res.status(400).json({ error });
     if (safe.owner_id) {
       const ok = await pool.query('SELECT 1 FROM owners WHERE id = $1 AND user_id = $2', [safe.owner_id, req.userId]);
@@ -1974,7 +2045,7 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
     const { generatePrescriptionPdf } = require('./utils/generatePrescriptionPdf');
 
     const userResult = await pool.query(
-      'SELECT email, clinic_name, veterinarian_name, clinic_phone, clinic_address FROM users WHERE id = $1',
+      'SELECT email, clinic_name, veterinarian_name, clinic_phone, clinic_address, professional_rut, professional_title, professional_university, signature_png, stamp_png FROM users WHERE id = $1',
       [req.userId]
     );
     const userProfile = userResult.rows[0] || {};
@@ -2004,7 +2075,7 @@ app.post('/items/prescriptions/:id/email', authMiddleware, async (req, res) => {
     const pdfBuffer = await generatePrescriptionPdf(
       { ...rx, veterinarian_name: rx.veterinarian_name || userProfile.veterinarian_name, vet_email: vetEmail },
       { name: rx.pet_name, species: rx.species, breed: rx.breed, weight: rx.weight, sex: rx.sex, birth_date: rx.birth_date, reproductive_status: rx.reproductive_status, tutor_name: rx.tutor_name, tutor_email: rx.tutor_email, tutor_phone: rx.tutor_phone, tutor_rut: rx.tutor_rut, id: rx.pet_id },
-      { veterinarian_name: userProfile.veterinarian_name, clinic_name: userProfile.clinic_name, clinic_phone: userProfile.clinic_phone, clinic_address: userProfile.clinic_address, vet_email: vetEmail }
+      { veterinarian_name: userProfile.veterinarian_name, clinic_name: userProfile.clinic_name, clinic_phone: userProfile.clinic_phone, clinic_address: userProfile.clinic_address, professional_rut: userProfile.professional_rut, professional_title: userProfile.professional_title, professional_university: userProfile.professional_university, signature_png: userProfile.signature_png, stamp_png: userProfile.stamp_png, vet_email: vetEmail }
     );
 
 
@@ -2090,7 +2161,7 @@ app.get('/items/pets/:petId/prescriptions/:rxId/pdf', authMiddleware, async (req
     const pet = petResult.rows[0];
 
     const userResult = await pool.query(
-      'SELECT email, clinic_name, veterinarian_name, clinic_phone, clinic_address FROM users WHERE id = $1',
+      'SELECT email, clinic_name, veterinarian_name, clinic_phone, clinic_address, professional_rut, professional_title, professional_university, signature_png, stamp_png FROM users WHERE id = $1',
       [req.userId]
     );
     const userProfile = userResult.rows[0] || {};
@@ -2099,7 +2170,7 @@ app.get('/items/pets/:petId/prescriptions/:rxId/pdf', authMiddleware, async (req
     const pdfBuffer = await generatePrescriptionPdf(
       { ...rx, veterinarian_name: rx.veterinarian_name || userProfile.veterinarian_name, vet_email: userProfile.email },
       { name: pet.name, species: pet.species, breed: pet.breed, weight: pet.weight, sex: pet.sex, birth_date: pet.birth_date, reproductive_status: pet.reproductive_status, tutor_name: pet.tutor_name, tutor_email: pet.email, tutor_phone: pet.phone, tutor_rut: pet.tutor_rut, id: pet.id },
-      { veterinarian_name: userProfile.veterinarian_name, clinic_name: userProfile.clinic_name, clinic_phone: userProfile.clinic_phone, clinic_address: userProfile.clinic_address, vet_email: userProfile.email }
+      { veterinarian_name: userProfile.veterinarian_name, clinic_name: userProfile.clinic_name, clinic_phone: userProfile.clinic_phone, clinic_address: userProfile.clinic_address, professional_rut: userProfile.professional_rut, professional_title: userProfile.professional_title, professional_university: userProfile.professional_university, signature_png: userProfile.signature_png, stamp_png: userProfile.stamp_png, vet_email: userProfile.email }
     );
 
     res.setHeader('Content-Type', 'application/pdf');
@@ -2146,7 +2217,7 @@ app.get('/items/pets/:id/file-pdf', authMiddleware, async (req, res) => {
 
 // ─── VISIT SUMMARY AND VACCINE CERTIFICATE ─────────────
 async function clinicProfile(userId) {
-  const r = await pool.query('SELECT email AS vet_email, clinic_name, veterinarian_name, clinic_phone, clinic_address FROM users WHERE id = $1', [userId]);
+  const r = await pool.query('SELECT email AS vet_email, clinic_name, veterinarian_name, clinic_phone, clinic_address, professional_rut, professional_title, professional_university, signature_png, stamp_png FROM users WHERE id = $1', [userId]);
   return r.rows[0] || {};
 }
 async function petWithOwner(petId, userId) {

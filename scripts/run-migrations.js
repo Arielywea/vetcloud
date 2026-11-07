@@ -41,6 +41,7 @@ const MIGRATIONS = [
   '031_password_resets.sql',
   '032_legal_acceptances.sql',
   '033_invite_codes.sql',
+  '034_professional_signature.sql',
 ];
 
 async function runMigrations() {

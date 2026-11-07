@@ -1,4 +1,5 @@
 const PDFDocument = require('pdfkit');
+const { signatureBlock, SIGNATURE_BLOCK_HEIGHT } = require('./pdfLayout');
 
 function generatePrescriptionPdf(prescription, pet, clinic) {
   return new Promise((resolve, reject) => {
@@ -93,6 +94,11 @@ function generatePrescriptionPdf(prescription, pet, clinic) {
         width: doc.page.width - 130,
         lineGap: 4,
       });
+
+    // Signature and stamp at the foot of the box; a long prescription that reaches it is signed by hand
+    const boxBottom = doc.page.height - 100;
+    const sigY = boxBottom - SIGNATURE_BLOCK_HEIGHT - 6;
+    if (doc.y + 12 < sigY) signatureBlock(doc, sigY, clinic, { x: doc.page.width - 50 - 15 - 220 });
 
     // ── FOOTER ──
     // Footer sits inside the bottom margin: drop it so pdfkit doesn't add blank pages

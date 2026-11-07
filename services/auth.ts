@@ -155,3 +155,28 @@ export async function apiRegistrationInfo(): Promise<{ invite_required: boolean;
   if (!res.ok) throw new Error(json.error || 'No se pudo consultar el registro');
   return json.data;
 }
+
+export type SignatureKind = 'signature' | 'stamp';
+
+export async function apiGetSignature(kind: SignatureKind): Promise<string | null> {
+  const res = await apiFetch(`${API_URL}/auth/signature?kind=${kind}`, { headers: await authHeaders() });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'No se pudo cargar la imagen');
+  return json.data?.image || null;
+}
+
+export async function apiPutSignature(kind: SignatureKind, image: string) {
+  const res = await apiFetch(`${API_URL}/auth/signature`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+    body: JSON.stringify({ kind, image }),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'No se pudo guardar la imagen');
+}
+
+export async function apiDeleteSignature(kind: SignatureKind) {
+  const res = await apiFetch(`${API_URL}/auth/signature?kind=${kind}`, { method: 'DELETE', headers: await authHeaders() });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'No se pudo borrar la imagen');
+}
