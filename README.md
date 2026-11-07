@@ -1,225 +1,158 @@
-# Vet Avalon 🐶
+# Vet Avalon
 
-Sistema de gestión veterinaria web y móvil. App de React Native (Expo) con API Express.js, desplegada en Vercel con Neon PostgreSQL.
+Ficha clínica veterinaria para perros y gatos, hecha en Chile. App web instalable (PWA) en Expo y React Native Web, con una API Express y PostgreSQL en Neon, desplegada en Vercel.
 
-## Características
+Estado: alpha cerrada (noviembre de 2026).
 
-- 🐾 **Gestión de pacientes** — Registro completo con perfil, historial clínico y estado reproductivo
-- 📋 **Catálogo de enfermedades** — 39+ enfermedades caninas y felinas con patofisiología, signos, diagnóstico y tratamiento
-- 💊 **Recetas veterinarias** — Generación de recetas con PDF adjunto y envío por correo
-- 📅 **Agenda médica** — Calendario de citas y consultas
-- 📝 **Notas personales** — Casos clínicos con vinculación a mascotas/enfermedades
-- 📦 **Inventario** — Control de stock con alertas de bajo inventario
-- 🎨 **12 paletas de temáticas** — One Piece, Gurren Lagann, Slam Dunk, Dragon Ball Z, Vinland Saga, 86, Fate, Frieren, Pandora Hearts, Saber/Artoria, NERV y predeterminada
-- 🐕 **Logo beagle** — Branding minimalista con SVG
-- 🔒 **Seguridad** — JWT auth, bcrypt passwords, endpoints protegidos
+## Qué hace
+
+- **Pacientes y tutores**: ficha por paciente con tutor (RUT, teléfono, correo), alertas, peso, estado y foto. Solo perros y gatos.
+- **Consulta en una pantalla**: anamnesis remota que el tutor responde desde un enlace, signos vitales, examen físico, lista de problemas, diagnóstico y plan.
+- **Documentos en PDF**: receta, certificado de vacunas, resumen de visita, orden de exámenes y ficha completa, con firma, timbre y datos del profesional. La receta y el resumen también se envían por correo.
+- **Vacunas y desparasitaciones**: plan por especie, dosis con fecha estimada y recordatorios.
+- **Agenda**: citas, controles y la vista del día como Mesa Redonda (08:00 a 20:00).
+- **Hospitalización, laboratorio e inventario**, con avisos automáticos de la clínica (stock bajo, vacunas vencidas, checklist de alta).
+- **Apoyo clínico**: catálogo de 200 enfermedades caninas y felinas ordenado por frecuencia en Chile, vademécum de 240 medicamentos con dosis por peso, 20 guías quirúrgicas paso a paso, fluidoterapia AAHA 2024 y calculadora de dosis.
+- **Notas** con editor de bloques y **reportes** de la clínica.
+- **Cuenta**: registro con aceptación de Términos y Privacidad, recuperación de contraseña por correo, exportación de todos los datos (JSON y CSV) y códigos de invitación para la alpha.
+
+El catálogo, las guías y las calculadoras son material de apoyo: la decisión clínica es siempre del veterinario tratante.
 
 ## Arquitectura
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Vercel (Deploy)                       │
-│  ┌─────────────────┐  ┌──────────────────────────────┐  │
-│  │  React Native    │  │  Express.js API (server.js)  │  │
-│  │  (Expo Web)      │  │  Puerto: 8055                │  │
-│  └─────────────────┘  └──────────────────────────────┘  │
-└─────────────────────────────────────────────────────────┘
-                           │
-                    ┌──────┴──────┐
-                    │  Neon DB    │
-                    │  PostgreSQL │
-                    └─────────────┘
+Navegador / app instalada (PWA)
+        │
+        ▼
+Vercel ── dist/ (export web de Expo, estático)
+   │
+   └── /auth, /items, /account, ... ──► api/index.js ──► server.js (Express)
+                                                            │
+                                                            ▼
+                                                   Neon PostgreSQL (SQL directo con pg, sin ORM)
 ```
+
+- `server.js` es toda la API. `api/index.js` solo lo envuelve para Vercel.
+- `services/directus.ts` es el cliente HTTP de la API propia (el nombre es histórico: no hay Directus).
+- Cada prefijo de ruta de la API necesita su rewrite en `vercel.json`; el resto cae en `index.html`.
 
 ## Requisitos
 
-- [Node.js](https://nodejs.org/) v18+
-- npm
-- Cuenta en [Vercel](https://vercel.com) (deploy)
-- Cuenta en [Neon](https://neon.tech) (base de datos)
+- Node.js 18 o superior y npm
+- Una base PostgreSQL (Neon) y, para desplegar, un proyecto en Vercel
+- Una cuenta de correo con contraseña de aplicación para los envíos (Gmail por defecto)
 
-## Instalación
-
-### 1. Instalar dependencias
+## Puesta en marcha
 
 ```bash
 npm install
-```
-
-### 2. Configurar variables de entorno
-
-Copia `.env.example` a `.env` y completa:
-
-```bash
 cp .env.example .env
+node scripts/run-migrations.js
+npm run server
+npm run web
 ```
 
-Variables requeridas:
+`npm run server` levanta la API en el puerto 8055 y `npm run web` abre la app en el navegador.
 
-| Variable | Descripción |
-|----------|-------------|
-| `DATABASE_URL` | URL de conexión a Neon PostgreSQL |
-| `JWT_SECRET` | Secreto para JWT (generar con `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) |
-| `SMTP_EMAIL` | Correo Gmail para envío de recetas |
-| `SMTP_PASSWORD` | Contraseña de aplicación de Google |
+**Importante:** si `DATABASE_URL` apunta a producción, la API local escribe en producción. Usa una rama de desarrollo de Neon, y cualquier prueba que escriba datos debe ir dentro de `BEGIN … ROLLBACK`.
 
-### 3. Ejecutar migraciones
+### Variables de entorno
+
+| Variable | Para qué |
+|----------|----------|
+| `DATABASE_URL` | Conexión a PostgreSQL (Neon) |
+| `JWT_SECRET` | Firma de las sesiones. Genera uno con `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
+| `EXPO_PUBLIC_API_URL` | URL de la API que usa la app (en local, `http://localhost:8055`) |
+| `SMTP_SERVICE`, `SMTP_EMAIL`, `SMTP_PASSWORD` | Envío de recetas, resúmenes, recordatorios y recuperación de contraseña |
+| `APP_URL` | URL pública de la app; arma el enlace del correo de recuperación de contraseña |
+| `REQUIRE_INVITE` | `true` para que el registro exija un código de invitación (alpha cerrada) |
+| `CORS_ORIGIN` | Orígenes permitidos para la API |
+| `EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME`, `EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET` | Subida de fotos de pacientes |
+
+`.env` contiene credenciales reales: no se sube al repositorio ni se comparte.
+
+## Comandos
+
+| Comando | Qué hace |
+|---------|----------|
+| `npm run server` | API local en :8055 |
+| `npm run web` | App en modo desarrollo |
+| `npm run build:web` | Export web a `dist/` e inyección de la PWA (lo mismo que corre Vercel) |
+| `npm run typecheck` | `tsc` sobre la app; debe dar 0 errores |
+| `npm run check:schema` | Verifica que las columnas que usa `server.js` existan en la BD y que cada ruta tenga rewrite. Córrelo antes de cada push |
+| `node scripts/run-migrations.js` | Aplica las migraciones pendientes |
+| `node scripts/invite-code.js` | Crea, lista o desactiva códigos de invitación |
+
+### Migraciones
+
+Cada cambio de esquema va en `scripts/migrations/NNN_nombre.sql` (idempotente, con `IF NOT EXISTS`) y en la lista `MIGRATIONS` de `scripts/run-migrations.js`. El script registra lo aplicado en la tabla `_migrations` y salta lo que ya corrió. Los `.sql` sueltos de `scripts/` son históricos.
+
+Si agregas un campo a un formulario, agrégalo también a la whitelist del servidor (`PET_COLUMNS` o el `allowed` del handler) y a la migración.
+
+### Códigos de invitación
 
 ```bash
-node -e "const {Pool}=require('pg');const p=new Pool({connectionString:process.env.DATABASE_URL,ssl:{rejectUnauthorized:false}});p.query('SQL_AQUI').then(r=>{console.log('OK');p.end()})"
+node scripts/invite-code.js create MESAREDONDA --label "Compañeros" --max-uses 20 --days 30
+node scripts/invite-code.js list
+node scripts/invite-code.js disable MESAREDONDA
 ```
 
-Migraciones disponibles en `scripts/`:
-- `add-auth.sql` — Tabla users con auth
-- `add-theme-column.sql` — Preferencia de tema
-- `add-pet-status.sql` — Estado de mascota (vivo/fallecido)
-- `add-prescriptions-table.sql` — Tabla de recetas
-- `add-user-profile-columns.sql` — Campos de perfil (clínica, SMTP)
-- `add-color-palette-column.sql` — Paleta de colores personalizada
+Cada código tiene usos máximos, vencimiento opcional y días de prueba. La cuenta guarda con qué código llegó.
 
-### 4. Sembrar usuarios
-
-```bash
-node scripts/seed-users.js
-```
-
-Los passwords se generan aleatoriamente al ejecutar el script. Se imprimen en consola — guardalos.
-
-Alternativamente, podés crear cuentas directamente desde la pantalla de registro de la app.
-
-### 5. Sembrar enfermedades
-
-```bash
-npx ts-node scripts/seed-diseases.ts
-```
-
-### 6. Iniciar desarrollo
-
-```bash
-npx expo start
-```
-
-Presiona `w` para abrir en navegador web.
-
-## Estructura del Proyecto
+## Estructura
 
 ```
-vet-cloud/
-├── app/
-│   ├── (drawer)/           # Pantallas principales (drawer navigation)
-│   │   ├── index.tsx       # Dashboard
-│   │   ├── pacientes.tsx   # Lista de pacientes
-│   │   ├── diseases.tsx    # Catálogo de enfermedades
-│   │   ├── agenda.tsx      # Calendario de citas
-│   │   ├── notes.tsx       # Notas personales
-│   │   ├── inventario.tsx  # Control de inventario
-│   │   ├── profile.tsx     # Perfil y personalización
-│   │   ├── search.tsx      # Búsqueda global
-│   │   ├── add-paciente.tsx
-│   │   └── add-disease.tsx
-│   ├── auth/
-│   │   └── login.tsx       # Pantalla de login
-│   ├── pet/[id].tsx        # Detalle de mascota + recetas
-│   ├── disease/[id].tsx    # Detalle de enfermedad
-│   └── _layout.tsx         # Root layout
-├── components/
-│   ├── BeagleLogo.tsx      # Logo SVG beagle
-│   ├── DrawerContent.tsx   # Menú drawer
-│   ├── PetHeader.tsx       # Header de mascota
-│   ├── ClinicalTabs.tsx    # Tabs de historial clínico
-│   ├── AgendaWidget.tsx    # Widget de agenda
-│   └── TaskWidget.tsx      # Widget de tareas
-├── constants/
-│   ├── colors.ts           # Temas de colores (12 paletas)
-│   ├── diseases.ts         # Datos de enfermedades
-│   ├── breeds.ts           # Razas
-│   └── vaccinations.ts     # Protocolos de vacunación
-├── contexts/
-│   └── ThemeContext.tsx     # Proveedor de temas
-├── hooks/
-│   ├── useAuth.tsx         # Autenticación
-│   └── useDirectus.ts      # Hooks de datos
-├── services/
-│   ├── auth.ts             # API de autenticación
-│   ├── directus.ts         # API de datos
-│   ├── files.ts            # Subida de archivos
-│   └── cloudinary.ts       # Cloudinary
-├── utils/
-│   ├── age.ts              # Cálculo de edad
-│   └── generatePrescriptionPdf.js  # Generación PDF
-├── server.js               # API Express.js
-├── admin.html              # Panel admin
-├── package.json
-└── .env.example
+app/
+  (drawer)/          pantallas con barra lateral: inicio, pacientes, agenda, enfermedades,
+                     vademécum, cirugías, hospitalización, laboratorio, inventario, avisos,
+                     fluidoterapia, dosis, reportes, notas, recordatorios, configuración
+  consulta/[petId]   la consulta
+  pet/[id]           ficha del paciente
+  owner/, disease/, surgery/, notes/
+  auth/login.tsx     ingreso, registro y recuperación de contraseña
+  f/[token].tsx      anamnesis que responde el tutor (pública)
+  restablecer.tsx, terminos.tsx, privacidad.tsx   páginas públicas
+components/          por área (consulta, pet, agenda, dashboard, exams, profile, legal, ui...)
+constants/           colores y tokens del diseño, textos legales, catálogos de apoyo
+services/            auth.ts (sesión) y directus.ts (cliente de la API)
+utils/               generadores de PDF (pdfLayout.js y generate*Pdf.js), fechas, identidad (RUT)
+public/              manifest, service worker e íconos de la PWA
+scripts/             migraciones, verificación de esquema, importadores y utilidades
+server.js            la API completa
+api/index.js         envoltorio para Vercel
 ```
 
-## Paletas de Colores
+## Diseño
 
-| # | Paleta | Light | Dark |
-|---|--------|-------|------|
-| — | Predeterminada | Purple/beige | — |
-| 1 | One Piece | Rojo pirata | Rojo oscuro/azul |
-| 2 | Gurren Lagann | Rojo mecha | Rojo neón/negro |
-| 3 | Slam Dunk | Naranja cancha | Naranja/negro |
-| 4 | Dragon Ball Z | Naranja/azul | Dorado/negro |
-| 5 | Vinland Saga | Tierra/madera | Marrón/negro |
-| 6 | 86 | Militar rojo | Gris/rojo |
-| 7 | Fate Series | Dorado/azul | Dorado/azul oscuro |
-| 8 | Frieren | Púrpura etéreo | Púrpura/negro |
-| 9 | Pandora Hearts | Gótico rosa | Rosa/negro |
-| 10 | Saber/Artoria | Azul royal/dorado | Púrpura/dorado |
-| 11 | NERV | — | Naranja/negro |
+Dos temas, definidos en `constants/colors.ts`: **Camelot** (claro: azul real, oro antiguo y marfil, del escudo de `assets/logo.png`) y **Morgana** (oscuro: casi negro, carmesí y oro pálido). Inter para la interfaz y Cormorant Garamond para títulos, esquinas rectas, sin sombras en lo que está en reposo y sin emojis como iconos. Las reglas completas están en `CLAUDE.md`.
 
-## API Endpoints
+## API
 
-### Auth
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/auth/login` | Login con RUT + password |
-| GET | `/auth/me` | Obtener usuario actual |
-| PATCH | `/auth/profile` | Actualizar perfil |
-| PATCH | `/auth/password` | Cambiar contraseña |
+Todas las rutas, salvo las públicas, exigen `Authorization: Bearer <token>`. Los errores de validación responden 400 con un mensaje en español.
 
-### Datos (requieren JWT)
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET/POST | `/items/pets` | Pacientes |
-| GET/POST | `/items/clinical_records` | Registros clínicos |
-| GET/POST | `/items/prescriptions` | Recetas |
-| POST | `/items/prescriptions/:id/email` | Enviar receta por correo |
-| GET/POST | `/items/appointments` | Citas |
-| GET/POST | `/items/personal_notes` | Notas |
-| GET/POST | `/items/inventory` | Inventario |
+| Prefijo | Contenido |
+|---------|-----------|
+| `/auth` | Registro, ingreso, perfil, contraseña y su recuperación, firma y timbre, información del registro |
+| `/items` | Pacientes, tutores, consultas, recetas, vacunas, citas, exámenes, hospitalizaciones, inventario, notas, recordatorios, catálogos y PDFs |
+| `/account` | Exportación de datos de la cuenta |
+| `/appointments`, `/vital-measurements`, `/payments` | Agenda, signos vitales y pagos |
+| `/reports`, `/stats`, `/search` | Reportes, cifras del inicio y búsqueda global |
+| `/public` | Anamnesis del tutor por enlace (sin sesión) |
+| `/files`, `/assistant` | Adjuntos y asistente |
 
-### Enfermedades (lectura pública, escritura requiere auth)
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/items/diseases` | Listar enfermedades |
-| GET | `/items/diseases/:id` | Detalle de enfermedad |
-| POST | `/items/diseases` | Crear (auth) |
-| PATCH | `/items/diseases/:id` | Actualizar (auth) |
-| DELETE | `/items/diseases/:id` | Eliminar (auth) |
+## Despliegue
 
-## Deploy en Vercel
+Vercel despliega solo al hacer push a `master`. El build corre `npx expo export --platform web && node scripts/inject-pwa.js` y sirve `dist/`; la API corre como función en `api/index.js`. Las variables de entorno se configuran en el panel de Vercel, y las migraciones se aplican antes de desplegar código que las necesite.
 
-1. Conectar repositorio GitHub a Vercel
-2. Configurar variables de entorno en Vercel Dashboard
-3. Deploy automático al hacer push a `master`
+## Seguridad y datos
 
-Variables de entorno en Vercel:
-- `DATABASE_URL` — Neon PostgreSQL connection string
-- `JWT_SECRET` — Secreto JWT (generar con `openssl rand -hex 32`)
-- `SMTP_EMAIL` — Email para envío de notificaciones
-- `SMTP_PASSWORD` — Contraseña de aplicación del email configurado
-
-## Seguridad
-
-- JWT authentication con bcrypt password hashing
-- Endpoints de datos protegidos con auth middleware
-- CORS restringido
-- Errores sanitizados (no exponen detalles internos)
-- Credenciales nunca hardcodeadas en el repo
+- Contraseñas con bcrypt, sesiones JWT y límites de intentos en ingreso, registro y recuperación.
+- Cada consulta filtra por la cuenta del usuario; las referencias que llegan del cliente se verifican.
+- La firma y el timbre son privados: solo se usan al generar los PDF de esa cuenta.
+- Aceptación de Términos y Privacidad registrada con versión, fecha e IP (Ley 21.719).
+- El veterinario es responsable de los datos de sus tutores; Vet Avalon es encargado del tratamiento.
+- Errores registrados en los logs del servidor sin exponer detalles al cliente.
 
 ## Licencia
 
-Uso personal.
+Software propietario. Todos los derechos reservados. Ver Términos y condiciones en la app.
