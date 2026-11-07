@@ -68,6 +68,7 @@ export async function apiAuthRegister(data: {
   accepted_terms?: boolean;
   accepted_privacy?: boolean;
   legal_version?: string;
+  invite_code?: string;
 }) {
   const res = await apiFetch(`${API_URL}/auth/register`, {
     method: 'POST',
@@ -146,4 +147,11 @@ export async function apiResetPassword(token: string, newPassword: string) {
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error || 'No se pudo cambiar la contraseña');
+}
+
+export async function apiRegistrationInfo(): Promise<{ invite_required: boolean; legal_version: string }> {
+  const res = await apiFetch(`${API_URL}/auth/registration-info`);
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'No se pudo consultar el registro');
+  return json.data;
 }

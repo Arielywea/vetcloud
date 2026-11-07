@@ -333,6 +333,12 @@ function authMiddleware(req, res, next) {
 // Version of the Términos / Política de privacidad texts (constants/legal.ts must carry the same value).
 // Bump it whenever either text changes: new sign-ups record this version.
 const LEGAL_VERSION = '2026-11-06';
+// Closed alpha: with REQUIRE_INVITE=true the sign-up form only accepts accounts that bring an invite code.
+const REQUIRE_INVITE = String(process.env.REQUIRE_INVITE || '').toLowerCase() === 'true';
+
+app.get('/auth/registration-info', (req, res) => {
+  res.json({ data: { invite_required: REQUIRE_INVITE, legal_version: LEGAL_VERSION } });
+});
 app.post('/auth/login', async (req, res) => {
   try {
     const clientIp = req.ip || req.connection?.remoteAddress || 'unknown';
@@ -382,7 +388,11 @@ app.post('/auth/register', async (req, res) => {
     if (!await rateLimit(`register:${clientIp}`, 3, 300000)) {
       return res.status(429).json({ error: 'Demasiados registros. Intente en 5 minutos.' });
     }
-    const { username, email, password, org_name, org_type, accepted_terms, accepted_privacy, legal_version } = req.body;
+    const { username, email, password, org_name, org_type, accepted_terms, accepted_privacy, legal_version, invite_code } = req.body;
+    const inviteCode = String(invite_code || '').trim().toUpperCase();
+    if (REQUIRE_INVITE && !inviteCode) {
+      return res.status(400).json({ error: 'El registro es solo por invitación. Ingresa tu código de invitación.' });
+    }
 
     // Validations
     if (!username || !email || !password) {
@@ -417,6 +427,20 @@ app.post('/auth/register', async (req, res) => {
     try {
       await client.query('BEGIN');
 
+      // Redeem the invite code first; the same transaction rolls the use back if anything below fails
+      if (inviteCode) {
+        const redeemed = await client.query(
+          `UPDATE invite_codes SET uses = uses + 1
+           WHERE code = $1 AND active AND (max_uses IS NULL OR uses < max_uses) AND (expires_at IS NULL OR expires_at > now())
+           RETURNING code`,
+          [inviteCode]
+        );
+        if (!redeemed.rows.length) {
+          await client.query('ROLLBACK');
+          return res.status(400).json({ error: 'El código de invitación no es válido, venció o ya se usó por completo' });
+        }
+      }
+
       // Create organization
       const orgName = org_name || `${username}'s Clinic`;
       const orgType = org_type === 'clinic' ? 'clinic' : 'solo';
@@ -429,8 +453,8 @@ app.post('/auth/register', async (req, res) => {
       // Create user
       const hash = bcrypt.hashSync(password, 10);
       const userResult = await client.query(
-        'INSERT INTO users (username, email, password_hash, name, role, organization_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, username, email, name, role, organization_id',
-        [username, email, hash, username, 'owner', organizationId]
+        'INSERT INTO users (username, email, password_hash, name, role, organization_id, invite_code) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, username, email, name, role, organization_id',
+        [username, email, hash, username, 'owner', organizationId, inviteCode || null]
       );
       const user = userResult.rows[0];
 

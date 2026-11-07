@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { Text } from 'react-native-paper';
-import { User, Lock, AlertCircle, LogIn, Eye, EyeOff, Mail, Building, UserPlus, ArrowLeft, Check } from 'lucide-react-native';
+import { User, Lock, AlertCircle, LogIn, Eye, EyeOff, Mail, Building, UserPlus, ArrowLeft, Check, Ticket } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, alpha } from '../../constants/tokens';
@@ -10,7 +10,7 @@ import BeagleLogo from '../../components/BeagleLogo';
 import VInput from '../../components/ui/Input';
 import VButton from '../../components/ui/Button';
 import { passwordPolicyError, PASSWORD_HINT } from '../../utils/password';
-import { apiForgotPassword } from '../../services/auth';
+import { apiForgotPassword, apiRegistrationInfo } from '../../services/auth';
 import { LEGAL_VERSION } from '../../constants/legal';
 
 export default function LoginScreen() {
@@ -31,6 +31,12 @@ export default function LoginScreen() {
   const [regOrgType, setRegOrgType] = useState<'solo' | 'clinic'>('solo');
 
   const [acceptedLegal, setAcceptedLegal] = useState(false);
+  const [regInvite, setRegInvite] = useState('');
+  const [inviteRequired, setInviteRequired] = useState(false);
+  useEffect(() => {
+    // Closed alpha: the server says whether sign-up needs an invite code (REQUIRE_INVITE)
+    apiRegistrationInfo().then((info) => setInviteRequired(!!info.invite_required)).catch(() => {});
+  }, []);
 
   // Forgot-password state
   const [forgotEmail, setForgotEmail] = useState('');
@@ -54,6 +60,7 @@ export default function LoginScreen() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail.trim())) { setError('Formato de correo inválido'); return; }
     const policyError = passwordPolicyError(regPassword);
     if (policyError) { setError(policyError); return; }
+    if (inviteRequired && !regInvite.trim()) { setError('Ingresa tu código de invitación'); return; }
     if (!acceptedLegal) { setError('Debes aceptar los Términos y la Política de privacidad'); return; }
 
     setLoading(true); setError('');
@@ -67,6 +74,7 @@ export default function LoginScreen() {
         accepted_terms: true,
         accepted_privacy: true,
         legal_version: LEGAL_VERSION,
+        invite_code: regInvite.trim() || undefined,
       });
     } catch (e: any) {
       setError(e.message || 'Error al crear cuenta');
@@ -96,6 +104,7 @@ export default function LoginScreen() {
             <VInput label="Correo electrónico *" placeholder="correo@ejemplo.com" value={regEmail} onChangeText={setRegEmail} leftIcon={<Mail size={18} color={colors.primary} />} keyboardType="email-address" autoCapitalize="none" />
             <VInput label="Contraseña *" autoComplete="new-password" hint={PASSWORD_HINT} value={regPassword} onChangeText={setRegPassword} secureTextEntry={!showPassword} leftIcon={<Lock size={18} color={colors.primary} />}
               rightIcon={<View style={{ padding: 4 }}>{showPassword ? <EyeOff size={18} color={colors.textSecondary} onPress={() => setShowPassword(false)} /> : <Eye size={18} color={colors.textSecondary} onPress={() => setShowPassword(true)} />}</View>} />
+            <VInput label={inviteRequired ? 'Código de invitación *' : 'Código de invitación (opcional)'} placeholder="CÓDIGO" value={regInvite} onChangeText={setRegInvite} leftIcon={<Ticket size={18} color={colors.primary} />} autoCapitalize="characters" />
             <VInput label="Nombre de la clínica (opcional)" onSubmitEditing={handleRegister} returnKeyType="go" placeholder="Mi clínica veterinaria" value={regOrgName} onChangeText={setRegOrgName} leftIcon={<Building size={18} color={colors.primary} />} />
 
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Tipo de negocio</Text>
