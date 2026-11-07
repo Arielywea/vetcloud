@@ -2,10 +2,10 @@ import { API_URL } from '../config';
 import { authHeaders, apiFetch } from '../services/auth';
 
 /** Fetches an authenticated PDF from the API and saves it in the browser. Throws with the server's message. */
-export async function downloadPdf(endpoint: string, filename: string): Promise<void> {
+export async function downloadPdf(endpoint: string, filename: string, failMessage = 'No se pudo generar el PDF'): Promise<void> {
   const res = await apiFetch(`${API_URL}${endpoint}`, { headers: await authHeaders() });
   if (!res.ok) {
-    let message = 'No se pudo generar el PDF';
+    let message = failMessage;
     try { message = (await res.json())?.error || message; } catch { /* not JSON */ }
     throw new Error(message);
   }

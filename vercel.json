@@ -43,6 +43,10 @@
       "destination": "/api"
     },
     {
+      "source": "/account/(.*)",
+      "destination": "/api"
+    },
+    {
       "source": "/stats/(.*)",
       "destination": "/api"
     },

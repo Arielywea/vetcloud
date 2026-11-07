@@ -2720,6 +2720,78 @@ app.delete('/items/lab_exams/:id', authMiddleware, async (req, res) => {
 const CLINIC_TZ = 'America/Santiago';
 const WEEKDAYS_ES = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
 
+// ─── ACCOUNT DATA EXPORT ──────────────────────────────────
+// Everything the account owns, in the caller's hands (portability, Ley 21.719). GET only, so it also works
+// once an account is read-only. Never includes the password hash or other credentials.
+const EXPORT_TABLES = {
+  owners: 'Tutores',
+  pets: 'Pacientes',
+  clinical_records: 'Consultas',
+  vaccinations: 'Vacunas',
+  prescriptions: 'Recetas',
+  appointments: 'Citas',
+  lab_exams: 'Examenes',
+  hospitalizations: 'Hospitalizaciones',
+  vital_measurements: 'Signos vitales',
+  inventory: 'Inventario',
+  payments: 'Pagos',
+  personal_notes: 'Notas',
+  reminders: 'Recordatorios',
+};
+const EXPORT_SKIP_COLUMNS = new Set(['photo']); // inline images make CSV unusable; they stay in the JSON
+
+function csvCell(v) {
+  if (v === null || v === undefined) return '';
+  let t = v instanceof Date ? v.toISOString() : typeof v === 'object' ? JSON.stringify(v) : String(v);
+  // Cells that start with = + - @ run as formulas in Excel/Sheets
+  if (typeof v === 'string' && /^[=+\-@\t\r]/.test(t)) t = "'" + t;
+  return /[",\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+}
+function toCsv(rows) {
+  if (!rows.length) return '';
+  const cols = Object.keys(rows[0]).filter((c) => !EXPORT_SKIP_COLUMNS.has(c));
+  return '﻿' + [cols.join(','), ...rows.map((r) => cols.map((c) => csvCell(r[c])).join(','))].join('\r\n');
+}
+
+app.get('/account/export', authMiddleware, async (req, res) => {
+  try {
+    if (!await rateLimit(`export:${req.userId}`, 10, 600000)) {
+      return res.status(429).json({ error: 'Demasiadas exportaciones. Intenta en unos minutos.' });
+    }
+    const format = req.query.format === 'csv' ? 'csv' : 'json';
+    const stamp = new Date().toISOString().slice(0, 10);
+
+    if (format === 'csv') {
+      const table = String(req.query.table || '');
+      if (!Object.prototype.hasOwnProperty.call(EXPORT_TABLES, table)) {
+        return res.status(400).json({ error: 'Tabla no válida para exportar' });
+      }
+      const result = await pool.query(`SELECT * FROM ${table} WHERE user_id = $1 ORDER BY created_at NULLS LAST`, [req.userId])
+        .catch(() => pool.query(`SELECT * FROM ${table} WHERE user_id = $1`, [req.userId]));
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="vetavalon-${table}-${stamp}.csv"`);
+      return res.send(toCsv(result.rows));
+    }
+
+    const data = { exported_at: new Date().toISOString(), format_version: 1 };
+    const me = await pool.query(
+      'SELECT id, username, name, email, clinic_name, veterinarian_name, clinic_phone, clinic_address, created_at FROM users WHERE id = $1',
+      [req.userId]
+    );
+    data.account = me.rows[0] || null;
+    await Promise.all(Object.keys(EXPORT_TABLES).map(async (table) => {
+      const r = await pool.query(`SELECT * FROM ${table} WHERE user_id = $1`, [req.userId]);
+      data[table] = r.rows;
+    }));
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="vetavalon-datos-${stamp}.json"`);
+    res.send(JSON.stringify(data, null, 2));
+  } catch (err) {
+    logError(req, err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 app.get('/stats/dashboard', authMiddleware, async (req, res) => {
   try {
     const [pets, appointments, records, lowStock, hospitalized, lastVisits, recentRecords] = await Promise.all([

@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Switch } from 'react-native';
 import { Text } from 'react-native-paper';
-import { User, Palette, Bell, Shield, Check, AlertCircle, Eye, EyeOff, Sun, Moon, Building2 } from 'lucide-react-native';
+import { User, Palette, Bell, Shield, Check, AlertCircle, Eye, EyeOff, Sun, Moon, Building2, Download } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import PageHeader from '../../components/ui/PageHeader';
 import { apiAuthChangePassword } from '../../services/auth';
 import { passwordPolicyError, PASSWORD_HINT } from '../../utils/password';
+import { downloadPdf } from '../../utils/downloadPdf';
 import { SPACING, RADIUS, TYPOGRAPHY, alpha } from '../../constants/tokens';
 import { useToast } from '../../components/ui/VToast';
 import VCard from '../../components/ui/Card';
@@ -20,6 +21,13 @@ export default function ConfiguracionScreen() {
   const { user, updateProfile } = useAuth();
   const { colors, onPrimaryText } = useTheme();
   const toast = useToast();
+  const [exporting, setExporting] = useState<string | null>(null);
+  const exportData = async (key: string, query: string, filename: string) => {
+    setExporting(key);
+    try { await downloadPdf(`/account/export?${query}`, filename, 'No se pudo exportar'); }
+    catch (e: any) { toast.error(e?.message || 'No se pudo exportar'); }
+    finally { setExporting(null); }
+  };
   const [saving, setSaving] = useState(false);
 
   const [name, setName] = useState(user?.name || '');
@@ -270,6 +278,27 @@ export default function ConfiguracionScreen() {
         <VButton variant="secondary" onPress={handleChangePassword} loading={changingPassword} disabled={changingPassword}>
           Cambiar contraseña
         </VButton>
+      </VCard>
+
+      {/* Mis datos: portabilidad. Disponible siempre, también con la cuenta en solo lectura */}
+      <VCard style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Download size={20} color={colors.primary} />
+          <DisplayText style={[styles.cardTitle, { color: colors.text }]}>Mis datos</DisplayText>
+        </View>
+        <Text style={[styles.msgText, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
+          Descarga todo lo que hay en tu cuenta: tutores, pacientes, consultas, vacunas, recetas, citas y más. El archivo completo (JSON) sirve de respaldo; los CSV se abren en Excel.
+        </Text>
+        <VButton variant="secondary" onPress={() => exportData('json', 'format=json', 'vetavalon-datos.json')} loading={exporting === 'json'} disabled={!!exporting}>
+          Descargar todo (JSON)
+        </VButton>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.sm }}>
+          {([['owners', 'Tutores'], ['pets', 'Pacientes'], ['clinical_records', 'Consultas'], ['vaccinations', 'Vacunas']] as const).map(([table, label]) => (
+            <VButton key={table} variant="secondary" onPress={() => exportData(table, `format=csv&table=${table}`, `vetavalon-${table}.csv`)} loading={exporting === table} disabled={!!exporting}>
+              {`${label} (CSV)`}
+            </VButton>
+          ))}
+        </View>
       </VCard>
     </ScrollView>
   );
