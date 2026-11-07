@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 import VButton from '../ui/Button';
@@ -9,8 +9,16 @@ import { useMedications } from '../../hooks/useDirectus';
 import { SPACING, RADIUS, TYPOGRAPHY, alpha } from '../../constants/tokens';
 import { Medication } from '../../services/directus';
 import { parseNumberInRange } from '../../utils/parseNumber';
-import { parseDose, parseConcentration } from '../../utils/doseParser';
-import DisplayText from '../ui/DisplayText';
+import {
+  parseDose, doseOptions, presentationOptions, parseDoseInput, convertAmount, tabletsText,
+  DoseOption, DoseUnit, PresentationForm, PresentationOption, PresentationUnit,
+} from '../../utils/doseParser';
+import VInput from '../ui/Input';
+import Segmented from '../ui/Segmented';
+
+const DOSE_UNITS = [{ value: 'mg', label: 'mg/kg' }, { value: 'mcg', label: 'mcg/kg' }, { value: 'UI', label: 'UI/kg' }, { value: 'ml', label: 'ml/kg' }] as const;
+const PRES_FORMS = [{ value: 'liquid', label: 'Líquido (por ml)' }, { value: 'tablet', label: 'Comprimido' }] as const;
+const PRES_UNITS = [{ value: 'mg', label: 'mg' }, { value: 'mcg', label: 'mcg' }, { value: 'UI', label: 'UI' }] as const;
 
 type Species = 'perro' | 'gato';
 
@@ -38,16 +46,60 @@ export default function DoseCalculator({ initialWeight, initialSpecies }: { init
   }, [medications, searchQuery]);
 
   const doseText = selectedMed ? (especie === 'perro' ? selectedMed.dosis_perro : selectedMed.dosis_gato) : null;
-  const dose = useMemo(() => parseDose(doseText), [doseText]);
-  const concentration = useMemo(() => parseConcentration(selectedMed?.presentacion), [selectedMed]);
+  const doseOpts = useMemo(() => doseOptions(doseText, { min: selectedMed?.dosis_min_mg_kg ?? null, max: selectedMed?.dosis_max_mg_kg ?? null }), [doseText, selectedMed]);
+  const presOpts = useMemo(() => presentationOptions(selectedMed?.presentacion, selectedMed?.concentracion_mg_ml), [selectedMed]);
+  const frequency = useMemo(() => parseDose(doseText)?.everyHours ?? selectedMed?.frecuencia_horas ?? null, [doseText, selectedMed]);
+
+  // What the calculation uses: starts at the reference, and the vet can pick another option or type their own
+  const [doseInput, setDoseInput] = useState('');
+  const [doseUnit, setDoseUnit] = useState<DoseUnit>('mg');
+  const [presForm, setPresForm] = useState<PresentationForm>('liquid');
+  const [presAmount, setPresAmount] = useState('');
+  const [presUnit, setPresUnit] = useState<PresentationUnit>('mg');
+
+  const pickDose = (o: DoseOption) => { setDoseInput(o.min === o.max ? fmt(o.min, 3) : `${fmt(o.min, 3)}-${fmt(o.max, 3)}`); setDoseUnit(o.unit); };
+  const pickPres = (o: PresentationOption | null) => {
+    setPresForm(o?.form || 'liquid');
+    setPresAmount(o ? fmt(o.amount, 3) : '');
+    setPresUnit(o?.unit || 'mg');
+  };
+  useEffect(() => {
+    if (doseOpts[0]) pickDose(doseOpts[0]); else { setDoseInput(''); setDoseUnit('mg'); }
+  }, [doseOpts]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    pickPres(presOpts.find((o) => o.form === 'liquid') || presOpts[0] || null);
+  }, [presOpts]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const dose = parseDoseInput(doseInput);
+  const doseInvalid = doseInput.trim() !== '' && !dose;
+  const amount = parseNumberInRange(presAmount, 0.0001, 100000);
+  const presentation = amount !== null && !Number.isNaN(amount) ? { form: presForm, amount, unit: presUnit } : null;
+  const doseKey = (o: DoseOption) => dose && o.unit === doseUnit && Math.abs(o.min - dose.min) < 1e-9 && Math.abs(o.max - dose.max) < 1e-9;
+  const presKey = (o: PresentationOption) => presentation && o.form === presentation.form && o.unit === presentation.unit && Math.abs(o.amount - presentation.amount) < 1e-9;
 
   const result = useMemo(() => {
     if (!dose || pesoNum === null || Number.isNaN(pesoNum)) return null;
     const min = dose.min * pesoNum;
     const max = dose.max * pesoNum;
-    const volume = dose.unit === 'mg' && concentration ? { min: min / concentration, max: max / concentration } : null;
-    return { min, max, volume };
-  }, [dose, pesoNum, concentration]);
+    if (doseUnit === 'ml') return { min, max, volume: { min, max }, tablets: null, mismatch: false };
+    if (!presentation) return { min, max, volume: null, tablets: null, mismatch: false };
+    const a = convertAmount(min, doseUnit, presentation.unit);
+    const b = convertAmount(max, doseUnit, presentation.unit);
+    if (a === null || b === null) return { min, max, volume: null, tablets: null, mismatch: true };
+    return presentation.form === 'liquid'
+      ? { min, max, volume: { min: a / presentation.amount, max: b / presentation.amount }, tablets: null, mismatch: false }
+      : { min, max, volume: null, tablets: { min: a / presentation.amount, max: b / presentation.amount }, mismatch: false };
+  }, [dose, doseUnit, pesoNum, presentation?.form, presentation?.amount, presentation?.unit]); // eslint-disable-line react-hooks/exhaustive-deps
+  const range = (a: number, b: number, unit: string, digits = 2) => (Math.abs(a - b) < 1e-9 ? `${fmt(a, digits)} ${unit}` : `${fmt(a, digits)} – ${fmt(b, digits)} ${unit}`);
+  // A quarter tablet more or less than the dose: say how far the rounding lands
+  const tabletNote = (() => {
+    if (!result?.tablets || !presentation) return null;
+    const n = (result.tablets.min + result.tablets.max) / 2;
+    const q = Math.round(n * 4) / 4;
+    if (q === 0) return 'La dosis es menor a ¼ de comprimido: usa otra presentación o un preparado magistral.';
+    const off = Math.abs(q - n) / n;
+    return off > 0.15 ? `Al redondear a ${tabletsText(n)} la dosis queda un ${Math.round(off * 100)} % ${q > n ? 'por encima' : 'por debajo'}: considera otra concentración.` : null;
+  })();
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -88,31 +140,90 @@ export default function DoseCalculator({ initialWeight, initialSpecies }: { init
             <Text style={[styles.resultTitle, { color: colors.text }]}>{selectedMed.nombre}</Text>
           </View>
 
-          {result && dose ? (
-            <>
-              <ResultRow label="Dosis" value={dose.min === dose.max ? `${fmt(result.min, 2)} ${dose.unit}` : `${fmt(result.min, 2)} – ${fmt(result.max, 2)} ${dose.unit}`} colors={colors} />
-              {result.volume && (
-                <ResultRow
-                  label={`Volumen (${fmt(concentration!, 2)} mg/ml)`}
-                  value={dose.min === dose.max ? `${fmt(result.volume.min, 2)} ml` : `${fmt(result.volume.min, 2)} – ${fmt(result.volume.max, 2)} ml`}
-                  colors={colors}
-                />
-              )}
-              {dose.everyHours && <ResultRow label="Frecuencia" value={`Cada ${dose.everyHours} h`} colors={colors} />}
-              <ResultRow label="Base" value={`${fmt(dose.min, 3)}${dose.min !== dose.max ? `–${fmt(dose.max, 3)}` : ''} ${dose.unit}/kg × ${fmt(pesoNum as number, 2)} kg`} colors={colors} />
-            </>
-          ) : (
-            <View style={[styles.alertCard, { backgroundColor: alpha(colors.warning, 0.1), borderColor: alpha(colors.warning, 0.35) }]}>
-              <AlertTriangle size={16} color={colors.warning} />
-              <Text style={[styles.alertText, { color: colors.text }]}>
-                {pesoNum === null
-                  ? 'Ingresa el peso para calcular.'
-                  : !doseText
-                    ? `Sin dosis registrada para ${especie}.`
-                    : 'No se puede calcular automáticamente esta dosis (por ejemplo, infusión continua o por superficie corporal). Usa la referencia.'}
-              </Text>
+          {/* Dose: the options of the reference, or the vet's own */}
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Dosis</Text>
+          {doseOpts.length > 1 ? (
+            <View style={styles.chips}>
+              {doseOpts.map((o) => (
+                <VButton key={o.key} size="sm" variant={doseKey(o) ? 'filled' : 'secondary'} onPress={() => pickDose(o)} accessibilityLabel={`Dosis ${o.label}${doseKey(o) ? ', seleccionada' : ''}`}>{o.label}</VButton>
+              ))}
             </View>
-          )}
+          ) : null}
+          <View style={styles.editRow}>
+            <VInput containerStyle={styles.editNarrow} label="Por kg" value={doseInput} onChangeText={setDoseInput} keyboardType="numbers-and-punctuation"
+              placeholder="Ej: 2 o 2-4" error={doseInvalid ? 'Escribe un número o un rango (2-4)' : undefined} />
+            <Segmented label="Unidad de la dosis" options={DOSE_UNITS} value={doseUnit} onChange={setDoseUnit} size="sm" style={styles.editSeg} />
+          </View>
+          {dose && dose.min !== dose.max ? (
+            <View style={[styles.chips, styles.chipsAfter]}>
+              <Text style={[styles.hint, { color: colors.textSecondary }]}>Usar</Text>
+              {([['Mínima', dose.min], ['Media', (dose.min + dose.max) / 2], ['Máxima', dose.max]] as const).map(([label, v]) => (
+                <VButton key={label} size="sm" variant="ghost" onPress={() => setDoseInput(fmt(v, 3))} accessibilityLabel={`Usar dosis ${label.toLowerCase()}: ${fmt(v, 3)}`}>{`${label} ${fmt(v, 3)}`}</VButton>
+              ))}
+            </View>
+          ) : null}
+
+          {/* Presentation: what is in the vial or the box */}
+          {doseUnit !== 'ml' ? (
+            <>
+              <Text style={[styles.label, styles.labelGap, { color: colors.textSecondary }]}>Presentación</Text>
+              {presOpts.length ? (
+                <View style={styles.chips}>
+                  {presOpts.map((o) => (
+                    <VButton key={o.key} size="sm" variant={presKey(o) ? 'filled' : 'secondary'} onPress={() => pickPres(o)} accessibilityLabel={`Presentación ${o.label}${presKey(o) ? ', seleccionada' : ''}`}>{o.label}</VButton>
+                  ))}
+                </View>
+              ) : (
+                <Text style={[styles.hint, styles.chipsAfter, { color: colors.textSecondary }]}>La ficha no indica concentración: escribe la del producto que usarás.</Text>
+              )}
+              <Segmented label="Forma" options={PRES_FORMS} value={presForm} onChange={setPresForm} size="sm" style={styles.editSeg} />
+              <View style={styles.editRow}>
+                <VInput containerStyle={styles.editNarrow} label={presForm === 'liquid' ? 'Concentración (por ml)' : 'Contenido por comprimido'} value={presAmount} onChangeText={setPresAmount}
+                  keyboardType="decimal-pad" placeholder={presForm === 'liquid' ? 'Ej: 10' : 'Ej: 25'} />
+                <Segmented label="Unidad de la presentación" options={PRES_UNITS} value={presUnit} onChange={setPresUnit} size="sm" style={styles.editSeg} />
+              </View>
+            </>
+          ) : null}
+
+          <View style={styles.resultBlock}>
+            {result && dose ? (
+              <>
+                <ResultRow label="Dosis total" value={doseUnit === 'ml' ? range(result.min, result.max, 'ml') : range(result.min, result.max, doseUnit)} colors={colors} />
+                {result.volume && doseUnit !== 'ml' && presentation ? (
+                  <ResultRow label={`Volumen (${fmt(presentation.amount, 3)} ${presentation.unit}/ml)`} value={range(result.volume.min, result.volume.max, 'ml')} colors={colors} />
+                ) : null}
+                {result.tablets && presentation ? (
+                  <ResultRow
+                    label={`Comprimidos de ${fmt(presentation.amount, 3)} ${presentation.unit}`}
+                    value={Math.abs(result.tablets.min - result.tablets.max) < 1e-9
+                      ? `${tabletsText(result.tablets.min)} (${fmt(result.tablets.min, 2)})`
+                      : `${tabletsText(result.tablets.min)} – ${tabletsText(result.tablets.max)} (${fmt(result.tablets.min, 2)}–${fmt(result.tablets.max, 2)})`}
+                    colors={colors}
+                  />
+                ) : null}
+                {frequency ? <ResultRow label="Frecuencia (referencia)" value={`Cada ${frequency} h`} colors={colors} /> : null}
+                <ResultRow label="Base" value={`${range(dose.min, dose.max, `${doseUnit}/kg`, 3)} × ${fmt(pesoNum as number, 2)} kg`} colors={colors} />
+                {result.mismatch ? <Text style={[styles.hint, { color: colors.error }]}>La dosis va en UI y la presentación en mg o mcg (o al revés): no se pueden convertir. Revisa las unidades.</Text> : null}
+                {!result.mismatch && doseUnit !== 'ml' && !presentation ? <Text style={[styles.hint, { color: colors.textSecondary }]}>Indica la presentación para calcular el volumen o los comprimidos.</Text> : null}
+                {tabletNote ? <Text style={[styles.hint, { color: colors.warning }]}>{tabletNote}</Text> : null}
+              </>
+            ) : (
+              <View style={[styles.alertCard, { backgroundColor: alpha(colors.warning, 0.1), borderColor: alpha(colors.warning, 0.35) }]}>
+                <AlertTriangle size={16} color={colors.warning} />
+                <Text style={[styles.alertText, { color: colors.text }]}>
+                  {pesoNum === null
+                    ? 'Ingresa el peso para calcular.'
+                    : doseInvalid
+                      ? 'Revisa la dosis por kg.'
+                      : doseOpts.length
+                        ? 'Escribe la dosis por kg para calcular.'
+                        : !doseText
+                          ? `Sin dosis registrada para ${especie}: escribe la dosis por kg que quieres usar.`
+                          : 'La referencia no trae una dosis por kg (por ejemplo, infusión continua o por superficie corporal). Escribe la dosis por kg o usa la referencia.'}
+                </Text>
+              </View>
+            )}
+          </View>
 
           {doseText ? (
             <View style={styles.sourceBox}>
@@ -124,7 +235,7 @@ export default function DoseCalculator({ initialWeight, initialSpecies }: { init
             </View>
           ) : null}
           <Text style={[styles.disclaimer, { color: colors.textLight }]}>
-            Cálculo a partir de la primera dosis por kg de la referencia. Verifica siempre la indicación y la presentación antes de administrar.
+            Cálculo con la dosis y la presentación elegidas arriba; parten de la referencia y puedes cambiarlas. Verifica siempre la indicación y el producto antes de administrar.
           </Text>
         </View>
       )}
@@ -223,4 +334,12 @@ const styles = StyleSheet.create({
   sourceBox: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.lg },
   sourceText: { flex: 1, fontSize: TYPOGRAPHY.sizes.sm, lineHeight: 19 },
   disclaimer: { fontSize: 12, marginTop: SPACING.sm, lineHeight: 17 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: SPACING.xs, marginBottom: SPACING.sm },
+  chipsAfter: { marginTop: -SPACING.xs },
+  editRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', columnGap: SPACING.md },
+  editNarrow: { flexGrow: 1, flexBasis: 160, maxWidth: 260 },
+  editSeg: { marginBottom: SPACING.md, paddingTop: SPACING.xs },
+  hint: { fontSize: TYPOGRAPHY.sizes.sm, lineHeight: 19 },
+  labelGap: { marginTop: SPACING.md },
+  resultBlock: { marginTop: SPACING.md },
 });
