@@ -699,8 +699,8 @@ app.get('/auth/signature', authMiddleware, async (req, res) => {
   try {
     const column = SIGNATURE_KINDS[req.query.kind];
     if (!column) return res.status(400).json({ error: 'Indica si es la firma o el timbre' });
-    const r = await pool.query(`SELECT ${column} AS image FROM users WHERE id = $1`, [req.userId]);
-    res.json({ data: { image: r.rows[0]?.image || null } });
+    const r = await pool.query('SELECT signature_png, stamp_png FROM users WHERE id = $1', [req.userId]);
+    res.json({ data: { image: r.rows[0]?.[column] || null } });
   } catch (err) {
     logError(req, err);
     res.status(500).json({ error: 'Error interno del servidor' });
