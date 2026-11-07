@@ -12,7 +12,7 @@ import IconButton from '../../components/ui/IconButton';
 import { api, Appointment, ClinicalRecord, DirectusPet, Medication, Vaccination } from '../../services/directus';
 import { downloadPdf } from '../../utils/downloadPdf';
 import { CONSULT_TEMPLATES } from '../../constants/consultTemplates';
-import RemoteAnamnesis, { RemoteForm, remoteFromPet, remoteToPetPatch, remoteSummary, declaredDoses, mergeTutorAnswers } from '../../components/consulta/RemoteAnamnesis';
+import RemoteAnamnesis, { RemoteForm, RemoteOverview, remoteFromPet, remoteToPetPatch, remoteSummary, remoteChanges, declaredDoses, mergeTutorAnswers } from '../../components/consulta/RemoteAnamnesis';
 import TutorAnamnesisLink from '../../components/consulta/TutorAnamnesisLink';
 import DisplayText from '../../components/ui/DisplayText';
 import VButton from '../../components/ui/Button';
@@ -71,6 +71,8 @@ interface Form {
   /** Remote anamnesis: open (being filled or updated) at the first visit or when the vet asks for it */
   remote: RemoteForm;
   remoteOpen: boolean;
+  /** Returning patient: the vet confirmed with the tutor that nothing changed */
+  remoteReviewed?: boolean;
   /** Structured vitals, physical exam, current-problem anamnesis and problem list */
   exam: ExamForm;
   /** Exams ordered from this visit (one pending lab exam each, created when the visit is saved) */
@@ -96,7 +98,7 @@ function formFromRecord(rec: ClinicalRecord, p: DirectusPet): Form {
     findings: d.hallazgos_examen_fisico || '', diagnosisText: dxText, diagnoses: dx,
     plan: d.plan || '', procedure: d.procedimiento || '', postop: d.postoperatorio || '',
     rx: '', vaccines: [], controlDate: '', controlTime: '10:00', payAmount: '', payMethod: 'efectivo', payDescription: '', extras: [],
-    remote: remoteFromPet(p), remoteOpen: false, exam: examFromDetails(d), orders: emptySelection(),
+    remote: remoteFromPet(p), remoteOpen: false, remoteReviewed: false, exam: examFromDetails(d), orders: emptySelection(),
   };
 }
 
@@ -149,6 +151,17 @@ export default function ConsultaScreen() {
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) => setForm((f) => (f ? { ...f, [key]: value } : f));
 
+  const remoteHistory = useMemo(() => {
+    const past = records.filter((r) => r.id !== editRecord?.id);
+    const touched = (r: ClinicalRecord) => { const d: any = r.details || {}; return !!(d.anamnesis_remota || d.anamnesis_remota_revisada || d.anamnesis_remota_cambios || r.is_initial); };
+    const reviewed = past.find(touched);
+    const legacy = past.find((r) => typeof (r.details as any)?.anamnesis_remota === 'string' && (r.details as any).anamnesis_remota.trim());
+    return {
+      reviewedAt: reviewed ? reviewed.date : null,
+      legacy: legacy ? { date: legacy.date, text: String((legacy.details as any).anamnesis_remota) } : null,
+    };
+  }, [records, editRecord]);
+
   useEffect(() => {
     if (!petId) return;
     let cancelled = false;
@@ -177,7 +190,7 @@ export default function ConsultaScreen() {
         if (editId && !rec) throw new Error('No se encontró la consulta que quieres editar');
         // Drafts from before the remote anamnesis existed lack it
         if (rec) { setEditRecord(rec); setForm(formFromRecord(rec, p)); }
-        else if (draft) { setForm({ ...draft, exam: draft.exam || emptyExam(), orders: draft.orders || emptySelection(), remote: draft.remote || remoteFromPet(p), remoteOpen: draft.remote ? draft.remoteOpen : sorted.length === 0 }); setRestored(true); }
+        else if (draft) { setForm({ ...draft, exam: draft.exam || emptyExam(), orders: draft.orders || emptySelection(), remote: draft.remote || remoteFromPet(p), remoteOpen: draft.remote ? draft.remoteOpen : sorted.length === 0, remoteReviewed: !!draft.remoteReviewed }); setRestored(true); }
         else {
           setForm({
             type: appt?.appointment_type === 'control' ? 'control' : appt?.appointment_type === 'cirugia' ? 'cirugia' : 'consulta',
@@ -187,7 +200,7 @@ export default function ConsultaScreen() {
             weight: '', findings: '', diagnosisText: '', diagnoses: [], plan: '', procedure: '', postop: '',
             rx: '', vaccines: [], controlDate: '', controlTime: '10:00',
             payAmount: '', payMethod: 'efectivo', payDescription: '', extras: [],
-            remote: remoteFromPet(p), remoteOpen: sorted.length === 0, exam: emptyExam(), orders: emptySelection(),
+            remote: remoteFromPet(p), remoteOpen: sorted.length === 0, remoteReviewed: false, exam: emptyExam(), orders: emptySelection(),
           });
         }
         loaded.current = !editId;
@@ -309,10 +322,19 @@ export default function ConsultaScreen() {
     let orderId: string | null = null;
     try {
       const names = form.diagnoses.map((d) => d.name);
+      // Returning patient: the visit keeps what changed in the antecedents, or that they were confirmed unchanged
+      const returning = records.length > 0;
+      const doseName = (d: (typeof declared)[number]) => d.plan_item ? PLAN_LABEL[d.plan_item] : d.kind === 'desparasitacion_interna' ? 'Desparasitación interna' : 'Desparasitación externa';
+      const changes = returning && form.remoteOpen
+        ? [...remoteChanges(remoteFromPet(pet), form.remote, pet.species), ...declared.map((d) => `Dosis declarada: ${doseName(d)} ${d.raw.trim()}`)]
+        : [];
+      const reviewed = returning && (form.remoteOpen ? changes.length === 0 : !!form.remoteReviewed);
       const fresh = {
           motivo_consulta: form.reason.trim() || undefined,
           anamnesis: form.anamnesis.trim() || undefined,
           anamnesis_remota: form.remoteOpen ? remoteSummary(form.remote, pet.species) || undefined : undefined,
+          anamnesis_remota_cambios: changes.length ? changes : undefined,
+          anamnesis_remota_revisada: reviewed || undefined,
           hallazgos_examen_fisico: form.findings.trim() || undefined,
           exam: examToDetails(form.exam),
           anamnesis_proxima: nextToDetails(form.exam.next),
@@ -346,8 +368,10 @@ export default function ConsultaScreen() {
       });
       if (form.remoteOpen) {
         try {
-          await api.pets.update(pet.id, remoteToPetPatch(form.remote, pet));
-          outcomes.push({ label: 'Anamnesis remota guardada en la ficha', ok: true });
+          if (!returning || changes.length) {
+            await api.pets.update(pet.id, remoteToPetPatch(form.remote, pet));
+            outcomes.push({ label: returning ? `Antecedentes actualizados (${changes.length} ${changes.length === 1 ? 'cambio' : 'cambios'})` : 'Anamnesis remota guardada en la ficha', ok: true });
+          }
         } catch (e: any) { outcomes.push({ label: 'Anamnesis remota', ok: false, detail: e?.message }); }
         for (const d of declared) {
           const { date: applied, estimated } = parseDoseDate(d.raw)!;
@@ -531,10 +555,27 @@ export default function ConsultaScreen() {
           <View style={styles.grow}>
             <DisplayText style={[styles.panelTitle, styles.inlineTitle, { color: colors.text }]}>Anamnesis remota</DisplayText>
             <Text style={[styles.meta, { color: colors.textSecondary }]}>
-              {form.remoteOpen ? (records.length ? 'Actualiza lo que cambió; se guarda en la ficha al cerrar.' : 'Primera consulta: los antecedentes quedan en la ficha y no se vuelven a preguntar.') : 'Antecedentes registrados en la ficha.'}
+              {!records.length ? 'Primera consulta: los antecedentes quedan en la ficha y no se vuelven a preguntar.'
+                : form.remoteOpen ? 'Viene con lo que ya está en la ficha: cambia solo lo nuevo. La consulta registra qué cambió.'
+                : form.remoteReviewed ? 'Confirmado con el tutor: sin cambios. Queda registrado en esta consulta.'
+                : 'Lo que ya está en la ficha. Confírmalo con el tutor o edita lo que cambió.'}
             </Text>
           </View>
-          {records.length ? <VButton size="sm" variant={form.remoteOpen ? 'ghost' : 'secondary'} onPress={() => set('remoteOpen', !form.remoteOpen)}>{form.remoteOpen ? 'No actualizar' : 'Actualizar'}</VButton> : null}
+          {records.length ? (
+            <View style={styles.remoteActions}>
+              {form.remoteOpen ? (
+                <VButton size="sm" variant="ghost" onPress={() => setForm((f) => (f ? { ...f, remoteOpen: false, remote: remoteFromPet(pet) } : f))}>Descartar cambios</VButton>
+              ) : (
+                <>
+                  <VButton size="sm" variant={form.remoteReviewed ? 'filled' : 'secondary'} icon={form.remoteReviewed ? <Check size={16} color={onPrimaryText.default} /> : undefined}
+                    onPress={() => set('remoteReviewed', !form.remoteReviewed)} accessibilityLabel={form.remoteReviewed ? 'Antecedentes sin cambios, confirmado. Pulsa para deshacer' : 'Confirmar antecedentes sin cambios'}>
+                    Sin cambios
+                  </VButton>
+                  <VButton size="sm" variant="secondary" onPress={() => setForm((f) => (f ? { ...f, remoteOpen: true, remoteReviewed: false } : f))}>Editar</VButton>
+                </>
+              )}
+            </View>
+          ) : null}
         </View>
         <TutorAnamnesisLink
           petId={pet.id}
@@ -544,9 +585,7 @@ export default function ConsultaScreen() {
         {form.remoteOpen ? (
           <RemoteAnamnesis pet={pet} value={form.remote} onChange={(v) => set('remote', v)} vaccinations={vaccinations} />
         ) : (
-          <Text style={[styles.body, { color: remoteSummary(form.remote, pet.species) ? colors.text : colors.textSecondary }]}>
-            {remoteSummary(form.remote, pet.species) || 'Sin antecedentes registrados. Pulsa «Actualizar» para completarlos.'}
-          </Text>
+          <RemoteOverview pet={pet} value={form.remote} vaccinations={vaccinations} reviewedAt={remoteHistory.reviewedAt} legacy={remoteHistory.legacy} />
         )}
       </View>
       </>)}
@@ -738,6 +777,7 @@ const styles = StyleSheet.create({
   note: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: SPACING.sm, padding: SPACING.md, borderRadius: RADIUS.md, marginBottom: SPACING.md },
   panel: { padding: SPACING.xl, borderRadius: RADIUS.md, marginBottom: SPACING.md },
   panelTitle: { fontSize: 24, lineHeight: 28, fontWeight: '600', marginBottom: SPACING.lg },
+  remoteActions: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   panelHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: SPACING.md, marginBottom: SPACING.md },
   inlineTitle: { marginBottom: SPACING.xs },
   segment: { marginBottom: SPACING.lg },

@@ -10,7 +10,7 @@ export interface ExamForm {
   nodes: Record<NodeKey, string | null>;
   oral: string; ausc: string; abdomen: string; postura: string;
   problems: string;
-  next: { evolucion: string; animo: string | null; apetito: string | null; vomito: string; diarrea: string; heces: string; orina: string; tos: string; farmacos: string };
+  next: { evolucion: string; animo: string | null; apetito: string | null; agua: string | null; vomito: string; diarrea: string; heces: string; orina: string; tos: string; farmacos: string };
 }
 
 export const emptyExam = (): ExamForm => ({
@@ -18,7 +18,7 @@ export const emptyExam = (): ExamForm => ({
   estado: null, bcs: null, estres: null, pelaje: null,
   nodes: { submandibular: null, preescapular: null, popliteo: null, mamario: null },
   oral: '', ausc: '', abdomen: '', postura: '', problems: '',
-  next: { evolucion: '', animo: null, apetito: null, vomito: '', diarrea: '', heces: '', orina: '', tos: '', farmacos: '' },
+  next: { evolucion: '', animo: null, apetito: null, agua: null, vomito: '', diarrea: '', heces: '', orina: '', tos: '', farmacos: '' },
 });
 
 export const NODE_LABEL: Record<NodeKey, string> = { submandibular: 'Submandibulares', preescapular: 'Preescapulares', popliteo: 'Poplíteos', mamario: 'Mamarios' };
@@ -37,6 +37,7 @@ export const ESTRES = opts('0', '1', '2', '3', '4', '5');
 export const PELAJE = opts('Brillante', 'Opaco', 'Hirsuto', 'Alopecia localizada', 'Alopecia generalizada');
 export const ANIMO = opts('Normal', 'Decaído', 'Letárgico', 'Agresivo');
 export const APETITO = opts('Normal', 'Aumentado', 'Disminuido', 'Anorexia');
+export const AGUA = opts('Normal', 'Aumentado', 'Disminuido', 'No bebe');
 
 const RANGES = { fc: [20, 300, 'FC'], fr: [4, 150, 'FR'], temp: [30, 45, 'T°'], tllc: [0, 10, 'TLLC'] } as const;
 const num = (s: string) => parseFloat(s.trim().replace(',', '.'));
@@ -69,7 +70,7 @@ export function examToDetails(e: ExamForm) {
 }
 
 export function nextToDetails(n: ExamForm['next']) {
-  const t = filled({ evolucion: n.evolucion.trim(), animo: n.animo, apetito: n.apetito, vomito: n.vomito.trim(), diarrea: n.diarrea.trim(), heces: n.heces.trim(), orina: n.orina.trim(), tos: n.tos.trim(), farmacos: n.farmacos.trim() });
+  const t = filled({ evolucion: n.evolucion.trim(), animo: n.animo, apetito: n.apetito, agua: n.agua, vomito: n.vomito.trim(), diarrea: n.diarrea.trim(), heces: n.heces.trim(), orina: n.orina.trim(), tos: n.tos.trim(), farmacos: n.farmacos.trim() });
   return Object.keys(t).length ? t : undefined;
 }
 
@@ -106,7 +107,7 @@ export function examLines(ex: any): Array<[string, string]> {
   return rows.filter((r): r is [string, string] => !!r[1]);
 }
 
-const NEXT_LABEL: Record<string, string> = { evolucion: 'Evolución', animo: 'Ánimo', apetito: 'Apetito', vomito: 'Vómito o regurgitación', diarrea: 'Diarrea', heces: 'Heces', orina: 'Orina', tos: 'Tos o estornudos', farmacos: 'Fármacos recibidos' };
+const NEXT_LABEL: Record<string, string> = { evolucion: 'Evolución', animo: 'Ánimo', apetito: 'Apetito', agua: 'Consumo de agua', vomito: 'Vómito o regurgitación', diarrea: 'Diarrea', heces: 'Heces', orina: 'Orina', tos: 'Tos o estornudos', farmacos: 'Fármacos recibidos' };
 export function nextLines(n: any): Array<[string, string]> {
   return Object.entries(n || {}).filter(([, v]) => v).map(([k, v]) => [NEXT_LABEL[k] || k, String(v)] as [string, string]);
 }

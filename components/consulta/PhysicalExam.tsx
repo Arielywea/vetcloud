@@ -6,7 +6,7 @@ import VInput from '../ui/Input';
 import Segmented from '../ui/Segmented';
 import { SPACING, TYPOGRAPHY } from '../../constants/tokens';
 import {
-  ExamForm, NodeKey, NODE_LABEL, NODE_OPTIONS, MUCOSAS, PLIEGUE, DESHID, ESTADO, BCS, ESTRES, PELAJE, ANIMO, APETITO,
+  ExamForm, NodeKey, NODE_LABEL, NODE_OPTIONS, MUCOSAS, PLIEGUE, DESHID, ESTADO, BCS, ESTRES, PELAJE, ANIMO, APETITO, AGUA,
 } from '../../utils/physicalExam';
 
 interface Props { exam: ExamForm; onChange: (e: ExamForm) => void }
@@ -65,6 +65,7 @@ export function NextAnamnesis({ exam, onChange }: Props) {
       <VInput label="Evolución" value={n.evolucion} onChangeText={(v) => set('evolucion', v)} placeholder="Hace cuánto comenzaron los primeros síntomas" />
       <Pick label="Estado de ánimo" options={ANIMO} value={n.animo} onChange={(v) => set('animo', v)} />
       <Pick label="Apetito" options={APETITO} value={n.apetito} onChange={(v) => set('apetito', v)} />
+      <Pick label="Consumo de agua" options={AGUA} value={n.agua} onChange={(v) => set('agua', v)} />
       <View style={styles.cells}>
         {short('Vómito o regurgitación', 'vomito')}
         {short('Diarrea', 'diarrea')}

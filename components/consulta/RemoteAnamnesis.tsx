@@ -9,7 +9,7 @@ import VButton from '../ui/Button';
 import Segmented from '../ui/Segmented';
 import { SPACING, TYPOGRAPHY } from '../../constants/tokens';
 import { DEWORMING, doseStatus, formatDay, planFor } from '../../utils/vaccinePlan';
-import { monthsAgoInput } from '../../utils/date';
+import { formatDmy, monthsAgoInput } from '../../utils/date';
 
 // "The tutor does not remember": a month/year estimate, filled in one tap
 const AGO = [{ label: '3 meses', months: 3 }, { label: '6 meses', months: 6 }, { label: '1 año', months: 12 }, { label: '2 años', months: 24 }];
@@ -122,13 +122,13 @@ export function remoteToPetPatch(r: RemoteForm, pet: DirectusPet): Record<string
   };
 }
 
-/** One readable block, kept in the visit (and shown in the chart's history) */
-export function remoteSummary(r: RemoteForm, species: DirectusPet['species']): string {
-  const lines = [
+/** Every antecedent as [label, text] in reading order, empty ones included (for summaries and diffs) */
+export function remoteFields(r: RemoteForm, species: DirectusPet['species']): Array<[string, string]> {
+  return [
     ['Procedencia', [r.origin, (r.originAge || '').trim() ? `llegó con ${(r.originAge || '').trim()}` : null].filter(Boolean).join(' · ')],
     ['Test VIF/ViLeF', species === 'cat' ? (r.retroviral || '').trim() : ''],
+    ['Alimentación', [r.diet, r.dietDetail.trim(), r.feedings.trim() ? `${r.feedings.trim()} al día` : null].filter(Boolean).join(' · ')],
     ['Consumo de agua', r.water || ''],
-    ['Alimentación', [r.diet, r.dietDetail.trim(), r.feedings.trim()].filter(Boolean).join(' · ')],
     ['Ambiente', [r.housing === 'Depto' ? 'Departamento' : r.housing, r.outdoor, species === 'cat' && r.litter.trim() ? `areneros: ${r.litter.trim()}` : null].filter(Boolean).join(' · ')],
     ['Convive con', r.companions.trim()],
     ['Enfermedades previas', [...r.chronic, ...list(r.chronicOther)].join(', ')],
@@ -138,7 +138,72 @@ export function remoteSummary(r: RemoteForm, species: DirectusPet['species']): s
     ['Comportamiento', r.temperament.join(', ')],
     ['Último celo', r.lastHeat.trim()],
   ];
-  return lines.filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join('\n');
+}
+
+/** One readable block, kept in the visit (and shown in the chart's history) */
+export function remoteSummary(r: RemoteForm, species: DirectusPet['species']): string {
+  return remoteFields(r, species).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join('\n');
+}
+
+/** What changed between the ficha and the form, one readable line per antecedent ("Medicación actual: sin dato → meloxicam") */
+export function remoteChanges(before: RemoteForm, after: RemoteForm, species: DirectusPet['species']): string[] {
+  const old = new Map(remoteFields(before, species));
+  return remoteFields(after, species)
+    .filter(([k, v]) => (old.get(k) || '') !== v)
+    .map(([k, v]) => `${k}: ${old.get(k) || 'sin dato'} → ${v || 'sin dato'}`);
+}
+
+/** Antecedents that usually change between visits: worth a question to the tutor even when nothing else changed */
+const VOLATILE = new Set(['Alimentación', 'Consumo de agua', 'Convive con', 'Medicación actual', 'Último celo']);
+
+interface RemoteOverviewProps {
+  pet: DirectusPet;
+  value: RemoteForm;
+  vaccinations: Vaccination[];
+  /** Date (ISO) of the last visit that reviewed the antecedents */
+  reviewedAt?: string | null;
+  /** Text-only antecedents of an older visit, shown when the ficha has none */
+  legacy?: { date: string; text: string } | null;
+}
+
+/** The antecedents at a glance, for a returning patient: grouped, dated, with what to confirm marked */
+export function RemoteOverview({ pet, value, vaccinations, reviewedAt, legacy }: RemoteOverviewProps) {
+  const { colors } = useTheme();
+  const { isMobile } = useResponsive();
+  const rows = remoteFields(value, pet.species).filter(([k, v]) => v || VOLATILE.has(k) && (k !== 'Último celo' || !!value.lastHeat.trim()));
+  const doses = [
+    ...planFor(pet.species).map((p) => ({ label: p.label, s: doseStatus(vaccinations, (v) => v.kind === 'vacuna' && v.plan_item === p.item, p.months) })),
+    ...DEWORMING.map((d) => ({ label: d.label, s: doseStatus(vaccinations, (v) => v.kind === d.kind, d.months) })),
+  ].map(({ label, s }) => `${label}: ${s.last ? `${formatDay(s.last.applied_at, { month: '2-digit', year: 'numeric' })}${s.last.date_estimated ? ' (aprox.)' : ''}` : 'sin registro'}`);
+  const filled = rows.some(([, v]) => v);
+
+  if (!filled && legacy) {
+    return (
+      <View>
+        <Text style={[styles.note, { color: colors.textSecondary }]}>
+          Antecedentes anotados como texto en la consulta del {formatDmy(legacy.date)}; aún no están en la ficha. Pulsa «Editar» para completarlos.
+        </Text>
+        <Text style={[styles.body, styles.legacy, { color: colors.text }]}>{legacy.text}</Text>
+      </View>
+    );
+  }
+  if (!filled) {
+    return <Text style={[styles.body, { color: colors.textSecondary }]}>Sin antecedentes registrados. Pulsa «Editar» para completarlos.</Text>;
+  }
+  return (
+    <View>
+      {reviewedAt ? <Text style={[styles.note, { color: colors.textSecondary }]}>Revisados por última vez el {formatDmy(reviewedAt)}.</Text> : null}
+      {[...rows, ['Vacunas y desparasitación', doses.join(' · ')] as [string, string]].map(([k, v]) => (
+        <View key={k} style={[styles.row, isMobile && styles.rowMobile]}>
+          <View style={!isMobile && styles.rowLabel}>
+            <Text style={[styles.label, styles.rowLabelText, { color: colors.textSecondary }]}>{k}</Text>
+            {VOLATILE.has(k) ? <Text style={[styles.confirm, { color: colors.primary }]}>Confirmar con el tutor</Text> : null}
+          </View>
+          <Text style={[styles.body, styles.rowValue, { color: v ? colors.text : colors.textSecondary }]}>{v || 'Sin dato'}</Text>
+        </View>
+      ))}
+    </View>
+  );
 }
 
 /** A blank form: what the tutor starts from on the public page */
@@ -306,4 +371,11 @@ const styles = StyleSheet.create({
   half: { flexGrow: 1, flexBasis: 220 },
   third: { flexGrow: 1, flexBasis: 170 },
   recorded: { marginBottom: SPACING.lg, minHeight: 64 },
+  row: { flexDirection: 'row', gap: SPACING.xl, paddingVertical: SPACING.xs },
+  rowMobile: { flexDirection: 'column', gap: 2, paddingVertical: SPACING.sm },
+  rowLabel: { width: 168 },
+  rowLabelText: { marginBottom: 0 },
+  rowValue: { flex: 1, minWidth: 0, lineHeight: 22 },
+  confirm: { fontSize: TYPOGRAPHY.sizes.sm },
+  legacy: { lineHeight: 22 },
 });

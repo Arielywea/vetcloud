@@ -23,7 +23,7 @@ export default function RecordDetail({ record }: RecordDetailProps) {
   const { colors } = useTheme();
 
   const d = record.details || {};
-  const hasSoapData = d.subjective || d.objective || d.assessment || d.plan || d.treatment || d.anamnesis_remota || d.exam || d.anamnesis_proxima;
+  const hasSoapData = d.subjective || d.objective || d.assessment || d.plan || d.treatment || d.anamnesis_remota || d.anamnesis_remota_cambios || d.anamnesis_remota_revisada || d.exam || d.anamnesis_proxima;
   const hasLegacyData = d.notes || d.anamnesis || d.hallazgos || d.hallazgos_examen_fisico || d.motivo_consulta;
 
   // The record form saves temperature/heart_rate/...; older records used temp/fc/fr/pa.
@@ -42,6 +42,12 @@ export default function RecordDetail({ record }: RecordDetailProps) {
     vs.spo2 != null ? { label: 'SpO₂', value: `${vs.spo2}%` } : null,
   ].filter(Boolean) as { label: string; value: string }[];
 
+  // A returning visit shows what changed in the antecedents (or that they were confirmed); the first one, the whole block
+  const remoteChanges: string[] = Array.isArray(d.anamnesis_remota_cambios) ? d.anamnesis_remota_cambios : [];
+  const remoteText = remoteChanges.length ? `Cambios en los antecedentes:\n${remoteChanges.join('\n')}`
+    : d.anamnesis_remota_revisada ? 'Antecedentes revisados con el tutor: sin cambios.'
+    : d.anamnesis_remota ? `Anamnesis remota:\n${d.anamnesis_remota}` : '';
+
   const buildSoapSections = (): SoapSection[] => {
     if (hasSoapData) {
       return [
@@ -49,7 +55,7 @@ export default function RecordDetail({ record }: RecordDetailProps) {
           label: 'Subjetivo',
           icon: 'account-heart-outline',
           color: colors.primary,
-          content: [d.subjective, d.anamnesis_remota && `Anamnesis remota:\n${d.anamnesis_remota}`, (nextLines(d.anamnesis_proxima).length || d.anamnesis) && `Anamnesis próxima:\n${[...nextLines(d.anamnesis_proxima).map(([k, v]) => `${k}: ${v}`), d.anamnesis].filter(Boolean).join('\n')}`].filter(Boolean).join('\n\n'),
+          content: [d.subjective, remoteText, (nextLines(d.anamnesis_proxima).length || d.anamnesis) && `Anamnesis próxima:\n${[...nextLines(d.anamnesis_proxima).map(([k, v]) => `${k}: ${v}`), d.anamnesis].filter(Boolean).join('\n')}`].filter(Boolean).join('\n\n'),
           fields: [
             ...(d.motivo_consulta ? [{ label: 'Motivo', value: d.motivo_consulta }] : []),
             ...(d.edited_at ? [{ label: 'Editada', value: new Date(d.edited_at).toLocaleDateString('es-CL') }] : []),
