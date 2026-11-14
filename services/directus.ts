@@ -730,6 +730,7 @@ export const api = {
     create: (data: any) => apiPost('/items/hospitalizations', data),
     update: (id: string, data: any) => apiPatch(`/items/hospitalizations/${id}`, data),
     delete: (id: string) => apiDelete(`/items/hospitalizations/${id}`),
+    board: () => apiGet('/items/hospitalizations/board') as Promise<{ treatments: HospitalTreatment[]; tasks: HospitalTask[] }>,
     sheet: (id: string) => apiGet(`/items/hospitalizations/${id}/sheet`) as Promise<HospitalSheet>,
     addTreatment: (id: string, data: Partial<HospitalTreatment>) => apiPost(`/items/hospitalizations/${id}/treatments`, data) as Promise<HospitalTreatment>,
     updateTreatment: (treatmentId: string, data: Partial<HospitalTreatment>) => apiPatch(`/items/hospital_treatments/${treatmentId}`, data) as Promise<HospitalTreatment>,

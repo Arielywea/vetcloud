@@ -18,6 +18,7 @@ import { useToast } from '../../components/ui/VToast';
 import { useConfirm } from '../../components/ui/ConfirmDialog';
 import { petAlerts } from '../../components/pet/ChartHeader';
 import { SPACING, RADIUS, TYPOGRAPHY, alpha } from '../../constants/tokens';
+import { HOSPITAL_TEMPLATES, HospitalTemplate } from '../../constants/hospitalTemplates';
 import { calculateAge } from '../../utils/age';
 import { speciesLabel } from '../../utils/identity';
 import { Slot, SlotState, KIND_LABEL, buildSlots, floorToHour, frequencyLabel, hourLabel, sortTreatments, startOfDay } from '../../utils/hospitalSheet';
@@ -77,6 +78,13 @@ export default function HospitalSheetScreen() {
   // Vitals set: asks when to take them before adding the three rows
   const [vitalsOpen, setVitalsOpen] = useState(false);
   const [vitalsSchedule, setVitalsSchedule] = useState<Frequency>('4');
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  // A treatment opened from its name: rename it, change when it is due, or suspend it
+  const [editing, setEditing] = useState<HospitalTreatment | null>(null);
+  const [eName, setEName] = useState('');
+  const [eInstructions, setEInstructions] = useState('');
+  const [eUnit, setEUnit] = useState('');
+  const [eSchedule, setESchedule] = useState<Frequency>('8');
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -224,12 +232,70 @@ export default function HospitalSheetScreen() {
     }
   };
 
+  const applyTemplate = async (tpl: HospitalTemplate) => {
+    if (!id) return;
+    setBusy(`tpl:${tpl.key}`);
+    try {
+      const start = startDate('now').toISOString();
+      const created: HospitalTreatment[] = [];
+      for (const r of tpl.rows) {
+        created.push(await api.hospitalizations.addTreatment(id, { kind: r.kind, name: r.name, unit: r.unit || null, instructions: r.instructions || null, frequency_hours: r.every ?? null, start_at: start }));
+      }
+      setSheet((s) => (s ? { ...s, treatments: [...s.treatments, ...created] } : s));
+      setTemplatesOpen(false);
+      toast.success(`Plantilla "${tpl.label}" agregada: revisa fármacos, dosis y horarios`);
+    } catch (e: any) {
+      toast.error(e?.message || 'No se pudo aplicar la plantilla');
+      load(true);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const openEdit = (t: HospitalTreatment) => {
+    setEditing(t); setEName(t.name); setEInstructions(t.instructions || ''); setEUnit(t.unit || ''); setFormError(null);
+    setHours(t.day_hours?.length ? [...t.day_hours] : DEFAULT_HOURS);
+    const f = t.day_hours?.length ? 'hours' : t.frequency_hours ? String(t.frequency_hours) : 'once';
+    setESchedule(FREQUENCIES.some((o) => o.value === f) ? (f as Frequency) : '8');
+  };
+  const saveEdit = async () => {
+    if (!editing || !id || !sheet) return;
+    if (!eName.trim()) { setFormError('Escribe el nombre del tratamiento'); return; }
+    if (eSchedule === 'hours' && !hours.length) { setFormError('Elige al menos una hora'); return; }
+    setSaving(true); setFormError(null);
+    try {
+      const base = { name: eName.trim(), instructions: eInstructions.trim() || null, unit: editing.kind === 'constante' ? eUnit.trim() || null : null };
+      const schedule = scheduleOf(eSchedule);
+      const sameSchedule = (schedule.frequency_hours ?? null) === (editing.frequency_hours ?? null)
+        && (schedule.day_hours || []).join() === (editing.day_hours || []).join();
+      const replace = (u: HospitalTreatment) => setSheet((s) => (s ? { ...s, treatments: s.treatments.map((x) => (x.id === u.id ? u : x)) } : s));
+      if (sameSchedule) {
+        replace(await api.hospitalizations.updateTreatment(editing.id, base));
+      } else if (!sheet.tasks.some((task) => task.treatment_id === editing.id)) {
+        // Nothing recorded yet: the row simply takes the new schedule from this hour on
+        replace(await api.hospitalizations.updateTreatment(editing.id, { ...base, ...schedule, start_at: startDate('now').toISOString() }));
+      } else {
+        // What was already given stays on its own row; the new schedule starts a fresh one
+        replace(await api.hospitalizations.updateTreatment(editing.id, { discontinued_at: new Date().toISOString() }));
+        const created = await api.hospitalizations.addTreatment(id, { kind: editing.kind, ...base, ...schedule, start_at: startDate('now').toISOString() });
+        setSheet((s) => (s ? { ...s, treatments: [...s.treatments, created] } : s));
+      }
+      setEditing(null);
+    } catch (e: any) {
+      setFormError(e?.message || 'No se pudo guardar el tratamiento');
+      load(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const discontinue = async (t: HospitalTreatment) => {
     const ok = await confirm({ title: 'Suspender tratamiento', message: `"${t.name}" deja de programarse desde ahora. Lo ya registrado se conserva en la hoja.`, confirmLabel: 'Suspender', destructive: true });
     if (!ok) return;
     try {
       const updated = await api.hospitalizations.updateTreatment(t.id, { discontinued_at: new Date().toISOString() });
       setSheet((s) => (s ? { ...s, treatments: s.treatments.map((x) => (x.id === t.id ? updated : x)) } : s));
+      setEditing(null);
     } catch (e: any) { toast.error(e?.message || 'No se pudo suspender'); }
   };
 
@@ -330,6 +396,7 @@ export default function HospitalSheetScreen() {
         </View>
         {!closed ? (
           <View style={styles.actions}>
+            <VButton size="sm" variant="ghost" onPress={() => setTemplatesOpen(true)}>Plantillas</VButton>
             <VButton size="sm" variant="secondary" onPress={() => { setHours(DEFAULT_HOURS); setVitalsSchedule('4'); setFormError(null); setVitalsOpen(true); }}>Agregar constantes</VButton>
             <VButton onPress={() => { resetForm(); setAdding(true); }} icon={<Plus size={16} color={onAccentText.default} />}>Agregar tratamiento</VButton>
           </View>
@@ -358,8 +425,8 @@ export default function HospitalSheetScreen() {
               const off = !!t.discontinued_at;
               const firstOfKind = i === 0 || treatments[i - 1].kind !== t.kind;
               return (
-                <Pressable key={t.id} onPress={() => (off || closed ? undefined : discontinue(t))} disabled={off || closed} accessibilityRole="button"
-                  accessibilityLabel={`${t.name}, ${frequencyLabel(t)}${off ? ', suspendido' : '. Pulsa para suspender'}`}
+                <Pressable key={t.id} onPress={() => (off || closed ? undefined : openEdit(t))} disabled={off || closed} accessibilityRole="button"
+                  accessibilityLabel={`${t.name}, ${frequencyLabel(t)}${off ? ', suspendido' : '. Pulsa para editar o suspender'}`}
                   style={({ hovered }: any) => [styles.labelCell, { borderColor: colors.border, backgroundColor: hovered && !off && !closed ? colors.surfaceVariant : 'transparent' }]}>
                   {firstOfKind ? <Text style={[styles.kind, { color: colors.textSecondary }]}>{KIND_LABEL[t.kind]}</Text> : null}
                   <Text numberOfLines={1} style={[styles.rowName, { color: off ? colors.textLight : colors.text }, off && styles.struck]}>{t.name}</Text>
@@ -398,7 +465,7 @@ export default function HospitalSheetScreen() {
           <Text style={[styles.meta, { color: colors.textSecondary }]}>
             Borde fino: programado · Punto azul: toca ahora · Triángulo rojo: atrasado · Marca verde o valor: hecho · Guion: omitido
           </Text>
-          {!closed ? <Text style={[styles.meta, { color: colors.textSecondary }]}>Un toque marca hecho; mantén pulsado para anotar u omitir. Pulsa el nombre de un tratamiento para suspenderlo.</Text> : null}
+          {!closed ? <Text style={[styles.meta, { color: colors.textSecondary }]}>Un toque marca hecho; mantén pulsado para anotar u omitir. Pulsa el nombre de un tratamiento para editarlo o suspenderlo.</Text> : null}
         </View>
       ) : null}
 
@@ -429,6 +496,39 @@ export default function HospitalSheetScreen() {
         <Text style={[styles.meta, { color: colors.textSecondary }]}>
           {vitalsSchedule === 'hours' ? hoursSummary : `Desde las ${hourLabel(startDate('now'))}, cada ${vitalsSchedule} h, hasta suspender o dar el alta.`}
         </Text>
+      </FormSheet>
+
+      <FormSheet visible={templatesOpen} title="Plantillas" onClose={() => setTemplatesOpen(false)}>
+        <Text style={[styles.meta, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
+          Agregan las filas habituales de un cuadro, sin fármacos ni dosis: complétalos pulsando el nombre de cada fila.
+        </Text>
+        {HOSPITAL_TEMPLATES.map((tpl) => (
+          <View key={tpl.key} style={styles.template}>
+            <View style={styles.grow}>
+              <Text style={[styles.rowName, { color: colors.text }]}>{tpl.label}</Text>
+              <Text style={[styles.meta, { color: colors.textSecondary }]}>{`${tpl.rows.length} filas · ${tpl.description}`}</Text>
+            </View>
+            <VButton size="sm" variant="secondary" onPress={() => applyTemplate(tpl)} loading={busy === `tpl:${tpl.key}`} disabled={!!busy}>Agregar</VButton>
+          </View>
+        ))}
+      </FormSheet>
+
+      <FormSheet visible={!!editing} title="Editar tratamiento" onClose={() => setEditing(null)} onSubmit={saveEdit} submitting={saving} error={formError}>
+        {editing ? (
+          <>
+            <Text style={[styles.meta, { color: colors.textSecondary, marginBottom: SPACING.md }]}>{KIND_LABEL[editing.kind]}</Text>
+            <VInput label="Nombre" value={eName} onChangeText={setEName} />
+            {editing.kind === 'constante' ? <VInput label="Unidad" value={eUnit} onChangeText={setEUnit} containerStyle={styles.narrow} /> : null}
+            <VInput label="Indicaciones" value={eInstructions} onChangeText={setEInstructions} multiline placeholder="Fármaco, dosis, vía, dilución" />
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Frecuencia</Text>
+            <Segmented label="Frecuencia" size="sm" options={FREQUENCIES} value={eSchedule} onChange={setESchedule} style={styles.segment} />
+            {eSchedule === 'hours' ? hourPicker : null}
+            <Text style={[styles.meta, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
+              Si cambias la frecuencia, el horario nuevo rige desde las {hourLabel(startDate('now'))}. Lo ya registrado se conserva.
+            </Text>
+            <VButton size="sm" variant="ghost" color={colors.error} onPress={() => discontinue(editing)} style={{ alignSelf: 'flex-start' }}>Suspender tratamiento</VButton>
+          </>
+        ) : null}
       </FormSheet>
 
       <FormSheet visible={!!open} title={open ? `${open.treatment.name} · ${hourLabel(open.at)}` : ''} onClose={() => setOpen(null)}
@@ -493,6 +593,7 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: TYPOGRAPHY.sizes.sm, marginBottom: SPACING.sm },
   segment: { marginBottom: SPACING.lg },
   narrow: { maxWidth: 220 },
+  template: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginBottom: SPACING.lg },
   hourPicker: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginBottom: SPACING.md },
   hourBtn: { minWidth: 44 },
 });

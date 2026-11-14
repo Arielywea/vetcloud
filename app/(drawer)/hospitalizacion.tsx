@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
 import { BedDouble, Clock, Stethoscope, CheckCircle, Plus, AlertTriangle, ClipboardList } from 'lucide-react-native';
@@ -6,7 +6,9 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import PageHeader from '../../components/ui/PageHeader';
 import { SPACING, TYPOGRAPHY, alpha } from '../../constants/tokens';
-import { useHospitalizations, usePets } from '../../hooks/useDirectus';
+import { useHospitalizations, usePets, useRefreshOn } from '../../hooks/useDirectus';
+import { api, HospitalTask, HospitalTreatment } from '../../services/directus';
+import { buildSlots, hourLabel } from '../../utils/hospitalSheet';
 import VCard from '../../components/ui/Card';
 import VButton from '../../components/ui/Button';
 import VInput from '../../components/ui/Input';
@@ -55,10 +57,33 @@ export default function HospitalizacionScreen() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // The board: what each active sheet has late, due this hour and coming next
+  const [board, setBoard] = useState<{ treatments: HospitalTreatment[]; tasks: HospitalTask[] }>({ treatments: [], tasks: [] });
+  const [now, setNow] = useState(() => new Date());
+  const loadBoard = useCallback(() => { api.hospitalizations.board().then(setBoard).catch(() => { /* the list still works without it */ }); }, []);
+  useEffect(() => { loadBoard(); }, [loadBoard]);
+  useRefreshOn(['hospitalizations', 'hospital_treatments', 'hospital_tasks'], loadBoard);
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(t);
+  }, []);
+  const attention = useMemo(() => {
+    const map = new Map<string, { rows: number; late: number; due: number; next: Date | null }>();
+    hospitalizations.filter((a) => a.status !== 'discharged').forEach((a) => {
+      const rows = board.treatments.filter((t) => t.hospitalization_id === a.id);
+      const slots = buildSlots(rows, board.tasks, new Date(a.admission_date), new Date(now.getTime() + 86400000), null, now);
+      const pending = slots.filter((s) => s.state === 'pending').sort((x, y) => x.at.getTime() - y.at.getTime());
+      map.set(a.id, { rows: rows.length, late: slots.filter((s) => s.state === 'late').length, due: slots.filter((s) => s.state === 'due').length, next: pending[0]?.at || null });
+    });
+    return map;
+  }, [hospitalizations, board, now]);
+
   const filtered = useMemo(() => {
-    if (filter === 'todos') return hospitalizations.filter(a => a.status !== 'discharged');
-    return hospitalizations.filter(a => a.status === filter);
-  }, [hospitalizations, filter]);
+    const list = filter === 'todos' ? hospitalizations.filter(a => a.status !== 'discharged') : hospitalizations.filter(a => a.status === filter);
+    // Whoever is waiting for something goes first
+    const weight = (id: string) => { const a = attention.get(id); return a ? a.late * 1000 + a.due : 0; };
+    return [...list].sort((a, b) => weight(b.id) - weight(a.id));
+  }, [hospitalizations, filter, attention]);
 
   const resetForm = () => {
     setPetId(null); setReason(''); setStatus('internado'); setVeterinarian(''); setNotes(''); setFormError(null);
@@ -174,6 +199,24 @@ export default function HospitalizacionScreen() {
                   </Text>
                 </View>
                 {admission.notes ? <Text style={[styles.metaText, { color: colors.textSecondary }]}>{admission.notes}</Text> : null}
+                {(() => {
+                  const a = attention.get(admission.id);
+                  if (!a) return null;
+                  if (!a.rows) return <Text style={[styles.metaText, { color: colors.textSecondary }]}>Hoja de tratamientos vacía</Text>;
+                  const parts = [
+                    a.late ? `${a.late} ${a.late === 1 ? 'atrasado' : 'atrasados'}` : null,
+                    a.due ? `${a.due} para esta hora` : null,
+                    a.next ? `próximo a las ${hourLabel(a.next)}` : null,
+                  ].filter(Boolean);
+                  return (
+                    <View style={styles.metaRow}>
+                      {a.late ? <AlertTriangle size={14} color={colors.error} /> : null}
+                      <Text style={[styles.metaText, { color: a.late ? colors.error : colors.text, fontWeight: a.late || a.due ? '600' : '400' }]}>
+                        {parts.length ? parts.join(' · ') : 'Hoja al día'}
+                      </Text>
+                    </View>
+                  );
+                })()}
               </View>
 
               {admission.status === 'discharged' ? (

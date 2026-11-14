@@ -2687,6 +2687,29 @@ function parseDayHours(value) {
   return [...new Set(value)].sort((a, b) => a - b);
 }
 
+// Every active sheet at once, for the list of hospitalized patients: what is late and what comes next
+app.get('/items/hospitalizations/board', authMiddleware, async (req, res) => {
+  try {
+    const [treatments, tasks] = await Promise.all([
+      pool.query(
+        `SELECT tr.* FROM hospital_treatments tr JOIN hospitalizations h ON h.id = tr.hospitalization_id
+         WHERE tr.user_id = $1 AND h.status <> 'discharged' ORDER BY tr.sort_order, tr.created_at`,
+        [req.userId]
+      ),
+      pool.query(
+        `SELECT t.* FROM hospital_tasks t JOIN hospital_treatments tr ON tr.id = t.treatment_id
+         JOIN hospitalizations h ON h.id = tr.hospitalization_id
+         WHERE t.user_id = $1 AND h.status <> 'discharged'`,
+        [req.userId]
+      ),
+    ]);
+    res.json({ data: { treatments: treatments.rows, tasks: tasks.rows } });
+  } catch (error) {
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 app.get('/items/hospitalizations/:id/sheet', authMiddleware, async (req, res) => {
   try {
     const h = await pool.query(
@@ -2749,7 +2772,7 @@ app.post('/items/hospitalizations/:id/treatments', authMiddleware, async (req, r
 
 app.patch('/items/hospital_treatments/:id', authMiddleware, async (req, res) => {
   try {
-    const allowed = ['name', 'instructions', 'unit', 'frequency_hours', 'discontinued_at', 'day_hours'];
+    const allowed = ['name', 'instructions', 'unit', 'frequency_hours', 'discontinued_at', 'day_hours', 'start_at'];
     const safe = sanitizeColumns(allowed, req.body);
     if (safe.day_hours !== undefined) {
       const dayHours = parseDayHours(safe.day_hours);
@@ -2763,6 +2786,7 @@ app.patch('/items/hospital_treatments/:id', authMiddleware, async (req, res) => 
     const vErr = validateFields(safe, {
       frequency_hours: { type: 'number', integer: true, min: 1, max: 24, label: 'Frecuencia' },
       discontinued_at: { type: 'datetime', label: 'Fecha de suspensión' },
+      start_at: { type: 'datetime', required: true, label: 'Hora de inicio' },
     });
     if (vErr) return res.status(400).json({ error: vErr });
     if (safe.frequency_hours != null && !HOSPITAL_FREQUENCIES.includes(safe.frequency_hours)) {
