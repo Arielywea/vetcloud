@@ -31,6 +31,8 @@ function relativeTime(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
+  // A date still ahead (an appointment's start) is not "just now"
+  if (diffMs < -60000) return date.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' });
   const diffMin = Math.floor(diffMs / 60000);
   const diffHrs = Math.floor(diffMin / 60);
   const diffDays = Math.floor(diffHrs / 24);
@@ -198,8 +200,9 @@ export default function DashboardScreen() {
         iconColor: colors.info,
         iconBg: colors.info + '18',
         text: `Cita programada para "${apt.patient_name}"`,
-        time: relativeTime(apt.start_time),
-        sortDate: apt.start_time,
+        // When it was booked, not when it will happen: a future start sorted first and read "Ahora mismo"
+        time: relativeTime(apt.created_at || apt.start_time),
+        sortDate: apt.created_at || apt.start_time,
       });
     });
 

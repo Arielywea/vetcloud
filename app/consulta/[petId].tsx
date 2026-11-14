@@ -89,7 +89,7 @@ function formFromRecord(rec: ClinicalRecord, p: DirectusPet): Form {
   const dx: Array<{ id: string; name: string }> = Array.isArray(d.diagnoses) ? d.diagnoses : [];
   const names = dx.map((x) => x.name).join(', ');
   let dxText: string = d.assessment || '';
-  if (names && dxText.startsWith(names)) dxText = dxText.slice(names.length).replace(/^.s*/, '');
+  if (names && dxText.startsWith(names)) dxText = dxText.slice(names.length).replace(/^\.\s*/, '');
   return {
     type: rec.record_type === 'control' || rec.record_type === 'cirugia' ? rec.record_type : 'consulta',
     date: toLocalDateTimeInput(new Date(rec.date)), vet: rec.veterinarian || '',
@@ -530,7 +530,7 @@ export default function ConsultaScreen() {
       {restored ? (
         <View style={[styles.note, { backgroundColor: colors.surfaceVariant }]}>
           <Text style={[styles.body, { color: colors.text, flex: 1 }]}>Recuperamos el borrador que quedó sin cerrar en este equipo.</Text>
-          <VButton size="sm" variant="ghost" onPress={() => { saveDraft(pet.id, null); setRestored(false); setForm({ ...form, reason: '', findings: '', diagnosisText: '', diagnoses: [], plan: '', rx: '', vaccines: [], extras: [], weight: '' }); }}>Empezar de cero</VButton>
+          <VButton size="sm" variant="ghost" onPress={() => { saveDraft(pet.id, null); setRestored(false); setForm({ ...form, reason: '', anamnesis: '', findings: '', diagnosisText: '', diagnoses: [], plan: '', procedure: '', postop: '', rx: '', vaccines: [], extras: [], weight: '', controlDate: '', payAmount: '', payDescription: '', exam: emptyExam(), orders: emptySelection() }); }}>Empezar de cero</VButton>
         </View>
       ) : null}
 
@@ -715,7 +715,7 @@ export default function ConsultaScreen() {
             <View style={styles.chips}>
               {[7, 15, 30].map((days) => {
                 const d = new Date(); d.setDate(d.getDate() + days);
-                return <VButton key={days} size="sm" variant="secondary" onPress={() => set('controlDate', formatDmy(d.toISOString().slice(0, 10)))}>{`En ${days} días`}</VButton>;
+                return <VButton key={days} size="sm" variant="secondary" onPress={() => set('controlDate', formatDmy(toLocalDateKey(d)))}>{`En ${days} días`}</VButton>;
               })}
             </View>
             <View style={[styles.pair, { marginTop: SPACING.md }]}>

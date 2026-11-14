@@ -14,6 +14,7 @@ import VBadge from '../../components/ui/Badge';
 import VEmptyState from '../../components/ui/EmptyState';
 import VRefreshControl from '../../components/ui/VRefreshControl';
 import { SkeletonList } from '../../components/ui/Skeleton';
+import { useConfirm } from '../../components/ui/ConfirmDialog';
 import { toLocalDateTimeInput, parseLocalDateTime } from '../../utils/date';
 
 const TYPE_ICONS: Record<string, typeof Syringe> = { vacuna: Syringe, desparasitacion: Bug, cita: CalendarClock, post_operatorio: BriefcaseMedical, control: ClipboardCheck };
@@ -22,6 +23,7 @@ export default function RemindersScreen() {
   const { colors, onPrimaryText, onAccentText } = useTheme();
   const { reminders, loading, addReminder, autoGenerate, updateReminder, removeReminder, sendPending, refresh } = useReminders();
   const { pets } = usePets();
+  const { confirm } = useConfirm();
   const [filter, setFilter] = useState<'all' | 'pending' | 'sent' | 'cancelled'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAutoModal, setShowAutoModal] = useState(false);
@@ -72,6 +74,12 @@ export default function RemindersScreen() {
     try { const result = await sendPending(); const sent = (result as any)?.sent || 0; if (sent === 0) setErrorDialog('No hay recordatorios pendientes para enviar'); } catch { setErrorDialog('No se pudieron enviar los recordatorios'); } finally { setSaving(false); }
   };
 
+  const handleDelete = async (reminder: Reminder) => {
+    const ok = await confirm({ title: 'Eliminar recordatorio', message: `Se eliminará "${reminder.title}". Esta acción no se puede deshacer.`, confirmLabel: 'Eliminar', destructive: true });
+    if (!ok) return;
+    try { await removeReminder(reminder.id); } catch (e: any) { setErrorDialog(e?.message || 'No se pudo eliminar el recordatorio'); }
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     try { await refresh(); } finally { setRefreshing(false); }
@@ -117,7 +125,7 @@ export default function RemindersScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>{reminder.title}</Text>
                   <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {reminder.pet_name} — {reminder.species === 'dog' ? 'Canino' : 'Felino'}
+                    {reminder.pet_name} — {reminder.species === 'dog' ? 'Canino' : reminder.species === 'cat' ? 'Felino' : 'Otra especie'}
                   </Text>
                 </View>
                 <VBadge variant={reminder.status === 'pending' ? 'warning' : reminder.status === 'sent' ? 'success' : 'danger'}>
@@ -136,7 +144,7 @@ export default function RemindersScreen() {
                       <TouchableOpacity onPress={() => updateReminder(reminder.id, { status: 'cancelled' })} style={{ padding: 8 }} hitSlop={4} accessibilityRole="button" accessibilityLabel="Cancelar recordatorio"><X size={16} color={colors.warning} /></TouchableOpacity>
                     </>
                   )}
-                  <TouchableOpacity onPress={() => removeReminder(reminder.id)} style={{ padding: 8 }} hitSlop={4} accessibilityRole="button" accessibilityLabel="Eliminar recordatorio"><Trash2 size={16} color={colors.error} /></TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleDelete(reminder)} style={{ padding: 8 }} hitSlop={4} accessibilityRole="button" accessibilityLabel="Eliminar recordatorio"><Trash2 size={16} color={colors.error} /></TouchableOpacity>
                 </View>
               </View>
             </VCard>

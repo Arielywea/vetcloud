@@ -8,6 +8,7 @@ import { api, Appointment, ClinicalRecord, DirectusLabExam, Prescription, Vaccin
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
 import { calculateAge } from '../../utils/age';
+import { speciesLabel } from '../../utils/identity';
 import { SPACING, RADIUS, TYPOGRAPHY } from '../../constants/tokens';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import ChartHeader from '../../components/pet/ChartHeader';
@@ -149,7 +150,7 @@ export default function PetDetailScreen() {
     } catch (e: any) { setErrorDialog(e?.message || 'No se pudo guardar la receta'); } finally { setSaving(false); }
   };
 
-  const handleSendRxEmail = async (rx: Prescription) => { setEmailTarget(rx); setEmailRecipient(pet?.email || ''); setShowEmailModal(true); };
+  const handleSendRxEmail = async (rx: Prescription) => { setEmailTarget(rx); setEmailRecipient(tutorEmail || ''); setShowEmailModal(true); };
 
   const handleDownloadRecipePdf = (rx: Prescription) => {
     if (id) pdf(`/items/pets/${id}/prescriptions/${rx.id}/pdf`, `receta_${pet?.name || 'paciente'}_${new Date(rx.issued_at).toLocaleDateString('es-CL').replace(/\//g, '-')}.pdf`);
@@ -243,7 +244,7 @@ export default function PetDetailScreen() {
               <View style={styles.rxInfoCol}>
                 <Text style={[styles.rxInfoSectionTitle, { color: colors.primary }]}>Paciente</Text>
                 <Text style={[styles.rxInfoName, { color: colors.text }]}>{pet.name}</Text>
-                <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>{pet.species === 'dog' ? 'Canino' : 'Felino'} - {pet.breed || 'N/D'}</Text>
+                <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>{speciesLabel(pet)} - {pet.breed || 'N/D'}</Text>
                 <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>Edad: {calculateAge(pet.birth_date)}</Text>
               </View>
               <View style={styles.rxInfoCol}>
@@ -311,7 +312,7 @@ export default function PetDetailScreen() {
                   <View style={styles.rxInfoCol}>
                     <Text style={[styles.rxInfoSectionTitle, { color: colors.primary }]}>Paciente</Text>
                     <Text style={[styles.rxInfoName, { color: colors.text }]}>{pet.name}</Text>
-                    <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>{pet.species === 'dog' ? 'Canino' : 'Felino'} - {pet.breed || 'N/D'}</Text>
+                    <Text style={[styles.rxInfoDetail, { color: colors.textSecondary }]}>{speciesLabel(pet)} - {pet.breed || 'N/D'}</Text>
                   </View>
                   <View style={styles.rxInfoCol}>
                     <Text style={[styles.rxInfoSectionTitle, { color: colors.primary }]}>Tutor</Text>
@@ -324,9 +325,9 @@ export default function PetDetailScreen() {
                 <View style={[styles.emailPreviewCard, { backgroundColor: colors.background, borderColor: colors.border }]}><Text style={{ color: colors.text }}>{emailTarget.prescription_body}</Text></View>
                 <TextInput label="Correo del destinatario" value={emailRecipient} onChangeText={setEmailRecipient} mode="outlined" keyboardType="email-address" style={styles.rxInput} left={<TextInput.Icon icon="email" />} />
                 {/* Sending elsewhere is allowed (a family member) but should be a conscious choice */}
-                {!!emailRecipient.trim() && emailRecipient.trim().toLowerCase() !== String(pet.email || '').trim().toLowerCase() && (
+                {!!emailRecipient.trim() && emailRecipient.trim().toLowerCase() !== String(tutorEmail || '').trim().toLowerCase() && (
                   <Text accessibilityRole="alert" style={[styles.emailWarning, { color: colors.warning }]}>
-                    {pet.email ? `No es el correo registrado del tutor (${pet.email}).` : 'El tutor no tiene correo registrado.'} Revisa la dirección antes de enviar.
+                    {tutorEmail ? `No es el correo registrado del tutor (${tutorEmail}).` : pet.owner_contact_revoked_at || pet.owner_anonymized_at ? 'El tutor pidió no ser contactado.' : 'El tutor no tiene correo registrado.'} Revisa la dirección antes de enviar.
                   </Text>
                 )}
                 <View style={styles.rxActionRow}>

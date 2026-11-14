@@ -91,7 +91,7 @@ export default function DiseasesScreen() {
     else if (sort === 'clinic') rows = [...rows].sort((a, b) => (seen[b.id] || 0) - (seen[a.id] || 0) || (a.chile_rank ?? 9999) - (b.chile_rank ?? 9999));
     else if (sort === 'severity') rows = [...rows].sort((a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity) || (a.chile_rank ?? 9999) - (b.chile_rank ?? 9999));
     return rows;
-  }, [bySpecies, query, urgent, zoonotic, favoritesOnly, young, categories, sort, isFavorite]);
+  }, [bySpecies, query, urgent, zoonotic, favoritesOnly, young, categories, sort, isFavorite, seen]);
 
   // Grouped by how common it is in Chile; until the catalog is classified, one plain list
   const sections = useMemo(() => {
