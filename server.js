@@ -2678,6 +2678,14 @@ app.delete('/items/hospitalizations/:id', authMiddleware, async (req, res) => {
 // frequency_hours; only what actually happened is stored (migration 035).
 const HOSPITAL_TREATMENT_KINDS = ['medicacion', 'fluidos', 'constante', 'alimentacion', 'cuidado'];
 const HOSPITAL_FREQUENCIES = [1, 2, 3, 4, 6, 8, 12, 24];
+// Fixed hours of the day (0-23) for a treatment. Returns a sorted array without repeats, null for
+// empty, or undefined if any value is not a whole hour.
+function parseDayHours(value) {
+  if (value === null || value === undefined || (Array.isArray(value) && value.length === 0)) return null;
+  if (!Array.isArray(value) || value.length > 24) return undefined;
+  if (!value.every((h) => Number.isInteger(h) && h >= 0 && h <= 23)) return undefined;
+  return [...new Set(value)].sort((a, b) => a - b);
+}
 
 app.get('/items/hospitalizations/:id/sheet', authMiddleware, async (req, res) => {
   try {
@@ -2716,18 +2724,21 @@ app.post('/items/hospitalizations/:id/treatments', authMiddleware, async (req, r
     if (frequency === undefined || (frequency !== null && !HOSPITAL_FREQUENCIES.includes(frequency))) {
       return res.status(400).json({ error: 'La frecuencia debe ser cada 1, 2, 3, 4, 6, 8, 12 o 24 horas' });
     }
+    const dayHours = parseDayHours(b.day_hours);
+    if (dayHours === undefined) return res.status(400).json({ error: 'Las horas fijas deben ser horas del día entre 0 y 23' });
+    if (dayHours && frequency !== null) return res.status(400).json({ error: 'Elige una frecuencia o unas horas fijas, no ambas' });
     const startAt = parseDateTimeInput(b.start_at);
     if (startAt === undefined) return res.status(400).json({ error: 'Hora de inicio inválida' });
     const hosp = await pool.query('SELECT status FROM hospitalizations WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
     if (!hosp.rows.length) return res.status(404).json({ error: 'No se encontró la hospitalización' });
     if (hosp.rows[0].status === 'discharged') return res.status(400).json({ error: 'El paciente ya fue dado de alta: la hoja está cerrada' });
     const result = await pool.query(
-      `INSERT INTO hospital_treatments (hospitalization_id, user_id, organization_id, kind, name, instructions, unit, frequency_hours, start_at, sort_order)
+      `INSERT INTO hospital_treatments (hospitalization_id, user_id, organization_id, kind, name, instructions, unit, frequency_hours, start_at, sort_order, day_hours)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9::timestamptz, now()),
-               (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM hospital_treatments WHERE hospitalization_id = $1))
+               (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM hospital_treatments WHERE hospitalization_id = $1), $10::smallint[])
        RETURNING *`,
       [req.params.id, req.userId, req.organizationId || null, kind, name,
-       String(b.instructions || '').trim().slice(0, 2000) || null, String(b.unit || '').trim().slice(0, 20) || null, frequency, startAt]
+       String(b.instructions || '').trim().slice(0, 2000) || null, String(b.unit || '').trim().slice(0, 20) || null, frequency, startAt, dayHours]
     );
     res.status(201).json({ data: result.rows[0] });
   } catch (error) {
@@ -2738,8 +2749,17 @@ app.post('/items/hospitalizations/:id/treatments', authMiddleware, async (req, r
 
 app.patch('/items/hospital_treatments/:id', authMiddleware, async (req, res) => {
   try {
-    const allowed = ['name', 'instructions', 'unit', 'frequency_hours', 'discontinued_at'];
+    const allowed = ['name', 'instructions', 'unit', 'frequency_hours', 'discontinued_at', 'day_hours'];
     const safe = sanitizeColumns(allowed, req.body);
+    if (safe.day_hours !== undefined) {
+      const dayHours = parseDayHours(safe.day_hours);
+      if (dayHours === undefined) return res.status(400).json({ error: 'Las horas fijas deben ser horas del día entre 0 y 23' });
+      // As a Postgres array literal: buildSet would store a JS array as JSON text. Fixed hours replace the interval
+      safe.day_hours = dayHours ? `{${dayHours.join(',')}}` : null;
+      if (dayHours) safe.frequency_hours = null;
+    } else if (safe.frequency_hours != null) {
+      safe.day_hours = null;
+    }
     const vErr = validateFields(safe, {
       frequency_hours: { type: 'number', integer: true, min: 1, max: 24, label: 'Frecuencia' },
       discontinued_at: { type: 'datetime', label: 'Fecha de suspensión' },

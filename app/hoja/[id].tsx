@@ -33,8 +33,12 @@ const KINDS = [
 const FREQUENCIES = [
   { value: 'once', label: 'Una vez' }, { value: '1', label: '1 h' }, { value: '2', label: '2 h' }, { value: '4', label: '4 h' },
   { value: '6', label: '6 h' }, { value: '8', label: '8 h' }, { value: '12', label: '12 h' }, { value: '24', label: '24 h' },
+  { value: 'hours', label: 'Horas fijas' },
 ] as const;
 type Frequency = (typeof FREQUENCIES)[number]['value'];
+// Vitals repeat: an interval, or the hours the clinic actually does its rounds
+const VITALS_SCHEDULES = FREQUENCIES.filter((f) => f.value !== 'once' && f.value !== '24');
+const DEFAULT_HOURS = [8, 14, 20];
 const STARTS = [{ value: 'now', label: 'Esta hora' }, { value: 'next', label: 'La próxima hora' }] as const;
 // The usual monitoring set, added in one tap
 const VITALS = [
@@ -69,6 +73,10 @@ export default function HospitalSheetScreen() {
   const [unit, setUnit] = useState('');
   const [frequency, setFrequency] = useState<Frequency>('8');
   const [startAt, setStartAt] = useState<'now' | 'next'>('now');
+  const [hours, setHours] = useState<number[]>(DEFAULT_HOURS);
+  // Vitals set: asks when to take them before adding the three rows
+  const [vitalsOpen, setVitalsOpen] = useState(false);
+  const [vitalsSchedule, setVitalsSchedule] = useState<Frequency>('4');
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -171,17 +179,21 @@ export default function HospitalSheetScreen() {
     } catch (e: any) { setSlotError(e?.message || 'No se pudo deshacer'); }
   };
 
-  const resetForm = () => { setKind('medicacion'); setName(''); setInstructions(''); setUnit(''); setFrequency('8'); setStartAt('now'); setFormError(null); };
+  const resetForm = () => { setKind('medicacion'); setName(''); setInstructions(''); setUnit(''); setFrequency('8'); setStartAt('now'); setHours(DEFAULT_HOURS); setFormError(null); };
+  const toggleHour = (h: number) => setHours((v) => (v.includes(h) ? v.filter((x) => x !== h) : [...v, h].sort((a, b) => a - b)));
+  // What a chosen schedule sends: an interval, fixed hours, or neither (once)
+  const scheduleOf = (f: Frequency) => ({ frequency_hours: f === 'once' || f === 'hours' ? null : Number(f), day_hours: f === 'hours' ? hours : null });
   const startDate = (which: 'now' | 'next') => new Date(floorToHour(new Date()).getTime() + (which === 'next' ? 3600000 : 0));
 
   const addTreatment = async () => {
     if (!id) return;
     if (!name.trim()) { setFormError('Escribe el nombre del tratamiento'); return; }
+    if (frequency === 'hours' && !hours.length) { setFormError('Elige al menos una hora'); return; }
     setSaving(true); setFormError(null);
     try {
       const created = await api.hospitalizations.addTreatment(id, {
         kind, name: name.trim(), instructions: instructions.trim() || null, unit: kind === 'constante' ? unit.trim() || null : null,
-        frequency_hours: frequency === 'once' ? null : Number(frequency), start_at: startDate(startAt).toISOString(),
+        ...scheduleOf(frequency), start_at: startDate(frequency === 'hours' ? 'now' : startAt).toISOString(),
       });
       setSheet((s) => (s ? { ...s, treatments: [...s.treatments, created] } : s));
       setAdding(false); resetForm();
@@ -194,13 +206,16 @@ export default function HospitalSheetScreen() {
 
   const addVitals = async () => {
     if (!id) return;
+    if (vitalsSchedule === 'hours' && !hours.length) { setFormError('Elige al menos una hora'); return; }
+    setFormError(null);
     setBusy('vitals');
     try {
       const start = startDate('now').toISOString();
       const created: HospitalTreatment[] = [];
-      for (const v of VITALS) created.push(await api.hospitalizations.addTreatment(id, { kind: 'constante', name: v.name, unit: v.unit, frequency_hours: 4, start_at: start }));
+      for (const v of VITALS) created.push(await api.hospitalizations.addTreatment(id, { kind: 'constante', name: v.name, unit: v.unit, ...scheduleOf(vitalsSchedule), start_at: start }));
       setSheet((s) => (s ? { ...s, treatments: [...s.treatments, ...created] } : s));
-      toast.success('Constantes agregadas cada 4 h');
+      setVitalsOpen(false);
+      toast.success(`Constantes agregadas ${frequencyLabel(scheduleOf(vitalsSchedule))}`);
     } catch (e: any) {
       toast.error(e?.message || 'No se pudieron agregar las constantes');
       load(true);
@@ -234,6 +249,19 @@ export default function HospitalSheetScreen() {
   const stayDay = Math.floor((today.getTime() - firstDay.getTime()) / DAY_MS) + 1;
   const labelWidth = isMobile ? 148 : 260;
   const dayLabel = day.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^./, (c) => c.toUpperCase());
+
+  // The 24 hours as toggles: the chosen ones filled, like every other selector
+  const hourPicker = (
+    <View style={styles.hourPicker} accessibilityLabel="Horas del día">
+      {HOURS.map((h) => (
+        <VButton key={h} size="sm" variant={hours.includes(h) ? 'filled' : 'secondary'} onPress={() => toggleHour(h)} style={styles.hourBtn}
+          accessibilityLabel={`${String(h).padStart(2, '0')}:00${hours.includes(h) ? ', elegida' : ''}`}>{String(h).padStart(2, '0')}</VButton>
+      ))}
+    </View>
+  );
+  const hoursSummary = hours.length
+    ? `Todos los días a las ${hours.map((h) => `${String(h).padStart(2, '0')}:00`).join(', ')}, desde ahora hasta suspender o dar el alta.`
+    : 'Elige las horas en que toca.';
 
   const cellMark = (slot: Slot) => {
     const key = `${slot.treatment.id}:${slot.at.getTime()}`;
@@ -302,7 +330,7 @@ export default function HospitalSheetScreen() {
         </View>
         {!closed ? (
           <View style={styles.actions}>
-            <VButton size="sm" variant="secondary" onPress={addVitals} loading={busy === 'vitals'} disabled={busy === 'vitals'}>Constantes cada 4 h</VButton>
+            <VButton size="sm" variant="secondary" onPress={() => { setHours(DEFAULT_HOURS); setVitalsSchedule('4'); setFormError(null); setVitalsOpen(true); }}>Agregar constantes</VButton>
             <VButton onPress={() => { resetForm(); setAdding(true); }} icon={<Plus size={16} color={onAccentText.default} />}>Agregar tratamiento</VButton>
           </View>
         ) : null}
@@ -331,12 +359,12 @@ export default function HospitalSheetScreen() {
               const firstOfKind = i === 0 || treatments[i - 1].kind !== t.kind;
               return (
                 <Pressable key={t.id} onPress={() => (off || closed ? undefined : discontinue(t))} disabled={off || closed} accessibilityRole="button"
-                  accessibilityLabel={`${t.name}, ${frequencyLabel(t.frequency_hours)}${off ? ', suspendido' : '. Pulsa para suspender'}`}
+                  accessibilityLabel={`${t.name}, ${frequencyLabel(t)}${off ? ', suspendido' : '. Pulsa para suspender'}`}
                   style={({ hovered }: any) => [styles.labelCell, { borderColor: colors.border, backgroundColor: hovered && !off && !closed ? colors.surfaceVariant : 'transparent' }]}>
                   {firstOfKind ? <Text style={[styles.kind, { color: colors.textSecondary }]}>{KIND_LABEL[t.kind]}</Text> : null}
                   <Text numberOfLines={1} style={[styles.rowName, { color: off ? colors.textLight : colors.text }, off && styles.struck]}>{t.name}</Text>
                   <Text numberOfLines={1} style={[styles.meta, { color: colors.textSecondary }]}>
-                    {[off ? 'Suspendido' : frequencyLabel(t.frequency_hours), t.unit, t.instructions].filter(Boolean).join(' · ')}
+                    {[off ? 'Suspendido' : frequencyLabel(t), t.unit, t.instructions].filter(Boolean).join(' · ')}
                   </Text>
                 </Pressable>
               );
@@ -382,10 +410,24 @@ export default function HospitalSheetScreen() {
         <VInput label="Indicaciones" value={instructions} onChangeText={setInstructions} placeholder="Vía, dilución, cuidados al administrar" multiline />
         <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Frecuencia</Text>
         <Segmented label="Frecuencia" size="sm" options={FREQUENCIES} value={frequency} onChange={setFrequency} style={styles.segment} />
-        <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Primera vez</Text>
-        <Segmented label="Primera vez" size="sm" options={STARTS} value={startAt} onChange={setStartAt} style={styles.segment} />
+        {frequency === 'hours' ? hourPicker : (
+          <>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Primera vez</Text>
+            <Segmented label="Primera vez" size="sm" options={STARTS} value={startAt} onChange={setStartAt} style={styles.segment} />
+          </>
+        )}
         <Text style={[styles.meta, { color: colors.textSecondary }]}>
-          {frequency === 'once' ? `Se programa a las ${hourLabel(startDate(startAt))}.` : `Desde las ${hourLabel(startDate(startAt))}, cada ${frequency} h, hasta suspenderlo o dar el alta.`}
+          {frequency === 'hours' ? hoursSummary : frequency === 'once' ? `Se programa a las ${hourLabel(startDate(startAt))}.` : `Desde las ${hourLabel(startDate(startAt))}, cada ${frequency} h, hasta suspenderlo o dar el alta.`}
+        </Text>
+      </FormSheet>
+
+      <FormSheet visible={vitalsOpen} title="Agregar constantes" onClose={() => setVitalsOpen(false)} onSubmit={addVitals} submitLabel="Agregar" submitting={busy === 'vitals'} error={formError}>
+        <Text style={[styles.body, { color: colors.text, marginBottom: SPACING.md }]}>Temperatura, frecuencia cardíaca y frecuencia respiratoria, cada una en su fila.</Text>
+        <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Cuándo tomarlas</Text>
+        <Segmented label="Cuándo tomarlas" size="sm" options={VITALS_SCHEDULES} value={vitalsSchedule} onChange={setVitalsSchedule} style={styles.segment} />
+        {vitalsSchedule === 'hours' ? hourPicker : null}
+        <Text style={[styles.meta, { color: colors.textSecondary }]}>
+          {vitalsSchedule === 'hours' ? hoursSummary : `Desde las ${hourLabel(startDate('now'))}, cada ${vitalsSchedule} h, hasta suspender o dar el alta.`}
         </Text>
       </FormSheet>
 
@@ -394,7 +436,7 @@ export default function HospitalSheetScreen() {
         {open ? (
           <>
             <Text style={[styles.meta, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
-              {[KIND_LABEL[open.treatment.kind], frequencyLabel(open.treatment.frequency_hours), open.treatment.instructions].filter(Boolean).join(' · ')}
+              {[KIND_LABEL[open.treatment.kind], frequencyLabel(open.treatment), open.treatment.instructions].filter(Boolean).join(' · ')}
             </Text>
             {open.task ? (
               <Text style={[styles.body, { color: colors.text, marginBottom: SPACING.md }]}>
@@ -451,4 +493,6 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: TYPOGRAPHY.sizes.sm, marginBottom: SPACING.sm },
   segment: { marginBottom: SPACING.lg },
   narrow: { maxWidth: 220 },
+  hourPicker: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginBottom: SPACING.md },
+  hourBtn: { minWidth: 44 },
 });

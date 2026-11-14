@@ -438,6 +438,8 @@ export interface HospitalTreatment {
   instructions: string | null;
   unit: string | null;
   frequency_hours: number | null;
+  /** Fixed hours of the day (0-23, local time) instead of an interval: [8, 13, 20] */
+  day_hours?: number[] | null;
   start_at: string;
   discontinued_at: string | null;
   sort_order: number;

@@ -29,6 +29,17 @@ export function scheduledTimes(t: HospitalTreatment, from: Date, to: Date, sheet
   const start = new Date(t.start_at).getTime();
   const stops = [to.getTime(), t.discontinued_at ? new Date(t.discontinued_at).getTime() : Infinity, sheetEnd ? sheetEnd.getTime() : Infinity];
   const end = Math.min(...stops);
+  if (t.day_hours?.length) {
+    // Fixed hours repeat every day in local time (built with the Date constructor, so a clock change keeps 08:00 at 08:00)
+    const times: Date[] = [];
+    for (let d = startOfDay(from); d.getTime() < end; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+      for (const h of t.day_hours) {
+        const at = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h).getTime();
+        if (at >= start && at >= from.getTime() && at < end) times.push(new Date(at));
+      }
+    }
+    return times.sort((a, b) => a.getTime() - b.getTime());
+  }
   if (!t.frequency_hours) return start >= from.getTime() && start < end ? [new Date(start)] : [];
   const step = t.frequency_hours * HOUR_MS;
   const times: Date[] = [];
@@ -56,8 +67,9 @@ export function sortTreatments(treatments: HospitalTreatment[]): HospitalTreatme
   return [...treatments].sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || a.sort_order - b.sort_order);
 }
 
-export function frequencyLabel(hours: number | null): string {
-  return hours ? `cada ${hours} h` : 'una vez';
+export function frequencyLabel(t: Pick<HospitalTreatment, 'frequency_hours' | 'day_hours'>): string {
+  if (t.day_hours?.length) return `a las ${t.day_hours.map((h) => String(h).padStart(2, '0')).join(', ')} h`;
+  return t.frequency_hours ? `cada ${t.frequency_hours} h` : 'una vez';
 }
 export function hourLabel(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
