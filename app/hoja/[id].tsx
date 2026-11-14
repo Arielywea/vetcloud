@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, Minus, Plus, FileText } from 'lucide-react-native';
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, Minus, Plus, FileText, Download, Droplets } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useResponsive } from '../../hooks/useResponsive';
 import { api, HospitalSheet, HospitalTask, HospitalTreatment, HospitalTreatmentKind } from '../../services/directus';
@@ -19,6 +19,9 @@ import { useConfirm } from '../../components/ui/ConfirmDialog';
 import { petAlerts } from '../../components/pet/ChartHeader';
 import { SPACING, RADIUS, TYPOGRAPHY, alpha } from '../../constants/tokens';
 import { HOSPITAL_TEMPLATES, HospitalTemplate } from '../../constants/hospitalTemplates';
+import FluidTherapyCalculator, { FluidPlan } from '../../components/calculators/FluidTherapyCalculator';
+import VModal from '../../components/ui/VModal';
+import { downloadPdf } from '../../utils/downloadPdf';
 import { calculateAge } from '../../utils/age';
 import { speciesLabel } from '../../utils/identity';
 import { Slot, SlotState, KIND_LABEL, buildSlots, floorToHour, frequencyLabel, hourLabel, sortTreatments, startOfDay } from '../../utils/hospitalSheet';
@@ -79,6 +82,8 @@ export default function HospitalSheetScreen() {
   const [vitalsOpen, setVitalsOpen] = useState(false);
   const [vitalsSchedule, setVitalsSchedule] = useState<Frequency>('4');
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [fluidCalc, setFluidCalc] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
   // A treatment opened from its name: rename it, change when it is due, or suspend it
   const [editing, setEditing] = useState<HospitalTreatment | null>(null);
   const [eName, setEName] = useState('');
@@ -252,6 +257,19 @@ export default function HospitalSheetScreen() {
     }
   };
 
+  // The calculator replaces the add form while open, then hands it the row it calculated
+  const useFluidPlan = (plan: FluidPlan) => {
+    setKind('fluidos'); setName(plan.name); setInstructions(plan.instructions);
+    setFluidCalc(false); setAdding(true);
+  };
+  const downloadSummary = async () => {
+    if (!id || !sheet) return;
+    setPdfBusy(true);
+    try { await downloadPdf(`/items/hospitalizations/${id}/discharge-pdf`, `hospitalizacion_${sheet.hospitalization.pet_name || 'paciente'}.pdf`); }
+    catch (e: any) { toast.error(e?.message || 'No se pudo generar el resumen'); }
+    finally { setPdfBusy(false); }
+  };
+
   const openEdit = (t: HospitalTreatment) => {
     setEditing(t); setEName(t.name); setEInstructions(t.instructions || ''); setEUnit(t.unit || ''); setFormError(null);
     setHours(t.day_hours?.length ? [...t.day_hours] : DEFAULT_HOURS);
@@ -372,7 +390,10 @@ export default function HospitalSheetScreen() {
             {hosp.veterinarian ? ` · ${hosp.veterinarian}` : ''}
           </Text>
         </View>
-        <VButton variant="ghost" size="sm" onPress={() => router.push(`/pet/${hosp.pet_id}` as any)} icon={<FileText size={15} color={colors.primary} />}>Ficha</VButton>
+        <View style={styles.headActions}>
+          <VButton variant="ghost" size="sm" onPress={() => router.push(`/pet/${hosp.pet_id}` as any)} icon={<FileText size={15} color={colors.primary} />}>Ficha</VButton>
+          <VButton variant="ghost" size="sm" onPress={downloadSummary} loading={pdfBusy} disabled={pdfBusy} icon={<Download size={15} color={colors.primary} />}>{closed ? 'Resumen de alta' : 'Resumen PDF'}</VButton>
+        </View>
       </View>
 
       {alerts.length ? (
@@ -474,6 +495,11 @@ export default function HospitalSheetScreen() {
         <Segmented label="Tipo" size="sm" options={KINDS} value={kind} onChange={setKind} style={styles.segment} />
         <VInput label="Nombre" value={name} onChangeText={setName} placeholder={NAME_PLACEHOLDER[kind]} autoFocus />
         {kind === 'constante' ? <VInput label="Unidad" value={unit} onChangeText={setUnit} placeholder="°C, lpm, rpm, mmHg…" containerStyle={styles.narrow} /> : null}
+        {kind === 'fluidos' ? (
+          <VButton size="sm" variant="secondary" onPress={() => { setAdding(false); setFluidCalc(true); }} icon={<Droplets size={15} color={colors.primary} />} style={styles.calcBtn}>
+            Calcular la tasa
+          </VButton>
+        ) : null}
         <VInput label="Indicaciones" value={instructions} onChangeText={setInstructions} placeholder="Vía, dilución, cuidados al administrar" multiline />
         <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Frecuencia</Text>
         <Segmented label="Frecuencia" size="sm" options={FREQUENCIES} value={frequency} onChange={setFrequency} style={styles.segment} />
@@ -497,6 +523,16 @@ export default function HospitalSheetScreen() {
           {vitalsSchedule === 'hours' ? hoursSummary : `Desde las ${hourLabel(startDate('now'))}, cada ${vitalsSchedule} h, hasta suspender o dar el alta.`}
         </Text>
       </FormSheet>
+
+      <VModal visible={fluidCalc} onDismiss={() => { setFluidCalc(false); setAdding(true); }} title="Calcular fluidoterapia" maxWidth={780}>
+        {fluidCalc ? (
+          <View style={styles.calcBox}>
+            <FluidTherapyCalculator embedded onUse={useFluidPlan}
+              initialWeight={hosp.current_weight_kg != null ? Number(hosp.current_weight_kg) : undefined}
+              initialSpecies={hosp.species === 'cat' ? 'gato' : 'perro'} />
+          </View>
+        ) : null}
+      </VModal>
 
       <FormSheet visible={templatesOpen} title="Plantillas" onClose={() => setTemplatesOpen(false)}>
         <Text style={[styles.meta, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
@@ -594,6 +630,9 @@ const styles = StyleSheet.create({
   segment: { marginBottom: SPACING.lg },
   narrow: { maxWidth: 220 },
   template: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginBottom: SPACING.lg },
+  headActions: { alignItems: 'flex-end', gap: SPACING.xs },
+  calcBtn: { alignSelf: 'flex-start', marginBottom: SPACING.lg },
+  calcBox: { height: 560, maxHeight: '75%' as any },
   hourPicker: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginBottom: SPACING.md },
   hourBtn: { minWidth: 44 },
 });

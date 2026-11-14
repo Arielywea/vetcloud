@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, Switch, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { Package, Syringe, ClipboardCheck, Square, SquareCheck, CheckCircle2 } from 'lucide-react-native';
+import { Package, Syringe, ClipboardCheck, Square, SquareCheck, CheckCircle2, BedDouble } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNotices } from '../../hooks/useNotices';
 import { AutomationRule, ClinicNotice, api } from '../../services/directus';
@@ -14,7 +14,7 @@ import VEmptyState from '../../components/ui/EmptyState';
 import { useToast } from '../../components/ui/VToast';
 import { SPACING, TYPOGRAPHY } from '../../constants/tokens';
 
-const KIND_ICON = { low_stock: Package, vaccines_overdue: Syringe, discharge_checklist: ClipboardCheck } as const;
+const KIND_ICON = { low_stock: Package, vaccines_overdue: Syringe, discharge_checklist: ClipboardCheck, sheet_late: BedDouble } as const;
 
 export default function AvisosScreen() {
   const { colors } = useTheme();

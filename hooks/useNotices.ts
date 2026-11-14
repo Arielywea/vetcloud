@@ -26,7 +26,7 @@ export function useNotices() {
   }, [load]);
 
   // Anything the rules read can change a notice
-  useRefreshOn(['notices', 'automation_rules', 'hospitalizations', 'inventory', 'vaccinations'], load);
+  useRefreshOn(['notices', 'automation_rules', 'hospitalizations', 'hospital_treatments', 'hospital_tasks', 'inventory', 'vaccinations'], load);
 
   return { notices, loading, refresh: load };
 }

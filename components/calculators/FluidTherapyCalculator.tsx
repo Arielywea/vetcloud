@@ -54,7 +54,15 @@ function Choice<T extends string | number>({ value, options, onChange, label }: 
 
 const fmt = (n: number, d = 0) => n.toLocaleString('es-CL', { maximumFractionDigits: d, minimumFractionDigits: d });
 
-export default function FluidTherapyCalculator({ initialWeight, initialSpecies }: { initialWeight?: number; initialSpecies?: Species }) {
+/** What the sheet takes from the calculator: a row name with the rate and the plan behind it */
+export interface FluidPlan { name: string; instructions: string; rateMlH: number }
+
+export default function FluidTherapyCalculator({ initialWeight, initialSpecies, embedded, onUse }: {
+  initialWeight?: number; initialSpecies?: Species;
+  /** Inside another screen (the hospital sheet): no page heading */
+  embedded?: boolean;
+  onUse?: (plan: FluidPlan) => void;
+}) {
   const { colors } = useTheme();
   const [peso, setPeso] = useState(initialWeight?.toString() || '');
   const [especie, setEspecie] = useState<Species>(initialSpecies || 'perro');
@@ -94,7 +102,7 @@ export default function FluidTherapyCalculator({ initialWeight, initialSpecies }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <PageHeader title="Fluidoterapia" subtitle="Bolo de shock, déficit, mantención y pérdidas según AAHA 2024, en mL/h y gotas por minuto" />
+      {embedded ? null : <PageHeader title="Fluidoterapia" subtitle="Bolo de shock, déficit, mantención y pérdidas según AAHA 2024, en mL/h y gotas por minuto" />}
 
       <View style={styles.inputGroup}>
         <Text style={[styles.label, { color: colors.textSecondary }]}>Peso (kg)</Text>
@@ -175,6 +183,19 @@ export default function FluidTherapyCalculator({ initialWeight, initialSpecies }
           <Text style={[styles.footnote, { color: colors.textSecondary }]}>
             Cristaloide isotónico tamponado (Ringer lactato, Plasma-Lyte). Reevalúa perfusión, peso, densidad urinaria y signos de sobrecarga al menos cada 4-6 h y recalcula. Referencia: 2024 AAHA Fluid Therapy Guidelines for Dogs and Cats.
           </Text>
+          {onUse ? (
+            <VButton style={{ marginTop: SPACING.lg }} onPress={() => onUse({
+              name: `Fluidoterapia ${fmt(result.rehydrationRate, 1)} mL/h`,
+              rateMlH: result.rehydrationRate,
+              instructions: [
+                `${fmt(result.rehydrationDrops)} gotas/min (${infusion === 'microgota' ? 'microgotero' : 'macrogotero'})`,
+                result.deficit > 0 ? `déficit ${fmt(result.deficit)} mL en ${periodo} h; después ${fmt(result.afterRate, 1)} mL/h` : null,
+                `mantención ${fmt(result.mantencion)} mL/día`,
+                result.perdidasDia > 0 ? `pérdidas estimadas ${fmt(result.perdidasDia)} mL/día` : null,
+                `${fmt(result.kg, 2)} kg`,
+              ].filter(Boolean).join(' · '),
+            })}>Usar en la hoja</VButton>
+          ) : null}
         </View>
       )}
     </ScrollView>

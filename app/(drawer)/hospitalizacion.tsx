@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
-import { BedDouble, Clock, Stethoscope, CheckCircle, Plus, AlertTriangle, ClipboardList } from 'lucide-react-native';
+import { BedDouble, Clock, Stethoscope, CheckCircle, Plus, AlertTriangle, ClipboardList, Download } from 'lucide-react-native';
+import { downloadPdf } from '../../utils/downloadPdf';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import PageHeader from '../../components/ui/PageHeader';
@@ -222,6 +223,8 @@ export default function HospitalizacionScreen() {
               {admission.status === 'discharged' ? (
                 <View style={styles.actions}>
                   <VButton variant="ghost" size="sm" onPress={() => router.push(`/hoja/${admission.id}` as any)} icon={<ClipboardList size={16} color={colors.primary} />}>Ver hoja</VButton>
+                  <VButton variant="ghost" size="sm" onPress={() => downloadPdf(`/items/hospitalizations/${admission.id}/discharge-pdf`, `hospitalizacion_${admission.pet_name || 'paciente'}.pdf`).catch((e: any) => toast.error(e?.message || 'No se pudo generar el resumen'))}
+                    icon={<Download size={16} color={colors.primary} />}>Resumen de alta</VButton>
                 </View>
               ) : (
                 <View style={styles.actions}>

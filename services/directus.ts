@@ -381,7 +381,7 @@ export const publicAnamnesis = {
 /** Inbox item for the clinic, created by an automation rule (see "CLINIC NOTICES" in server.js) */
 export interface ClinicNotice {
   id: string;
-  kind: 'low_stock' | 'vaccines_overdue' | 'discharge_checklist';
+  kind: 'low_stock' | 'vaccines_overdue' | 'discharge_checklist' | 'sheet_late';
   title: string;
   body: string | null;
   /** App route to open (e.g. /pet/<id>) */

@@ -2810,6 +2810,44 @@ app.patch('/items/hospital_treatments/:id', authMiddleware, async (req, res) => 
   }
 });
 
+// The tutor's summary of a stay, built from its treatment sheet
+app.get('/items/hospitalizations/:id/discharge-pdf', authMiddleware, async (req, res) => {
+  try {
+    const h = await pool.query('SELECT * FROM hospitalizations WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
+    if (!h.rows.length) return res.status(404).json({ error: 'No se encontró la hospitalización' });
+    const stay = h.rows[0];
+    const pet = await petWithOwner(stay.pet_id, req.userId);
+    if (!pet) return res.status(404).json({ error: 'No se encontró el paciente' });
+    const until = stay.discharge_date || new Date().toISOString();
+    const [treatments, tasks, rx, upcoming, clinic] = await Promise.all([
+      pool.query('SELECT * FROM hospital_treatments WHERE hospitalization_id = $1 AND user_id = $2 ORDER BY sort_order, created_at', [stay.id, req.userId]),
+      pool.query(
+        `SELECT t.* FROM hospital_tasks t JOIN hospital_treatments tr ON tr.id = t.treatment_id
+         WHERE tr.hospitalization_id = $1 AND t.user_id = $2 ORDER BY t.scheduled_for`, [stay.id, req.userId]),
+      // Prescriptions written during the stay or on the day of discharge: the medication for home
+      pool.query(
+        `SELECT prescription_body FROM prescriptions WHERE pet_id = $1 AND user_id = $2
+         AND issued_at >= $3::timestamptz AND issued_at <= $4::timestamptz + interval '1 day' ORDER BY issued_at`,
+        [stay.pet_id, req.userId, stay.admission_date, until]),
+      pool.query(
+        `SELECT start_time, appointment_type FROM appointments
+         WHERE pet_id = $1 AND user_id = $2 AND start_time > NOW() AND status NOT IN ('cancelada', 'completada', 'ausente')
+         ORDER BY start_time LIMIT 3`, [stay.pet_id, req.userId]),
+      clinicProfile(req.userId),
+    ]);
+    const { generateDischargeSummaryPdf } = require('./utils/generateDischargeSummaryPdf');
+    const pdf = await generateDischargeSummaryPdf({
+      stay, pet, owner: pet.owner, treatments: treatments.rows, tasks: tasks.rows, prescriptions: rx.rows, upcoming: upcoming.rows, clinic,
+    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.attachment(`hospitalizacion_${fileSafe(pet.name)}_${new Date(stay.admission_date).toISOString().slice(0, 10)}.pdf`);
+    res.send(pdf);
+  } catch (error) {
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 // Records what happened at one scheduled time. Saving the same time again replaces the record.
 app.post('/items/hospital_treatments/:id/tasks', authMiddleware, async (req, res) => {
   try {
@@ -3486,6 +3524,7 @@ const AUTOMATION_RULES = [
   { key: 'low_stock', title: 'Stock bajo', description: 'Avisa cuando un producto llega a su stock mínimo.' },
   { key: 'vaccines_overdue', title: 'Vacunas vencidas', description: 'Avisa cuando un paciente tiene vacunas o desparasitaciones con la fecha vencida.' },
   { key: 'discharge_checklist', title: 'Checklist de alta', description: 'Al dar de alta a un paciente hospitalizado, crea un checklist para cerrar el caso.' },
+  { key: 'sheet_late', title: 'Hoja de tratamientos atrasada', description: 'Avisa cuando un paciente hospitalizado tiene tratamientos sin registrar más de media hora después de su horario (últimas 24 horas).' },
 ];
 const DISCHARGE_CHECKLIST = ['Entregar las indicaciones de alta al tutor', 'Dar la receta y explicar la medicación', 'Agendar el control', 'Cobrar la hospitalización', 'Revisar que la ficha quede al día'];
 
@@ -3494,8 +3533,57 @@ async function disabledRules(userId) {
   return new Set(r.rows.map((x) => x.rule_key));
 }
 
+// Active stays with treatments past their time and nothing recorded, over the last 24 hours
+async function lateSheets(userId) {
+  const { lateTimes, clockText } = require('./utils/hospitalSchedule');
+  const now = Date.now();
+  const [stays, treatments, tasks] = await Promise.all([
+    pool.query(
+      `SELECT h.id, h.admission_date, h.pet_id, p.name AS pet_name FROM hospitalizations h JOIN pets p ON p.id = h.pet_id
+       WHERE h.user_id = $1 AND h.status <> 'discharged'`, [userId]),
+    pool.query(
+      `SELECT tr.* FROM hospital_treatments tr JOIN hospitalizations h ON h.id = tr.hospitalization_id
+       WHERE tr.user_id = $1 AND h.status <> 'discharged'`, [userId]),
+    pool.query(
+      `SELECT t.treatment_id, t.scheduled_for FROM hospital_tasks t JOIN hospital_treatments tr ON tr.id = t.treatment_id
+       JOIN hospitalizations h ON h.id = tr.hospitalization_id
+       WHERE t.user_id = $1 AND h.status <> 'discharged' AND t.scheduled_for > now() - interval '25 hours'`, [userId]),
+  ]);
+  const result = [];
+  for (const stay of stays.rows) {
+    const rows = treatments.rows.filter((t) => t.hospitalization_id === stay.id);
+    if (!rows.length) continue;
+    const from = Math.max(new Date(stay.admission_date).getTime(), now - 86400000);
+    const late = lateTimes(rows, tasks.rows, from, now);
+    if (!late.length) continue;
+    const names = [...new Set(late.map((l) => l.treatment.name))];
+    result.push({
+      stay,
+      title: `Hoja atrasada: ${stay.pet_name}`,
+      body: `${late.length} ${late.length === 1 ? 'horario sin registrar' : 'horarios sin registrar'} desde las ${clockText(late[0].at)}: ${names.slice(0, 3).join(', ')}${names.length > 3 ? ` y ${names.length - 3} más` : ''}`,
+    });
+  }
+  return result;
+}
+
 async function syncNotices(userId, organizationId) {
   const off = await disabledRules(userId);
+  const sheetOff = off.has('sheet_late');
+  const late = sheetOff ? [] : await lateSheets(userId);
+  for (const l of late.slice(0, 50)) {
+    await pool.query(
+      `INSERT INTO clinic_notices (user_id, organization_id, kind, title, body, link, pet_id, dedupe_key)
+       VALUES ($1, $2, 'sheet_late', $3, $4, $5, $6, $7)
+       ON CONFLICT (user_id, dedupe_key) DO UPDATE SET title = EXCLUDED.title, body = EXCLUDED.body
+         WHERE clinic_notices.status = 'open'`,
+      [userId, organizationId, l.title, l.body, `/hoja/${l.stay.id}`, l.stay.pet_id, `sheet:${l.stay.id}`]
+    );
+  }
+  // Removed once the sheet is up to date, the patient is discharged or the rule is off
+  await pool.query(
+    `DELETE FROM clinic_notices WHERE user_id = $1 AND kind = 'sheet_late' AND NOT (dedupe_key = ANY($2::text[]))`,
+    [userId, late.map((l) => `sheet:${l.stay.id}`)]
+  );
   const stockOff = off.has('low_stock');
   const vaccinesOff = off.has('vaccines_overdue');
   const overdue = `v.next_due_at < CURRENT_DATE AND p.status = 'alive'
