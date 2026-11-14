@@ -428,6 +428,38 @@ export interface Hospitalization {
   created_at: string;
 }
 
+export type HospitalTreatmentKind = 'medicacion' | 'fluidos' | 'constante' | 'alimentacion' | 'cuidado';
+/** One row of the treatment sheet. Scheduled times run from start_at every frequency_hours (null = once) */
+export interface HospitalTreatment {
+  id: string;
+  hospitalization_id: string;
+  kind: HospitalTreatmentKind;
+  name: string;
+  instructions: string | null;
+  unit: string | null;
+  frequency_hours: number | null;
+  start_at: string;
+  discontinued_at: string | null;
+  sort_order: number;
+}
+/** What happened at one scheduled time; a time without a task is still pending */
+export interface HospitalTask {
+  id: string;
+  treatment_id: string;
+  scheduled_for: string;
+  status: 'done' | 'skipped';
+  done_at: string;
+  done_by: string | null;
+  value: string | null;
+  notes: string | null;
+}
+export interface HospitalSheet {
+  hospitalization: Pick<Hospitalization, 'id' | 'pet_id' | 'admission_date' | 'discharge_date' | 'reason' | 'status' | 'veterinarian' | 'notes' | 'pet_name' | 'breed'>
+    & Pick<DirectusPet, 'species' | 'species_other' | 'birth_date' | 'allergies' | 'alerts' | 'current_weight_kg'>;
+  treatments: HospitalTreatment[];
+  tasks: HospitalTask[];
+}
+
 export interface InventoryItem {
   id: string;
   user_id: string;
@@ -696,6 +728,12 @@ export const api = {
     create: (data: any) => apiPost('/items/hospitalizations', data),
     update: (id: string, data: any) => apiPatch(`/items/hospitalizations/${id}`, data),
     delete: (id: string) => apiDelete(`/items/hospitalizations/${id}`),
+    sheet: (id: string) => apiGet(`/items/hospitalizations/${id}/sheet`) as Promise<HospitalSheet>,
+    addTreatment: (id: string, data: Partial<HospitalTreatment>) => apiPost(`/items/hospitalizations/${id}/treatments`, data) as Promise<HospitalTreatment>,
+    updateTreatment: (treatmentId: string, data: Partial<HospitalTreatment>) => apiPatch(`/items/hospital_treatments/${treatmentId}`, data) as Promise<HospitalTreatment>,
+    saveTask: (treatmentId: string, data: { scheduled_for: string; status: HospitalTask['status']; value?: string | null; notes?: string | null }) =>
+      apiPost(`/items/hospital_treatments/${treatmentId}/tasks`, data) as Promise<HospitalTask>,
+    deleteTask: (taskId: string) => apiDelete(`/items/hospital_tasks/${taskId}`),
   },
   inventory: {
     list: () => apiGet('/items/inventory'),

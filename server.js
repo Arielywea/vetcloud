@@ -2672,6 +2672,137 @@ app.delete('/items/hospitalizations/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// ─── HOSPITAL SHEET ────────────────────────────────────
+// The treatment sheet of one hospitalization: rows (treatments) with a frequency, and what was done
+// at each scheduled time (tasks). Scheduled times are computed by the client from start_at and
+// frequency_hours; only what actually happened is stored (migration 035).
+const HOSPITAL_TREATMENT_KINDS = ['medicacion', 'fluidos', 'constante', 'alimentacion', 'cuidado'];
+const HOSPITAL_FREQUENCIES = [1, 2, 3, 4, 6, 8, 12, 24];
+
+app.get('/items/hospitalizations/:id/sheet', authMiddleware, async (req, res) => {
+  try {
+    const h = await pool.query(
+      `SELECT h.id, h.pet_id, h.admission_date, h.discharge_date, h.reason, h.status, h.veterinarian, h.notes,
+              p.name AS pet_name, p.species, p.species_other, p.breed, p.birth_date, p.sex, p.allergies, p.alerts, p.current_weight_kg
+       FROM hospitalizations h JOIN pets p ON p.id = h.pet_id
+       WHERE h.id = $1 AND h.user_id = $2`,
+      [req.params.id, req.userId]
+    );
+    if (!h.rows.length) return res.status(404).json({ error: 'No se encontró la hospitalización' });
+    const [treatments, tasks] = await Promise.all([
+      pool.query('SELECT * FROM hospital_treatments WHERE hospitalization_id = $1 AND user_id = $2 ORDER BY sort_order, created_at', [req.params.id, req.userId]),
+      pool.query(
+        `SELECT t.* FROM hospital_tasks t JOIN hospital_treatments tr ON tr.id = t.treatment_id
+         WHERE tr.hospitalization_id = $1 AND t.user_id = $2 ORDER BY t.scheduled_for`,
+        [req.params.id, req.userId]
+      ),
+    ]);
+    res.json({ data: { hospitalization: h.rows[0], treatments: treatments.rows, tasks: tasks.rows } });
+  } catch (error) {
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/items/hospitalizations/:id/treatments', authMiddleware, async (req, res) => {
+  try {
+    const b = req.body || {};
+    const name = String(b.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'Escribe el nombre del tratamiento' });
+    if (name.length > 200) return res.status(400).json({ error: 'El nombre no puede superar 200 caracteres' });
+    const kind = b.kind || 'medicacion';
+    if (!HOSPITAL_TREATMENT_KINDS.includes(kind)) return res.status(400).json({ error: 'Tipo de tratamiento inválido' });
+    const frequency = parseNumberInput(b.frequency_hours, { integer: true });
+    if (frequency === undefined || (frequency !== null && !HOSPITAL_FREQUENCIES.includes(frequency))) {
+      return res.status(400).json({ error: 'La frecuencia debe ser cada 1, 2, 3, 4, 6, 8, 12 o 24 horas' });
+    }
+    const startAt = parseDateTimeInput(b.start_at);
+    if (startAt === undefined) return res.status(400).json({ error: 'Hora de inicio inválida' });
+    const hosp = await pool.query('SELECT status FROM hospitalizations WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
+    if (!hosp.rows.length) return res.status(404).json({ error: 'No se encontró la hospitalización' });
+    if (hosp.rows[0].status === 'discharged') return res.status(400).json({ error: 'El paciente ya fue dado de alta: la hoja está cerrada' });
+    const result = await pool.query(
+      `INSERT INTO hospital_treatments (hospitalization_id, user_id, organization_id, kind, name, instructions, unit, frequency_hours, start_at, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9::timestamptz, now()),
+               (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM hospital_treatments WHERE hospitalization_id = $1))
+       RETURNING *`,
+      [req.params.id, req.userId, req.organizationId || null, kind, name,
+       String(b.instructions || '').trim().slice(0, 2000) || null, String(b.unit || '').trim().slice(0, 20) || null, frequency, startAt]
+    );
+    res.status(201).json({ data: result.rows[0] });
+  } catch (error) {
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.patch('/items/hospital_treatments/:id', authMiddleware, async (req, res) => {
+  try {
+    const allowed = ['name', 'instructions', 'unit', 'frequency_hours', 'discontinued_at'];
+    const safe = sanitizeColumns(allowed, req.body);
+    const vErr = validateFields(safe, {
+      frequency_hours: { type: 'number', integer: true, min: 1, max: 24, label: 'Frecuencia' },
+      discontinued_at: { type: 'datetime', label: 'Fecha de suspensión' },
+    });
+    if (vErr) return res.status(400).json({ error: vErr });
+    if (safe.frequency_hours != null && !HOSPITAL_FREQUENCIES.includes(safe.frequency_hours)) {
+      return res.status(400).json({ error: 'La frecuencia debe ser cada 1, 2, 3, 4, 6, 8, 12 o 24 horas' });
+    }
+    if (safe.name !== undefined) {
+      safe.name = String(safe.name || '').trim();
+      if (!safe.name || safe.name.length > 200) return res.status(400).json({ error: 'Nombre del tratamiento inválido' });
+    }
+    if (Object.keys(safe).length === 0) return res.status(400).json({ error: 'Sin cambios' });
+    const { fields, values, idx } = buildSet(safe);
+    const result = await pool.query(
+      `UPDATE hospital_treatments SET ${fields.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`,
+      [...values, req.params.id, req.userId]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el tratamiento' });
+    res.json({ data: result.rows[0] });
+  } catch (error) {
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Records what happened at one scheduled time. Saving the same time again replaces the record.
+app.post('/items/hospital_treatments/:id/tasks', authMiddleware, async (req, res) => {
+  try {
+    const b = req.body || {};
+    const scheduledFor = parseDateTimeInput(b.scheduled_for);
+    if (!scheduledFor) return res.status(400).json({ error: 'Horario inválido' });
+    const status = b.status || 'done';
+    if (!['done', 'skipped'].includes(status)) return res.status(400).json({ error: 'Estado inválido' });
+    const owned = await pool.query('SELECT 1 FROM hospital_treatments WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
+    if (!owned.rows.length) return res.status(404).json({ error: 'No se encontró el tratamiento' });
+    const result = await pool.query(
+      `INSERT INTO hospital_tasks (treatment_id, user_id, scheduled_for, status, value, notes, done_by)
+       VALUES ($1, $2, $3, $4, $5, $6, (SELECT COALESCE(NULLIF(veterinarian_name, ''), name) FROM users WHERE id = $2))
+       ON CONFLICT (treatment_id, scheduled_for) DO UPDATE SET
+         status = EXCLUDED.status, value = EXCLUDED.value, notes = EXCLUDED.notes, done_by = EXCLUDED.done_by, done_at = now()
+       RETURNING *`,
+      [req.params.id, req.userId, scheduledFor, status,
+       String(b.value ?? '').trim().slice(0, 60) || null, String(b.notes || '').trim().slice(0, 2000) || null]
+    );
+    res.status(201).json({ data: result.rows[0] });
+  } catch (error) {
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.delete('/items/hospital_tasks/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM hospital_tasks WHERE id = $1 AND user_id = $2 RETURNING id', [req.params.id, req.userId]);
+    if (!result.rows.length) return res.status(404).json({ error: 'No se encontró el registro' });
+    res.json({ data: null });
+  } catch (error) {
+    logError(req, error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 // ─── LAB EXAMS ─────────────────────────────────────────
 app.get('/items/lab_exams', authMiddleware, async (req, res) => {
   try {

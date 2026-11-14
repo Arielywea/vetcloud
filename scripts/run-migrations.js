@@ -42,6 +42,7 @@ const MIGRATIONS = [
   '032_legal_acceptances.sql',
   '033_invite_codes.sql',
   '034_professional_signature.sql',
+  '035_hospital_sheet.sql',
 ];
 
 async function runMigrations() {

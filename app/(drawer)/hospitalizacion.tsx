@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
-import { BedDouble, Clock, Stethoscope, CheckCircle, Plus, AlertTriangle } from 'lucide-react-native';
+import { BedDouble, Clock, Stethoscope, CheckCircle, Plus, AlertTriangle, ClipboardList } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import PageHeader from '../../components/ui/PageHeader';
 import { SPACING, TYPOGRAPHY, alpha } from '../../constants/tokens';
@@ -35,7 +36,8 @@ const FILTERS = [
 ];
 
 export default function HospitalizacionScreen() {
-  const { colors, onAccentText } = useTheme();
+  const { colors, onAccentText, onPrimaryText } = useTheme();
+  const router = useRouter();
   const { confirm } = useConfirm();
   const toast = useToast();
   const [filter, setFilter] = useState('todos');
@@ -174,8 +176,13 @@ export default function HospitalizacionScreen() {
                 {admission.notes ? <Text style={[styles.metaText, { color: colors.textSecondary }]}>{admission.notes}</Text> : null}
               </View>
 
-              {admission.status !== 'discharged' && (
+              {admission.status === 'discharged' ? (
                 <View style={styles.actions}>
+                  <VButton variant="ghost" size="sm" onPress={() => router.push(`/hoja/${admission.id}` as any)} icon={<ClipboardList size={16} color={colors.primary} />}>Ver hoja</VButton>
+                </View>
+              ) : (
+                <View style={styles.actions}>
+                  <VButton size="sm" variant="filled" onPress={() => router.push(`/hoja/${admission.id}` as any)} icon={<ClipboardList size={16} color={onPrimaryText.default} />}>Hoja de tratamientos</VButton>
                   {(['internado', 'cirugia', 'recuperacion'] as const).filter(s => s !== admission.status).map(s => (
                     <VBadge key={s} label={`Pasar a ${STATUS_LABELS[s].toLowerCase()}`} variant="outlined" color={colors.textSecondary} onPress={() => handleStatus(admission.id, s)} />
                   ))}

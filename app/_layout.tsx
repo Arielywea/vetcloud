@@ -113,6 +113,17 @@ function AppContent() {
         }}
       />
       <Stack.Screen
+        name="hoja/[id]"
+        options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: colors.chrome },
+          headerTintColor: onChromeText.default,
+          headerShadowVisible: false,
+          headerTitle: () => <ChromeTitle>Hoja de tratamientos</ChromeTitle>,
+          headerLeft: () => <ChromeBack fallback="/(drawer)/hospitalizacion" />,
+        }}
+      />
+      <Stack.Screen
         name="owner/[id]"
         options={{
           headerShown: true,
