@@ -2,7 +2,8 @@ node_modules
 .expo
 dist
 .git
-scripts
+scripts/*
+!scripts/inject-pwa.js
 uploads
 docker
 *.sql
